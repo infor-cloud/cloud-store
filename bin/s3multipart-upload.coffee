@@ -2,8 +2,17 @@
 
 fs = require "fs"
 EventEmitter = require("events").EventEmitter
+zlib = require "zlib"
 
-compressionFilter = (inStreamEmitter) -> inStreamEmitter
+compressionFilter = (inStreamEmitter) ->
+  outStreamEmitter = new EventEmitter()
+  inStreamEmitter.on 'stream', (stream) ->
+    gzip = zlib.createGzip()
+    gzip.index = stream.index
+    outStreamEmitter.emit 'stream', stream.pipe zlib
+  inStreamEmitter.on 'lastIndex', (index) ->
+    outStreamEmitter.emit 'lastIndex', index
+  outStreamEmitter
 
 encryptionFilter = (inStreamEmitter) -> inStreamEmitter
 

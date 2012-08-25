@@ -1,7 +1,6 @@
 {
   s3multipart ? { outPath = ./.; rev = "1234"; name = "s3multipart"; },
   nixpkgs ? <nixpkgs>,
-  filteredstreams ? (import ../filtered-streams/release.nix {}).build
 }:
 
 with import <nixpkgs> {};
@@ -23,6 +22,6 @@ let
           xargs -0 sed -i 's|/usr/bin/coffee|${nodePackages."coffee-script"}/bin/coffee|g'
       '';
 
-      deps = [ filteredstreams ];
+      deps = [];
     };
   }; in jobs

@@ -14,7 +14,33 @@ compressionFilter = (inStreamEmitter) ->
     outStreamEmitter.emit 'lastIndex', index
   outStreamEmitter
 
-encryptionFilter = (inStreamEmitter) -> inStreamEmitter
+encryptionFilter = (inStreamEmitter) ->
+  outStreamEmitter = new EventEmitter()
+  inStreamEmitter.on 'stream', (stream) ->
+    cipher = crypto.createCipher algorithm, password
+    cipherStream = new Stream()
+    newStream.readable = true
+    newStream.pause = stream.pause
+    newStream.resume = stream.resume
+    newStream.destroy = stream.destroy
+    newStream.index = stream.index
+    stream.on 'data', (data) ->
+      newStream.emit 'data', cipher.update data
+    stream.on 'end', ->
+      newStream.emit 'data', cipher.final()
+      newStream.readable = false
+      newStream.emit 'end'
+    stream.on 'error', (exception) ->
+      newStream.readable = false
+      newStream.emit 'error', exception
+    stream.on 'close', ->
+      newStream.emit 'data', cipher.final()
+      newStream.readable = false
+      newStream.emit 'end'
+    outStreamEmitter.emit 'stream', newStream
+  inStreamEmitter.on 'lastIndex', (index) ->
+    outStreamEmitter.emit 'lastIndex', index
+  outStreamEmitter
 
 splitFilter = (inStreamEmitter) ->
   outStreamEmitter = new EventEmitter()

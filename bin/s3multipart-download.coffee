@@ -14,6 +14,8 @@ streamLength = (Math.floor(params.chunkSize/blockSize) + 1) * blockSize
 
 client = knox.createClient key: params['aws-access-key'], secret: params['aws-secret-key'], bucket: params.bucket
 
+require('https').globalAgent.maxSockets = params['max-concurrent-connections'] if params['max-concurrent-connections']?
+
 removeAndCheckHashFilter = (inStreamEmitter) ->
   outStreamEmitter = new EventEmitter()
   inStreamEmitter.on 'stream', (stream) ->

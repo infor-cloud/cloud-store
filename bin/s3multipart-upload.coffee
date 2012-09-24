@@ -10,6 +10,8 @@ knox = require 'knox'
 Parser = require('node-expat').Parser
 util = require '../lib/util'
 
+require('https').globalAgent.maxSockets = params['max-concurrent-connections'] if params['max-concurrent-connections']?
+
 client = knox.createClient key: params['aws-access-key'], secret: params['aws-secret-key'], bucket: params.bucket
 req = client.request 'POST', "/#{params.fileName}?uploads"
 req.on 'response', (res) ->

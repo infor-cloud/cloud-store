@@ -1,6 +1,6 @@
 {
   s3multipart ? { outPath = ./.; rev = "1234"; },
-  nixpkgs ? <nixpkgs>,
+  nixpkgs ? <nixpkgs>
 }:
 
 with import <nixpkgs> {

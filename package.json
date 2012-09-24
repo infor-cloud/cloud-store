@@ -10,5 +10,13 @@
 
 , "directories": {
     "bin": "./bin"
+  , "lib": "./lib"
+  }
+
+, "dependencies": {
+    "cipher-block-size": "0"
+  , "optimist": "~0.3.4"
+  , "knox": "~0.3.1"
+  , "node-expat": "1.6.1"
   }
 }

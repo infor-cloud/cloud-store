@@ -3,7 +3,21 @@
   nixpkgs ? <nixpkgs>,
 }:
 
-with import <nixpkgs> {};
+with import <nixpkgs> {
+  config.packageOverrides = (p: {
+    nodejs = p.lib.overrideDerivation p.nodejs (attrs: {
+      name = "nodejs-0.9.3pre";
+      src = p.fetchurl {
+        url = https://github.com/joyent/node/tarball/63ff449d87e23b5e3d475da960135c1a2fd0ed58;
+        sha256 = "1faqcl7jqh7g088mjgas34jjrlmw1lmbxm9vhw7g7vhanhh39yy9";
+        name = "node.tar.gz";
+      };
+    prePatch = ''
+      sed -e 's|^#!/usr/bin/env python$|#!${p.python}/bin/python|g' -i tools/{*.py,gyp_node} configure
+    '';
+    });
+  });
+};
 
 let
 
@@ -22,6 +36,6 @@ let
           xargs -0 sed -i 's|/usr/bin/coffee|${nodePackages."coffee-script"}/bin/coffee|g'
       '';
 
-      deps = [];
+      deps = [ nodePackages."cipher-block-size" nodePackages.optimist nodePackages.knox nodePackages."node-expat" ];
     };
   }; in jobs

@@ -7,15 +7,10 @@ cipherBlockSize = require 'cipher-block-size'
 params = require('optimist').argv
 Stream = require 'stream'
 knox = require 'knox'
+util = require '../lib/util'
 
 blockSize = cipherBlockSize params.algorithm
 streamLength = (Math.floor(params.chunkSize/blockSize) + 1) * blockSize
-
-memcmp = (buf1, buf2) ->
-  return false unless buf1.length is buf2.length
-  for index in [1..buf1.length]
-      return false unless buf1[index] is buf2[index]
-  true
 
 client = knox.createClient key: params['aws-access-key'], secret: params['aws-secret-key'], bucket: params.bucket
 
@@ -43,7 +38,7 @@ removeAndCheckHashFilter = (inStreamEmitter) ->
       newStream.emit 'data', data
     stream.on 'end', ->
       newStream.readable = false
-      throw 'bad hash' unless memcmp(hashBuf, hash.digest('buffer'))
+      throw 'bad hash' unless util.memcmp(hashBuf, hash.digest('buffer'))
       newStream.emit 'end'
     stream.on 'error', (exception) ->
       newStream.readable = false

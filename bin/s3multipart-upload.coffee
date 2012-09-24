@@ -8,12 +8,7 @@ params = require('optimist').argv
 Stream = require 'stream'
 knox = require 'knox'
 Parser = require('node-expat').Parser
-
-memcmp = (buf1, buf2) ->
-  return false unless buf1.length is buf2.length
-  for index in [1..buf1.length]
-      return false unless buf1[index] is buf2[index]
-  true
+util = require '../lib/util'
 
 client = knox.createClient key: params['aws-access-key'], secret: params['aws-secret-key'], bucket: params.bucket
 req = client.request 'POST', "/#{params.fileName}?uploads"
@@ -118,7 +113,7 @@ startUpload = (uploadId) ->
       remoteHash = null
       localHash = null
       hashesDone = ->
-        throw "Bad hash" unless memcmp(localHash, remoteHash)
+        throw "Bad hash" unless util.memcmp(localHash, remoteHash)
         completeReq[stream.index] = "<Part><PartNumber>#{stream.index + 1}</PartNumber><ETag>#{remoteHash.toString 'hex'}</ETag></Part>"
         chunkCount -= 1
         if chunkCount is 0

@@ -1,5 +1,5 @@
 {
-  s3multipart ? { outPath = ./.; rev = "1234"; name = "s3multipart"; },
+  s3multipart ? { outPath = ./.; rev = "1234"; },
   nixpkgs ? <nixpkgs>,
 }:
 
@@ -21,7 +21,7 @@ with import <nixpkgs> {
 
 let
 
-   version = src: lib.optionalString (src ? revCount) (toString src.revCount + "_" ) + toString (if src ? rev then src.rev else src.tag);
+  version = src: lib.optionalString (src ? revCount) (toString src.revCount + "_" ) + toString (if src ? rev then src.rev else src.tag);
 
   name = "s3multipart-0.0.0pre${version s3multipart}";
 

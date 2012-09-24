@@ -25,11 +25,11 @@ let
 
   name = "s3multipart-0.0.0pre${version s3multipart}";
 
+  src = s3multipart // { name = if s3multipart ? name then s3multipart.name else name; };
+
   jobs = {
     build = nodePackages.buildNodePackage {
-      inherit name;
-
-      src = s3multipart;
+      inherit name src;
 
       postInstall = ''
         find $out/node_modules/s3multipart/bin/ -name \*.coffee -print0 |

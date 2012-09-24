@@ -13,7 +13,7 @@ util = require '../lib/util'
 client = knox.createClient key: params['aws-access-key'], secret: params['aws-secret-key'], bucket: params.bucket
 req = client.request 'POST', "/#{params.fileName}?uploads"
 req.on 'response', (res) ->
-  if res.statusCode is 200
+  if res.statusCode < 300
     parser = new Parser()
     uploadId = ""
     parser.on 'startElement', (name) ->
@@ -127,7 +127,7 @@ startUpload = (uploadId) ->
       client.putStream stream, "/#{params.fileName}?partNumber=#{stream.index + 1}&uploadId=#{uploadId}",
         {'Content-Length': streamLength}, (err, res) ->
           throw err if err
-          if res.statusCode is 200
+          if res.statusCode < 300
             remoteHash = new Buffer(res.headers.etag.slice(1,33), 'hex')
             hashesDone() unless localHash is null
           else

@@ -91,7 +91,7 @@ save = (inStreamEmitter) ->
     stream.pipe write
 
 client.head("/#{params.fileName}").on('response', (res) ->
-  if res.statusCode is 200
+  if res.statusCode < 300
     fileLength = parseInt res.headers['content-length']
     initialStreamEmitter = new EventEmitter()
     createNewReadStream = (pos) ->

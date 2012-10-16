@@ -81,7 +81,10 @@ decryptionFilter = (inStreamEmitter) ->
 save = (inStreamEmitter) ->
   fd = fs.openSync params.file, 'w'
   inStreamEmitter.on 'stream', (stream) ->
+    errored = false
     onerror = (err) ->
+      return if errored
+      errored = true
       console.error "Error in chunk #{stream.index}: #{err}"
       createNewReadStream stream.index * (streamLength + 32)
     stream.on 'error', onerror
@@ -122,7 +125,10 @@ startMultipart = (tried) ->
       createNewReadStream = (pos) ->
         req = null
         index = pos / (streamLength + 32)
+        errored = false
         onerror = (err) ->
+          return if errored
+          errored = true
           console.error "Error in chunk #{index}: #{err}"
           if req?.socket
             req.socket.emit 'agentRemove'

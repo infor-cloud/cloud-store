@@ -129,7 +129,10 @@ startUpload = (uploadId) ->
     https.globalAgent.on 'free', removeActiveReq
     https.globalAgent.on 'free', listener for listener in freeListeners
     inStreamEmitter.on 'stream', (stream) ->
+      errored = false
       onerror = (err) ->
+        return if errored
+        errored = true
         console.error "Error in chunk #{stream.index}: #{err}"
         chunkCount -= 1
         if stream?.req?.socket

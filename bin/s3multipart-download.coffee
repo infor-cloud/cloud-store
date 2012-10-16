@@ -92,32 +92,48 @@ save = (inStreamEmitter) ->
       cb(null) if cb
     stream.pipe write
 
+createNewReadStream = ->
+
 client.head("/#{params.fileName}").on('response', (res) ->
   if res.statusCode < 300
     fileLength = parseInt res.headers['content-length']
     initialStreamEmitter = new EventEmitter()
+    activeReqs = 0
+    queuedReqs = []
+    freeListeners = https.globalAgent.listeners('free').slice 0
+    https.globalAgent.removeAllListeners 'free'
+    https.globalAgent.on 'free', ->
+      activeReqs -= 1
+      queued = queuedReqs.shift()
+      if queued
+        createNewReadStream queued
+    https.globalAgent.on 'free', listener for listener in freeListeners
     createNewReadStream = (pos) ->
-      req = client.get "/#{params.fileName}",
-        Range: "bytes=#{pos}-#{pos + (streamLength + 32) - 1}",
-        Connection: 'keep-alive'
-      req.on 'response', (res)->
-        if res.statusCode < 300
-          res.index = pos / (streamLength + 32)
-          initialStreamEmitter.emit 'stream', res
-        else
-          console.error "Error: Response code #{res.statusCode}"
-          console.error "Headers:"
-          console.error require('util').inspect res.headers
-          res.on 'data', (chunk) ->
-            console.error chunk.toString()
-          res.on 'end', ->
-            process.exit 1
-      req.on 'socket', (socket) ->
-        socket.resume()
-      req.end()
-      if pos + (streamLength + 32) < fileLength
-        createNewReadStream pos + (streamLength + 32)
-    createNewReadStream 0
+      if activeReqs >= https.globalAgent.maxSockets
+        queuedReqs.push pos
+      else
+        activeReqs += 1
+        req = client.get "/#{params.fileName}",
+          Range: "bytes=#{pos}-#{pos + (streamLength + 32) - 1}",
+          Connection: 'keep-alive'
+        index = pos / (streamLength + 32)
+        req.on 'response', (res)->
+          if res.statusCode < 300
+            res.index = pos / (streamLength + 32)
+            initialStreamEmitter.emit 'stream', res
+          else
+            console.error "Error: Response code #{res.statusCode}"
+            console.error "Headers:"
+            console.error require('util').inspect res.headers
+            res.on 'data', (chunk) ->
+              console.error chunk.toString()
+            res.on 'end', ->
+              process.exit 1
+        req.on 'socket', (socket) ->
+          socket.resume()
+        req.end()
+    for pos in [0..fileLength - 1] by streamLength + 32
+      createNewReadStream pos
     save decryptionFilter removeAndCheckHashFilter initialStreamEmitter
   else
     console.error "Error: Response code #{res.statusCode}"

@@ -118,13 +118,15 @@ startUpload = (uploadId) ->
     streamLength = (Math.floor(params.chunkSize/blockSize) + 1) * blockSize + 32
     activeReqs = 0
     queuedReqs = []
-    addActiveReq = -> activeReqs += 1
-    removeActiveReq = ->
+    freeListeners = https.globalAgent.listeners('free').slice 0
+    https.globalAgent.removeAllListeners 'free'
+    https.globalAgent.on 'free', ->
       activeReqs -= 1
       queued = queuedReqs.shift()
       if queued
         queued.resume()
         inStreamEmitter.emit 'stream', queued
+    https.globalAgent.on 'free', listener for listener in freeListeners
     inStreamEmitter.on 'stream', (stream) ->
       onerror = (err) ->
         console.error "Error in chunk #{stream.index}: #{err}"
@@ -144,7 +146,7 @@ startUpload = (uploadId) ->
           stream._ended = true
         queuedReqs.push stream
       else
-        addActiveReq()
+        activeReqs += 1
         remoteHash = null
         localHash = null
         hashesDone = ->
@@ -157,16 +159,13 @@ startUpload = (uploadId) ->
         req = client.put "/#{params.fileName}?partNumber=#{stream.index + 1}&uploadId=#{uploadId}",
           {'Content-Length': streamLength, Connection: 'keep-alive' }
         stream.req = req
-        req.on 'error', (err) ->
-          removeActiveReq()
-          onerror err
+        req.on 'error', onerror
         req.on 'socket', (socket) ->
           req.socket = socket
           socket.removeAllListeners 'error'
           socket.on 'error', (err) -> req.emit 'error', err
           socket.resume()
         req.on 'response', (res) ->
-          removeActiveReq()
           if res.statusCode < 300
             res.on 'error', ->
             remoteHash = new Buffer(res.headers.etag.slice(1,33), 'hex')

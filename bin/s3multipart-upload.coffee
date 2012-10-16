@@ -120,12 +120,13 @@ startUpload = (uploadId) ->
     queuedReqs = []
     freeListeners = https.globalAgent.listeners('free').slice 0
     https.globalAgent.removeAllListeners 'free'
-    https.globalAgent.on 'free', ->
+    removeActiveReq = ->
       activeReqs -= 1
       queued = queuedReqs.shift()
       if queued
         queued.resume()
         inStreamEmitter.emit 'stream', queued
+    https.globalAgent.on 'free', removeActiveReq
     https.globalAgent.on 'free', listener for listener in freeListeners
     inStreamEmitter.on 'stream', (stream) ->
       onerror = (err) ->
@@ -134,6 +135,7 @@ startUpload = (uploadId) ->
         if stream?.req?.socket
           stream.req.socket.emit 'agentRemove'
           stream.req.socket.destroy()
+          removeActiveReq()
         createNewReadStream stream.index * params.chunkSize
       stream.on 'error', onerror
       stream._ended = false

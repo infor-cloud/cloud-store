@@ -108,11 +108,12 @@ client.head("/#{params.fileName}").on('response', (res) ->
     queuedReqs = []
     freeListeners = https.globalAgent.listeners('free').slice 0
     https.globalAgent.removeAllListeners 'free'
-    https.globalAgent.on 'free', ->
+    removeActiveReq = ->
       activeReqs -= 1
       queued = queuedReqs.shift()
       if queued
         createNewReadStream queued
+    https.globalAgent.on 'free', removeActiveReq
     https.globalAgent.on 'free', listener for listener in freeListeners
     createNewReadStream = (pos) ->
       req = null
@@ -122,6 +123,7 @@ client.head("/#{params.fileName}").on('response', (res) ->
         if req?.socket
           req.socket.emit 'agentRemove'
           req.socket.destroy()
+          removeActiveReq()
         createNewReadStream pos
       if activeReqs >= https.globalAgent.maxSockets
         queuedReqs.push pos

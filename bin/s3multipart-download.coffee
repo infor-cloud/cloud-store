@@ -77,6 +77,10 @@ decryptionFilter = (inStreamEmitter) ->
 save = (inStreamEmitter) ->
   fd = fs.openSync params.file, 'w'
   inStreamEmitter.on 'stream', (stream) ->
+    onerror = (err) ->
+      console.error "Error in chunk #{stream.index}: #{err}"
+      createNewReadStream stream.index * (streamLength + 32)
+    stream.on 'error', onerror
     write = fs.createWriteStream params.file, fd: fd, flags: 'w', start: (stream.index * params.chunkSize)
     write.destroy = -> @writeable = false
     write.end = (data, encoding, cb) ->
@@ -90,6 +94,7 @@ save = (inStreamEmitter) ->
       this.writable = false
       this.flush()
       cb(null) if cb
+    write.on 'error', onerror
     stream.pipe write
 
 createNewReadStream = ->
@@ -109,6 +114,14 @@ client.head("/#{params.fileName}").on('response', (res) ->
         createNewReadStream queued
     https.globalAgent.on 'free', listener for listener in freeListeners
     createNewReadStream = (pos) ->
+      req = null
+      index = pos / (streamLength + 32)
+      onerror = (err) ->
+        console.error "Error in chunk #{index}: #{err}"
+        if req?.socket
+          req.socket.emit 'agentRemove'
+          req.socket.destroy()
+        createNewReadStream pos
       if activeReqs >= https.globalAgent.maxSockets
         queuedReqs.push pos
       else
@@ -116,20 +129,26 @@ client.head("/#{params.fileName}").on('response', (res) ->
         req = client.get "/#{params.fileName}",
           Range: "bytes=#{pos}-#{pos + (streamLength + 32) - 1}",
           Connection: 'keep-alive'
-        index = pos / (streamLength + 32)
+        req.on 'error', onerror
         req.on 'response', (res)->
           if res.statusCode < 300
-            res.index = pos / (streamLength + 32)
+            res.index = index
             initialStreamEmitter.emit 'stream', res
           else
-            console.error "Error: Response code #{res.statusCode}"
-            console.error "Headers:"
-            console.error require('util').inspect res.headers
+            err = "Error: Response code #{res.statusCode}\n"
+            err += "Headers:\n"
+            err += require('util').inspect res.headers
+            err += "\n"
             res.on 'data', (chunk) ->
-              console.error chunk.toString()
+              err += chunk.toString()
+              err += "\n"
             res.on 'end', ->
-              process.exit 1
+              onerror err
+            res.on 'error', onerror
         req.on 'socket', (socket) ->
+          req.socket = socket
+          socket.removeAllListeners 'error'
+          socket.on 'error', onerror
           socket.resume()
         req.end()
     for pos in [0..fileLength - 1] by streamLength + 32

@@ -152,11 +152,13 @@ startUpload = (uploadId) ->
         remoteHash = null
         localHash = null
         hashesDone = ->
-          throw "Bad hash" unless util.memcmp(localHash, remoteHash)
-          completeReq[stream.index] = "<Part><PartNumber>#{stream.index + 1}</PartNumber><ETag>#{remoteHash.toString 'hex'}</ETag></Part>"
-          chunkCount -= 1
-          if chunkCount is 0
-            finalize()
+          unless util.memcmp(localHash, remoteHash)
+            completeReq[stream.index] = "<Part><PartNumber>#{stream.index + 1}</PartNumber><ETag>#{remoteHash.toString 'hex'}</ETag></Part>"
+            chunkCount -= 1
+            if chunkCount is 0
+              finalize()
+          else
+            onerror "Bad hash"
         hash = crypto.createHash 'md5'
         req = client.put "/#{params.fileName}?partNumber=#{stream.index + 1}&uploadId=#{uploadId}",
           {'Content-Length': streamLength, Connection: 'keep-alive' }

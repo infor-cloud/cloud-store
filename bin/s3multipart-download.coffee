@@ -41,7 +41,7 @@ removeAndCheckHashFilter = (inStreamEmitter) ->
       newStream.emit 'data', data
     stream.on 'end', ->
       newStream.readable = false
-      unless util.memcmp(hashBuf, hash.digest('buffer'))
+      if util.memcmp(hashBuf, hash.digest('buffer'))
         newStream.emit 'end'
       else
         newStream.readable = false

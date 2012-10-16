@@ -152,7 +152,7 @@ startUpload = (uploadId) ->
         remoteHash = null
         localHash = null
         hashesDone = ->
-          unless util.memcmp(localHash, remoteHash)
+          if util.memcmp(localHash, remoteHash)
             completeReq[stream.index] = "<Part><PartNumber>#{stream.index + 1}</PartNumber><ETag>#{remoteHash.toString 'hex'}</ETag></Part>"
             chunkCount -= 1
             if chunkCount is 0

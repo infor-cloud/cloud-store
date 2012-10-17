@@ -10,8 +10,9 @@ knox = require 'knox'
 util = require '../lib/util'
 https = require 'https'
 
-blockSize = cipherBlockSize params.algorithm
-streamLength = (Math.floor(params.chunkSize/blockSize) + 1) * blockSize
+maxProtocolVersion = 0.0
+
+streamLength = undefined
 
 client = knox.createClient key: params['aws-access-key'], secret: params['aws-secret-key'], bucket: params.bucket
 
@@ -106,10 +107,20 @@ save = (inStreamEmitter) ->
 
 createNewReadStream = ->
 
+parseMeta = (headers) ->
+  version = parseFloat headers['x-amz-meta-s3multipart-protocol-version']
+  if version > maxProtocolVersion
+    throw "This version of the upload protocol not supported"
+  params.chunkSize = parseInt headers['x-amz-meta-chunk-size']
+  params.algorithm = headers['x-amz-meta-algorithm']
+  blockSize = cipherBlockSize params.algorithm
+  streamLength = (Math.floor(params.chunkSize/blockSize) + 1) * blockSize
+
 startMultipart = (tried) ->
   client.head("/#{params.fileName}").on('response', (res) ->
     if res.statusCode < 300
       fileLength = parseInt res.headers['content-length']
+      parseMeta res.headers
       initialStreamEmitter = new EventEmitter()
       activeReqs = 0
       queuedReqs = []

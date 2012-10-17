@@ -18,7 +18,7 @@ startMultipart = (tried) ->
   meta =
     algorithm: params.algorithm
     'chunk-size': params.chunkSize
-    's3multipart-version': 0.0 #!!! Change to 1.0 before production
+    's3multipart-protocol-version': 0.0 #!!! Change to 1.0 before production
   headers = {}
   headers["x-amz-meta-#{key}"] = value for key, value of meta
   req = client.request 'POST', "/#{params.fileName}?uploads", headers

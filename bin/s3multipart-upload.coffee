@@ -103,15 +103,22 @@ startUpload = (uploadId) ->
     completeString = "<CompleteMultipartUpload>"
     completeString += reqPart for reqPart in completeReq
     completeString += "</CompleteMultipartUpload>"
-    req = client.request 'POST', "/#{params.fileName}?uploadId=#{uploadId}", 'Content-Length': completeString.length
-    req.on 'response', (res) ->
-      console.log "Headers:"
-      console.log require('util').inspect res.headers
-      res.on 'data', (chunk) ->
-        console.log chunk.toString()
-      res.on 'end', ->
-        process.exit
-    req.end completeString
+    completeReq = (tried) ->
+      req = client.request 'POST', "/#{params.fileName}?uploadId=#{uploadId}", 'Content-Length': completeString.length
+      req.on 'response', (res) ->
+        if res.statusCode < 300
+          process.exit
+        else
+          console.error "Error: Response code #{res.statusCode}"
+          console.error "Headers:"
+          console.error require('util').inspect res.headers
+          res.on 'data', (chunk) ->
+            console.error chunk.toString()
+          res.on 'end', ->
+            process.exit 1 if tried
+            completeReq true
+      req.end completeString
+    completeReq false
 
   upload = (inStreamEmitter) ->
     blockSize = cipherBlockSize params.algorithm

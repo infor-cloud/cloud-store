@@ -15,7 +15,13 @@ https.globalAgent.maxSockets = params['max-concurrent-connections'] if params['m
 
 client = knox.createClient key: params['aws-access-key'], secret: params['aws-secret-key'], bucket: params.bucket
 startMultipart = (tried) ->
-  req = client.request 'POST', "/#{params.fileName}?uploads"
+  meta =
+    algorithm: params.algorithm
+    'chunk-size': params.chunkSize
+    's3multipart-version': 0.0 #!!! Change to 1.0 before production
+  headers = {}
+  headers["x-amz-meta-#{key}"] = value for key, value of meta
+  req = client.request 'POST', "/#{params.fileName}?uploads", headers
   req.on 'response', (res) ->
     if res.statusCode < 300
       parser = new Parser()

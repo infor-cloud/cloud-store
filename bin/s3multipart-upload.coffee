@@ -13,6 +13,8 @@ https = require 'https'
 
 https.globalAgent.maxSockets = params['max-concurrent-connections'] if params['max-concurrent-connections']?
 
+blockSize = cipherBlockSize params.algorithm
+
 client = knox.createClient key: params['aws-access-key'], secret: params['aws-secret-key'], bucket: params.bucket
 startMultipart = (tried) ->
   meta =
@@ -55,28 +57,46 @@ startUpload = (uploadId) ->
   encryptionFilter = (inStreamEmitter) ->
     outStreamEmitter = new EventEmitter()
     inStreamEmitter.on 'stream', (stream) ->
-      cipher = crypto.createCipher params.algorithm, params.password
       newStream = new Stream()
       newStream.readable = true
-      newStream.pause = -> stream.pause.call stream, arguments
-      newStream.resume = -> stream.resume.call stream, arguments
-      newStream.destroy = -> stream.destroy.call stream, arguments
+      newStream.pause = -> stream.pause.apply stream, arguments
+      newStream.resume = -> stream.resume.apply stream, arguments
+      newStream.destroy = -> stream.destroy.apply stream, arguments
       newStream.index = stream.index
-      stream.on 'data', (data) ->
-        newStream.emit 'data', cipher.update data, 'buffer', 'buffer'
+      crypto.randomBytes blockSize, (err, iv) ->
+        if err
+          newStream.emit 'error', err
+        else
+          key = new Buffer params.password, 'hex'
+          cipher = crypto.createCipheriv params.algorithm, key, iv
+          newStream.emit 'data', iv
+          newStream.emit 'data', cipher.update buf, 'buffer', 'buffer' for buf in stream.bufArray
+          delete stream['bufArray']
+          if stream?.gotEnd
+            newStream.emit cipher.final 'buffer'
+            newStream.readable = false
+            newStream.emit 'end'
+          else
+            stream.removeAllListeners 'data'
+            stream.removeAllListeners 'end'
+            stream.resume()
+            stream.on 'data', (data) ->
+              newStream.emit 'data', cipher.update data, 'buffer', 'buffer'
+            stream.on 'end', ->
+              newStream.emit 'data', cipher.final 'buffer'
+              newStream.readable = false
+              newStream.emit 'end'
+            stream.on 'error', (exception) ->
+              newStream.readable = false
+              newStream.emit 'error', exception
+            stream.on 'close', ->
+              newStream.emit 'close'
+      stream.bufArray = []
+      stream.pause()
+      stream.on 'data', (chunk) ->
+        stream.bufArray.push chunk
       stream.on 'end', ->
-        if newStream.readable
-          newStream.emit 'data', cipher.final 'buffer'
-          newStream.readable = false
-        newStream.emit 'end'
-      stream.on 'error', (exception) ->
-        newStream.readable = false
-        newStream.emit 'error', exception
-      stream.on 'close', ->
-        if newStream.readable
-          newStream.emit 'data', cipher.final 'buffer'
-          newStream.readable = false
-        newStream.emit 'close'
+        stream.gotEnd = true
       outStreamEmitter.emit 'stream', newStream
     outStreamEmitter
 
@@ -86,9 +106,9 @@ startUpload = (uploadId) ->
       hash = crypto.createHash 'sha256'
       newStream = new Stream()
       newStream.readable = true
-      newStream.pause = -> stream.pause.call stream, arguments
-      newStream.resume = -> stream.resume.call stream, arguments
-      newStream.destroy = -> stream.destroy.call stream, arguments
+      newStream.pause = -> stream.pause.apply stream, arguments
+      newStream.resume = -> stream.resume.apply stream, arguments
+      newStream.destroy = -> stream.destroy.apply stream, arguments
       newStream.index = stream.index
       stream.on 'data', (data) ->
         newStream.emit 'data', data
@@ -127,8 +147,7 @@ startUpload = (uploadId) ->
     completeReq false
 
   upload = (inStreamEmitter) ->
-    blockSize = cipherBlockSize params.algorithm
-    streamLength = (Math.floor(params.chunkSize/blockSize) + 1) * blockSize + 32
+    streamLength = (Math.floor(params.chunkSize/blockSize) + 2) * blockSize + 32
     activeReqs = 0
     queuedReqs = []
     freeListeners = https.globalAgent.listeners('free').slice 0
@@ -154,14 +173,13 @@ startUpload = (uploadId) ->
           removeActiveReq()
         createNewReadStream stream.index * params.chunkSize
       stream.on 'error', onerror
-      stream._ended = false
       if activeReqs >= https.globalAgent.maxSockets
         stream.bufArray = []
         stream.pause()
         stream.on 'data', (chunk) ->
           stream.bufArray.push chunk
         stream.on 'end', ->
-          stream._ended = true
+          stream.gotEnd = true
         queuedReqs.push stream
       else
         activeReqs += 1
@@ -206,7 +224,8 @@ startUpload = (uploadId) ->
           for chunk in stream.bufArray
             req.write chunk
             hash.update chunk, 'buffer'
-        if stream._ended
+          delete stream['bufArray']
+        if stream?.gotEnd
           req.end()
           localHash = hash.digest 'buffer'
         else
@@ -238,9 +257,9 @@ startUpload = (uploadId) ->
           initialStreamEmitter.emit 'stream', newStream
         else
           finalStream = new Stream()
-          finalStream.pause = -> newStream.pause.call newStream, arguments
-          finalStream.resume = -> newStream.resume.call newStream, arguments
-          finalStream.destroy = -> newStream.destroy.call newStream, arguments
+          finalStream.pause = -> newStream.pause.apply newStream, arguments
+          finalStream.resume = -> newStream.resume.apply newStream, arguments
+          finalStream.destroy = -> newStream.destroy.apply newStream, arguments
           finalStream.index = newStream.index
           finalStream.readable = true
           newStream.on 'data', (data) ->

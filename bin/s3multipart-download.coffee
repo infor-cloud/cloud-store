@@ -13,6 +13,7 @@ https = require 'https'
 maxProtocolVersion = 0.0
 
 streamLength = undefined
+blockSize = undefined
 
 client = knox.createClient key: params['aws-access-key'], secret: params['aws-secret-key'], bucket: params.bucket
 
@@ -24,9 +25,9 @@ removeAndCheckHashFilter = (inStreamEmitter) ->
     hash = crypto.createHash 'sha256'
     newStream = new Stream()
     newStream.readable = true
-    newStream.pause = -> stream.pause.call stream, arguments
-    newStream.resume = -> stream.resume.call stream, arguments
-    newStream.destroy = -> stream.destroy.call stream, arguments
+    newStream.pause = -> stream.pause.apply stream, arguments
+    newStream.resume = -> stream.resume.apply stream, arguments
+    newStream.destroy = -> stream.destroy.apply stream, arguments
     newStream.index = stream.index
     bytesLeft = streamLength
     hashBuf = new Buffer(32)
@@ -58,23 +59,36 @@ removeAndCheckHashFilter = (inStreamEmitter) ->
 decryptionFilter = (inStreamEmitter) ->
   outStreamEmitter = new EventEmitter()
   inStreamEmitter.on 'stream', (stream) ->
-    decipher = crypto.createDecipher params.algorithm, params.password
+    ivBufs = []
+    ivLen = 0
     newStream = new Stream()
     newStream.readable = true
-    newStream.pause = -> stream.pause.call stream, arguments
-    newStream.resume = -> stream.resume.call stream, arguments
-    newStream.destroy = -> stream.destroy.call stream, arguments
+    newStream.pause = -> stream.pause.apply stream, arguments
+    newStream.resume = -> stream.resume.apply stream, arguments
+    newStream.destroy = -> stream.destroy.apply stream, arguments
     newStream.index = stream.index
     stream.on 'data', (data) ->
-      newStream.emit 'data', decipher.update data, 'buffer', 'buffer'
-    stream.on 'end', ->
-      newStream.emit 'data', decipher.final 'buffer'
-      newStream.readable = false
-      newStream.emit 'end'
+      ivPartSize = Math.min(blockSize - ivLen, data.length)
+      ivBufs.push data.slice 0, ivPartSize
+      ivLen += ivPartSize
+      if ivLen is blockSize
+        stream.removeAllListeners 'data'
+        iv = Buffer.concat ivBufs, ivLen
+        ivBufs = undefined
+        key = new Buffer params.password, 'hex'
+        decipher = crypto.createDecipheriv params.algorithm, key, iv
+        newStream.emit 'data', decipher.update data.slice(ivPartSize), 'buffer', 'buffer'
+        stream.on 'data', (data) ->
+          newStream.emit 'data', decipher.update data, 'buffer', 'buffer'
+        stream.on 'end', ->
+          newStream.emit 'data', decipher.final 'buffer'
+          newStream.readable = false
+          newStream.emit 'end'
     stream.on 'error', (exception) ->
       newStream.readable = false
       newStream.emit 'error', exception
     stream.on 'close', ->
+      newStream.readable = false
       newStream.emit 'close'
     outStreamEmitter.emit 'stream', newStream
   outStreamEmitter
@@ -114,7 +128,7 @@ parseMeta = (headers) ->
   params.chunkSize = parseInt headers['x-amz-meta-chunk-size']
   params.algorithm = headers['x-amz-meta-algorithm']
   blockSize = cipherBlockSize params.algorithm
-  streamLength = (Math.floor(params.chunkSize/blockSize) + 1) * blockSize
+  streamLength = (Math.floor(params.chunkSize/blockSize) + 2) * blockSize
 
 startMultipart = (tried) ->
   client.head("/#{params.fileName}").on('response', (res) ->

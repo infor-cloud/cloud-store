@@ -7,7 +7,7 @@ cipherBlockSize = require 'cipher-block-size'
 params = require('optimist').argv
 Stream = require 'stream'
 knox = require 'knox'
-util = require '../lib/util'
+util = require './util'
 https = require 'https'
 
 maxProtocolVersion = 0.0

@@ -8,7 +8,7 @@ params = require('optimist').argv
 Stream = require 'stream'
 knox = require 'knox'
 Parser = require('node-expat').Parser
-util = require '../lib/util'
+util = require './util'
 https = require 'https'
 
 https.globalAgent.maxSockets = params['max-concurrent-connections'] if params['max-concurrent-connections']?

@@ -17,82 +17,76 @@ module.exports = (params) ->
 
   https.globalAgent.maxSockets = params['max-concurrent-connections'] if params['max-concurrent-connections']?
 
-  removeAndCheckHashFilter = (inStreamEmitter) ->
-    outStreamEmitter = new EventEmitter()
-    inStreamEmitter.on 'stream', (stream) ->
-      hash = crypto.createHash 'sha256'
-      newStream = new Stream()
-      newStream.readable = true
-      newStream.pause = -> stream.pause.apply stream, arguments
-      newStream.resume = -> stream.resume.apply stream, arguments
-      newStream.destroy = -> stream.destroy.apply stream, arguments
-      newStream.index = stream.index
-      bytesLeft = streamLength
-      hashBuf = new Buffer(32)
-      hashBufOffset = 0
-      stream.on 'data', (data) ->
-        bytesLeft -= data.length
-        if bytesLeft <= 0
-          dataByteCount = Math.max data.length + bytesLeft, 0
-          data.copy hashBuf, hashBufOffset, dataByteCount
-          hashBufOffset += data.length - dataByteCount
-          data = data.slice 0, dataByteCount
-        hash.update data, 'buffer'
-        newStream.emit 'data', data
-      stream.on 'end', ->
+  removeAndCheckHash = (stream) ->
+    hash = crypto.createHash 'sha256'
+    newStream = new Stream()
+    newStream.readable = true
+    newStream.pause = -> stream.pause.apply stream, arguments
+    newStream.resume = -> stream.resume.apply stream, arguments
+    newStream.destroy = -> stream.destroy.apply stream, arguments
+    newStream.index = stream.index
+    bytesLeft = streamLength
+    hashBuf = new Buffer(32)
+    hashBufOffset = 0
+    stream.on 'data', (data) ->
+      bytesLeft -= data.length
+      if bytesLeft <= 0
+        dataByteCount = Math.max data.length + bytesLeft, 0
+        data.copy hashBuf, hashBufOffset, dataByteCount
+        hashBufOffset += data.length - dataByteCount
+        data = data.slice 0, dataByteCount
+      hash.update data, 'buffer'
+      newStream.emit 'data', data
+    stream.on 'end', ->
+      newStream.readable = false
+      if hashBuf.equals hash.digest('buffer')
+        newStream.emit 'end'
+      else
         newStream.readable = false
-        if hashBuf.equals hash.digest('buffer')
-          newStream.emit 'end'
-        else
+        newStream.emit 'error', 'Bad hash'
+    stream.on 'error', (exception) ->
+      newStream.readable = false
+      newStream.emit 'error', exception
+    stream.on 'close', ->
+      newStream.emit 'close'
+    newStream
+
+  decrypt = (stream) ->
+    ivBufs = []
+    ivLen = 0
+    newStream = new Stream()
+    newStream.readable = true
+    newStream.pause = -> stream.pause.apply stream, arguments
+    newStream.resume = -> stream.resume.apply stream, arguments
+    newStream.destroy = -> stream.destroy.apply stream, arguments
+    newStream.index = stream.index
+    stream.on 'data', (data) ->
+      ivPartSize = Math.min(blockSize - ivLen, data.length)
+      ivBufs.push data.slice 0, ivPartSize
+      ivLen += ivPartSize
+      if ivLen is blockSize
+        stream.removeAllListeners 'data'
+        iv = Buffer.concat ivBufs, ivLen
+        ivBufs = undefined
+        decipher = crypto.createDecipheriv params.algorithm, encKey, iv
+        newStream.emit 'data', decipher.update data.slice(ivPartSize), 'buffer', 'buffer'
+        stream.on 'data', (data) ->
+          newStream.emit 'data', decipher.update data, 'buffer', 'buffer'
+        stream.on 'end', ->
+          newStream.emit 'data', decipher.final 'buffer'
           newStream.readable = false
-          newStream.emit 'error', 'Bad hash'
-      stream.on 'error', (exception) ->
-        newStream.readable = false
-        newStream.emit 'error', exception
-      stream.on 'close', ->
-        newStream.emit 'close'
-      outStreamEmitter.emit 'stream', newStream
-    outStreamEmitter
+          newStream.emit 'end'
+    stream.on 'error', (exception) ->
+      newStream.readable = false
+      newStream.emit 'error', exception
+    stream.on 'close', ->
+      newStream.readable = false
+      newStream.emit 'close'
+    newStream
 
-  decryptionFilter = (inStreamEmitter) ->
-    outStreamEmitter = new EventEmitter()
-    inStreamEmitter.on 'stream', (stream) ->
-      ivBufs = []
-      ivLen = 0
-      newStream = new Stream()
-      newStream.readable = true
-      newStream.pause = -> stream.pause.apply stream, arguments
-      newStream.resume = -> stream.resume.apply stream, arguments
-      newStream.destroy = -> stream.destroy.apply stream, arguments
-      newStream.index = stream.index
-      stream.on 'data', (data) ->
-        ivPartSize = Math.min(blockSize - ivLen, data.length)
-        ivBufs.push data.slice 0, ivPartSize
-        ivLen += ivPartSize
-        if ivLen is blockSize
-          stream.removeAllListeners 'data'
-          iv = Buffer.concat ivBufs, ivLen
-          ivBufs = undefined
-          decipher = crypto.createDecipheriv params.algorithm, encKey, iv
-          newStream.emit 'data', decipher.update data.slice(ivPartSize), 'buffer', 'buffer'
-          stream.on 'data', (data) ->
-            newStream.emit 'data', decipher.update data, 'buffer', 'buffer'
-          stream.on 'end', ->
-            newStream.emit 'data', decipher.final 'buffer'
-            newStream.readable = false
-            newStream.emit 'end'
-      stream.on 'error', (exception) ->
-        newStream.readable = false
-        newStream.emit 'error', exception
-      stream.on 'close', ->
-        newStream.readable = false
-        newStream.emit 'close'
-      outStreamEmitter.emit 'stream', newStream
-    outStreamEmitter
-
-  save = (inStreamEmitter) ->
+  save = do ->
     fd = fs.openSync params.file, 'w'
-    inStreamEmitter.on 'stream', (stream) ->
+    (stream) ->
       errored = false
       onerror = (err) ->
         return if errored
@@ -139,7 +133,6 @@ module.exports = (params) ->
         for key, value of res.headers
           meta[key.slice("x-amz-meta-s3multipart-".length)] = value if key.indexOf("x-amz-meta-s3multipart-") is 0
         parseMeta meta
-        initialStreamEmitter = new EventEmitter()
         activeReqs = 0
         queuedReqs = []
         freeListeners = https.globalAgent.listeners('free').slice 0
@@ -175,7 +168,7 @@ module.exports = (params) ->
             req.on 'response', (res)->
               if res.statusCode < 300
                 res.index = index
-                initialStreamEmitter.emit 'stream', res
+                save decrypt removeAndCheckHash res
               else
                 err = "Error: Response code #{res.statusCode}\n"
                 err += "Headers:\n"
@@ -195,7 +188,6 @@ module.exports = (params) ->
             req.end()
         for pos in [0..fileLength - 1] by streamLength + 32
           createNewReadStream pos
-        save decryptionFilter removeAndCheckHashFilter initialStreamEmitter
       else
         console.error "Error: Response code #{res.statusCode}"
         console.error "Headers:"

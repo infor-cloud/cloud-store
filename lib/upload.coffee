@@ -57,75 +57,69 @@ module.exports = (params) ->
   startUpload = (uploadId) ->
     chunkCount = null
     completeReq = []
-    encryptionFilter = (inStreamEmitter) ->
-      outStreamEmitter = new EventEmitter()
-      inStreamEmitter.on 'stream', (stream) ->
-        newStream = new Stream()
-        newStream.readable = true
-        newStream.pause = -> stream.pause.apply stream, arguments
-        newStream.resume = -> stream.resume.apply stream, arguments
-        newStream.destroy = -> stream.destroy.apply stream, arguments
-        newStream.index = stream.index
-        crypto.randomBytes blockSize, (err, iv) ->
-          if err
-            newStream.emit 'error', err
+    encrypt = (stream) ->
+      newStream = new Stream()
+      newStream.readable = true
+      newStream.pause = -> stream.pause.apply stream, arguments
+      newStream.resume = -> stream.resume.apply stream, arguments
+      newStream.destroy = -> stream.destroy.apply stream, arguments
+      newStream.index = stream.index
+      crypto.randomBytes blockSize, (err, iv) ->
+        if err
+          newStream.emit 'error', err
+        else
+          cipher = crypto.createCipheriv params.algorithm, encKey, iv
+          newStream.emit 'data', iv
+          newStream.emit 'data', cipher.update buf, 'buffer', 'buffer' for buf in stream.bufArray
+          delete stream['bufArray']
+          if stream?.gotEnd
+            newStream.emit cipher.final 'buffer'
+            newStream.readable = false
+            newStream.emit 'end'
           else
-            cipher = crypto.createCipheriv params.algorithm, encKey, iv
-            newStream.emit 'data', iv
-            newStream.emit 'data', cipher.update buf, 'buffer', 'buffer' for buf in stream.bufArray
-            delete stream['bufArray']
-            if stream?.gotEnd
-              newStream.emit cipher.final 'buffer'
+            stream.removeAllListeners 'data'
+            stream.removeAllListeners 'end'
+            stream.resume()
+            stream.on 'data', (data) ->
+              newStream.emit 'data', cipher.update data, 'buffer', 'buffer'
+            stream.on 'end', ->
+              newStream.emit 'data', cipher.final 'buffer'
               newStream.readable = false
               newStream.emit 'end'
-            else
-              stream.removeAllListeners 'data'
-              stream.removeAllListeners 'end'
-              stream.resume()
-              stream.on 'data', (data) ->
-                newStream.emit 'data', cipher.update data, 'buffer', 'buffer'
-              stream.on 'end', ->
-                newStream.emit 'data', cipher.final 'buffer'
-                newStream.readable = false
-                newStream.emit 'end'
-              stream.on 'error', (exception) ->
-                newStream.readable = false
-                newStream.emit 'error', exception
-              stream.on 'close', ->
-                newStream.emit 'close'
-        stream.bufArray = []
-        stream.pause()
-        stream.on 'data', (chunk) ->
-          stream.bufArray.push chunk
-        stream.on 'end', ->
-          stream.gotEnd = true
-        outStreamEmitter.emit 'stream', newStream
-      outStreamEmitter
+            stream.on 'error', (exception) ->
+              newStream.readable = false
+              newStream.emit 'error', exception
+            stream.on 'close', ->
+              newStream.emit 'close'
+      stream.bufArray = []
+      stream.pause()
+      stream.on 'data', (chunk) ->
+        stream.bufArray.push chunk
+      stream.on 'end', ->
+        stream.gotEnd = true
+      newStream
 
-    hashFilter = (inStreamEmitter) ->
-      outStreamEmitter = new EventEmitter()
-      inStreamEmitter.on 'stream', (stream) ->
-        hash = crypto.createHash 'sha256'
-        newStream = new Stream()
-        newStream.readable = true
-        newStream.pause = -> stream.pause.apply stream, arguments
-        newStream.resume = -> stream.resume.apply stream, arguments
-        newStream.destroy = -> stream.destroy.apply stream, arguments
-        newStream.index = stream.index
-        stream.on 'data', (data) ->
-          newStream.emit 'data', data
-          hash.update data, 'buffer'
-        stream.on 'end', ->
-          newStream.emit 'data', hash.digest 'buffer'
-          newStream.readable = false
-          newStream.emit 'end'
-        stream.on 'error', (exception) ->
-          newStream.readable = false
-          newStream.emit 'error', exception
-        stream.on 'close', ->
-          newStream.emit 'close'
-        outStreamEmitter.emit 'stream', newStream
-      outStreamEmitter
+    addHash = (stream) ->
+      hash = crypto.createHash 'sha256'
+      newStream = new Stream()
+      newStream.readable = true
+      newStream.pause = -> stream.pause.apply stream, arguments
+      newStream.resume = -> stream.resume.apply stream, arguments
+      newStream.destroy = -> stream.destroy.apply stream, arguments
+      newStream.index = stream.index
+      stream.on 'data', (data) ->
+        newStream.emit 'data', data
+        hash.update data, 'buffer'
+      stream.on 'end', ->
+        newStream.emit 'data', hash.digest 'buffer'
+        newStream.readable = false
+        newStream.emit 'end'
+      stream.on 'error', (exception) ->
+        newStream.readable = false
+        newStream.emit 'error', exception
+      stream.on 'close', ->
+        newStream.emit 'close'
+      newStream
 
     finalize = ->
       completeString = "<CompleteMultipartUpload>"
@@ -148,7 +142,7 @@ module.exports = (params) ->
         req.end completeString
       completeReq false
 
-    upload = (inStreamEmitter) ->
+    upload = do ->
       streamLength = (Math.floor(params.chunkSize/blockSize) + 2) * blockSize + 32
       activeReqs = 0
       queuedReqs = []
@@ -159,10 +153,10 @@ module.exports = (params) ->
         queued = queuedReqs.shift()
         if queued
           queued.resume()
-          inStreamEmitter.emit 'stream', queued
+          upload queued
       https.globalAgent.on 'free', removeActiveReq
       https.globalAgent.on 'free', listener for listener in freeListeners
-      inStreamEmitter.on 'stream', (stream) ->
+      (stream) ->
         errored = false
         onerror = (err) ->
           return if errored
@@ -246,7 +240,6 @@ module.exports = (params) ->
       throw err if err
       fs.fstat fd, (err, stats) ->
         throw err if err
-        initialStreamEmitter = new EventEmitter()
         createNewReadStream = (pos) ->
           chunkCount += 1
           newStream = fs.createReadStream params.file,
@@ -256,7 +249,7 @@ module.exports = (params) ->
           newStream.destroy = -> @readable = false
           newStream.index = pos / params.chunkSize
           if pos + params.chunkSize < stats.size
-            initialStreamEmitter.emit 'stream', newStream
+            upload addHash encrypt newStream
           else
             finalStream = new Stream()
             finalStream.pause = -> newStream.pause.apply newStream, arguments
@@ -279,8 +272,7 @@ module.exports = (params) ->
             newStream.on 'close', ->
               finalStream.readable = false
               finalStream.emit 'close'
-            initialStreamEmitter.emit 'stream', finalStream
+            upload addHash encrypt finalStream
         process.nextTick ->
           for pos in [0..stats.size - 1] by params.chunkSize
             createNewReadStream pos
-        upload hashFilter encryptionFilter initialStreamEmitter

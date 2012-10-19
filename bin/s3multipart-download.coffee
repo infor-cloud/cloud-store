@@ -14,6 +14,7 @@ maxProtocolVersion = 0.0
 
 streamLength = undefined
 blockSize = undefined
+encKey = undefined
 
 client = knox.createClient key: params['aws-access-key'], secret: params['aws-secret-key'], bucket: params.bucket
 
@@ -75,8 +76,7 @@ decryptionFilter = (inStreamEmitter) ->
         stream.removeAllListeners 'data'
         iv = Buffer.concat ivBufs, ivLen
         ivBufs = undefined
-        key = new Buffer params.password, 'hex'
-        decipher = crypto.createDecipheriv params.algorithm, key, iv
+        decipher = crypto.createDecipheriv params.algorithm, encKey, iv
         newStream.emit 'data', decipher.update data.slice(ivPartSize), 'buffer', 'buffer'
         stream.on 'data', (data) ->
           newStream.emit 'data', decipher.update data, 'buffer', 'buffer'
@@ -121,20 +121,27 @@ save = (inStreamEmitter) ->
 
 createNewReadStream = ->
 
-parseMeta = (headers) ->
-  version = parseFloat headers['x-amz-meta-s3multipart-protocol-version']
+parseMeta = (meta) ->
+  version = parseFloat meta['protocol-version']
   if version > maxProtocolVersion
     throw "This version of the upload protocol not supported"
-  params.chunkSize = parseInt headers['x-amz-meta-chunk-size']
-  params.algorithm = headers['x-amz-meta-algorithm']
+  params.chunkSize = parseInt meta['chunk-size']
+  params.algorithm = meta['algorithm']
   blockSize = cipherBlockSize params.algorithm
   streamLength = (Math.floor(params.chunkSize/blockSize) + 2) * blockSize
+  encKey = do ->
+    keyFileName = params['enc-key-file'] or "#{process.env['HOME']}/.s3multipart-enc-keys"
+    keyName = meta['enc-key-name']
+    new Buffer JSON.parse(fs.readFileSync(keyFileName, 'utf8'))[keyName], 'hex'
 
 startMultipart = (tried) ->
   client.head("/#{params.fileName}").on('response', (res) ->
     if res.statusCode < 300
       fileLength = parseInt res.headers['content-length']
-      parseMeta res.headers
+      meta = {}
+      for key, value of res.headers
+        meta[key.slice("x-amz-meta-s3multipart-".length)] = value if key.indexOf("x-amz-meta-s3multipart-") is 0
+      parseMeta meta
       initialStreamEmitter = new EventEmitter()
       activeReqs = 0
       queuedReqs = []

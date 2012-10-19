@@ -15,14 +15,20 @@ https.globalAgent.maxSockets = params['max-concurrent-connections'] if params['m
 
 blockSize = cipherBlockSize params.algorithm
 
+encKey = do ->
+  keyFileName = params['enc-key-file'] or "#{process.env['HOME']}/.s3multipart-enc-keys"
+  keyName = params['enc-key-name']
+  new Buffer JSON.parse(fs.readFileSync(keyFileName, 'utf8'))[keyName], 'hex'
+
 client = knox.createClient key: params['aws-access-key'], secret: params['aws-secret-key'], bucket: params.bucket
 startMultipart = (tried) ->
   meta =
     algorithm: params.algorithm
     'chunk-size': params.chunkSize
-    's3multipart-protocol-version': 0.0 #!!! Change to 1.0 before production
+    'enc-key-name': params['enc-key-name']
+    'protocol-version': "0.0" #!!! Change to 1.0 before production
   headers = {}
-  headers["x-amz-meta-#{key}"] = value for key, value of meta
+  headers["x-amz-meta-s3multipart-#{key}"] = value for key, value of meta
   req = client.request 'POST', "/#{params.fileName}?uploads", headers
   req.on 'response', (res) ->
     if res.statusCode < 300
@@ -67,8 +73,7 @@ startUpload = (uploadId) ->
         if err
           newStream.emit 'error', err
         else
-          key = new Buffer params.password, 'hex'
-          cipher = crypto.createCipheriv params.algorithm, key, iv
+          cipher = crypto.createCipheriv params.algorithm, encKey, iv
           newStream.emit 'data', iv
           newStream.emit 'data', cipher.update buf, 'buffer', 'buffer' for buf in stream.bufArray
           delete stream['bufArray']

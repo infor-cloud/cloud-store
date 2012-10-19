@@ -1,5 +1,6 @@
 #!/usr/bin/coffee
 
+require 'buffertools'
 argv = require('optimist').argv
 
 if argv._[0] is "upload"

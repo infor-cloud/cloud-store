@@ -4,7 +4,6 @@ crypto = require 'crypto'
 cipherBlockSize = require 'cipher-block-size'
 Stream = require 'stream'
 knox = require 'knox'
-util = require './util'
 https = require 'https'
 
 module.exports = (params) ->
@@ -42,7 +41,7 @@ module.exports = (params) ->
         newStream.emit 'data', data
       stream.on 'end', ->
         newStream.readable = false
-        if util.memcmp(hashBuf, hash.digest('buffer'))
+        if hashBuf.equals hash.digest('buffer')
           newStream.emit 'end'
         else
           newStream.readable = false

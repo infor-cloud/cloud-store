@@ -5,7 +5,6 @@ cipherBlockSize = require 'cipher-block-size'
 Stream = require 'stream'
 knox = require 'knox'
 Parser = require('node-expat').Parser
-util = require './util'
 https = require 'https'
 
 module.exports = (params) ->
@@ -189,7 +188,7 @@ module.exports = (params) ->
           remoteHash = null
           localHash = null
           hashesDone = ->
-            if util.memcmp(localHash, remoteHash)
+            if localHash.equals remoteHash
               completeReq[stream.index] = "<Part><PartNumber>#{stream.index + 1}</PartNumber><ETag>#{remoteHash.toString 'hex'}</ETag></Part>"
               chunkCount -= 1
               if chunkCount is 0

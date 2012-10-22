@@ -25,6 +25,7 @@ module.exports = (params) ->
     newStream.resume = -> stream.resume.apply stream, arguments
     newStream.destroy = -> stream.destroy.apply stream, arguments
     newStream.index = stream.index
+    newStream.errored = false
     bytesLeft = streamLength
     hashBuf = new Buffer(32)
     hashBufOffset = 0
@@ -45,8 +46,15 @@ module.exports = (params) ->
         newStream.readable = false
         newStream.emit 'error', 'Bad hash'
     stream.on 'error', (exception) ->
-      newStream.readable = false
-      newStream.emit 'error', exception
+      unless newStream.errored
+        newStream.errored = true
+        newStream.readable = false
+        newStream.emit 'error', exception
+    newStream.on 'error', (exception) ->
+      unless newStream.errored
+        newStream.errored = true
+        newStream.readable = false
+        stream.emit 'error', exception
     stream.on 'close', ->
       newStream.emit 'close'
     newStream
@@ -60,6 +68,7 @@ module.exports = (params) ->
     newStream.resume = -> stream.resume.apply stream, arguments
     newStream.destroy = -> stream.destroy.apply stream, arguments
     newStream.index = stream.index
+    newStream.errored = false
     stream.on 'data', (data) ->
       ivPartSize = Math.min(blockSize - ivLen, data.length)
       ivBufs.push data.slice 0, ivPartSize
@@ -77,8 +86,15 @@ module.exports = (params) ->
           newStream.readable = false
           newStream.emit 'end'
     stream.on 'error', (exception) ->
-      newStream.readable = false
-      newStream.emit 'error', exception
+      unless newStream.errored
+        newStream.errored = true
+        newStream.readable = false
+        newStream.emit 'error', exception
+    newStream.on 'error', (exception) ->
+      unless newStream.errored
+        newStream.errored = true
+        newStream.readable = false
+        stream.emit 'error', exception
     stream.on 'close', ->
       newStream.readable = false
       newStream.emit 'close'
@@ -87,14 +103,8 @@ module.exports = (params) ->
   save = do ->
     fd = fs.openSync params.file, 'w'
     (stream) ->
-      errored = false
-      onerror = (err) ->
-        return if errored
-        errored = true
-        console.error "Error in chunk #{stream.index}: #{err}"
-        createNewReadStream stream.index * (streamLength + 32)
-      stream.on 'error', onerror
       write = fs.createWriteStream params.file, fd: fd, flags: 'w', start: (stream.index * params.chunkSize)
+      write.errored = false
       write.destroy = -> @writeable = false
       write.end = (data, encoding, cb) ->
         if typeof data is 'function'
@@ -107,7 +117,16 @@ module.exports = (params) ->
         this.writable = false
         this.flush()
         cb(null) if cb
-      write.on 'error', onerror
+      stream.on 'error', (error) ->
+        unless write.errored
+          write.errored = true
+          write.readable = false
+          write.emit 'error', error
+      write.on 'error', (error) ->
+        unless write.errored
+          write.errored = true
+          write.readable = false
+          stream.emit 'error', error
       stream.pipe write
 
   createNewReadStream = ->
@@ -155,6 +174,7 @@ module.exports = (params) ->
             if req?.socket
               req.socket.emit 'agentRemove'
               req.socket.destroy()
+              delete req.socket
               removeActiveReq()
             createNewReadStream pos
           if activeReqs >= https.globalAgent.maxSockets
@@ -181,9 +201,6 @@ module.exports = (params) ->
                   onerror err
                 res.on 'error', onerror
             req.on 'socket', (socket) ->
-              req.socket = socket
-              socket.removeAllListeners 'error'
-              socket.on 'error', onerror
               socket.resume()
             req.end()
         for pos in [0..fileLength - 1] by streamLength + 32

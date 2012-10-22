@@ -216,7 +216,7 @@ module.exports = (params) ->
               req.socket.emit 'agentRemove'
               req.socket.destroy()
               delete req.socket
-            removeActiveReq()
+              removeActiveReq()
           req.on 'socket', (socket) ->
             try
               socket.resume()

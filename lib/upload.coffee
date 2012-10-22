@@ -60,6 +60,7 @@ module.exports = (params) ->
     encrypt = (stream) ->
       newStream = new Stream()
       newStream.readable = true
+      newStream.errored = false
       newStream.pause = -> stream.pause.apply stream, arguments
       newStream.resume = -> stream.resume.apply stream, arguments
       newStream.destroy = -> stream.destroy.apply stream, arguments
@@ -67,7 +68,7 @@ module.exports = (params) ->
       crypto.randomBytes blockSize, (err, iv) ->
         if err
           newStream.emit 'error', err
-        else
+        else unless newStream.errored
           cipher = crypto.createCipheriv params.algorithm, encKey, iv
           newStream.emit 'data', iv
           newStream.emit 'data', cipher.update buf, 'buffer', 'buffer' for buf in stream.bufArray
@@ -86,9 +87,6 @@ module.exports = (params) ->
               newStream.emit 'data', cipher.final 'buffer'
               newStream.readable = false
               newStream.emit 'end'
-            stream.on 'error', (exception) ->
-              newStream.readable = false
-              newStream.emit 'error', exception
             stream.on 'close', ->
               newStream.emit 'close'
       stream.bufArray = []
@@ -97,12 +95,23 @@ module.exports = (params) ->
         stream.bufArray.push chunk
       stream.on 'end', ->
         stream.gotEnd = true
+      stream.on 'error', (exception) ->
+        unless newStream.errored
+          newStream.errored = true
+          newStream.readable = false
+          newStream.emit 'error', exception
+      newStream.on 'error', (exception) ->
+        unless newStream.errored
+          newStream.errored = true
+          newStream.readable = false
+          stream.emit 'error', exception
       newStream
 
     addHash = (stream) ->
       hash = crypto.createHash 'sha256'
       newStream = new Stream()
       newStream.readable = true
+      newStream.errored = false
       newStream.pause = -> stream.pause.apply stream, arguments
       newStream.resume = -> stream.resume.apply stream, arguments
       newStream.destroy = -> stream.destroy.apply stream, arguments
@@ -115,8 +124,15 @@ module.exports = (params) ->
         newStream.readable = false
         newStream.emit 'end'
       stream.on 'error', (exception) ->
-        newStream.readable = false
-        newStream.emit 'error', exception
+        unless newStream.errored
+          newStream.errored = true
+          newStream.readable = false
+          newStream.emit 'error', exception
+      newStream.on 'error', (exception) ->
+        unless newStream.errored
+          newStream.errored = true
+          newStream.readable = false
+          stream.emit 'error', exception
       stream.on 'close', ->
         newStream.emit 'close'
       newStream
@@ -152,23 +168,15 @@ module.exports = (params) ->
         activeReqs -= 1
         queued = queuedReqs.shift()
         if queued
-          queued.resume()
-          upload queued
+          unless queued.errored
+            queued.resume()
+            upload queued
+          else
+            activeReqs += 1
+            removeActiveReq()
       https.globalAgent.on 'free', removeActiveReq
       https.globalAgent.on 'free', listener for listener in freeListeners
       (stream) ->
-        errored = false
-        onerror = (err) ->
-          return if errored
-          errored = true
-          console.error "Error in chunk #{stream.index}: #{err}"
-          chunkCount -= 1
-          if stream?.req?.socket
-            stream.req.socket.emit 'agentRemove'
-            stream.req.socket.destroy()
-            removeActiveReq()
-          createNewReadStream stream.index * params.chunkSize
-        stream.on 'error', onerror
         if activeReqs >= https.globalAgent.maxSockets
           stream.bufArray = []
           stream.pause()
@@ -188,17 +196,30 @@ module.exports = (params) ->
               if chunkCount is 0
                 finalize()
             else
-              onerror "Bad hash"
+              req.emit 'error', "Bad hash"
           hash = crypto.createHash 'md5'
           req = client.put "/#{params.fileName}?partNumber=#{stream.index + 1}&uploadId=#{uploadId}",
             {'Content-Length': streamLength, Connection: 'keep-alive' }
           stream.req = req
-          req.on 'error', onerror
+          req.errored = false
+          stream.on 'error', (err) ->
+            unless req.errored
+              req.errored = true
+              req.emit 'error', err
+              req.readable = false
+          req.on 'error', (err) ->
+            unless req.errored
+              req.errored = true
+              stream.emit 'error', err
+              req.readable = false
+            if req?.socket
+              req.socket.emit 'agentRemove'
+              req.socket.destroy()
+              delete req.socket
+            removeActiveReq()
           req.on 'socket', (socket) ->
-            req.socket = socket
-            socket.removeAllListeners 'error'
-            socket.on 'error', (err) -> req.emit 'error', err
-            socket.resume()
+            try
+              socket.resume()
           req.on 'response', (res) ->
             if res.statusCode < 300
               res.on 'error', ->
@@ -213,9 +234,9 @@ module.exports = (params) ->
                 err += chunk.toString()
                 err += "\n"
               res.on 'end', ->
-                onerror err
+                req.emit 'error', err
               res.on 'error', (err) ->
-                onerror err
+                req.emit 'error', err
           if stream?.bufArray
             for chunk in stream.bufArray
               req.write chunk
@@ -241,6 +262,13 @@ module.exports = (params) ->
       fs.fstat fd, (err, stats) ->
         throw err if err
         createNewReadStream = (pos) ->
+          errored = false
+          onerror = (err) ->
+            return if errored
+            errored = true
+            console.error "Error in chunk #{pos / params.chunkSize}: #{err}"
+            chunkCount -= 1
+            createNewReadStream pos
           chunkCount += 1
           newStream = fs.createReadStream params.file,
             fd: fd,
@@ -249,6 +277,7 @@ module.exports = (params) ->
           newStream.destroy = -> @readable = false
           newStream.index = pos / params.chunkSize
           if pos + params.chunkSize < stats.size
+            newStream.on 'error', onerror
             upload addHash encrypt newStream
           else
             finalStream = new Stream()
@@ -272,6 +301,7 @@ module.exports = (params) ->
             newStream.on 'close', ->
               finalStream.readable = false
               finalStream.emit 'close'
+            finalStream.on 'error', onerror
             upload addHash encrypt finalStream
         process.nextTick ->
           for pos in [0..stats.size - 1] by params.chunkSize

@@ -1,6 +1,7 @@
 fs = require "fs"
 EventEmitter = require("events").EventEmitter
 crypto = require "crypto"
+crypt = require "./crypt"
 cipherBlockSize = require 'cipher-block-size'
 Stream = require 'stream'
 knox = require 'knox'
@@ -57,55 +58,6 @@ module.exports = (params) ->
   startUpload = (uploadId) ->
     chunkCount = null
     completeReq = []
-    encrypt = (stream) ->
-      newStream = new Stream()
-      newStream.readable = true
-      newStream.errored = false
-      newStream.pause = -> stream.pause.apply stream, arguments
-      newStream.resume = -> stream.resume.apply stream, arguments
-      newStream.destroy = -> stream.destroy.apply stream, arguments
-      newStream.index = stream.index
-      crypto.randomBytes blockSize, (err, iv) ->
-        if err
-          newStream.emit 'error', err
-        else unless newStream.errored
-          cipher = crypto.createCipheriv params.algorithm, encKey, iv
-          newStream.emit 'data', iv
-          newStream.emit 'data', cipher.update buf, 'buffer', 'buffer' for buf in stream.bufArray
-          delete stream['bufArray']
-          if stream?.gotEnd
-            newStream.emit cipher.final 'buffer'
-            newStream.readable = false
-            newStream.emit 'end'
-          else
-            stream.removeAllListeners 'data'
-            stream.removeAllListeners 'end'
-            stream.resume()
-            stream.on 'data', (data) ->
-              newStream.emit 'data', cipher.update data, 'buffer', 'buffer'
-            stream.on 'end', ->
-              newStream.emit 'data', cipher.final 'buffer'
-              newStream.readable = false
-              newStream.emit 'end'
-            stream.on 'close', ->
-              newStream.emit 'close'
-      stream.bufArray = []
-      stream.pause()
-      stream.on 'data', (chunk) ->
-        stream.bufArray.push chunk
-      stream.on 'end', ->
-        stream.gotEnd = true
-      stream.on 'error', (exception) ->
-        unless newStream.errored
-          newStream.errored = true
-          newStream.readable = false
-          newStream.emit 'error', exception
-      newStream.on 'error', (exception) ->
-        unless newStream.errored
-          newStream.errored = true
-          newStream.readable = false
-          stream.emit 'error', exception
-      newStream
 
     addHash = (stream) ->
       hash = crypto.createHash 'sha256'
@@ -278,7 +230,7 @@ module.exports = (params) ->
           newStream.index = pos / params.chunkSize
           if pos + params.chunkSize < stats.size
             newStream.on 'error', onerror
-            upload addHash encrypt newStream
+            upload addHash crypt.encrypt newStream, params.algorithm, blockSize, encKey
           else
             finalStream = new Stream()
             finalStream.pause = -> newStream.pause.apply newStream, arguments
@@ -302,7 +254,7 @@ module.exports = (params) ->
               finalStream.readable = false
               finalStream.emit 'close'
             finalStream.on 'error', onerror
-            upload addHash encrypt finalStream
+            upload addHash crypt.encrypt finalStream, params.algorithm, blockSize, encKey
         process.nextTick ->
           for pos in [0..stats.size - 1] by params.chunkSize
             createNewReadStream pos

@@ -7,8 +7,11 @@ Stream = require 'stream'
 knox = require 'knox'
 Parser = require('node-expat').Parser
 https = require 'https'
+http = require 'http'
 
 module.exports = (params) ->
+  client = undefined
+
   https.globalAgent.maxSockets = params['max-concurrent-connections'] if params['max-concurrent-connections']?
 
   blockSize = cipherBlockSize params.algorithm
@@ -18,7 +21,6 @@ module.exports = (params) ->
     keyName = params['enc-key-name']
     new Buffer JSON.parse(fs.readFileSync(keyFileName, 'utf8'))[keyName], 'hex'
 
-  client = knox.createClient key: params['aws-access-key'], secret: params['aws-secret-key'], bucket: params.bucket
   startMultipart = (tried) ->
     meta =
       algorithm: params.algorithm
@@ -53,7 +55,41 @@ module.exports = (params) ->
 
     req.end()
 
-  startMultipart false
+  updateCredentials = (callback) ->
+    req = http.get "http://169.254.169.254/latest/iam/security-credentials/#{params['iam-role-name']}"
+    req.on 'response', (res) ->
+      if res.statusCode < 300
+        json = ""
+        res.on 'data', (chunk) ->
+          json += chunk.toString()
+        res.on 'end', (chunk) ->
+          cred = JSON.parse json
+          client = knox.createClient key: cred.AccessKeyId, secret: cred.SecretAccessKey, bucket: params.bucket
+          expire = new Date cred.Expiration
+          now = new Date()
+          setTimeout updateCredentials ((expire.UTC() - 4 * 60 * 1000) - now.UTC())
+          callback() if callback
+      else
+        console.error "Error: Response code #{res.statusCode}"
+        console.error "Headers:"
+        console.error require('util').inspect res.headers
+        res.on 'data', (chunk) ->
+          console.error chunk.toString()
+        res.on 'end', ->
+          updateCredentials callback
+
+  if params['iam-role-name']?
+    updateCredentials ->
+      startMultipart false
+  else
+    unless params['aws-secret-key']?
+      lines = fs.readFileSync("#{process.env['HOME']}/.ec2-keys", 'utf8').split('\n')
+      for line in lines
+        row = line.split(' ')
+        if row[0] is params['aws-access-key']
+          params['aws-secret-key'] = row[1]
+    client = knox.createClient key: params['aws-access-key'], secret: params['aws-secret-key'], bucket: params.bucket
+    startMultipart false
 
   startUpload = (uploadId) ->
     chunkCount = null

@@ -12,8 +12,7 @@ module.exports = (params) ->
   streamLength = undefined
   blockSize = undefined
   encKey = undefined
-
-  client = knox.createClient key: params['aws-access-key'], secret: params['aws-secret-key'], bucket: params.bucket
+  client = undefined
 
   https.globalAgent.maxSockets = params['max-concurrent-connections'] if params['max-concurrent-connections']?
 
@@ -216,4 +215,39 @@ module.exports = (params) ->
           startMultipart true
     ).end()
 
-  startMultipart false
+  updateCredentials = (callback) ->
+    req = http.get "http://169.254.169.254/latest/iam/security-credentials/#{params['iam-role-name']}"
+    req.on 'response', (res) ->
+      if res.statusCode < 300
+        json = ""
+        res.on 'data', (chunk) ->
+          json += chunk.toString()
+        res.on 'end', (chunk) ->
+          cred = JSON.parse json
+          client = knox.createClient key: cred.AccessKeyId, secret: cred.SecretAccessKey, bucket: params.bucket
+          expire = new Date cred.Expiration
+          now = new Date()
+          setTimeout updateCredentials ((expire.UTC() - 4 * 60 * 1000) - now.UTC())
+          callback() if callback
+      else
+        console.error "Error: Response code #{res.statusCode}"
+        console.error "Headers:"
+        console.error require('util').inspect res.headers
+        res.on 'data', (chunk) ->
+          console.error chunk.toString()
+        res.on 'end', ->
+          updateCredentials callback
+
+  if params['iam-role-name']?
+    updateCredentials ->
+      startMultipart false
+  else
+    unless params['aws-secret-key']?
+      lines = fs.readFileSync("#{process.env['HOME']}/.ec2-keys", 'utf8').split('\n')
+      for line in lines
+        row = line.split(' ')
+        if row[0] is params['aws-access-key']
+          params['aws-secret-key'] = row[1]
+    client = knox.createClient key: params['aws-access-key'], secret: params['aws-secret-key'], bucket: params.bucket
+    startMultipart false
+

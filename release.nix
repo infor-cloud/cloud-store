@@ -32,10 +32,10 @@ let
       inherit name src;
 
       postInstall = ''
-        find $out/node_modules/s3multipart/bin/ -name \*.coffee -print0 |
+        find $out/node_modules/s3multipart/bin/ -type f -print0 |
           xargs -0 sed -i 's|/usr/bin/coffee|${nodePackages."coffee-script"}/bin/coffee|g'
       '';
 
-      deps = [ nodePackages."cipher-block-size" nodePackages.optimist nodePackages.knox nodePackages."node-expat" ];
+      deps = [ nodePackages."cipher-block-size" nodePackages.optimist nodePackages.knox nodePackages."node-expat" nodePackages."buffertools-~1" ];
     };
   }; in jobs

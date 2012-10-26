@@ -1,7 +1,7 @@
 {
   "name": "s3multipart"
 
-, "version": "1.0.0"
+, "version": "1.0.1"
 
 , "author": {
     "name": "Shea Levy"
@@ -14,7 +14,7 @@
   }
 
 , "dependencies": {
-    "cipher-block-size": "0"
+    "cipher-block-size": "https://bitbucket.org/shlevy/node-cipher-block-size/get/0.0.0.tar.gz"
   , "optimist": "0.3.4"
   , "knox": "0.3.1"
   , "buffertools": "~1"

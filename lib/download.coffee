@@ -7,7 +7,7 @@ knox = require 'knox'
 https = require 'https'
 
 module.exports = (params) ->
-  maxProtocolVersion = 0.0
+  maxProtocolVersion = 1.0
 
   streamLength = undefined
   blockSize = undefined

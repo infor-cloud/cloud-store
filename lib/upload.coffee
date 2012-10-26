@@ -26,7 +26,7 @@ module.exports = (params) ->
       algorithm: params.algorithm
       'chunk-size': params.chunkSize
       'enc-key-name': params['enc-key-name']
-      'protocol-version': "0.0" #!!! Change to 1.0 before production
+      'protocol-version': "1.0"
     headers = {}
     headers["x-amz-meta-s3multipart-#{key}"] = value for key, value of meta
     req = client.request 'POST', "/#{params.fileName}?uploads", headers

@@ -1,0 +1,32 @@
+<project name="s3lib" default="dist">
+	<description>
+		Internal LB library to handle uploads and downloads from/to s3
+	</description>
+	<property name="src" location="src"/>
+	<property name="build" location="build"/>
+	<property name="dist" location="dist"/>
+	<property name="version" value="0.0.0"/>
+	<property name="jvmVersion" value="1.6"/>
+
+	<target name="init">
+		<tstamp/>
+		<mkdir dir="${build}"/>
+	</target>
+
+	<target name="compile" depends="init">
+		<javac srcdir="${src}" destdir="${build}"
+			includeantruntime="false" target="${jvmVersion}"
+			source="${jvmVersion}"/>
+	</target>
+
+	<target name="dist" depends="compile">
+		<mkdir dir="${dist}/lib"/>
+
+		<jar jarfile="${dist}/lib/s3lib-${version}.jar" basedir="${build}"/>
+	</target>
+
+	<target name="clean">
+		<delete dir="${build}"/>
+		<delete dir="${dist}"/>
+	</target>
+</project>

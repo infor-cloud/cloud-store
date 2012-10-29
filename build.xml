@@ -7,6 +7,7 @@
 	<property name="dist" location="dist"/>
 	<property name="version" value="0.0.0"/>
 	<property name="jvmVersion" value="1.6"/>
+	<property name="classpath" value="" />
 
 	<target name="init">
 		<tstamp/>
@@ -16,7 +17,7 @@
 	<target name="compile" depends="init">
 		<javac srcdir="${src}" destdir="${build}"
 			includeantruntime="false" target="${jvmVersion}"
-			source="${jvmVersion}"/>
+			source="${jvmVersion}" classpath="${classpath}"/>
 	</target>
 
 	<target name="dist" depends="compile">

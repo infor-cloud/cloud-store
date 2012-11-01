@@ -69,7 +69,7 @@ class CipherWithInlineIVInputStream extends FilterInputStream {
 	@Override
 	public int read(byte[] b) throws IOException {
 		if (this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen) {
-			int readCount = Math.max(b.length, ivLen - ivBytesWritten);
+			int readCount = Math.min(b.length, ivLen - ivBytesWritten);
 			System.arraycopy(iv, ivBytesWritten, b, 0, readCount);
 			ivBytesWritten += readCount;
 			return readCount;
@@ -80,7 +80,7 @@ class CipherWithInlineIVInputStream extends FilterInputStream {
 	@Override
 	public int read(byte[] b, int off, int len) throws IOException {
 		if (this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen) {
-			int readCount = Math.max(len, ivLen - ivBytesWritten);
+			int readCount = Math.min(len, ivLen - ivBytesWritten);
 			System.arraycopy(iv, ivBytesWritten, b, off, readCount);
 			ivBytesWritten += readCount;
 			return readCount;
@@ -91,7 +91,7 @@ class CipherWithInlineIVInputStream extends FilterInputStream {
 	@Override
 	public long skip(long n) throws IOException {
 		if (this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen) {
-			long skipped = Math.max(ivLen - ivBytesWritten, n);
+			long skipped = Math.min(ivLen - ivBytesWritten, n);
 			ivBytesWritten += skipped;
 			return skipped;
 		}

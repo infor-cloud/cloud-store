@@ -2,7 +2,7 @@ package com.logicblox.s3lib;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.ArrayList;
 import java.util.concurrent.Callable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,14 +23,14 @@ import com.amazonaws.services.s3.model.UploadPartResult;
 import com.amazonaws.services.s3.model.PartETag;
 
 public class MultipartAmazonUpload implements Upload {
-	private List<PartETag> etags = new CopyOnWriteArrayList<PartETag>();
+	private List<PartETag> etags = new ArrayList<PartETag>();
 	private AmazonS3 client;
 	private String bucketName;
 	private String key;
 	private String uploadId;
 	private ListeningExecutorService executor;
 
-	public MultipartAmazonUpload(AmazonS3 client, String key, String uploadId, ListeningExecutorService executor) {
+	public MultipartAmazonUpload(AmazonS3 client, String bucketName, String key, String uploadId, ListeningExecutorService executor) {
 		this.bucketName = bucketName;
 		this.key = key;
 		this.client = client;
@@ -60,7 +60,10 @@ public class MultipartAmazonUpload implements Upload {
 
 	private class CompleteCallable implements Callable<String> {
 		public String call() throws Exception {
-			CompleteMultipartUploadRequest req = new CompleteMultipartUploadRequest(bucketName, key, uploadId, etags);
+			CompleteMultipartUploadRequest req;
+			synchronized(MultipartAmazonUpload.this) {
+				req = new CompleteMultipartUploadRequest(bucketName, key, uploadId, etags);
+			}
 			CompleteMultipartUploadResult res = client.completeMultipartUpload(req);
 			return res.getETag();
 		}
@@ -81,14 +84,16 @@ public class MultipartAmazonUpload implements Upload {
 			UploadPartRequest req = new UploadPartRequest();
 			req.setBucketName(bucketName);
 			req.setInputStream(stream);
-			req.setPartNumber(partNumber);
+			req.setPartNumber(partNumber + 1);
 			req.setPartSize(partSize);
 			req.setUploadId(uploadId);
 			req.setKey(key);
 			UploadPartResult res = client.uploadPart(req);
 			byte[] etag = DatatypeConverter.parseHexBinary(res.getETag());
 			if (Arrays.equals(etag, stream.getDigest())) {
-				etags.add(res.getPartETag());
+				synchronized(MultipartAmazonUpload.this) {
+					etags.add(res.getPartETag());
+				}
 				return null;
 			} else {
 				throw new BadHashException();

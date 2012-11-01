@@ -40,7 +40,7 @@ public class MultipartAmazonUploadFactory implements UploadFactory {
 			metadata.setUserMetadata(meta);
 			InitiateMultipartUploadRequest req = new InitiateMultipartUploadRequest(bucketName, key, metadata);
 			InitiateMultipartUploadResult res = client.initiateMultipartUpload(req);
-			return new MultipartAmazonUpload(client, key, res.getUploadId(), executor);
+			return new MultipartAmazonUpload(client, bucketName, key, res.getUploadId(), executor);
 		}
 	}
 }

@@ -30,7 +30,7 @@ public class AmazonDownloadFactory implements DownloadFactory {
 		}
 
 		public Download call() {
-			return new AmazonDownload(client, key, bucketName, client.getObjectMetadata(bucketName, key), executor);
+			return new AmazonDownload(client, key, bucketName, client.getObjectMetadata(bucketName, key).getUserMetadata(), executor);
 		}
 	}
 }

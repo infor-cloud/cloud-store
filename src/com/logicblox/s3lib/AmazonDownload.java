@@ -15,17 +15,15 @@ public class AmazonDownload implements Download {
 	private AmazonS3 client;
 	private ListeningExecutorService executor;
 	private Map<String,String> meta;
-	private long length;
 	private String key;
 	private String bucketName;
 
-	public AmazonDownload(AmazonS3 client, String key, String bucketName, ObjectMetadata metadata, ListeningExecutorService executor) {
+	public AmazonDownload(AmazonS3 client, String key, String bucketName, Map<String,String> meta, ListeningExecutorService executor) {
 		this.client = client;
 		this.key = key;
 		this.bucketName = bucketName;
 		this.executor = executor;
-		this.meta = metadata.getUserMetadata();
-		this.length = metadata.getContentLength();
+		this.meta = meta;
 	}
 
 	public ListenableFuture<InputStream> getPart(long start, long end) {
@@ -34,10 +32,6 @@ public class AmazonDownload implements Download {
 
 	public Map<String,String> getMeta() {
 		return meta;
-	}
-
-	public long getLength() {
-		return length;
 	}
 
 	private class DownloadCallable implements Callable<InputStream> {

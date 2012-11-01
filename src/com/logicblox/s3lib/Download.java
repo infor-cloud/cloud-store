@@ -9,6 +9,4 @@ public interface Download {
 	ListenableFuture<InputStream> getPart(long start, long end);
 
 	Map<String,String> getMeta();
-
-	long getLength();
 }

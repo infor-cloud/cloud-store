@@ -11,12 +11,24 @@
 	<property name="awsJavaSdkJar" value="" />
 	<property name="joptSimpleJar" value="" />
 	<property name="log4jJar" value="" />
+	<property name="commonsLoggingJar" value="" />
+	<property name="commonsCodecJar" value="" />
+	<property name="httpcoreJar" value="" />
+	<property name="httpclientJar" value="" />
 
 	<path id="compile.classpath">
 		<pathelement path="${guavaJar}" />
 		<pathelement path="${awsJavaSdkJar}" />
 		<pathelement path="${joptSimpleJar}" />
 		<pathelement path="${log4jJar}" />
+	</path>
+
+	<path id="run.classpath">
+		<path refid="compile.classpath" />
+		<pathelement path="${commonsLoggingJar}" />
+		<pathelement path="${commonsCodecJar}" />
+		<pathelement path="${httpcoreJar}" />
+		<pathelement path="${httpclientJar}" />
 	</path>
 
 	<target name="init">
@@ -35,7 +47,7 @@
 	<target name="dist" depends="compile">
 		<mkdir dir="${dist}/lib"/>
 		<manifestclasspath property="jar.classpath" jarfile="${dist}/lib/s3lib-${version}.jar">
-			<classpath refid="compile.classpath" />
+			<classpath refid="run.classpath" />
 		</manifestclasspath>
 		<jar jarfile="${dist}/lib/s3lib-${version}.jar" basedir="${build}">
 			<manifest>

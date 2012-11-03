@@ -11,17 +11,30 @@ let
     then previousReleases.logicblox logicblox
     else logicblox;
 
-  guavaJar = "${lb}/lib/java/guava-13.0.1.jar";
+  deps = {
+    guava = "${lb}/lib/java/guava-13.0.1.jar";
 
-  awsJavaSdkJar = "${lb}/lib/java/aws-java-sdk-1.3.18.jar";
+    awsJavaSdk = "${lb}/lib/java/aws-java-sdk-1.3.18.jar";
 
-  joptSimpleJar = "${lb}/lib/java/jopt-simple-3.3.jar";
+    joptSimple = "${lb}/lib/java/jopt-simple-3.3.jar";
 
-  log4jJar = "${lb}/lib/java/log4j-1.2.13.jar";
+    log4j = "${lb}/lib/java/log4j-1.2.13.jar";
+
+    commonsLogging = "${lb}/lib/java/commons-logging-1.1.1.jar";
+
+    httpcore = "${lb}/lib/java/httpcore-4.1.jar";
+
+    httpclient = "${lb}/lib/java/httpclient-4.1.1.jar";
+
+    commonsCodec = "${lb}/lib/java/commons-codec-1.6.jar";
+  };
+
+  depsString = pkgs.lib.concatStringsSep " " 
+    (pkgs.lib.mapAttrsToList (name: value: "-D${name}Jar=${value}") deps);
 in
 
 {
   build = pkgs.runCommand "s3lib-${version s3lib}" { ant = "${pkgs.ant}/bin/ant"; } ''
-    $ant -Ddist=$out -DguavaJar=${guavaJar} -DawsJavaSdkJar=${awsJavaSdkJar} -DjoptSimpleJar=${joptSimpleJar} -Dlog4jJar=${log4jJar} -Dbuild=$TMPDIR/build -f ${s3lib}/build.xml
+    $ant -Ddist=$out ${depsString} -Dbuild=$TMPDIR/build -f ${s3lib}/build.xml
   '';
 }

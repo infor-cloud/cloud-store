@@ -43,13 +43,13 @@ public class Main {
 		root.setLevel(Level.INFO);
 		File defaultEncKeyFile = new File(System.getProperty("user.home") + File.separator + ".s3lib-enc-keys");
 		OptionParser parser = new OptionParser();
-		OptionSpec<File> fileSpec = parser.accepts("file").withRequiredArg().ofType(File.class);
-		OptionSpec<String> keySpec = parser.accepts("key").withRequiredArg();
-		OptionSpec<String> bucketSpec = parser.accepts("bucket").withRequiredArg();
-		OptionSpec<Integer> maxConcurrentConnectionsSpec = parser.accepts("max-concurrent-connections").withRequiredArg().ofType(Integer.class);
-		OptionSpec<Long> chunkSizeSpec = parser.accepts("chunk-size").withRequiredArg().ofType(Long.class);
-		OptionSpec<String> encKeyNameSpec = parser.accepts("enc-key-name").withRequiredArg();
-		OptionSpec<File> encKeyFileSpec = parser.accepts("enc-key-file").withRequiredArg().ofType(File.class).defaultsTo(defaultEncKeyFile);
+		OptionSpec<File> fileSpec = parser.accepts("file", "The file to upload/download to/from").withRequiredArg().ofType(File.class).describedAs("Required");
+		OptionSpec<String> keySpec = parser.accepts("key", "The name of the file in s3").withRequiredArg().describedAs("Required");
+		OptionSpec<String> bucketSpec = parser.accepts("bucket", "The s3 bucket").withRequiredArg().describedAs("Required");
+		OptionSpec<Integer> maxConcurrentConnectionsSpec = parser.accepts("max-concurrent-connections", "The maximum number of concurrent HTTP connections to s3").withRequiredArg().ofType(Integer.class).defaultsTo(Integer.valueOf(10)).describedAs("Optional");
+		OptionSpec<Long> chunkSizeSpec = parser.accepts("chunk-size", "The size of each chunk read from the file").withRequiredArg().ofType(Long.class).describedAs("Required for upload");
+		OptionSpec<String> encKeyNameSpec = parser.accepts("enc-key-name", "The key to use for encryption").withRequiredArg().describedAs("Required for upload");
+		OptionSpec<File> encKeyFileSpec = parser.accepts("enc-key-file", "The file where the encryption keys (represented as a serialization of java.util.HashMap<java.lang.String,java.security.Key>) are found").withRequiredArg().ofType(File.class).defaultsTo(defaultEncKeyFile).describedAs("Optional");
 
 		OptionSet options = parser.parse(args);
 
@@ -76,9 +76,6 @@ public class Main {
 		}
 		String bucket = options.valueOf(bucketSpec);
 
-		if (!options.has(maxConcurrentConnectionsSpec)) {
-			showUsage(parser);
-		}
 		int maxConcurrentConnections = options.valueOf(maxConcurrentConnectionsSpec).intValue();
 
 		long chunkSize = 0;
@@ -107,7 +104,12 @@ public class Main {
 	}
 
 	private static void showUsage(OptionParser parser) {
-		System.err.println("Bad args");
+		System.err.println("Usage: s3tool <command> <args>");
+		System.err.println("Commands: upload download");
+		try {
+			parser.printHelpOn(System.err);
+		} catch (IOException e) {
+		}
 		System.exit(1);
 	}
 

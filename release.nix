@@ -36,5 +36,11 @@ in
 {
   build = pkgs.runCommand "s3lib-${version s3lib}" { ant = "${pkgs.ant}/bin/ant"; } ''
     $ant -Ddist=$out ${depsString} -Dbuild=$TMPDIR/build -f ${s3lib}/build.xml
+  mkdir -p $out/bin
+  cat > $out/bin/s3tool << EOF
+#!/bin/sh
+exec ${pkgs.jdk}/bin/java -jar $(readlink -f $out/lib/s3lib-*.jar) "\$@"
+EOF
+  chmod +x $out/bin/s3tool
   '';
 }

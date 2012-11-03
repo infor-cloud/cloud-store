@@ -10,10 +10,18 @@ let
   lb = if builtins.isString logicblox
     then previousReleases.logicblox logicblox
     else logicblox;
+
+  guavaJar = "${lb}/lib/java/guava-13.0.1.jar";
+
+  awsJavaSdkJar = "${lb}/lib/java/aws-java-sdk-1.3.18.jar";
+
+  joptSimpleJar = "${lb}/lib/java/jopt-simple-3.3.jar";
+
+  log4jJar = "${lb}/lib/java/log4j-1.2.13.jar";
 in
 
 {
   build = pkgs.runCommand "s3lib-${version s3lib}" { ant = "${pkgs.ant}/bin/ant"; } ''
-    $ant -Ddist=$out -DguavaJar="$(readlink -f ${lb}/lib/java/guava*.jar)" -DawsJavaSdkJar="$(readlink -f ${lb}/lib/java/aws-java-sdk-*.jar)" -DjoptSimpleJar="$(readlink -f ${lb}/lib/java/jopt-simple-*.jar)" -Dlog4jJar="$(readlink -f ${lb}/lib/java/log4j*.jar)" -Dbuild=$TMPDIR/build -f ${s3lib}/build.xml
+    $ant -Ddist=$out -DguavaJar=${guavaJar} -DawsJavaSdkJar=${awsJavaSdkJar} -DjoptSimpleJar=${joptSimpleJar} -Dlog4jJar=${log4jJar} -Dbuild=$TMPDIR/build -f ${s3lib}/build.xml
   '';
 }

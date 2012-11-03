@@ -18,12 +18,15 @@
 		<javac srcdir="${src}" destdir="${build}"
 			includeantruntime="false" target="${jvmVersion}"
 			source="${jvmVersion}" classpath="${classpath}"/>
+
+		<manifest file="${build}/MANIFEST.MF">
+			<attribute name="Main-Class" value="com.logicblox.s3lib.Main" />
+		</manifest>
 	</target>
 
 	<target name="dist" depends="compile">
 		<mkdir dir="${dist}/lib"/>
-
-		<jar jarfile="${dist}/lib/s3lib-${version}.jar" basedir="${build}"/>
+		<jar jarfile="${dist}/lib/s3lib-${version}.jar" basedir="${build}" manifest="${build}/MANIFEST.MF" />
 	</target>
 
 	<target name="clean">

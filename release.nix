@@ -14,6 +14,6 @@ in
 
 {
   build = pkgs.runCommand "s3lib-${version s3lib}" { ant = "${pkgs.ant}/bin/ant"; } ''
-    $ant -Ddist=$out -Dclasspath=$(readlink -f ${lb}/lib/java/guava*.jar):$(readlink -f ${lb}/lib/java/aws-java-sdk-*.jar):$(readlink -f ${lb}/lib/java/jopt-simple-*.jar):$(readlink -f ${lb}/lib/java/log4j*.jar) -Dbuild=$TMPDIR/build -f ${s3lib}/build.xml
+    $ant -Ddist=$out -DguavaJar="$(readlink -f ${lb}/lib/java/guava*.jar)" -DawsJavaSdkJar="$(readlink -f ${lb}/lib/java/aws-java-sdk-*.jar)" -DjoptSimpleJar="$(readlink -f ${lb}/lib/java/jopt-simple-*.jar)" -Dlog4jJar="$(readlink -f ${lb}/lib/java/log4j*.jar)" -Dbuild=$TMPDIR/build -f ${s3lib}/build.xml
   '';
 }

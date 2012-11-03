@@ -7,7 +7,17 @@
 	<property name="dist" location="dist"/>
 	<property name="version" value="0.0.0"/>
 	<property name="jvmVersion" value="1.6"/>
-	<property name="classpath" value="" />
+	<property name="guavaJar" value="" />
+	<property name="awsJavaSdkJar" value="" />
+	<property name="joptSimpleJar" value="" />
+	<property name="log4jJar" value="" />
+
+	<path id="compile.classpath">
+		<pathelement path="${guavaJar}" />
+		<pathelement path="${awsJavaSdkJar}" />
+		<pathelement path="${joptSimpleJar}" />
+		<pathelement path="${log4jJar}" />
+	</path>
 
 	<target name="init">
 		<tstamp/>
@@ -17,16 +27,22 @@
 	<target name="compile" depends="init">
 		<javac srcdir="${src}" destdir="${build}"
 			includeantruntime="false" target="${jvmVersion}"
-			source="${jvmVersion}" classpath="${classpath}"/>
-
-		<manifest file="${build}/MANIFEST.MF">
-			<attribute name="Main-Class" value="com.logicblox.s3lib.Main" />
-		</manifest>
+			source="${jvmVersion}">
+			<classpath refid="compile.classpath" />
+		</javac>
 	</target>
 
 	<target name="dist" depends="compile">
 		<mkdir dir="${dist}/lib"/>
-		<jar jarfile="${dist}/lib/s3lib-${version}.jar" basedir="${build}" manifest="${build}/MANIFEST.MF" />
+		<manifestclasspath property="jar.classpath" jarfile="${dist}/lib/s3lib-${version}.jar">
+			<classpath refid="compile.classpath" />
+		</manifestclasspath>
+		<jar jarfile="${dist}/lib/s3lib-${version}.jar" basedir="${build}">
+			<manifest>
+				<attribute name="Main-Class" value="com.logicblox.s3lib.Main" />
+				<attribute name="Class-Path" value="${jar.classpath}" />
+			</manifest>
+		</jar>
 	</target>
 
 	<target name="clean">

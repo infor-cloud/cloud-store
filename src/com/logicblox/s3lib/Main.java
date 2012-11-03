@@ -41,6 +41,7 @@ public class Main {
 	{
 		Logger root = Logger.getRootLogger();
 		root.setLevel(Level.INFO);
+		File defaultEncKeyFile = new File(System.getProperty("user.home") + File.separator + ".s3lib-enc-keys");
 		OptionParser parser = new OptionParser();
 		OptionSpec<File> fileSpec = parser.accepts("file").withRequiredArg().ofType(File.class);
 		OptionSpec<String> keySpec = parser.accepts("key").withRequiredArg();
@@ -48,7 +49,7 @@ public class Main {
 		OptionSpec<Integer> maxConcurrentConnectionsSpec = parser.accepts("max-concurrent-connections").withRequiredArg().ofType(Integer.class);
 		OptionSpec<Long> chunkSizeSpec = parser.accepts("chunk-size").withRequiredArg().ofType(Long.class);
 		OptionSpec<String> encKeyNameSpec = parser.accepts("enc-key-name").withRequiredArg();
-		OptionSpec<File> encKeyFileSpec = parser.accepts("enc-key-file").withRequiredArg().ofType(File.class);
+		OptionSpec<File> encKeyFileSpec = parser.accepts("enc-key-file").withRequiredArg().ofType(File.class).defaultsTo(defaultEncKeyFile);
 
 		OptionSet options = parser.parse(args);
 
@@ -94,12 +95,7 @@ public class Main {
 			encKeyName = options.valueOf(encKeyNameSpec);
 		}
 
-		File encKeyFile;
-		if (options.has(encKeyFileSpec)) {
-			encKeyFile = options.valueOf(encKeyFileSpec);
-		} else {
-			encKeyFile = new File(System.getProperty("user.home") + File.separator + ".s3lib-enc-keys");
-		}
+		File encKeyFile = options.valueOf(encKeyFileSpec);
 
 		if (command.equals("upload")) {
 			new UploadCommand(file, chunkSize, encKeyName, encKeyFile).run(bucket, key, maxConcurrentConnections);

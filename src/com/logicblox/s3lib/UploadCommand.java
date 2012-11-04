@@ -100,7 +100,7 @@ public class UploadCommand extends Command
     UploadFactory factory = new MultipartAmazonUploadFactory(new AmazonS3Client(), _uploadExecutor);
     
     Map<String,String> meta = new HashMap<String,String>();
-    meta.put("s3tool-version", "0.0");
+    meta.put("s3tool-version", String.valueOf(Version.CURRENT));
     meta.put("s3tool-key-name", encKeyName);
     meta.put("s3tool-chunk-size", Long.toString(chunkSize));
     meta.put("s3tool-file-length", Long.toString(fileLength));

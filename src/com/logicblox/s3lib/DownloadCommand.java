@@ -112,10 +112,10 @@ public class DownloadCommand extends Command
     if (!meta.containsKey("s3tool-version"))
       throw new UsageException("File not uploaded with s3tool");
 
-    // TODO make this a fixed number that is only bumped if the format
-    // of S3 uploaded files changes.
-    if (Float.valueOf(meta.get("s3tool-version")) > 0.0)
-      throw new UsageException("File uploaded with unsupported version");
+    String objectVersion = meta.get("s3tool-version");
+
+    if (!String.valueOf(Version.CURRENT).equals(objectVersion))
+      throw new UsageException("File uploaded with unsupported version: " + objectVersion + ", should be " + Version.CURRENT);
 
     String keyName = meta.get("s3tool-key-name");
     try {

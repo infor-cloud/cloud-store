@@ -16,7 +16,9 @@ class CipherWithInlineIVInputStream extends FilterInputStream {
   private int ivLen;
   private byte[] iv;
 
-  public CipherWithInlineIVInputStream(InputStream in, Cipher cipher, int opmode, Key key) throws IOException, InvalidKeyException, InvalidAlgorithmParameterException {
+  public CipherWithInlineIVInputStream(InputStream in, Cipher cipher, int opmode, Key key)
+  throws IOException, InvalidKeyException, InvalidAlgorithmParameterException
+  {
     super(in);
 
     ivLen = cipher.getBlockSize();

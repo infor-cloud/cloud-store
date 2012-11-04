@@ -1,10 +1,5 @@
 package com.logicblox.s3lib;
 
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
 import java.io.InputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,7 +8,16 @@ import java.io.BufferedInputStream;
 import java.io.RandomAccessFile;
 import java.io.ObjectInputStream;
 import java.io.IOException;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
+
 import java.security.Key;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -21,16 +25,10 @@ import java.security.InvalidAlgorithmParameterException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.Cipher;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.ParameterException;
-import com.beust.jcommander.Parameters;
-
 import com.amazonaws.services.s3.AmazonS3Client;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-
+import com.google.common.base.Functions;
+import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.FutureCallback;
@@ -39,92 +37,149 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 
 public class UploadCommand extends Command
 {
-  private Upload upload;
   private String encKeyName;
+
+  private int _retryCount = 50;
+  private ListeningExecutorService _uploadExecutor;
+  private ListeningExecutorService _executor;
   
-  public UploadCommand(File file, long chunkSize, String encKeyName, File encKeyFile) {
+  public UploadCommand(
+    ListeningExecutorService uploadExecutor,
+    ListeningExecutorService internalExecutor,
+    File file,
+    long chunkSize,
+    String encKeyName,
+    File encKeyFile)
+  throws IOException
+  {
+    _uploadExecutor = uploadExecutor;
+    _executor = internalExecutor;
+
     this.file = file;
     this.chunkSize = chunkSize;
     this.fileLength = file.length();
     this.encKeyName = encKeyName;
-    try {
+
+    try
+    {
       this.encKey = readKeyFromFile(encKeyName, encKeyFile);
-    } catch (IOException e) {
-      System.err.println("IO Error reading key file: " + e.getMessage());
-      System.exit(1);
-    } catch (ClassNotFoundException e) {
-      System.err.println("Error: Key file is not in the right format " + e.getMessage());
-      System.exit(1);
     }
+    catch (ClassNotFoundException e)
+    {
+      throw new UsageException("key file is not in the right format " + e.getMessage());
+    }
+
     completedParts = new HashSet<Integer>();
   }
+
+  public void setRetryCount(int retryCount) {
+    _retryCount = retryCount;
+  }
   
-  public void run(final String bucket, final String key, final int maxConcurrentConnections) {
-    if (this.encKey == null) {
-      System.err.println("Missing encryption key");
-      System.exit(1);
-    }
+  /**
+   * Run ties Step 1, Step 2, and Step 3 together. The return result is the ETag of the upload.
+   */
+  public ListenableFuture<String> run(final String bucket, final String key) throws FileNotFoundException
+  {
+    if (this.encKey == null)
+      throw new UsageException("encryption key is required");
+    
+    if (!file.exists())
+      throw new FileNotFoundException(file.getPath());
+      
     
     if (this.fileLength == 0) {
       throw new UsageException("File does not exist or is a special file");
     }
-    
-    ListeningExecutorService executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(maxConcurrentConnections));
-    
-    UploadFactory factory = new MultipartAmazonUploadFactory(new AmazonS3Client(), executor);
+
+    System.out.println("Initiating upload");
+    ListenableFuture<Upload> upload = startUpload(bucket, key, 0);
+    upload = Futures.transform(upload, startPartsAsyncFunction());
+    ListenableFuture<String> result = Futures.transform(upload, completeAsyncFunction());
+    return result;
+  }
+
+  /**
+   * Step 1: Returns a future upload that is internally retried.
+   */
+  public ListenableFuture<Upload> startUpload(final String bucket, final String key, final int retryCount)
+  throws FileNotFoundException
+  {
+    UploadFactory factory = new MultipartAmazonUploadFactory(new AmazonS3Client(), _uploadExecutor);
     
     Map<String,String> meta = new HashMap<String,String>();
     meta.put("s3tool-version", "0.0");
     meta.put("s3tool-key-name", encKeyName);
     meta.put("s3tool-chunk-size", Long.toString(chunkSize));
     meta.put("s3tool-file-length", Long.toString(fileLength));
-    
+
+    // TODO should we schedule the retry after a pause?              
     ListenableFuture<Upload> startUploadFuture = factory.startUpload(bucket, key, meta);
-    
-    System.out.println("Initiating upload");
-    final UploadCommand that = this;
-    FutureCallback<Upload> startUploadCallback = new FutureCallback<Upload>()
+
+    FutureFallback<Upload> startAgain = new FutureFallback<Upload>()
       {
-        public void onSuccess(Upload upload) {
-          that.startParts(upload);
-        }
-          
-        public void onFailure(Throwable thrown)
+        public ListenableFuture<Upload> create(Throwable thrown) throws Exception
         {
           System.err.println("Error starting upload: " + thrown.getMessage());
-            that.run(bucket, key, maxConcurrentConnections);
+            
+            rethrowOnMaxRetry(thrown, retryCount);
+            return UploadCommand.this.startUpload(bucket, key, retryCount + 1);
         }
       };
-    Futures.addCallback(startUploadFuture, startUploadCallback);
+    
+    return withFallback(startUploadFuture, startAgain);
   }
-  
-  public void startParts(Upload upload) {
-    this.upload = upload;
-    for (long position = 0; position < fileLength; position += chunkSize) {
-      startPartUploadThread(position);
-    }
-  }
-  
-  public void startPartUploadThread(final long position) {
-    final UploadCommand that = this;
-    Executors.newSingleThreadExecutor().submit(new Runnable() {
-      public void run() {
-        that.startPartUpload(position);
+
+  /**
+   * Step 2: Upload parts
+   */
+  private AsyncFunction<Upload, Upload> startPartsAsyncFunction()
+  {
+    return new AsyncFunction<Upload, Upload>()
+    {
+      public ListenableFuture<Upload> apply(Upload upload)
+      {
+        return startParts(upload);
       }
-    });
+    };
+  }
+
+  public ListenableFuture<Upload> startParts(final Upload upload)
+  {
+    List<ListenableFuture<Void>> parts = new ArrayList<ListenableFuture<Void>>();
+    
+    for (long position = 0; position < fileLength; position += chunkSize)
+    {
+      parts.add(startPartUploadThread(upload, position));
+    }
+
+    // we do not care about the voids, so we just return the upload
+    // object.
+    return Futures.transform(
+      Futures.allAsList(parts),
+      Functions.constant(upload));
   }
   
-  public void startPartUpload(final long position) {
+  public ListenableFuture<Void> startPartUploadThread(final Upload upload, final long position)
+  {
+    ListenableFuture<ListenableFuture<Void>> result =
+      _executor.submit(new Callable<ListenableFuture<Void>>()
+        {
+          public ListenableFuture<Void> call() throws Exception
+          {
+            return UploadCommand.this.startPartUpload(upload, position, 0);
+          }
+        });
+
+    return Futures.dereference(result);
+  }
+  
+  public ListenableFuture<Void> startPartUpload(final Upload upload, final long position, final int retryCount)
+  throws FileNotFoundException
+  {
     final int partNumber = (int) (position / chunkSize);
-    final FileInputStream fs;
-    try {
-      fs = new FileInputStream(file);
-    } catch (FileNotFoundException e) {
-      System.err.println(file.getPath());
-      System.err.println("Error: File not found");
-      System.exit(1);
-      return;
-    }
+    final FileInputStream fs = new FileInputStream(file);
+
     try {
       long skipped = fs.skip(position);
       while (skipped < position) {
@@ -136,20 +191,19 @@ public class UploadCommand extends Command
         fs.close();
       } catch (IOException ignored) {
       }
-      startPartUpload(position);
-      return;
+      return startPartUpload(upload, position, retryCount + 1);
     }
+
     BufferedInputStream bs = new BufferedInputStream(fs);
     Cipher cipher = null;
     try {
       cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
     } catch (NoSuchAlgorithmException e) {
-      System.err.println("No AES/CBC/PKCS5Padding!");
-      System.exit(1);
+      throw new RuntimeException(e);
     } catch (NoSuchPaddingException e) {
-      System.err.println("No AES/CBC/PKCS5Padding!");
-      System.exit(1);
+      throw new RuntimeException(e);
     }
+
     CipherWithInlineIVInputStream in = null;
     try {
       in = new CipherWithInlineIVInputStream(bs, cipher, Cipher.ENCRYPT_MODE, encKey);
@@ -159,69 +213,116 @@ public class UploadCommand extends Command
         fs.close();
       } catch (IOException ignored) {
       }
-      startPartUpload(position);
-      return;
+      return startPartUpload(upload, position, retryCount + 1);
     } catch (InvalidKeyException e) {
-      System.err.println("Error: Invalid key");
-      System.exit(1);
+      throw new RuntimeException(e);
     } catch (InvalidAlgorithmParameterException e) {
       System.err.println("Error uploading part " + partNumber + ": " + e.getMessage());
       try {
         fs.close();
-      } catch (IOException ignored) {
+      } catch (Exception ignored) {
       }
-      startPartUpload(position);
-      return;
+      return startPartUpload(upload, position, retryCount + 1);
     }
 
     long preCryptSize = Math.min(fileLength - position, chunkSize);
     long blockSize = cipher.getBlockSize();
     long partSize = blockSize * (preCryptSize/blockSize + 2);
+
+    // TODO should we schedule the retry after a pause based on retryCount?
     System.out.println("Uploading part " + partNumber);
     ListenableFuture<Void> uploadPartFuture = upload.uploadPart(partNumber, in, partSize);
-    final UploadCommand that = this;
-    Futures.addCallback(uploadPartFuture, new FutureCallback<Void>() {
-        public void onSuccess(Void ignored) {
-          that.finishPart(partNumber);
-          try {
-            fs.close();
-          } catch (IOException e) {
-          }
-        }
-        public void onFailure(Throwable thrown) {
+
+    FutureFallback<Void> uploadPartAgain = new FutureFallback<Void>()
+      {
+        public ListenableFuture<Void> create(Throwable thrown) throws Exception
+        {
           System.err.println("Error uploading part " + partNumber + ": " + thrown.getMessage());
+            
+            try {
+              fs.close();
+            } catch (Exception e) {
+            }
+            
+            rethrowOnMaxRetry(thrown, retryCount);
+            return UploadCommand.this.startPartUpload(upload, position, retryCount + 1);
+        }
+      };
+
+    Futures.addCallback(uploadPartFuture, new FutureCallback<Void>()
+      {
+        public void onFailure(Throwable t) {}
+        public void onSuccess(Void ignored) {
           try {
             fs.close();
-          } catch (IOException e) {
+          } catch (Exception e) {
           }
-          that.startPartUpload(position);
         }
       });
+    
+    return withFallback(uploadPartFuture, uploadPartAgain);
   }
 
-  public void finishPart(final int partNumber) {
-    System.out.println("Finished part " + partNumber);
-    boolean allDone = false;
-    synchronized(this) {
-      completedParts.add(partNumber);
-      if (completedParts.size() == (fileLength + chunkSize - 1)/chunkSize) {
-        allDone = true;
+  /**
+   * Step 3: Complete parts
+   */
+  private AsyncFunction<Upload, String> completeAsyncFunction()
+  {
+    return new AsyncFunction<Upload, String>()
+    {
+      public ListenableFuture<String> apply(Upload upload)
+      {
+        return complete(upload, 0);
       }
-    }
-    
-    if (allDone) {
-      ListenableFuture<String> completeUploadFuture = upload.completeUpload();
-      final FutureCallback<String> completeUploadCallback = new FutureCallback<String>() {
-        public void onSuccess(String etag) {
-          System.out.println("File uploaded with etag " + etag);
-            System.exit(0);
-        }
-          public void onFailure(Throwable thrown) {
-            System.err.println("Error completing upload: " + thrown);
-              finishPart(partNumber);
-          }
-      };
-      Futures.addCallback(completeUploadFuture, completeUploadCallback);
-    }
+    };
   }
+
+  public ListenableFuture<String> complete(final Upload upload, final int retryCount)
+  {
+    System.out.println("Finished all parts, now completing upload");
+    // TODO should we schedule the retry after a pause?
+    ListenableFuture<String> completeUploadFuture = upload.completeUpload();
+
+    FutureFallback<String> completeAgain = new FutureFallback<String>()
+    {
+      public ListenableFuture<String> create(Throwable thrown) throws Exception
+      {
+        System.err.println("Error completing upload: " + thrown.getMessage());
+        return UploadCommand.this.complete(upload, retryCount + 1);
+      }
+    };
+
+    return withFallback(completeUploadFuture, completeAgain);
+  }
+
+  private <V> ListenableFuture<V> withFallback(ListenableFuture<V> future, FutureFallback<V> fallback)
+  {
+    return new FallbackFuture<V>(future, fallback, MoreExecutors.sameThreadExecutor());
+  }
+
+  /**
+   * Utility to rethrow the given throwable as an exception if the
+   * retryCount has exceeded the configured maximum.
+   */
+  private void rethrowOnMaxRetry(Throwable thrown, int retryCount) throws Exception
+  {
+    if(retryCount > _retryCount)
+    {
+      if(thrown instanceof Exception)
+        throw (Exception) thrown;
+      if(thrown instanceof Error)
+        throw (Error) thrown;
+      else
+        throw new RuntimeException(thrown);
+    }
+
+    /*
+     if(thrown instanceof AmazonServiceException) {
+       AmazonServiceException exc = (AmazonServiceException) thrown;
+       if(exc.getErrorType() == ErrorType.Client)
+         throw exc;
+     }
+     */
+  }
+
 }

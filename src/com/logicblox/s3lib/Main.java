@@ -1,7 +1,10 @@
 package com.logicblox.s3lib;
 
-import java.util.List;
 import java.io.File;
+import java.io.IOException;
+
+import java.util.List;
+import java.util.concurrent.Executors;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -10,6 +13,12 @@ import com.beust.jcommander.Parameters;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 
 public class Main
 {
@@ -84,9 +93,27 @@ public class Main
     @Parameter(names = "--enc-key-name", description = "The name of the encryption key to use", required = true)
     String encKeyName;
 
-    public void invoke()
+    public void invoke() throws Exception
     {
-      new UploadCommand(new File(file), chunkSize, encKeyName, new File(encKeyFile)).run(bucket, key, maxConcurrentConnections);
+      ListeningExecutorService uploadExecutor =
+        MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(maxConcurrentConnections));
+
+      ListeningExecutorService internalExecutor =
+        MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(50));
+
+      UploadCommand command = new UploadCommand(
+        uploadExecutor,
+        internalExecutor,
+        new File(file),
+        chunkSize,
+        encKeyName,
+        new File(encKeyFile));
+
+      ListenableFuture<String> etag = command.run(bucket, key);
+      System.out.println("File uploaded with etag " + etag.get());
+
+      uploadExecutor.shutdown();
+      internalExecutor.shutdown();
     }
   }
 

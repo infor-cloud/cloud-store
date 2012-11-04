@@ -1,41 +1,15 @@
 package com.logicblox.s3lib;
 
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-import java.io.InputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.BufferedInputStream;
-import java.io.RandomAccessFile;
-import java.io.ObjectInputStream;
-import java.io.IOException;
-import java.util.concurrent.Executors;
-import java.security.Key;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.InvalidAlgorithmParameterException;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.Cipher;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 
-import com.amazonaws.services.s3.AmazonS3Client;
-
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-
-import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
 
 public class Main
 {

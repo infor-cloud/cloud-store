@@ -79,6 +79,16 @@ public class Main
 
     @Parameter(names = "--enc-key-file", description = "The file where the encryption keys are found")
     String encKeyFile = System.getProperty("user.home") + File.separator + ".s3lib-enc-keys";
+
+    protected ListeningExecutorService getHttpExecutor()
+    {
+      return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(maxConcurrentConnections));
+    }
+    
+    protected ListeningExecutorService getInternalExecutor()
+    {
+      return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(50));
+    }
   }
 
   @Parameters(commandDescription = "Upload a file to S3")
@@ -88,18 +98,15 @@ public class Main
     String file;
 
     @Parameter(names = {"--chunk-size"}, description = "The size of each chunk read from the file")
-    long chunkSize = 10 * 1024 * 1024;
+    long chunkSize = 5 * 1024 * 1024;
 
     @Parameter(names = "--enc-key-name", description = "The name of the encryption key to use", required = true)
     String encKeyName;
 
     public void invoke() throws Exception
     {
-      ListeningExecutorService uploadExecutor =
-        MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(maxConcurrentConnections));
-
-      ListeningExecutorService internalExecutor =
-        MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(50));
+      ListeningExecutorService uploadExecutor = getHttpExecutor();
+      ListeningExecutorService internalExecutor = getInternalExecutor();
 
       UploadCommand command = new UploadCommand(
         uploadExecutor,
@@ -124,9 +131,26 @@ public class Main
     String file;
 
     @Override
-    public void invoke()
+    public void invoke() throws Exception
     {
-      new DownloadCommand(new File(file)).run(bucket, key, maxConcurrentConnections, new File(encKeyFile));
+      ListeningExecutorService downloadExecutor = getHttpExecutor();
+      ListeningExecutorService internalExecutor = getInternalExecutor();
+
+      DownloadCommand command = new DownloadCommand(
+        downloadExecutor,
+        internalExecutor,
+        new File(file),
+        new File(encKeyFile));
+      
+      // TODO would be useful to get a command hash back
+      // (e.g. SHA-512) so that we can use that in authentication.
+      ListenableFuture<Object> result = command.run(bucket, key);
+
+      result.get();
+      System.out.println("Download complete.");
+            
+      downloadExecutor.shutdown();
+      internalExecutor.shutdown();
     }
   }
 

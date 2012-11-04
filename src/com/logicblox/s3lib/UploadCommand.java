@@ -29,7 +29,6 @@ import com.amazonaws.services.s3.AmazonS3Client;
 
 import com.google.common.base.Functions;
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -39,7 +38,6 @@ public class UploadCommand extends Command
 {
   private String encKeyName;
 
-  private int _retryCount = 50;
   private ListeningExecutorService _uploadExecutor;
   private ListeningExecutorService _executor;
   
@@ -68,12 +66,6 @@ public class UploadCommand extends Command
     {
       throw new UsageException("key file is not in the right format " + e.getMessage());
     }
-
-    completedParts = new HashSet<Integer>();
-  }
-
-  public void setRetryCount(int retryCount) {
-    _retryCount = retryCount;
   }
   
   /**
@@ -294,35 +286,4 @@ public class UploadCommand extends Command
 
     return withFallback(completeUploadFuture, completeAgain);
   }
-
-  private <V> ListenableFuture<V> withFallback(ListenableFuture<V> future, FutureFallback<V> fallback)
-  {
-    return new FallbackFuture<V>(future, fallback, MoreExecutors.sameThreadExecutor());
-  }
-
-  /**
-   * Utility to rethrow the given throwable as an exception if the
-   * retryCount has exceeded the configured maximum.
-   */
-  private void rethrowOnMaxRetry(Throwable thrown, int retryCount) throws Exception
-  {
-    if(retryCount > _retryCount)
-    {
-      if(thrown instanceof Exception)
-        throw (Exception) thrown;
-      if(thrown instanceof Error)
-        throw (Error) thrown;
-      else
-        throw new RuntimeException(thrown);
-    }
-
-    /*
-     if(thrown instanceof AmazonServiceException) {
-       AmazonServiceException exc = (AmazonServiceException) thrown;
-       if(exc.getErrorType() == ErrorType.Client)
-         throw exc;
-     }
-     */
-  }
-
 }

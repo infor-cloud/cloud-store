@@ -21,9 +21,10 @@ import java.security.InvalidAlgorithmParameterException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.Cipher;
 
-import joptsimple.OptionParser;
-import joptsimple.OptionSpec;
-import joptsimple.OptionSet;
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.ParameterException;
+import com.beust.jcommander.Parameters;
 
 import com.amazonaws.services.s3.AmazonS3Client;
 
@@ -36,480 +37,205 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
-public class Main {
+public class Main
+{
+  JCommander _commander = new JCommander();
+
   public static void main(String[] args)
   {
     Logger root = Logger.getRootLogger();
     root.setLevel(Level.INFO);
-    File defaultEncKeyFile = new File(System.getProperty("user.home") + File.separator + ".s3lib-enc-keys");
-    OptionParser parser = new OptionParser();
-    OptionSpec<File> fileSpec = parser.accepts("file", "The file to upload/download to/from").withRequiredArg().ofType(File.class).describedAs("Required");
-    OptionSpec<String> keySpec = parser.accepts("key", "The name of the file in s3").withRequiredArg().describedAs("Required");
-    OptionSpec<String> bucketSpec = parser.accepts("bucket", "The s3 bucket").withRequiredArg().describedAs("Required");
-    OptionSpec<Integer> maxConcurrentConnectionsSpec = parser.accepts("max-concurrent-connections", "The maximum number of concurrent HTTP connections to s3").withRequiredArg().ofType(Integer.class).defaultsTo(Integer.valueOf(10)).describedAs("Optional");
-    OptionSpec<Long> chunkSizeSpec = parser.accepts("chunk-size", "The size of each chunk read from the file").withRequiredArg().ofType(Long.class).describedAs("Required for upload");
-    OptionSpec<String> encKeyNameSpec = parser.accepts("enc-key-name", "The key to use for encryption").withRequiredArg().describedAs("Required for upload");
-    OptionSpec<File> encKeyFileSpec = parser.accepts("enc-key-file", "The file where the encryption keys (represented as a serialization of java.util.HashMap<java.lang.String,java.security.Key>) are found").withRequiredArg().ofType(File.class).defaultsTo(defaultEncKeyFile).describedAs("Optional");
 
-    OptionSet options = parser.parse(args);
-
-    List<String> commands = options.nonOptionArguments();
-
-    if (commands.size() != 1) {
-      showUsage(parser);
+    try
+    {
+      Main main = new Main();
+      main.execute(args);
     }
-
-    String command = commands.get(0);
-
-    if (!options.has(fileSpec)) {
-      showUsage(parser);
+    catch(Exception exc)
+    {
+      exc.printStackTrace();
+      System.exit(1);
     }
-    File file = options.valueOf(fileSpec);
+    // TODO
+    // System.exit(0);
+  }
 
-    if (!options.has(keySpec)) {
-      showUsage(parser);
-    }
-    String key = options.valueOf(keySpec);
+  public Main()
+  {
+    _commander = new JCommander(new MainCommand());
+    _commander.setProgramName("s3tool");
+    _commander.addCommand("upload", new UploadCommandOptions());
+    _commander.addCommand("download", new DownloadCommandOptions());
+    _commander.addCommand("help", new HelpCommand());
+  }
 
-    if (!options.has(bucketSpec)) {
-      showUsage(parser);
-    }
-    String bucket = options.valueOf(bucketSpec);
+  class MainCommand
+  {
+    @Parameter(names = { "-h", "--help" }, description = "Print usage information")
+    boolean help = false;
+  }
 
-    int maxConcurrentConnections = options.valueOf(maxConcurrentConnectionsSpec).intValue();
+  abstract class Command
+  {
+    @Parameter(names = { "-h", "--help" }, description = "Print usage information")
+    boolean help = false;
 
-    long chunkSize = 0;
-    String encKeyName = null;
-    if (command.equals("upload")) {
-      if (!options.has(chunkSizeSpec)) {
-        showUsage(parser);
-      }
-      chunkSize = options.valueOf(chunkSizeSpec).longValue();
+    public abstract void invoke() throws Exception;
+  }
 
-      if (!options.has(encKeyNameSpec)) {
-        showUsage(parser);
-      }
-      encKeyName = options.valueOf(encKeyNameSpec);
-    }
+  abstract class S3Command extends Command
+  {
+    @Parameter(names = {"--bucket"}, description = "Name of S3 bucket")
+    String bucket;
 
-    File encKeyFile = options.valueOf(encKeyFileSpec);
+    @Parameter(names = {"--key"}, description = "Name of the S3 object (relative to the bucket)")
+    String key;
 
-    if (command.equals("upload")) {
-      new UploadCommand(file, chunkSize, encKeyName, encKeyFile).run(bucket, key, maxConcurrentConnections);
-    } else if (command.equals("download")) {
-      new DownloadCommand(file).run(bucket, key, maxConcurrentConnections, encKeyFile);
-    } else {
-      showUsage(parser);
+    @Parameter(names = {"--max-concurrent-connections"}, description = "The maximum number of concurrent HTTP connections to S3")
+    int maxConcurrentConnections = 10;
+
+    @Parameter(names = "--enc-key-file", description = "The file where the encryption keys are found")
+    String encKeyFile = System.getProperty("user.home") + File.separator + ".s3lib-enc-keys";
+  }
+
+  @Parameters(commandDescription = "Upload a file to S3")
+  class UploadCommandOptions extends S3Command
+  {
+    @Parameter(names = {"-f", "--file"}, description = "File to upload")
+    String file;
+
+    @Parameter(names = {"--chunk-size"}, description = "The size of each chunk read from the file")
+    long chunkSize = 5 * 1024 * 1024;
+
+    @Parameter(names = "--enc-key-name", description = "The name of the encryption key to use")
+    String encKeyName;
+
+    public void invoke()
+    {
+      new UploadCommand(new File(file), chunkSize, encKeyName, new File(encKeyFile)).run(bucket, key, maxConcurrentConnections);
     }
   }
 
-  private static void showUsage(OptionParser parser) {
-    System.err.println("Usage: s3tool <command> <args>");
-    System.err.println("Commands: upload download");
-    try {
-      parser.printHelpOn(System.err);
-    } catch (IOException e) {
+  @Parameters(commandDescription = "Download a file from S3")
+  class DownloadCommandOptions extends S3Command
+  {
+    @Parameter(names = {"-f", "--file"}, description = "File to upload")
+    String file;
+
+    @Override
+    public void invoke()
+    {
+      new DownloadCommand(new File(file)).run(bucket, key, maxConcurrentConnections, new File(encKeyFile));
     }
-    System.exit(1);
   }
 
-  private static Key readKeyFromFile(String encKeyName, File encKeyFile) throws IOException, ClassNotFoundException {
-    FileInputStream fs = new FileInputStream(encKeyFile);
-    ObjectInputStream in = new ObjectInputStream(fs);
-    Map<String,Key> keys = (HashMap<String,Key>) in.readObject();
-    in.close();
-    if (keys.containsKey(encKeyName)) {
-      return keys.get(encKeyName);
-    }
-    return null;
-  }
+  /**
+   * Help
+   */
+  @Parameters(commandDescription = "Print usage")
+  class HelpCommand extends Command
+  {
+    @Parameter(description = "Commands")
+    List<String> _commands;
 
-  private static class Command {
-    protected File file;
-    protected long chunkSize;
-    protected Key encKey;
-    protected Set<Integer> completedParts;
-    protected long fileLength;
-  }
-
-  private static class DownloadCommand extends Command {
-    private Download download;
-
-    public DownloadCommand(File file) {
-      this.file = file;
-      try {
-        file.createNewFile();
-      } catch (IOException e) {
-        System.err.println("Error creating download file: " + e.getMessage());
-      }
-      completedParts = new HashSet<Integer>();
-    }
-
-    public void run(final String bucket, final String key, final int maxConcurrentConnections, final File encKeyFile) {
-      ListeningExecutorService executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(maxConcurrentConnections));
-
-      DownloadFactory factory = new AmazonDownloadFactory(new AmazonS3Client(), executor);
-
-      ListenableFuture<Download> startDownloadFuture = factory.startDownload(bucket, key);
-      final DownloadCommand that = this;
-      System.out.println("Getting file metadata");
-      FutureCallback<Download> startDownloadCallback = new FutureCallback<Download>() {
-        public void onSuccess(Download download) {
-          that.startParts(download, encKeyFile);
+    public void invoke()
+    {
+      if(_commands == null)
+        printUsage();
+      else
+      {
+        for(String cmd : _commands)
+        {
+          printCommandUsage(cmd);
         }
-        public void onFailure(Throwable thrown) {
-          System.err.println("Error starting download: " + thrown.getMessage());
-          that.run(bucket, key, maxConcurrentConnections, encKeyFile);
-        }
-      };
-      Futures.addCallback(startDownloadFuture, startDownloadCallback);
-    }
-
-    public void startParts(Download download, File encKeyFile) {
-      this.download = download;
-
-      Map<String,String> meta = download.getMeta();
-      if (!meta.containsKey("s3tool-version")) {
-        System.err.println("File not uploaded with s3tool");
-        System.exit(1);
-      }
-      if (Float.valueOf(meta.get("s3tool-version")) > 0.0) {
-        System.err.println("File uploaded with unsupported version");
-        System.exit(1);
-      }
-      try {
-        encKey = readKeyFromFile(meta.get("s3tool-key-name"), encKeyFile);
-      } catch (IOException e) {
-        System.err.println("IO Error reading key file: " + e.getMessage());
-        System.exit(1);
-      } catch (ClassNotFoundException e) {
-        System.err.println("Error: Key file is not in the right format " + e.getMessage());
-        System.exit(1);
-      }
-      if (encKey == null) {
-        System.err.println("Missing encryption key");
-        System.exit(1);
-      }
-      chunkSize = Long.valueOf(meta.get("s3tool-chunk-size"));
-      fileLength = Long.valueOf(meta.get("s3tool-file-length"));
-
-      for (long position = 0; position < fileLength; position += chunkSize) {
-        startPartDownload(position);
-      }
-    }
-
-    public void startPartDownload(final long position) {
-      final int partNumber = (int) (position / chunkSize);
-      long blockSize = 0;
-      try {
-        blockSize = Cipher.getInstance("AES/CBC/PKCS5Padding").getBlockSize();
-      } catch (NoSuchAlgorithmException e) {
-        System.err.println("No AES/CBC/PKCS5Padding!");
-        System.exit(1);
-      } catch (NoSuchPaddingException e) {
-        System.err.println("No AES/CBC/PKCS5Padding!");
-        System.exit(1);
-      }
-      long postCryptSize = Math.min(fileLength - position, chunkSize);
-      long start = partNumber * blockSize * (chunkSize/blockSize + 2);
-      long partSize = blockSize * (postCryptSize/blockSize + 2);
-
-      ListenableFuture<InputStream> getPartFuture = download.getPart(start, start + partSize - 1);
-      final DownloadCommand that = this;
-      System.out.println("Downloading part " + partNumber);
-      Futures.addCallback(getPartFuture, new FutureCallback<InputStream>() {
-        public void onSuccess(InputStream stream) {
-          that.readDownload(stream, position, partNumber);
-        }
-        public void onFailure(Throwable thrown) {
-          System.err.println("Error downloading part " + partNumber + ": " + thrown.getMessage());
-          that.startPartDownload(position);
-        }
-      });
-    }
-
-    public void readDownload(InputStream stream, long position, int partNumber) {
-      RandomAccessFile out = null;
-      try {
-        out = new RandomAccessFile(file, "rw");
-      } catch (FileNotFoundException e) {
-        System.err.println("Error: Download file location deleted.");
-        System.exit(1);
-      }
-      try {
-        out.seek(position);
-      } catch (IOException e) {
-        System.err.println("Error: IO exception when seeking in output file: " + e.getMessage());
-        System.exit(1);
-      }
-      Cipher cipher = null;
-      try {
-        cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-      } catch (NoSuchAlgorithmException e) {
-        System.err.println("No AES/CBC/PKCS5Padding!");
-        System.exit(1);
-      } catch (NoSuchPaddingException e) {
-        System.err.println("No AES/CBC/PKCS5Padding!");
-        System.exit(1);
-      }
-      CipherWithInlineIVInputStream in = null;
-      try {
-        in = new CipherWithInlineIVInputStream(stream, cipher, Cipher.DECRYPT_MODE, encKey);
-      } catch (IOException e) {
-        System.err.println("Error initiating cipher stream for part " + partNumber + ": " + e.getMessage());
-        startPartDownload(position);
-        return;
-      } catch (InvalidKeyException e) {
-        System.err.println("Error: Invalid key");
-        System.exit(1);
-      } catch (InvalidAlgorithmParameterException e) {
-        System.err.println("Error downloading part " + partNumber + ": " + e.getMessage());
-        startPartDownload(position);
-        return;
-      }
-      int postCryptSize = (int) Math.min(fileLength - position, chunkSize);
-      int offset = 0;
-      byte[] buf = new byte[postCryptSize];
-      while (offset < postCryptSize) {
-        int result;
-        try {
-          result = in.read(buf, offset, postCryptSize - offset);
-        } catch (IOException e) {
-          System.err.println("Error reading part " + partNumber + ": " + e.getMessage());
-          try {
-            out.close();
-            stream.close();
-          } catch (IOException ignored) {
-          }
-          startPartDownload(position);
-          return;
-        }
-        if (result == -1) {
-          System.err.println("Error downloading part " + partNumber + ": unexpected EOF");
-          try {
-            out.close();
-            stream.close();
-          } catch (IOException e) {
-          }
-          startPartDownload(position);
-          return;
-        }
-        try {
-          out.write(buf, offset, result);
-        } catch (IOException e) {
-          System.err.println("Error writing part " + partNumber + ": " + e.getMessage());
-          try {
-            out.close();
-            stream.close();
-          } catch (IOException ignored) {
-          }
-          startPartDownload(position);
-          return;
-        }
-        offset += result;
-      }
-      try {
-        out.close();
-        stream.close();
-      } catch (IOException e) {
-      }
-      System.out.println("Finished part " + partNumber);
-      boolean allDone = false;
-      synchronized(this) {
-        completedParts.add(partNumber);
-        if (completedParts.size() == (fileLength + chunkSize - 1)/chunkSize) {
-          allDone = true;
-        }
-      }
-
-      if (allDone) {
-        System.exit(0);
       }
     }
   }
 
-  private static class UploadCommand extends Command {
-    private Upload upload;
-    private String encKeyName;
-
-    public UploadCommand(File file, long chunkSize, String encKeyName, File encKeyFile) {
-      this.file = file;
-      this.chunkSize = chunkSize;
-      this.fileLength = file.length();
-      this.encKeyName = encKeyName;
-      try {
-        this.encKey = readKeyFromFile(encKeyName, encKeyFile);
-      } catch (IOException e) {
-        System.err.println("IO Error reading key file: " + e.getMessage());
-        System.exit(1);
-      } catch (ClassNotFoundException e) {
-        System.err.println("Error: Key file is not in the right format " + e.getMessage());
-        System.exit(1);
-      }
-      completedParts = new HashSet<Integer>();
-    }
-
-    public void run(final String bucket, final String key, final int maxConcurrentConnections) {
-      if (this.encKey == null) {
-        System.err.println("Missing encryption key");
-        System.exit(1);
-      }
-
-      if (this.fileLength == 0) {
-        System.err.println("File does not exist or is a special file");
-        System.exit(1);
-      }
-
-      ListeningExecutorService executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(maxConcurrentConnections));
-
-      UploadFactory factory = new MultipartAmazonUploadFactory(new AmazonS3Client(), executor);
-
-      Map<String,String> meta = new HashMap<String,String>();
-      meta.put("s3tool-version", "0.0");
-      meta.put("s3tool-key-name", encKeyName);
-      meta.put("s3tool-chunk-size", Long.toString(chunkSize));
-      meta.put("s3tool-file-length", Long.toString(fileLength));
-
-      ListenableFuture<Upload> startUploadFuture = factory.startUpload(bucket, key, meta);
-
-      System.out.println("Initiating upload");
-      final UploadCommand that = this;
-      FutureCallback<Upload> startUploadCallback = new FutureCallback<Upload>() {
-        public void onSuccess(Upload upload) {
-          that.startParts(upload);
+  public void execute(String[] args)
+  {
+    try
+    {
+      _commander.parse(args);
+      String command = _commander.getParsedCommand();
+      if(command != null)
+      {
+        Command cmd = (Command) _commander.getCommands().get(command).getObjects().get(0);
+        if(cmd.help)
+        {
+          printCommandUsage(command);
+          System.exit(1);
         }
-        public void onFailure(Throwable thrown) {
-          System.err.println("Error starting upload: " + thrown.getMessage());
-          that.run(bucket, key, maxConcurrentConnections);
-        }
-      };
-      Futures.addCallback(startUploadFuture, startUploadCallback);
-    }
 
-    public void startParts(Upload upload) {
-      this.upload = upload;
-      for (long position = 0; position < fileLength; position += chunkSize) {
-        startPartUploadThread(position);
+        cmd.invoke();
+      }
+      else
+      {
+        printUsage();
       }
     }
-
-    public void startPartUploadThread(final long position) {
-      final UploadCommand that = this;
-      Executors.newSingleThreadExecutor().submit(new Runnable() {
-        public void run() {
-          that.startPartUpload(position);
-        }
-      });
+    catch(ParameterException exc)
+    {
+      System.err.println("error: " + exc.getMessage());
+      System.err.println("");
+      printUsage();
+      System.exit(1);
     }
-
-    public void startPartUpload(final long position) {
-      final int partNumber = (int) (position / chunkSize);
-      final FileInputStream fs;
-      try {
-        fs = new FileInputStream(file);
-      } catch (FileNotFoundException e) {
-        System.err.println(file.getPath());
-        System.err.println("Error: File not found");
-        System.exit(1);
-        return;
-      }
-      try {
-        long skipped = fs.skip(position);
-        while (skipped < position) {
-          skipped += fs.skip(position - skipped);
-        }
-      } catch (IOException e) {
-        System.err.println("Error uploading part " + partNumber + ": " + e.getMessage());
-        try {
-          fs.close();
-        } catch (IOException ignored) {
-        }
-        startPartUpload(position);
-        return;
-      }
-      BufferedInputStream bs = new BufferedInputStream(fs);
-      Cipher cipher = null;
-      try {
-        cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-      } catch (NoSuchAlgorithmException e) {
-        System.err.println("No AES/CBC/PKCS5Padding!");
-        System.exit(1);
-      } catch (NoSuchPaddingException e) {
-        System.err.println("No AES/CBC/PKCS5Padding!");
-        System.exit(1);
-      }
-      CipherWithInlineIVInputStream in = null;
-      try {
-        in = new CipherWithInlineIVInputStream(bs, cipher, Cipher.ENCRYPT_MODE, encKey);
-      } catch (IOException e) {
-        System.err.println("Error uploading part " + partNumber + ": " + e.getMessage());
-        try {
-          fs.close();
-        } catch (IOException ignored) {
-        }
-        startPartUpload(position);
-        return;
-      } catch (InvalidKeyException e) {
-        System.err.println("Error: Invalid key");
-        System.exit(1);
-      } catch (InvalidAlgorithmParameterException e) {
-        System.err.println("Error uploading part " + partNumber + ": " + e.getMessage());
-        try {
-          fs.close();
-        } catch (IOException ignored) {
-        }
-        startPartUpload(position);
-        return;
-      }
-      long preCryptSize = Math.min(fileLength - position, chunkSize);
-      long blockSize = cipher.getBlockSize();
-      long partSize = blockSize * (preCryptSize/blockSize + 2);
-      System.out.println("Uploading part " + partNumber);
-      ListenableFuture<Void> uploadPartFuture = upload.uploadPart(partNumber, in, partSize);
-      final UploadCommand that = this;
-      Futures.addCallback(uploadPartFuture, new FutureCallback<Void>() {
-        public void onSuccess(Void ignored) {
-          that.finishPart(partNumber);
-          try {
-            fs.close();
-          } catch (IOException e) {
-          }
-        }
-        public void onFailure(Throwable thrown) {
-          System.err.println("Error uploading part " + partNumber + ": " + thrown.getMessage());
-          try {
-            fs.close();
-          } catch (IOException e) {
-          }
-          that.startPartUpload(position);
-        }
-      });
+    catch(UsageException exc)
+    {
+      System.err.println("error: " + exc.getMessage());
+      System.exit(1);
     }
-
-    public void finishPart(final int partNumber) {
-      System.out.println("Finished part " + partNumber);
-      boolean allDone = false;
-      synchronized(this) {
-        completedParts.add(partNumber);
-        if (completedParts.size() == (fileLength + chunkSize - 1)/chunkSize) {
-          allDone = true;
-        }
-      }
-
-      if (allDone) {
-        ListenableFuture<String> completeUploadFuture = upload.completeUpload();
-        final FutureCallback<String> completeUploadCallback = new FutureCallback<String>() {
-          public void onSuccess(String etag) {
-            System.out.println("File uploaded with etag " + etag);
-            System.exit(0);
-          }
-          public void onFailure(Throwable thrown) {
-            System.err.println("Error completing upload: " + thrown);
-            finishPart(partNumber);
-          }
-        };
-        Futures.addCallback(completeUploadFuture, completeUploadCallback);
-      }
+    catch(Exception exc)
+    {
+      System.err.println("error: " + exc.getMessage());
+      System.err.println("");
+      exc.printStackTrace();
+      System.exit(1);
     }
+  }
+
+  private void printOptions()
+  {
+    // Hack to avoid printing the commands, which are not formatted
+    // correctly.
+    JCommander tmp = new JCommander(new MainCommand());
+    tmp.setProgramName("s3tool");
+
+    // Hack to avoid printing the usage line, which is not correct in
+    // this incomplete commander object.
+    StringBuilder builder = new StringBuilder();
+    tmp.usage(builder);
+    String usage = builder.toString();
+    String options = usage.substring(usage.indexOf('\n'));
+    System.err.println(options);
+  }
+
+  private void printUsage()
+  {
+    System.err.println("Usage: s3tool [options] command [command options]");
+    printOptions();
+    
+    System.err.println("   Commands: ");
+    for(String cmd : _commander.getCommands().keySet())
+    {
+      System.out.println("     " + padRight(15, ' ', cmd) + _commander.getCommandDescription(cmd));
+    }
+  }
+
+  private static String padRight(int width, char c, String s)
+  {
+    StringBuffer buf = new StringBuffer(width);
+    buf.append(s);
+    for(int i = 0; i < width - s.length(); i++)
+      buf.append(c);
+    return buf.toString();
+  }
+
+  private void printCommandUsage(String command)
+  {
+    StringBuilder builder = new StringBuilder();
+    _commander.usage(command, builder);
+    System.err.println(builder.toString());
   }
 }

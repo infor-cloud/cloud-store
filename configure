@@ -17,7 +17,10 @@ emit('all : jars')
 deps = [
     '$(logicblox)/lib/java/guava-13.0.1.jar',
     '$(logicblox)/lib/java/jcommander-1.29.jar',
-    '$(logicblox)/lib/java/jopt-simple-3.3.jar',
+    '$(logicblox)/lib/java/commons-logging-1.1.1.jar',
+    '$(logicblox)/lib/java/httpcore-4.1.jar',
+    '$(logicblox)/lib/java/httpclient-4.1.1.jar',
+    '$(logicblox)/lib/java/commons-codec-1.6.jar',
     '$(logicblox)/lib/java/log4j-1.2.13.jar',
     '$(logicblox)/lib/java/aws-java-sdk-1.3.18.jar']
 

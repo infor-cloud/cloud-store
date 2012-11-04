@@ -1,0 +1,34 @@
+#! /usr/bin/env python
+
+from buildlib import *
+
+parse_arguments(
+  prefix='/opt/logicblox/s3lib',
+  # TODO should probably use separate guava and aws dependencies here.
+  deps = { 'logicblox' : '$(LOGICBLOX_HOME)' })
+
+open_makefile()
+
+emit('version = 0.1')
+emit('package_name = s3lib-$(version)')
+emit('all : jars')
+
+
+deps = [
+    '$(logicblox)/lib/java/guava-13.0.1.jar',
+    '$(logicblox)/lib/java/jcommander-1.29.jar',
+    '$(logicblox)/lib/java/jopt-simple-3.3.jar',
+    '$(logicblox)/lib/java/log4j-1.2.13.jar',
+    '$(logicblox)/lib/java/aws-java-sdk-1.3.18.jar']
+
+jar(
+   name = 's3lib-$(version)',
+   srcdirs = ['src'],
+   classpath = deps,
+   javadoc =
+     {'title' : "s3lib $(version) API Documentation" })
+
+bin_program('s3tool')
+install_files(deps, '$(prefix)/lib/java')
+
+close_makefile()

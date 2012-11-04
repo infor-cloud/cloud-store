@@ -280,6 +280,7 @@ public class UploadCommand extends Command
       public ListenableFuture<String> create(Throwable thrown) throws Exception
       {
         System.err.println("Error completing upload: " + thrown.getMessage());
+        rethrowOnMaxRetry(thrown, retryCount);
         return UploadCommand.this.complete(upload, retryCount + 1);
       }
     };

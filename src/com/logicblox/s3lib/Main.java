@@ -59,10 +59,10 @@ public class Main
 
   abstract class S3Command extends Command
   {
-    @Parameter(names = {"--bucket"}, description = "Name of S3 bucket")
+    @Parameter(names = {"--bucket"}, description = "Name of S3 bucket", required = true)
     String bucket;
 
-    @Parameter(names = {"--key"}, description = "Name of the S3 object (relative to the bucket)")
+    @Parameter(names = {"--key"}, description = "Name of the S3 object (relative to the bucket)", required = true)
     String key;
 
     @Parameter(names = {"--max-concurrent-connections"}, description = "The maximum number of concurrent HTTP connections to S3")
@@ -75,13 +75,13 @@ public class Main
   @Parameters(commandDescription = "Upload a file to S3")
   class UploadCommandOptions extends S3Command
   {
-    @Parameter(names = {"-f", "--file"}, description = "File to upload")
+    @Parameter(names = {"-f", "--file"}, description = "File to upload", required = true)
     String file;
 
     @Parameter(names = {"--chunk-size"}, description = "The size of each chunk read from the file")
-    long chunkSize = 5 * 1024 * 1024;
+    long chunkSize = 10 * 1024 * 1024;
 
-    @Parameter(names = "--enc-key-name", description = "The name of the encryption key to use")
+    @Parameter(names = "--enc-key-name", description = "The name of the encryption key to use", required = true)
     String encKeyName;
 
     public void invoke()
@@ -93,7 +93,7 @@ public class Main
   @Parameters(commandDescription = "Download a file from S3")
   class DownloadCommandOptions extends S3Command
   {
-    @Parameter(names = {"-f", "--file"}, description = "File to upload")
+    @Parameter(names = {"-f", "--file"}, description = "File to upload", required = true)
     String file;
 
     @Override

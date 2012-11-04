@@ -12,41 +12,41 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 
 public class AmazonDownload implements Download {
-	private AmazonS3 client;
-	private ListeningExecutorService executor;
-	private Map<String,String> meta;
-	private String key;
-	private String bucketName;
+  private AmazonS3 client;
+  private ListeningExecutorService executor;
+  private Map<String,String> meta;
+  private String key;
+  private String bucketName;
 
-	public AmazonDownload(AmazonS3 client, String key, String bucketName, Map<String,String> meta, ListeningExecutorService executor) {
-		this.client = client;
-		this.key = key;
-		this.bucketName = bucketName;
-		this.executor = executor;
-		this.meta = meta;
-	}
+  public AmazonDownload(AmazonS3 client, String key, String bucketName, Map<String,String> meta, ListeningExecutorService executor) {
+    this.client = client;
+    this.key = key;
+    this.bucketName = bucketName;
+    this.executor = executor;
+    this.meta = meta;
+  }
 
-	public ListenableFuture<InputStream> getPart(long start, long end) {
-		return executor.submit(new DownloadCallable(start, end));
-	}
+  public ListenableFuture<InputStream> getPart(long start, long end) {
+    return executor.submit(new DownloadCallable(start, end));
+  }
 
-	public Map<String,String> getMeta() {
-		return meta;
-	}
+  public Map<String,String> getMeta() {
+    return meta;
+  }
 
-	private class DownloadCallable implements Callable<InputStream> {
-		private long start;
-		private long end;
+  private class DownloadCallable implements Callable<InputStream> {
+    private long start;
+    private long end;
 
-		public DownloadCallable(long start, long end) {
-			this.start = start;
-			this.end = end;
-		}
+    public DownloadCallable(long start, long end) {
+      this.start = start;
+      this.end = end;
+    }
 
-		public InputStream call() throws Exception {
-			GetObjectRequest req = new GetObjectRequest(bucketName, key);
-			req.setRange(start, end);
-			return client.getObject(req).getObjectContent();
-		}
-	}
+    public InputStream call() throws Exception {
+      GetObjectRequest req = new GetObjectRequest(bucketName, key);
+      req.setRange(start, end);
+      return client.getObject(req).getObjectContent();
+    }
+  }
 }

@@ -5,9 +5,9 @@ import java.io.InputStream;
 import com.google.common.util.concurrent.ListenableFuture;
 
 public interface Upload {
-	ListenableFuture<Void> uploadPart(int partNumber, InputStream stream, long partSize);
+  ListenableFuture<Void> uploadPart(int partNumber, InputStream stream, long partSize);
 
-	ListenableFuture<String> completeUpload();
+  ListenableFuture<String> completeUpload();
 
-	ListenableFuture<Void> abort();
+  ListenableFuture<Void> abort();
 }

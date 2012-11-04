@@ -5,5 +5,5 @@ import java.util.Map;
 import com.google.common.util.concurrent.ListenableFuture;
 
 public interface UploadFactory {
-	ListenableFuture<Upload> startUpload(String bucketName, String key, Map<String,String> meta);
+  ListenableFuture<Upload> startUpload(String bucketName, String key, Map<String,String> meta);
 }

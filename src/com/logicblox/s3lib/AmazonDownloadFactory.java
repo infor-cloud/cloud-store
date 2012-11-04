@@ -8,29 +8,29 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.amazonaws.services.s3.AmazonS3;
 
 public class AmazonDownloadFactory implements DownloadFactory {
-	private ListeningExecutorService executor;
-	private AmazonS3 client;
+  private ListeningExecutorService executor;
+  private AmazonS3 client;
 
-	public AmazonDownloadFactory(AmazonS3 client, ListeningExecutorService executor) {
-		this.client = client;
-		this.executor = executor;
-	}
+  public AmazonDownloadFactory(AmazonS3 client, ListeningExecutorService executor) {
+    this.client = client;
+    this.executor = executor;
+  }
 
-	public ListenableFuture<Download> startDownload(String bucketName, String key) {
-		return executor.submit(new GetObjectMetadataCallable(bucketName, key));
-	}
+  public ListenableFuture<Download> startDownload(String bucketName, String key) {
+    return executor.submit(new GetObjectMetadataCallable(bucketName, key));
+  }
 
-	private class GetObjectMetadataCallable implements Callable<Download> {
-		private String bucketName;
-		private String key;
+  private class GetObjectMetadataCallable implements Callable<Download> {
+    private String bucketName;
+    private String key;
 
-		public GetObjectMetadataCallable(String bucketName, String key) {
-			this.bucketName = bucketName;
-			this.key = key;
-		}
+    public GetObjectMetadataCallable(String bucketName, String key) {
+      this.bucketName = bucketName;
+      this.key = key;
+    }
 
-		public Download call() {
-			return new AmazonDownload(client, key, bucketName, client.getObjectMetadata(bucketName, key).getUserMetadata(), executor);
-		}
-	}
+    public Download call() {
+      return new AmazonDownload(client, key, bucketName, client.getObjectMetadata(bucketName, key).getUserMetadata(), executor);
+    }
+  }
 }

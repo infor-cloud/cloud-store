@@ -6,7 +6,7 @@ import java.io.InputStream;
 import com.google.common.util.concurrent.ListenableFuture;
 
 public interface Download {
-	ListenableFuture<InputStream> getPart(long start, long end);
+  ListenableFuture<InputStream> getPart(long start, long end);
 
-	Map<String,String> getMeta();
+  Map<String,String> getMeta();
 }

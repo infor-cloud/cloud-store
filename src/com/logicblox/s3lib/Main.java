@@ -2,7 +2,8 @@ package com.logicblox.s3lib;
 
 import java.io.File;
 import java.io.IOException;
-
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.concurrent.Executors;
 
@@ -68,17 +69,14 @@ public class Main
 
   abstract class S3Command extends Command
   {
-    @Parameter(names = {"--bucket"}, description = "Name of S3 bucket", required = true)
-    String bucket;
-
-    @Parameter(names = {"--key"}, description = "Name of the S3 object (relative to the bucket)", required = true)
-    String key;
+    @Parameter(description = "S3URL", required = true)
+    List<String> urls;
 
     @Parameter(names = {"--max-concurrent-connections"}, description = "The maximum number of concurrent HTTP connections to S3")
     int maxConcurrentConnections = 10;
 
-    @Parameter(names = "--enc-key-directory", description = "The directory where the encryption keys are found")
-    String encKeyDirectory = System.getProperty("user.home") + File.separator + ".s3lib-enc-keys";
+    @Parameter(names = "--keydir", description = "Directory where encryption keys are found")
+    String encKeyDirectory = System.getProperty("user.home") + File.separator + ".s3lib-keys";
 
     protected ListeningExecutorService getHttpExecutor()
     {
@@ -89,18 +87,53 @@ public class Main
     {
       return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(50));
     }
+
+    protected URI getURI() throws URISyntaxException
+    {
+      if(urls.size() != 1)
+        throw new UsageException("A single S3 object URL is required");
+
+      URI uri = new URI(urls.get(0));
+
+      if(!"s3".equals(uri.getScheme()))
+        throw new UsageException("S3 object URL needs to have 's3' as scheme");
+
+      return uri;
+    }
+
+    protected String getBucket() throws URISyntaxException
+    {
+      return getURI().getAuthority();
+    }
+
+    protected String getObjectKey() throws URISyntaxException
+    {
+      return getURI().getPath();
+    }
+
+    protected KeyProvider getKeyProvider()
+    {
+      File dir = new File(encKeyDirectory);
+      if(!dir.exists())
+        throw new UsageException("specified key directory '" + encKeyDirectory + "' does not exist");
+
+      if(!dir.isDirectory())
+        throw new UsageException("specified key directory '" + encKeyDirectory + "' is not a directory");
+
+      return new DirectoryKeyProvider(dir);
+    }
   }
 
   @Parameters(commandDescription = "Upload a file to S3")
   class UploadCommandOptions extends S3Command
   {
-    @Parameter(names = {"-f", "--file"}, description = "File to upload", required = true)
+    @Parameter(names = "-i", description = "File to upload", required = true)
     String file;
 
     @Parameter(names = {"--chunk-size"}, description = "The size of each chunk read from the file")
     long chunkSize = 5 * 1024 * 1024;
 
-    @Parameter(names = "--enc-key-name", description = "The name of the encryption key to use", required = true)
+    @Parameter(names = "--key", description = "The name of the encryption key to use", required = true)
     String encKeyName;
 
     public void invoke() throws Exception
@@ -114,9 +147,9 @@ public class Main
         new File(file),
         chunkSize,
         encKeyName,
-        new DirectoryKeyProvider(new File(encKeyDirectory)));
+        getKeyProvider());
 
-      ListenableFuture<String> etag = command.run(bucket, key);
+      ListenableFuture<String> etag = command.run(getBucket(), getObjectKey());
       System.out.println("File uploaded with etag " + etag.get());
 
       uploadExecutor.shutdown();
@@ -127,7 +160,7 @@ public class Main
   @Parameters(commandDescription = "Download a file from S3")
   class DownloadCommandOptions extends S3Command
   {
-    @Parameter(names = {"-f", "--file"}, description = "File to upload", required = true)
+    @Parameter(names = "-o", description = "Write output to file", required = true)
     String file;
 
     @Override
@@ -140,11 +173,11 @@ public class Main
         downloadExecutor,
         internalExecutor,
         new File(file),
-        new DirectoryKeyProvider(new File(encKeyDirectory)));
+        getKeyProvider());
       
       // TODO would be useful to get a command hash back
       // (e.g. SHA-512) so that we can use that in authentication.
-      ListenableFuture<Object> result = command.run(bucket, key);
+      ListenableFuture<Object> result = command.run(getBucket(), getObjectKey());
 
       result.get();
       System.out.println("Download complete.");

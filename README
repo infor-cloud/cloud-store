@@ -1,0 +1,38 @@
+Building from source
+---------------
+
+Currently, LogicBlox is required to build from source (we use jar
+files from there). The binary distribution is self-contained.
+
+To build and install:
+
+  $ ./configure
+  $ make install
+
+The default installation prefix is '/opt/logicblox/s3lib'. To
+configure this, use the --prefix option. For example:
+
+  $ ./configure --prefix=$HOME/s3lib
+
+Usage
+---------------
+
+Generate a key and put it in the default key directory:
+
+  $ s3lib-keygen martin
+  $ mkdir -p ~/.s3lib-keys
+  $ mv martin.pem ~/.s3lib-keys
+
+Upload:
+
+  $ s3tool upload s3://bucket/AS400.jpg -i AS400.jpg --key martin
+
+Download:
+
+  $ s3tool download s3://bucket/AS400.jpg -o AS400-2.jpg
+
+Authors
+---------------
+
+  * Shea Levy
+  * Martin Bravenboer

@@ -36,7 +36,7 @@ let
      binary_tarball =
       release_helper {
         inherit name build;
-        unixify = "bin/s3tool";
+        unixify = "bin/s3tool bin/s3lib-keygen";
         };
     };
 

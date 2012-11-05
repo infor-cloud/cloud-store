@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
 import com.beust.jcommander.JCommander;
@@ -40,8 +41,6 @@ public class Main
       exc.printStackTrace();
       System.exit(1);
     }
-    // TODO
-    // System.exit(0);
   }
 
   public Main()
@@ -179,9 +178,16 @@ public class Main
       // (e.g. SHA-512) so that we can use that in authentication.
       ListenableFuture<Object> result = command.run(getBucket(), getObjectKey());
 
-      result.get();
-      System.out.println("Download complete.");
-            
+      try
+      {
+        result.get();
+        System.out.println("Download complete.");
+      }
+      catch(ExecutionException exc)
+      {
+        rethrow(exc.getCause());
+      }
+
       downloadExecutor.shutdown();
       internalExecutor.shutdown();
     }
@@ -295,5 +301,15 @@ public class Main
     StringBuilder builder = new StringBuilder();
     _commander.usage(command, builder);
     System.err.println(builder.toString());
+  }
+
+  private static void rethrow(Throwable thrown) throws Exception
+  {
+    if(thrown instanceof Exception)
+      throw (Exception) thrown;
+    if(thrown instanceof Error)
+      throw (Error) thrown;
+    else
+      throw new RuntimeException(thrown);
   }
 }

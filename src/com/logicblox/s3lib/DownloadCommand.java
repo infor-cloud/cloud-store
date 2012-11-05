@@ -78,7 +78,6 @@ public class DownloadCommand extends Command
   {
     DownloadFactory factory = new AmazonDownloadFactory(new AmazonS3Client(), _downloadExecutor);
 
-    System.out.println("Getting file metadata");
     ListenableFuture<Download> startDownloadFuture = factory.startDownload(bucket, key);
     
     FutureFallback<Download> startAgain = new FutureFallback<Download>()
@@ -114,19 +113,19 @@ public class DownloadCommand extends Command
     Map<String,String> meta = download.getMeta();
 
     if (!meta.containsKey("s3tool-version"))
-      throw new UsageException("File not uploaded with s3tool");
+      throw new UsageException("file was not uploaded with s3tool");
 
     String objectVersion = meta.get("s3tool-version");
 
     if (!String.valueOf(Version.CURRENT).equals(objectVersion))
-      throw new UsageException("File uploaded with unsupported version: " + objectVersion + ", should be " + Version.CURRENT);
+      throw new UsageException("file uploaded with unsupported version: " + objectVersion + ", should be " + Version.CURRENT);
 
     String keyName = meta.get("s3tool-key-name");
     Key privKey;
     try {
       privKey = _encKeyProvider.getPrivateKey(keyName);
     } catch (NoSuchKeyException e) {
-      throw new UsageException("Missing encryption key: " + keyName);
+      throw new UsageException("private key '" + keyName + "' is not available to decrypt");
     }
 
     Cipher cipher;
@@ -182,7 +181,7 @@ public class DownloadCommand extends Command
     long start = partNumber * blockSize * (chunkSize/blockSize + 2);
     long partSize = blockSize * (postCryptSize/blockSize + 2);
 
-    System.out.println("Downloading part " + partNumber);    
+    System.err.println("Downloading part " + partNumber);    
     ListenableFuture<InputStream> getPartFuture = download.getPart(start, start + partSize - 1);
 
     FutureFallback<Integer> getPartAgain = new FutureFallback<Integer>()
@@ -278,6 +277,6 @@ public class DownloadCommand extends Command
     } catch (IOException e) {
     }
 
-    System.out.println("Finished part " + partNumber);
+    System.err.println("Finished part " + partNumber);
   }
 }

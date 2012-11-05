@@ -54,13 +54,13 @@ public class Main
 
   class MainCommand
   {
-    @Parameter(names = { "-h", "--help" }, description = "Print usage information")
+    @Parameter(names = { "-h", "--help" }, description = "Print usage information", help = true)
     boolean help = false;
   }
 
   abstract class Command
   {
-    @Parameter(names = { "-h", "--help" }, description = "Print usage information")
+    @Parameter(names = { "-h", "--help" }, description = "Print usage information", help = true)
     boolean help = false;
 
     public abstract void invoke() throws Exception;

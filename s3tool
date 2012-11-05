@@ -3,7 +3,6 @@
 import sys
 import os
 import subprocess
-import argparse
 
 bindir = os.path.dirname(os.path.realpath( __file__ ))
 prefix = os.path.dirname(bindir)

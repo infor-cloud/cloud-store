@@ -23,7 +23,11 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.InvalidAlgorithmParameterException;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
+import javax.xml.bind.DatatypeConverter;
 
 import com.amazonaws.services.s3.AmazonS3Client;
 
@@ -41,18 +45,18 @@ public class DownloadCommand extends Command
 {
   private ListeningExecutorService _downloadExecutor;
   private ListeningExecutorService _executor;
-  private File _encKeyFile;
+  private KeyProvider _encKeyProvider;
 
   public DownloadCommand(
     ListeningExecutorService downloadExecutor,
     ListeningExecutorService internalExecutor,
     File file,
-    File encKeyFile)
+    KeyProvider encKeyProvider)
   throws IOException
   {
     _downloadExecutor = downloadExecutor;
     _executor = internalExecutor;
-    _encKeyFile = encKeyFile;
+    _encKeyProvider = encKeyProvider;
 
     this.file = file;
 
@@ -118,14 +122,37 @@ public class DownloadCommand extends Command
       throw new UsageException("File uploaded with unsupported version: " + objectVersion + ", should be " + Version.CURRENT);
 
     String keyName = meta.get("s3tool-key-name");
+    Key privKey;
     try {
-      encKey = readKeyFromFile(keyName, _encKeyFile);
-    } catch (ClassNotFoundException e) {
-      throw new UsageException("key file is not in the right format " + e.getMessage());
+      privKey = _encKeyProvider.getPrivateKey(keyName);
+    } catch (NoSuchKeyException e) {
+      throw new UsageException("Missing encryption key: " + keyName);
     }
 
-    if (encKey == null)
-      throw new UsageException("Missing encryption key: " + keyName);
+    Cipher cipher;
+    try
+    {
+      cipher = Cipher.getInstance("RSA");
+    } catch (NoSuchAlgorithmException e) {
+      throw new RuntimeException(e);
+    } catch (NoSuchPaddingException e) {
+      throw new RuntimeException(e);
+    }
+    try
+    {
+      cipher.init(Cipher.DECRYPT_MODE, privKey);
+    } catch (InvalidKeyException e) {
+      throw new RuntimeException(e);
+    }
+    byte[] encKeyBytes;
+    try {
+      encKeyBytes = cipher.doFinal(DatatypeConverter.parseBase64Binary(meta.get("s3tool-symmetric-key")));
+    } catch (IllegalBlockSizeException e) {
+      throw new RuntimeException(e);
+    } catch (BadPaddingException e) {
+      throw new RuntimeException(e);
+    }
+    encKey = new SecretKeySpec(encKeyBytes, "AES");
 
     chunkSize = Long.valueOf(meta.get("s3tool-chunk-size"));
     fileLength = Long.valueOf(meta.get("s3tool-file-length"));

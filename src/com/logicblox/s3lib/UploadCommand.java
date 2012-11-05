@@ -18,12 +18,17 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 
+import java.security.SecureRandom;
 import java.security.Key;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.InvalidAlgorithmParameterException;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
+import javax.xml.bind.DatatypeConverter;
 
 import com.amazonaws.services.s3.AmazonS3Client;
 
@@ -37,6 +42,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 public class UploadCommand extends Command
 {
   private String encKeyName;
+  private String encryptedSymmetricKeyString;
 
   private ListeningExecutorService _uploadExecutor;
   private ListeningExecutorService _executor;
@@ -47,7 +53,7 @@ public class UploadCommand extends Command
     File file,
     long chunkSize,
     String encKeyName,
-    File encKeyFile)
+    KeyProvider encKeyProvider)
   throws IOException
   {
     _uploadExecutor = uploadExecutor;
@@ -58,13 +64,27 @@ public class UploadCommand extends Command
     this.fileLength = file.length();
     this.encKeyName = encKeyName;
 
+    byte[] encKeyBytes = new byte[16];
+    new SecureRandom().nextBytes(encKeyBytes);
+    this.encKey = new SecretKeySpec(encKeyBytes, "AES");
     try
     {
-      this.encKey = readKeyFromFile(encKeyName, encKeyFile);
-    }
-    catch (ClassNotFoundException e)
-    {
-      throw new UsageException("key file is not in the right format " + e.getMessage());
+      Key pubKey = encKeyProvider.getPublicKey(this.encKeyName);
+      Cipher cipher = Cipher.getInstance("RSA");
+      cipher.init(Cipher.ENCRYPT_MODE, pubKey);
+      this.encryptedSymmetricKeyString = DatatypeConverter.printBase64Binary(cipher.doFinal(encKeyBytes));
+    } catch (NoSuchKeyException e) {
+      throw new UsageException("Missing encryption key: " + this.encKeyName);
+    } catch (NoSuchAlgorithmException e) {
+      throw new RuntimeException(e);
+    } catch (NoSuchPaddingException e) {
+      throw new RuntimeException(e);
+    } catch (InvalidKeyException e) {
+      throw new RuntimeException(e);
+    } catch (IllegalBlockSizeException e) {
+      throw new RuntimeException(e);
+    } catch (BadPaddingException e) {
+      throw new RuntimeException(e);
     }
   }
   
@@ -73,13 +93,9 @@ public class UploadCommand extends Command
    */
   public ListenableFuture<String> run(final String bucket, final String key) throws FileNotFoundException
   {
-    if (this.encKey == null)
-      throw new UsageException("encryption key is required");
-    
     if (!file.exists())
       throw new FileNotFoundException(file.getPath());
-      
-    
+
     if (this.fileLength == 0) {
       throw new UsageException("File does not exist or is a special file");
     }
@@ -104,6 +120,7 @@ public class UploadCommand extends Command
     meta.put("s3tool-key-name", encKeyName);
     meta.put("s3tool-chunk-size", Long.toString(chunkSize));
     meta.put("s3tool-file-length", Long.toString(fileLength));
+    meta.put("s3tool-symmetric-key", encryptedSymmetricKeyString);
 
     // TODO should we schedule the retry after a pause?              
     ListenableFuture<Upload> startUploadFuture = factory.startUpload(bucket, key, meta);

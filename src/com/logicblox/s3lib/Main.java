@@ -77,8 +77,8 @@ public class Main
     @Parameter(names = {"--max-concurrent-connections"}, description = "The maximum number of concurrent HTTP connections to S3")
     int maxConcurrentConnections = 10;
 
-    @Parameter(names = "--enc-key-file", description = "The file where the encryption keys are found")
-    String encKeyFile = System.getProperty("user.home") + File.separator + ".s3lib-enc-keys";
+    @Parameter(names = "--enc-key-directory", description = "The directory where the encryption keys are found")
+    String encKeyDirectory = System.getProperty("user.home") + File.separator + ".s3lib-enc-keys";
 
     protected ListeningExecutorService getHttpExecutor()
     {
@@ -114,7 +114,7 @@ public class Main
         new File(file),
         chunkSize,
         encKeyName,
-        new File(encKeyFile));
+        new DirectoryKeyProvider(new File(encKeyDirectory)));
 
       ListenableFuture<String> etag = command.run(bucket, key);
       System.out.println("File uploaded with etag " + etag.get());
@@ -140,7 +140,7 @@ public class Main
         downloadExecutor,
         internalExecutor,
         new File(file),
-        new File(encKeyFile));
+        new DirectoryKeyProvider(new File(encKeyDirectory)));
       
       // TODO would be useful to get a command hash back
       // (e.g. SHA-512) so that we can use that in authentication.

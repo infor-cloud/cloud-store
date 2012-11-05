@@ -16,7 +16,7 @@ import com.amazonaws.AmazonServiceException;
 
 public class Command
 {
-  protected boolean _stubborn = false;
+  protected boolean _stubborn = true;
   protected int _retryCount = 50;
   protected File file;
   protected long chunkSize;
@@ -63,7 +63,7 @@ public class Command
         throw exc;
     }
 
-    if(retryCount > _retryCount)
+    if(retryCount >= _retryCount)
     {
       if(thrown instanceof Exception)
         throw (Exception) thrown;

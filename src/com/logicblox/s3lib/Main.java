@@ -60,7 +60,7 @@ public class Main
     boolean help = false;
   }
 
-  abstract class Command
+  abstract class CommandOptions
   {
     @Parameter(names = { "-h", "--help" }, description = "Print usage information", help = true)
     boolean help = false;
@@ -68,7 +68,7 @@ public class Main
     public abstract void invoke() throws Exception;
   }
 
-  abstract class S3Command extends Command
+  abstract class S3CommandOptions extends CommandOptions
   {
     @Parameter(description = "S3URL", required = true)
     List<String> urls;
@@ -79,6 +79,12 @@ public class Main
     @Parameter(names = "--keydir", description = "Directory where encryption keys are found")
     String encKeyDirectory = System.getProperty("user.home") + File.separator + ".s3lib-keys";
 
+    @Parameter(names = "--stubborn", description = "Retry client exceptions (e.g. file not found and authentication errors)")
+    boolean _stubborn = false;
+
+    @Parameter(names = "--retry", description = "Number of retries on failures")
+    int _retryCount = 50;
+
     protected ListeningExecutorService getHttpExecutor()
     {
       return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(maxConcurrentConnections));
@@ -87,6 +93,12 @@ public class Main
     protected ListeningExecutorService getInternalExecutor()
     {
       return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(50));
+    }
+
+    protected void configure(Command cmd)
+    {
+      cmd.setRetryClientException(_stubborn);
+      cmd.setRetryCount(_retryCount);
     }
 
     protected URI getURI() throws URISyntaxException
@@ -126,7 +138,7 @@ public class Main
   }
 
   @Parameters(commandDescription = "Upload a file to S3")
-  class UploadCommandOptions extends S3Command
+  class UploadCommandOptions extends S3CommandOptions
   {
     @Parameter(names = "-i", description = "File to upload", required = true)
     String file;
@@ -150,6 +162,8 @@ public class Main
         encKeyName,
         getKeyProvider());
 
+      configure(command);
+
       ListenableFuture<String> etag = command.run(getBucket(), getObjectKey());
       System.out.println("File uploaded with etag " + etag.get());
 
@@ -159,7 +173,7 @@ public class Main
   }
 
   @Parameters(commandDescription = "Download a file from S3")
-  class DownloadCommandOptions extends S3Command
+  class DownloadCommandOptions extends S3CommandOptions
   {
     @Parameter(names = "-o", description = "Write output to file", required = true)
     String file;
@@ -175,6 +189,8 @@ public class Main
         internalExecutor,
         new File(file),
         getKeyProvider());
+
+      configure(command);
       
       // TODO would be useful to get a command hash back
       // (e.g. SHA-512) so that we can use that in authentication.
@@ -199,7 +215,7 @@ public class Main
    * Help
    */
   @Parameters(commandDescription = "Print usage")
-  class HelpCommand extends Command
+  class HelpCommand extends CommandOptions
   {
     @Parameter(description = "Commands")
     List<String> _commands;
@@ -226,7 +242,7 @@ public class Main
       String command = _commander.getParsedCommand();
       if(command != null)
       {
-        Command cmd = (Command) _commander.getCommands().get(command).getObjects().get(0);
+        CommandOptions cmd = (CommandOptions) _commander.getCommands().get(command).getObjects().get(0);
         if(cmd.help)
         {
           printCommandUsage(command);

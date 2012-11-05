@@ -12,9 +12,11 @@ import java.security.Key;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.amazonaws.AmazonServiceException;
 
 public class Command
 {
+  protected boolean _stubborn = false;
   protected int _retryCount = 50;
   protected File file;
   protected long chunkSize;
@@ -24,6 +26,11 @@ public class Command
   public void setRetryCount(int retryCount)
   {
     _retryCount = retryCount;
+  }
+
+  public void setRetryClientException(boolean retry)
+  {
+    _stubborn = retry;
   }
 
   protected static Key readKeyFromFile(String encKeyName, File encKeyFile) throws IOException, ClassNotFoundException
@@ -49,6 +56,13 @@ public class Command
    */
   protected void rethrowOnMaxRetry(Throwable thrown, int retryCount) throws Exception
   {
+    if(!_stubborn && thrown instanceof AmazonServiceException)
+    {
+      AmazonServiceException exc = (AmazonServiceException) thrown;
+      if(exc.getErrorType() == AmazonServiceException.ErrorType.Client)
+        throw exc;
+    }
+
     if(retryCount > _retryCount)
     {
       if(thrown instanceof Exception)
@@ -58,14 +72,15 @@ public class Command
       else
         throw new RuntimeException(thrown);
     }
-
-    /*
-     if(thrown instanceof AmazonServiceException) {
-       AmazonServiceException exc = (AmazonServiceException) thrown;
-       if(exc.getErrorType() == ErrorType.Client)
-         throw exc;
-     }
-     */
   }
 
+  protected static void rethrow(Throwable thrown) throws Exception
+  {
+    if(thrown instanceof Exception)
+      throw (Exception) thrown;
+    if(thrown instanceof Error)
+      throw (Error) thrown;
+    else
+      throw new RuntimeException(thrown);
+  }
 }

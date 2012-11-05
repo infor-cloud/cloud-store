@@ -22,6 +22,8 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
+import com.amazonaws.AmazonServiceException;
+
 public class Main
 {
   JCommander _commander = new JCommander();
@@ -248,6 +250,24 @@ public class Main
     catch(UsageException exc)
     {
       System.err.println("error: " + exc.getMessage());
+      System.exit(1);
+    }
+    catch(AmazonServiceException exc)
+    {
+      if(exc.getStatusCode() == 404)
+      {
+        System.err.println("error: S3 object not found");
+      }
+      else if(exc.getStatusCode() == 403)
+      {
+        System.err.println("error: Access to S3 object denied with current credentials");
+      }
+      else
+      {
+        System.err.println("error: " + exc.getMessage());
+        exc.printStackTrace();
+      }
+
       System.exit(1);
     }
     catch(Exception exc)

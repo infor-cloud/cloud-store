@@ -84,9 +84,9 @@ public class DownloadCommand extends Command
       {
         public ListenableFuture<Download> create(Throwable thrown) throws Exception
         {
-          System.err.println("Error starting download: " + thrown.getMessage());
-
           rethrowOnMaxRetry(thrown, retryCount);
+
+            System.err.println("Error starting download: " + thrown.getMessage());
           return DownloadCommand.this.startDownload(bucket, key, retryCount + 1);
         }
       };

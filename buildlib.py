@@ -154,7 +154,8 @@ def jar(name,
         srcgen = [],
         javadoc = None,
         resources = [],
-        install = True):
+        install = True,
+        java_version = "1.6"):
     '''Build a jar by compiling Java files with javac'''
     java_files = []
 
@@ -174,6 +175,8 @@ def jar(name,
     emit(jar_file + ': ' + ' '.join(java_files) + ' ' + ' '.join(resources))
     emit('\tmkdir -p ' + classes_dir)
     emit('\tjavac -Xlint:deprecation -d ' + classes_dir +
+         ' -source ' + java_version +
+         ' -target ' + java_version +
          ' -cp ' + ':'.join(classpath) + ':' + classes_dir +
          ' ' + 
          ' '.join(java_files))

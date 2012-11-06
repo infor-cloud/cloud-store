@@ -121,7 +121,15 @@ public class Main
 
     protected String getObjectKey() throws URISyntaxException
     {
-      return getURI().getPath();
+      String path =getURI().getPath();
+
+      if(path == null || path.length() == 0)
+        throw new UsageException("S3 URLs have the format s3://bucket/key");
+
+      if(path.charAt(0) != '/')
+        throw new UsageException("S3 URLs have the format s3://bucket/key");
+
+      return path.substring(1);
     }
 
     protected KeyProvider getKeyProvider()

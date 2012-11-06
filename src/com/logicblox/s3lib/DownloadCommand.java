@@ -71,7 +71,12 @@ public class DownloadCommand extends Command
       if(!dir.mkdirs())
         throw new IOException("Could not create directory '" + dir + "'");
     }
-    file.createNewFile();
+
+    if(file.exists() && !file.delete())
+      throw new IOException("Could not delete existing file '" + file + "'");
+
+    if(!file.createNewFile())
+      throw new IOException("File '" + file + "' already exists");
   }
 
   public ListenableFuture<Object> run(final String bucket, final String key)

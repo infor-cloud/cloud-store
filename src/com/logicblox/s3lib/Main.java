@@ -209,10 +209,11 @@ public class Main
       }
 
       f = f.getAbsoluteFile();
-      if(!f.getParent().exists())
+      File dir = f.getParentFile();
+      if(!dir.exists())
       {
-        if(!f.mkdirs())
-          throw new UsageException("Could not create directory '" + f.getParent() + "'");
+        if(!dir.mkdirs())
+          throw new UsageException("Could not create directory '" + dir + "'");
       }
 
       DownloadCommand command = new DownloadCommand(

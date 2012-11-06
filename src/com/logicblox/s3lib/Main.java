@@ -208,14 +208,6 @@ public class Main
           throw new UsageException("File '" + file + "' already exists. Please delete or use --overwrite");
       }
 
-      f = f.getAbsoluteFile();
-      File dir = f.getParentFile();
-      if(!dir.exists())
-      {
-        if(!dir.mkdirs())
-          throw new UsageException("Could not create directory '" + dir + "'");
-      }
-
       DownloadCommand command = new DownloadCommand(
         downloadExecutor,
         internalExecutor,

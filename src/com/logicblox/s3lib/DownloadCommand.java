@@ -59,6 +59,18 @@ public class DownloadCommand extends Command
     _encKeyProvider = encKeyProvider;
 
     this.file = file;
+    createNewFile();
+  }
+
+  private void createNewFile() throws IOException
+  {
+    file = file.getAbsoluteFile();
+    File dir = file.getParentFile();
+    if(!dir.exists())
+    {
+      if(!dir.mkdirs())
+        throw new IOException("Could not create directory '" + dir + "'");
+    }
     file.createNewFile();
   }
 

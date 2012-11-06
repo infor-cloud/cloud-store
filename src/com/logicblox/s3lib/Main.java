@@ -186,16 +186,39 @@ public class Main
     @Parameter(names = "-o", description = "Write output to file", required = true)
     String file;
 
+    @Parameter(names = "--overwrite", description = "Overwrite existing file if existing")
+    boolean overwrite = false;
+
     @Override
     public void invoke() throws Exception
     {
       ListeningExecutorService downloadExecutor = getHttpExecutor();
       ListeningExecutorService internalExecutor = getInternalExecutor();
 
+      File f = new File(file);
+
+      if(f.exists())
+      {
+        if(overwrite)
+        {
+          if(!f.delete())
+            throw new UsageException("Could not overwrite existing file '" + file + "'");
+        }
+        else
+          throw new UsageException("File '" + file + "' already exists. Please delete or use --overwrite");
+      }
+
+      f = f.getAbsoluteFile();
+      if(!f.getParent().exists())
+      {
+        if(!f.mkdirs())
+          throw new UsageException("Could not create directory '" + f.getParent() + "'");
+      }
+
       DownloadCommand command = new DownloadCommand(
         downloadExecutor,
         internalExecutor,
-        new File(file),
+        f,
         getKeyProvider());
 
       configure(command);

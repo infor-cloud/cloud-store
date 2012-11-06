@@ -59,8 +59,6 @@ public class DownloadCommand extends Command
     _encKeyProvider = encKeyProvider;
 
     this.file = file;
-
-    // TODO perhaps postpone making the file until we now if the remote file exists
     file.createNewFile();
   }
 

@@ -77,7 +77,7 @@ public class Main
     int maxConcurrentConnections = 10;
 
     @Parameter(names = "--keydir", description = "Directory where encryption keys are found")
-    String encKeyDirectory = System.getProperty("user.home") + File.separator + ".s3lib-keys";
+    String encKeyDirectory = Utils.getDefaultKeyDirectory();
 
     @Parameter(names = "--stubborn", description = "Retry client exceptions (e.g. file not found and authentication errors)")
     boolean _stubborn = false;
@@ -106,30 +106,17 @@ public class Main
       if(urls.size() != 1)
         throw new UsageException("A single S3 object URL is required");
 
-      URI uri = new URI(urls.get(0));
-
-      if(!"s3".equals(uri.getScheme()))
-        throw new UsageException("S3 object URL needs to have 's3' as scheme");
-
-      return uri;
+      return Utils.getURI(urls.get(0));
     }
 
     protected String getBucket() throws URISyntaxException
     {
-      return getURI().getAuthority();
+      return Utils.getBucket(getURI());
     }
 
     protected String getObjectKey() throws URISyntaxException
     {
-      String path =getURI().getPath();
-
-      if(path == null || path.length() == 0)
-        throw new UsageException("S3 URLs have the format s3://bucket/key");
-
-      if(path.charAt(0) != '/')
-        throw new UsageException("S3 URLs have the format s3://bucket/key");
-
-      return path.substring(1);
+      return Utils.getObjectKey(getURI());
     }
 
     protected KeyProvider getKeyProvider()
@@ -152,7 +139,7 @@ public class Main
     String file;
 
     @Parameter(names = {"--chunk-size"}, description = "The size of each chunk read from the file")
-    long chunkSize = 5 * 1024 * 1024;
+    long chunkSize = Utils.getDefaultChunkSize();
 
     @Parameter(names = "--key", description = "The name of the encryption key to use", required = true)
     String encKeyName;

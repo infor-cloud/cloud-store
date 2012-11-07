@@ -45,9 +45,11 @@ public class Command
     return null;
   }
 
-  protected <V> ListenableFuture<V> withFallback(ListenableFuture<V> future, FutureFallback<V> fallback)
+  protected <V> ListenableFuture<V> withFallback(
+    ListenableFuture<V> future,
+    FutureFallback<V> fallback)
   {
-    return new FallbackFuture<V>(future, fallback, MoreExecutors.sameThreadExecutor());
+    return Utils.withFallback(future, fallback);
   }
 
   /**

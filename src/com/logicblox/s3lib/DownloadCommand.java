@@ -59,9 +59,24 @@ public class DownloadCommand extends Command
     _encKeyProvider = encKeyProvider;
 
     this.file = file;
+    createNewFile();
+  }
 
-    // TODO perhaps postpone making the file until we now if the remote file exists
-    file.createNewFile();
+  private void createNewFile() throws IOException
+  {
+    file = file.getAbsoluteFile();
+    File dir = file.getParentFile();
+    if(!dir.exists())
+    {
+      if(!dir.mkdirs())
+        throw new IOException("Could not create directory '" + dir + "'");
+    }
+
+    if(file.exists() && !file.delete())
+      throw new IOException("Could not delete existing file '" + file + "'");
+
+    if(!file.createNewFile())
+      throw new IOException("File '" + file + "' already exists");
   }
 
   public ListenableFuture<Object> run(final String bucket, final String key)

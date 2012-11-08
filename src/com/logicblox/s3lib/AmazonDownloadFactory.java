@@ -7,6 +7,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 
 public class AmazonDownloadFactory implements DownloadFactory
 {
@@ -37,8 +38,8 @@ public class AmazonDownloadFactory implements DownloadFactory
 
     public Download call()
     {
-      Map<String,String> meta = client.getObjectMetadata(bucketName, key).getUserMetadata();
-      return new AmazonDownload(client, key, bucketName, meta, executor);
+      ObjectMetadata data = client.getObjectMetadata(bucketName, key);
+      return new AmazonDownload(client, key, bucketName, data.getUserMetadata(), data.getContentLength(), executor);
     }
   }
 }

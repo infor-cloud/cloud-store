@@ -60,7 +60,7 @@ public class UploadCommand extends Command
     _executor = internalExecutor;
 
     this.file = file;
-    this.chunkSize = chunkSize;
+    setChunkSize(chunkSize);
     this.fileLength = file.length();
     this.encKeyName = encKeyName;
 

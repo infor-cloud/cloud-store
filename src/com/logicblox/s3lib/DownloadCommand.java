@@ -127,50 +127,56 @@ public class DownloadCommand extends Command
   {
     Map<String,String> meta = download.getMeta();
 
-    if (!meta.containsKey("s3tool-version"))
-      throw new UsageException("file was not uploaded with s3tool");
+    if (meta.containsKey("s3tool-version")) {
+      String objectVersion = meta.get("s3tool-version");
 
-    String objectVersion = meta.get("s3tool-version");
+      if (!String.valueOf(Version.CURRENT).equals(objectVersion))
+        throw new UsageException("file uploaded with unsupported version: " + objectVersion + ", should be " + Version.CURRENT);
 
-    if (!String.valueOf(Version.CURRENT).equals(objectVersion))
-      throw new UsageException("file uploaded with unsupported version: " + objectVersion + ", should be " + Version.CURRENT);
+      if (meta.containsKey("s3tool-key-name")) {
+        String keyName = meta.get("s3tool-key-name");
+        Key privKey;
+        try {
+          privKey = _encKeyProvider.getPrivateKey(keyName);
+        } catch (NoSuchKeyException e) {
+          throw new UsageException("private key '" + keyName + "' is not available to decrypt");
+        }
 
-    String keyName = meta.get("s3tool-key-name");
-    Key privKey;
-    try {
-      privKey = _encKeyProvider.getPrivateKey(keyName);
-    } catch (NoSuchKeyException e) {
-      throw new UsageException("private key '" + keyName + "' is not available to decrypt");
+        Cipher cipher;
+        try
+        {
+          cipher = Cipher.getInstance("RSA");
+        } catch (NoSuchAlgorithmException e) {
+          throw new RuntimeException(e);
+        } catch (NoSuchPaddingException e) {
+          throw new RuntimeException(e);
+        }
+        try
+        {
+          cipher.init(Cipher.DECRYPT_MODE, privKey);
+        } catch (InvalidKeyException e) {
+          throw new RuntimeException(e);
+        }
+        byte[] encKeyBytes;
+        try {
+          encKeyBytes = cipher.doFinal(DatatypeConverter.parseBase64Binary(meta.get("s3tool-symmetric-key")));
+        } catch (IllegalBlockSizeException e) {
+          throw new RuntimeException(e);
+        } catch (BadPaddingException e) {
+          throw new RuntimeException(e);
+        }
+        encKey = new SecretKeySpec(encKeyBytes, "AES");
+      }
+
+      setChunkSize(Long.valueOf(meta.get("s3tool-chunk-size")));
+      fileLength = Long.valueOf(meta.get("s3tool-file-length"));
+    } else {
+      fileLength = download.getLength();
+      if (chunkSize == 0) {
+        setChunkSize(fileLength);
+      }
     }
 
-    Cipher cipher;
-    try
-    {
-      cipher = Cipher.getInstance("RSA");
-    } catch (NoSuchAlgorithmException e) {
-      throw new RuntimeException(e);
-    } catch (NoSuchPaddingException e) {
-      throw new RuntimeException(e);
-    }
-    try
-    {
-      cipher.init(Cipher.DECRYPT_MODE, privKey);
-    } catch (InvalidKeyException e) {
-      throw new RuntimeException(e);
-    }
-    byte[] encKeyBytes;
-    try {
-      encKeyBytes = cipher.doFinal(DatatypeConverter.parseBase64Binary(meta.get("s3tool-symmetric-key")));
-    } catch (IllegalBlockSizeException e) {
-      throw new RuntimeException(e);
-    } catch (BadPaddingException e) {
-      throw new RuntimeException(e);
-    }
-    encKey = new SecretKeySpec(encKeyBytes, "AES");
-
-    chunkSize = Long.valueOf(meta.get("s3tool-chunk-size"));
-    fileLength = Long.valueOf(meta.get("s3tool-file-length"));
-    
     List<ListenableFuture<Integer>> parts = new ArrayList<ListenableFuture<Integer>>();
     for (long position = 0; position < fileLength; position += chunkSize)
     {
@@ -183,18 +189,26 @@ public class DownloadCommand extends Command
   public ListenableFuture<Integer> startPartDownload(final Download download, final long position, final int retryCount)
   {
     final int partNumber = (int) (position / chunkSize);
-    long blockSize = 0;
-    try {
-      blockSize = Cipher.getInstance("AES/CBC/PKCS5Padding").getBlockSize();
-    } catch (NoSuchAlgorithmException e) {
-      throw new RuntimeException(e);
-    } catch (NoSuchPaddingException e) {
-      throw new RuntimeException(e);
-    }
+    long start;
+    long partSize;
 
-    long postCryptSize = Math.min(fileLength - position, chunkSize);
-    long start = partNumber * blockSize * (chunkSize/blockSize + 2);
-    long partSize = blockSize * (postCryptSize/blockSize + 2);
+    if (encKey != null) {
+      long blockSize;
+      try {
+        blockSize = Cipher.getInstance("AES/CBC/PKCS5Padding").getBlockSize();
+      } catch (NoSuchAlgorithmException e) {
+        throw new RuntimeException(e);
+      } catch (NoSuchPaddingException e) {
+        throw new RuntimeException(e);
+      }
+
+      long postCryptSize = Math.min(fileLength - position, chunkSize);
+      start = partNumber * blockSize * (chunkSize/blockSize + 2);
+      partSize = blockSize * (postCryptSize/blockSize + 2);
+    } else {
+      start = position;
+      partSize = chunkSize;
+    }
 
     System.err.println("Downloading part " + partNumber);    
     ListenableFuture<InputStream> getPartFuture = download.getPart(start, start + partSize - 1);
@@ -230,19 +244,23 @@ public class DownloadCommand extends Command
 
     Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 
-    CipherWithInlineIVInputStream in = null;
-    try {
-      in = new CipherWithInlineIVInputStream(stream, cipher, Cipher.DECRYPT_MODE, encKey);
-    } catch (IOException e) {
-      System.err.println("Error initiating cipher stream for part " + partNumber + ": " + e.getMessage());
-      startPartDownload(download, position, retryCount + 1);
-      return;
-    } catch (InvalidKeyException e) {
-      throw new RuntimeException(e);
-    } catch (InvalidAlgorithmParameterException e) {
-      System.err.println("Error downloading part " + partNumber + ": " + e.getMessage());
-      startPartDownload(download, position, retryCount + 1);
-      return;
+    InputStream in;
+    if (encKey != null) {
+      try {
+        in = new CipherWithInlineIVInputStream(stream, cipher, Cipher.DECRYPT_MODE, encKey);
+      } catch (IOException e) {
+        System.err.println("Error initiating cipher stream for part " + partNumber + ": " + e.getMessage());
+        startPartDownload(download, position, retryCount + 1);
+        return;
+      } catch (InvalidKeyException e) {
+        throw new RuntimeException(e);
+      } catch (InvalidAlgorithmParameterException e) {
+        System.err.println("Error downloading part " + partNumber + ": " + e.getMessage());
+        startPartDownload(download, position, retryCount + 1);
+        return;
+      }
+    } else {
+      in = stream;
     }
     int postCryptSize = (int) Math.min(fileLength - position, chunkSize);
     int offset = 0;

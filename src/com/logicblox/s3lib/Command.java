@@ -23,6 +23,11 @@ public class Command
   protected Key encKey;
   protected long fileLength;
 
+  public void setChunkSize(long chunkSize)
+  {
+    this.chunkSize = chunkSize;
+  }
+
   public void setRetryCount(int retryCount)
   {
     _retryCount = retryCount;

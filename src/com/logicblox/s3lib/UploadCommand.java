@@ -64,7 +64,7 @@ public class UploadCommand extends Command
     this.fileLength = file.length();
     this.encKeyName = encKeyName;
 
-    byte[] encKeyBytes = new byte[16];
+    byte[] encKeyBytes = new byte[32];
     new SecureRandom().nextBytes(encKeyBytes);
     this.encKey = new SecretKeySpec(encKeyBytes, "AES");
     try

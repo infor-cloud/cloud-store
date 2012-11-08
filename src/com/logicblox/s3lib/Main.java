@@ -141,8 +141,8 @@ public class Main
     @Parameter(names = {"--chunk-size"}, description = "The size of each chunk read from the file")
     long chunkSize = Utils.getDefaultChunkSize();
 
-    @Parameter(names = "--key", description = "The name of the encryption key to use", required = true)
-    String encKeyName;
+    @Parameter(names = "--key", description = "The name of the encryption key to use")
+    String encKeyName = null;
 
     public void invoke() throws Exception
     {

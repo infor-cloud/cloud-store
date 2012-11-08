@@ -64,27 +64,29 @@ public class UploadCommand extends Command
     this.fileLength = file.length();
     this.encKeyName = encKeyName;
 
-    byte[] encKeyBytes = new byte[32];
-    new SecureRandom().nextBytes(encKeyBytes);
-    this.encKey = new SecretKeySpec(encKeyBytes, "AES");
-    try
-    {
-      Key pubKey = encKeyProvider.getPublicKey(this.encKeyName);
-      Cipher cipher = Cipher.getInstance("RSA");
-      cipher.init(Cipher.ENCRYPT_MODE, pubKey);
-      this.encryptedSymmetricKeyString = DatatypeConverter.printBase64Binary(cipher.doFinal(encKeyBytes));
-    } catch (NoSuchKeyException e) {
-      throw new UsageException("Missing encryption key: " + this.encKeyName);
-    } catch (NoSuchAlgorithmException e) {
-      throw new RuntimeException(e);
-    } catch (NoSuchPaddingException e) {
-      throw new RuntimeException(e);
-    } catch (InvalidKeyException e) {
-      throw new RuntimeException(e);
-    } catch (IllegalBlockSizeException e) {
-      throw new RuntimeException(e);
-    } catch (BadPaddingException e) {
-      throw new RuntimeException(e);
+    if (this.encKeyName != null) {
+      byte[] encKeyBytes = new byte[32];
+      new SecureRandom().nextBytes(encKeyBytes);
+      this.encKey = new SecretKeySpec(encKeyBytes, "AES");
+      try
+      {
+        Key pubKey = encKeyProvider.getPublicKey(this.encKeyName);
+        Cipher cipher = Cipher.getInstance("RSA");
+        cipher.init(Cipher.ENCRYPT_MODE, pubKey);
+        this.encryptedSymmetricKeyString = DatatypeConverter.printBase64Binary(cipher.doFinal(encKeyBytes));
+      } catch (NoSuchKeyException e) {
+        throw new UsageException("Missing encryption key: " + this.encKeyName);
+      } catch (NoSuchAlgorithmException e) {
+        throw new RuntimeException(e);
+      } catch (NoSuchPaddingException e) {
+        throw new RuntimeException(e);
+      } catch (InvalidKeyException e) {
+        throw new RuntimeException(e);
+      } catch (IllegalBlockSizeException e) {
+        throw new RuntimeException(e);
+      } catch (BadPaddingException e) {
+        throw new RuntimeException(e);
+      }
     }
   }
   
@@ -117,10 +119,12 @@ public class UploadCommand extends Command
     
     Map<String,String> meta = new HashMap<String,String>();
     meta.put("s3tool-version", String.valueOf(Version.CURRENT));
-    meta.put("s3tool-key-name", encKeyName);
+    if (this.encKeyName != null) {
+      meta.put("s3tool-key-name", encKeyName);
+      meta.put("s3tool-symmetric-key", encryptedSymmetricKeyString);
+    }
     meta.put("s3tool-chunk-size", Long.toString(chunkSize));
     meta.put("s3tool-file-length", Long.toString(fileLength));
-    meta.put("s3tool-symmetric-key", encryptedSymmetricKeyString);
 
     // TODO should we schedule the retry after a pause?              
     ListenableFuture<Upload> startUploadFuture = factory.startUpload(bucket, key, meta);
@@ -204,39 +208,45 @@ public class UploadCommand extends Command
     }
 
     BufferedInputStream bs = new BufferedInputStream(fs);
-    Cipher cipher = null;
-    try {
-      cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-    } catch (NoSuchAlgorithmException e) {
-      throw new RuntimeException(e);
-    } catch (NoSuchPaddingException e) {
-      throw new RuntimeException(e);
-    }
-
-    CipherWithInlineIVInputStream in = null;
-    try {
-      in = new CipherWithInlineIVInputStream(bs, cipher, Cipher.ENCRYPT_MODE, encKey);
-    } catch (IOException e) {
-      System.err.println("Error uploading part " + partNumber + ": " + e.getMessage());
+    InputStream in;
+    long partSize;
+    if (this.encKeyName != null) {
+      Cipher cipher = null;
       try {
-        fs.close();
-      } catch (IOException ignored) {
+        cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+      } catch (NoSuchAlgorithmException e) {
+        throw new RuntimeException(e);
+      } catch (NoSuchPaddingException e) {
+        throw new RuntimeException(e);
       }
-      return startPartUpload(upload, position, retryCount + 1);
-    } catch (InvalidKeyException e) {
-      throw new RuntimeException(e);
-    } catch (InvalidAlgorithmParameterException e) {
-      System.err.println("Error uploading part " + partNumber + ": " + e.getMessage());
-      try {
-        fs.close();
-      } catch (Exception ignored) {
-      }
-      return startPartUpload(upload, position, retryCount + 1);
-    }
 
-    long preCryptSize = Math.min(fileLength - position, chunkSize);
-    long blockSize = cipher.getBlockSize();
-    long partSize = blockSize * (preCryptSize/blockSize + 2);
+      try {
+        in = new CipherWithInlineIVInputStream(bs, cipher, Cipher.ENCRYPT_MODE, encKey);
+      } catch (IOException e) {
+        System.err.println("Error uploading part " + partNumber + ": " + e.getMessage());
+        try {
+          fs.close();
+        } catch (IOException ignored) {
+        }
+        return startPartUpload(upload, position, retryCount + 1);
+      } catch (InvalidKeyException e) {
+        throw new RuntimeException(e);
+      } catch (InvalidAlgorithmParameterException e) {
+        System.err.println("Error uploading part " + partNumber + ": " + e.getMessage());
+        try {
+          fs.close();
+        } catch (Exception ignored) {
+        }
+        return startPartUpload(upload, position, retryCount + 1);
+      }
+
+      long preCryptSize = Math.min(fileLength - position, chunkSize);
+      long blockSize = cipher.getBlockSize();
+      partSize = blockSize * (preCryptSize/blockSize + 2);
+    } else {
+      in = bs;
+      partSize = Math.min(fileLength - position, chunkSize);
+    }
 
     // TODO should we schedule the retry after a pause based on retryCount?
     System.out.println("Uploading part " + partNumber);

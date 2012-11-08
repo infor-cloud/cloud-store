@@ -207,7 +207,7 @@ public class DownloadCommand extends Command
       partSize = blockSize * (postCryptSize/blockSize + 2);
     } else {
       start = position;
-      partSize = chunkSize;
+      partSize = Math.min(fileLength - position, chunkSize);
     }
 
     System.err.println("Downloading part " + partNumber);    

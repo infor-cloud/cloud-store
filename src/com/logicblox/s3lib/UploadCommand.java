@@ -56,6 +56,11 @@ public class UploadCommand extends Command
     KeyProvider encKeyProvider)
   throws IOException
   {
+    if(uploadExecutor == null)
+      throw new IllegalArgumentException("non-null upload executor is required");
+    if(internalExecutor == null)
+      throw new IllegalArgumentException("non-null internal executor is required");
+
     _uploadExecutor = uploadExecutor;
     _executor = internalExecutor;
 

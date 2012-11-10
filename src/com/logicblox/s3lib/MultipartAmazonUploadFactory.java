@@ -16,6 +16,11 @@ public class MultipartAmazonUploadFactory implements UploadFactory {
   private ListeningExecutorService executor;
 
   public MultipartAmazonUploadFactory(AmazonS3 client, ListeningExecutorService executor) {
+    if(client == null)
+      throw new IllegalArgumentException("non-null client is required");
+    if(executor == null)
+      throw new IllegalArgumentException("non-null executor is required");
+
     this.client = client;
     this.executor = executor;
   }

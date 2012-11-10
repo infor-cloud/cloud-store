@@ -12,7 +12,10 @@ import java.security.Key;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
+
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3Client;
 
 public class Command
 {
@@ -22,6 +25,8 @@ public class Command
   protected long chunkSize;
   protected Key encKey;
   protected long fileLength;
+
+  private AWSCredentialsProvider _awsCredentialsProvider = null;
 
   public void setChunkSize(long chunkSize)
   {
@@ -36,6 +41,19 @@ public class Command
   public void setRetryClientException(boolean retry)
   {
     _stubborn = retry;
+  }
+
+  public void setAWSCredentials(AWSCredentialsProvider provider)
+  {
+    _awsCredentialsProvider = provider;
+  }
+
+  protected AmazonS3Client getAmazonS3Client()
+  {
+    if(_awsCredentialsProvider != null)
+      return new AmazonS3Client(_awsCredentialsProvider);
+    else
+      return new AmazonS3Client();
   }
 
   protected static Key readKeyFromFile(String encKeyName, File encKeyFile) throws IOException, ClassNotFoundException

@@ -91,7 +91,7 @@ public class DownloadCommand extends Command
    */
   public ListenableFuture<Download> startDownload(final String bucket, final String key, final int retryCount)
   {
-    DownloadFactory factory = new AmazonDownloadFactory(new AmazonS3Client(), _downloadExecutor);
+    DownloadFactory factory = new AmazonDownloadFactory(getAmazonS3Client(), _downloadExecutor);
 
     ListenableFuture<Download> startDownloadFuture = factory.startDownload(bucket, key);
     

@@ -46,7 +46,7 @@ public class UploadCommand extends Command
 
   private ListeningExecutorService _uploadExecutor;
   private ListeningExecutorService _executor;
-  
+
   public UploadCommand(
     ListeningExecutorService uploadExecutor,
     ListeningExecutorService internalExecutor,
@@ -120,7 +120,7 @@ public class UploadCommand extends Command
   public ListenableFuture<Upload> startUpload(final String bucket, final String key, final int retryCount)
   throws FileNotFoundException
   {
-    UploadFactory factory = new MultipartAmazonUploadFactory(new AmazonS3Client(), _uploadExecutor);
+    UploadFactory factory = new MultipartAmazonUploadFactory(getAmazonS3Client(), _uploadExecutor);
     
     Map<String,String> meta = new HashMap<String,String>();
     meta.put("s3tool-version", String.valueOf(Version.CURRENT));

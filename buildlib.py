@@ -205,6 +205,8 @@ def jar(name,
              ' -windowtitle "' + javadoc['title'] + '"' +
              ' -doctitle "' + javadoc['title'] + '"' +
              ' -link "http://docs.oracle.com/javase/6/docs/api/"' +
+             ' -link "http://docs.guava-libraries.googlecode.com/git/javadoc/"' +
+             ' -link "http://docs.amazonwebservices.com/AWSJavaSDK/latest/javadoc/"' +
              ' -d ' + javadoc_dir + 
              ' ' + ' '.join(java_files))
 

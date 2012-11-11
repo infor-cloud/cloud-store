@@ -2,9 +2,11 @@ package com.logicblox.s3lib;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
-import java.io.Reader;
+import java.io.InputStreamReader;
 import java.io.IOException;
+import java.io.Reader;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -15,6 +17,9 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.regex.Pattern;
 import javax.xml.bind.DatatypeConverter;
+
+import com.google.common.base.Charsets;
+import com.google.common.io.Closeables;
 
 public class DirectoryKeyProvider implements KeyProvider
 {
@@ -106,26 +111,37 @@ public class DirectoryKeyProvider implements KeyProvider
   {
     int state = 0;
     StringBuilder keyPem = new StringBuilder();
-    BufferedReader in = new BufferedReader(new FileReader(file));
 
-    String line;
-    while(((line = in.readLine()) != null))
+    BufferedReader in = null;
+    boolean threw = true;
+    try
     {
-      if(begin.matcher(line).matches() && state == 0)
+      in = new BufferedReader(new InputStreamReader(new FileInputStream(file), Charsets.UTF_8));
+      String line;
+      while(((line = in.readLine()) != null))
       {
-        state = 1;
-        continue;
-      }
-      else if(end.matcher(line).matches() && state == 1)
-      {
-        state = 2;
+        if(begin.matcher(line).matches() && state == 0)
+        {
+          state = 1;
+          continue;
+        }
+        else if(end.matcher(line).matches() && state == 1)
+        {
+          state = 2;
+        }
+        
+        if(state == 1)
+        {
+          keyPem.append(line);
+          keyPem.append("\n");
+        }
       }
 
-      if(state == 1)
-      {
-        keyPem.append(line);
-        keyPem.append("\n");
-      }
+      threw = false;
+    }
+    finally
+    {
+      Closeables.close(in, threw);
     }
 
     if(state != 2)

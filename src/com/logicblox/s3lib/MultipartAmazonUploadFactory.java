@@ -11,7 +11,8 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
 
-public class MultipartAmazonUploadFactory implements UploadFactory {
+class MultipartAmazonUploadFactory implements UploadFactory
+{
   private AmazonS3 client;
   private ListeningExecutorService executor;
 

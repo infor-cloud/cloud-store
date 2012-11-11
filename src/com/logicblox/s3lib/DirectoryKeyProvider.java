@@ -106,7 +106,7 @@ public class DirectoryKeyProvider implements KeyProvider
     return result;
   }
 
-  public byte[] extractKey(File file, Pattern begin, Pattern end)
+  private byte[] extractKey(File file, Pattern begin, Pattern end)
   throws NoSuchKeyException, IOException
   {
     int state = 0;

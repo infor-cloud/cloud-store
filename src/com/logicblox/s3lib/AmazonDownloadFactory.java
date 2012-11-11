@@ -9,7 +9,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
-public class AmazonDownloadFactory implements DownloadFactory
+class AmazonDownloadFactory implements DownloadFactory
 {
   private ListeningExecutorService executor;
   private AmazonS3 client;

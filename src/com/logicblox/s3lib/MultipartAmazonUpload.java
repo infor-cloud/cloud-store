@@ -22,7 +22,8 @@ import com.amazonaws.services.s3.model.UploadPartRequest;
 import com.amazonaws.services.s3.model.UploadPartResult;
 import com.amazonaws.services.s3.model.PartETag;
 
-public class MultipartAmazonUpload implements Upload {
+class MultipartAmazonUpload implements Upload
+{
   private List<PartETag> etags = new ArrayList<PartETag>();
   private AmazonS3 client;
   private String bucketName;

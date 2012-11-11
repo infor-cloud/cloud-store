@@ -1,4 +1,4 @@
 package com.logicblox.s3lib;
 
-public class BadHashException extends Exception {
+class BadHashException extends Exception {
 }

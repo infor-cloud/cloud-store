@@ -117,7 +117,7 @@ public class UploadCommand extends Command
   /**
    * Step 1: Returns a future upload that is internally retried.
    */
-  public ListenableFuture<Upload> startUpload(final String bucket, final String key, final int retryCount)
+  private ListenableFuture<Upload> startUpload(final String bucket, final String key, final int retryCount)
   throws FileNotFoundException
   {
     UploadFactory factory = new MultipartAmazonUploadFactory(getAmazonS3Client(), _uploadExecutor);
@@ -162,7 +162,7 @@ public class UploadCommand extends Command
     };
   }
 
-  public ListenableFuture<Upload> startParts(final Upload upload)
+  private ListenableFuture<Upload> startParts(final Upload upload)
   {
     List<ListenableFuture<Void>> parts = new ArrayList<ListenableFuture<Void>>();
     
@@ -178,7 +178,7 @@ public class UploadCommand extends Command
       Functions.constant(upload));
   }
   
-  public ListenableFuture<Void> startPartUploadThread(final Upload upload, final long position)
+  private ListenableFuture<Void> startPartUploadThread(final Upload upload, final long position)
   {
     ListenableFuture<ListenableFuture<Void>> result =
       _executor.submit(new Callable<ListenableFuture<Void>>()
@@ -192,7 +192,7 @@ public class UploadCommand extends Command
     return Futures.dereference(result);
   }
   
-  public ListenableFuture<Void> startPartUpload(final Upload upload, final long position, final int retryCount)
+  private ListenableFuture<Void> startPartUpload(final Upload upload, final long position, final int retryCount)
   throws FileNotFoundException
   {
     final int partNumber = (int) (position / chunkSize);
@@ -301,7 +301,7 @@ public class UploadCommand extends Command
     };
   }
 
-  public ListenableFuture<String> complete(final Upload upload, final int retryCount)
+  private ListenableFuture<String> complete(final Upload upload, final int retryCount)
   {
     System.out.println("Finished all parts, now completing upload");
     // TODO should we schedule the retry after a pause?

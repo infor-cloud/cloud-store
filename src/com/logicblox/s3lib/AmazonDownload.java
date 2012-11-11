@@ -11,7 +11,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 
-public class AmazonDownload implements Download
+class AmazonDownload implements Download
 {
   private AmazonS3 client;
   private ListeningExecutorService executor;

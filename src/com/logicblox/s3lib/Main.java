@@ -24,7 +24,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 
 import com.amazonaws.AmazonServiceException;
 
-public class Main
+class Main
 {
   JCommander _commander = new JCommander();
 

@@ -89,7 +89,7 @@ public class DownloadCommand extends Command
   /**
    * Step 1: Start download and fetch metadata.
    */
-  public ListenableFuture<Download> startDownload(final String bucket, final String key, final int retryCount)
+  private ListenableFuture<Download> startDownload(final String bucket, final String key, final int retryCount)
   {
     DownloadFactory factory = new AmazonDownloadFactory(getAmazonS3Client(), _downloadExecutor);
 
@@ -122,7 +122,7 @@ public class DownloadCommand extends Command
     };
   }
 
-  public ListenableFuture<Download> startParts(Download download)
+  private ListenableFuture<Download> startParts(Download download)
   throws IOException, UsageException
   {
     Map<String,String> meta = download.getMeta();
@@ -186,7 +186,7 @@ public class DownloadCommand extends Command
     return Futures.transform(Futures.allAsList(parts), Functions.constant(download));
   }
 
-  public ListenableFuture<Integer> startPartDownload(final Download download, final long position, final int retryCount)
+  private ListenableFuture<Integer> startPartDownload(final Download download, final long position, final int retryCount)
   {
     final int partNumber = (int) (position / chunkSize);
     long start;
@@ -237,7 +237,7 @@ public class DownloadCommand extends Command
       getPartAgain);
   }
   
-  public void readDownload(Download download, InputStream stream, long position, int partNumber, int retryCount) throws Exception
+  private void readDownload(Download download, InputStream stream, long position, int partNumber, int retryCount) throws Exception
   {
     RandomAccessFile out = new RandomAccessFile(file, "rw");
     out.seek(position);

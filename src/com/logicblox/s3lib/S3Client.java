@@ -20,6 +20,8 @@ public class S3Client
   private long _chunkSize;
   private AWSCredentialsProvider _credentials;
   private KeyProvider _keyProvider;
+  private boolean _retryClientException = false;
+  private int _retryCount = 50;
 
   /**
    * @param credentials   AWS Credentials
@@ -40,6 +42,23 @@ public class S3Client
     _chunkSize = chunkSize;
     _keyProvider = keyProvider;
     _credentials = credentials;
+  }
+
+  public void setRetryCount(int retryCount)
+  {
+    _retryCount = retryCount;
+  }
+
+  public void setRetryClientException(boolean retry)
+  {
+    _retryClientException = retry;
+  }
+
+  private void configure(Command cmd)
+  {
+    cmd.setRetryClientException(_retryClientException);
+    cmd.setRetryCount(_retryCount);
+    cmd.setAWSCredentials(_credentials);
   }
 
   /**
@@ -80,7 +99,7 @@ public class S3Client
   {
     UploadCommand cmd =
       new UploadCommand(_s3Executor, _executor, file, _chunkSize, key, _keyProvider);
-    cmd.setAWSCredentials(_credentials);
+    configure(cmd);
     return cmd.run(bucket, object); 
   }
 
@@ -114,8 +133,7 @@ public class S3Client
   throws IOException
   {
     DownloadCommand cmd = new DownloadCommand(_s3Executor, _executor, file, _keyProvider);
-    
-    cmd.setAWSCredentials(_credentials);
+    configure(cmd);
     return cmd.run(bucket, object); 
   }
 
@@ -132,12 +150,8 @@ public class S3Client
     if(!"s3".equals(s3url.getScheme()))
       throw new IllegalArgumentException("S3 object URL needs to have 's3' as scheme");
 
-    DownloadCommand cmd = new DownloadCommand(_s3Executor, _executor, file, _keyProvider);
-
     String bucket = Utils.getBucket(s3url);
     String object = Utils.getObjectKey(s3url);
-    
-    cmd.setAWSCredentials(_credentials);
-    return cmd.run(bucket, object); 
+    return download(file, bucket, object);
   }
 }

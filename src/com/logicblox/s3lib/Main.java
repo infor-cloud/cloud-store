@@ -89,7 +89,7 @@ class Main
     {
       return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(maxConcurrentConnections));
     }
-    
+
     protected ListeningExecutorService getInternalExecutor()
     {
       return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(50));
@@ -122,7 +122,7 @@ class Main
     protected KeyProvider getKeyProvider()
     {
       File dir = new File(encKeyDirectory);
-      if(!dir.exists())
+      if(!dir.exists() && !dir.mkdirs())
         throw new UsageException("specified key directory '" + encKeyDirectory + "' does not exist");
 
       if(!dir.isDirectory())
@@ -202,7 +202,7 @@ class Main
         getKeyProvider());
 
       configure(command);
-      
+
       // TODO would be useful to get a command hash back
       // (e.g. SHA-512) so that we can use that in authentication.
       ListenableFuture<Object> result = command.run(getBucket(), getObjectKey());
@@ -326,7 +326,7 @@ class Main
   {
     System.err.println("Usage: s3tool [options] command [command options]");
     printOptions();
-    
+
     System.err.println("   Commands: ");
     for(String cmd : _commander.getCommands().keySet())
     {

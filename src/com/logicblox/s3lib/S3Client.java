@@ -5,9 +5,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import com.amazonaws.auth.AWSCredentialsProvider;
 
 /**
  * Captures the full configuration independent of concrete uploads and
@@ -19,6 +20,7 @@ public class S3Client
   private ListeningExecutorService _executor;
   private long _chunkSize;
   private AWSCredentialsProvider _credentials;
+  private AmazonS3Client _client;
   private KeyProvider _keyProvider;
   private boolean _retryClientException = false;
   private int _retryCount = 50;
@@ -42,6 +44,10 @@ public class S3Client
     _chunkSize = chunkSize;
     _keyProvider = keyProvider;
     _credentials = credentials;
+    if(_credentials != null)
+      _client = new AmazonS3Client(_credentials);
+    else
+      _client = new AmazonS3Client();
   }
 
   public void setRetryCount(int retryCount)
@@ -58,7 +64,7 @@ public class S3Client
   {
     cmd.setRetryClientException(_retryClientException);
     cmd.setRetryCount(_retryCount);
-    cmd.setAWSCredentials(_credentials);
+    cmd.setAmazonS3Client(_client);
   }
 
   /**

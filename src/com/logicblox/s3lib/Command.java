@@ -2,20 +2,15 @@ package com.logicblox.s3lib;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.ObjectInputStream;
 import java.io.IOException;
-
+import java.io.ObjectInputStream;
+import java.security.Key;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.security.Key;
-
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.google.common.util.concurrent.ListenableFuture;
 
 public class Command
 {
@@ -26,7 +21,7 @@ public class Command
   protected Key encKey;
   protected long fileLength;
 
-  private AWSCredentialsProvider _awsCredentialsProvider = null;
+  private AmazonS3Client _client = null;
 
   public void setChunkSize(long chunkSize)
   {
@@ -42,18 +37,15 @@ public class Command
   {
     _stubborn = retry;
   }
-
-  public void setAWSCredentials(AWSCredentialsProvider provider)
+  
+  public void setAmazonS3Client(AmazonS3Client client)
   {
-    _awsCredentialsProvider = provider;
+    _client = client;
   }
 
   protected AmazonS3Client getAmazonS3Client()
   {
-    if(_awsCredentialsProvider != null)
-      return new AmazonS3Client(_awsCredentialsProvider);
-    else
-      return new AmazonS3Client();
+    return _client;
   }
 
   protected static Key readKeyFromFile(String encKeyName, File encKeyFile) throws IOException, ClassNotFoundException

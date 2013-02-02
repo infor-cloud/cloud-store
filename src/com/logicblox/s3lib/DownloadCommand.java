@@ -262,13 +262,12 @@ public class DownloadCommand extends Command
     } else {
       in = stream;
     }
-    int postCryptSize = (int) Math.min(fileLength - position, chunkSize);
-    int offset = 0;
-    byte[] buf = new byte[postCryptSize];
-    while (offset < postCryptSize) {
-      int result;
+    int bufSize = 8192;
+    byte[] buf = new byte[bufSize];
+    int result = 0;
+    while (result >= 0) {
       try {
-        result = in.read(buf, offset, postCryptSize - offset);
+        result = in.read(buf);
       } catch (IOException e) {
         System.err.println("Error reading part " + partNumber + ": " + e.getMessage());
         try {
@@ -279,29 +278,20 @@ public class DownloadCommand extends Command
         startPartDownload(download, position, retryCount + 1);
         return;
       }
-      if (result == -1) {
-        System.err.println("Error downloading part " + partNumber + ": unexpected EOF");
+      if (result >= 0) {
         try {
-          out.close();
-          stream.close();
+          out.write(buf, 0, result);
         } catch (IOException e) {
-        }
-        startPartDownload(download, position, retryCount + 1);
-        return;
+          System.err.println("Error writing part " + partNumber + ": " + e.getMessage());
+          try {
+            out.close();
+            stream.close();
+          } catch (IOException ignored) {
+          }
+          startPartDownload(download, position, retryCount + 1);
+          return;
       }
-      try {
-        out.write(buf, offset, result);
-      } catch (IOException e) {
-        System.err.println("Error writing part " + partNumber + ": " + e.getMessage());
-        try {
-          out.close();
-          stream.close();
-        } catch (IOException ignored) {
-        }
-        startPartDownload(download, position, retryCount + 1);
-        return;
       }
-      offset += result;
     }
 
     try {

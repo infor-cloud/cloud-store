@@ -2,10 +2,14 @@
 
 from buildlib import *
 
+bloxweb_deps=os.getenv('BLOXWEB_DEPS', '/opt/logicblox')
+
 parse_arguments(
   prefix='/opt/logicblox/s3lib',
-  # TODO should probably use separate guava and aws dependencies here.
-  deps = { 'logicblox' : '$(LOGICBLOX_HOME)' })
+  # TODO should probably use separate aws dependencies here.
+  deps = { 'logicblox' : '$(LOGICBLOX_HOME)',
+           'guava' : bloxweb_deps + '/guava-14.0'
+         })
 
 open_makefile()
 
@@ -15,7 +19,7 @@ emit('all : jars')
 
 
 deps = [
-    '$(logicblox)/lib/java/guava-13.0.1.jar',
+    '$(guava)/lib/java/guava-14.0.jar',
     '$(logicblox)/lib/java/jcommander-1.29.jar',
     '$(logicblox)/lib/java/commons-logging-1.1.1.jar',
     '$(logicblox)/lib/java/httpcore-4.1.jar',

@@ -1,0 +1,30 @@
+#! /bin/sh
+#
+# Download dependencies needed to compile s3lib.
+#
+# Usage: download-deps [PREFIX]
+#
+# The PREFIX is the directory where dependencies will be downloaded to. It defaults
+# to /opt/logicblox, but can be overridden by setting BLOXWEB_DEPS or by passing a
+# parameter to this script.
+
+set -e
+
+PREFIX=$BLOXWEB_DEPS
+
+if [ -z "$PREFIX" ]; then
+    PREFIX=/opt/logicblox
+fi
+
+if [ -n "$1" ]; then
+    PREFIX="$1"
+fi
+
+echo "Downloading dependencies to $PREFIX"
+
+mkdir -p $PREFIX
+cd $PREFIX
+
+echo "Downloading guava..."
+mkdir -p guava-14.0/lib/java
+curl -o guava-14.0/lib/java/guava-14.0.jar http://search.maven.org/remotecontent?filepath=com/google/guava/guava/14.0/guava-14.0.jar

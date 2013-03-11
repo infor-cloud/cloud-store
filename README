@@ -1,8 +1,13 @@
 Building from source
 ---------------
 
-Currently, LogicBlox is required to build from source (we use jar
-files from there). The binary distribution is self-contained.
+Currently, LogicBlox is required to build from source (s3lib uses jar
+files from there). Before building from source, also download
+additional jar dependencies using:
+
+  $ ./download-deps
+
+The binary distribution of s3lib is self-contained.
 
 To build and install:
 
@@ -36,3 +41,7 @@ Authors
 
   * Shea Levy
   * Martin Bravenboer
+  * Patrick Lee
+  * Luke Vanderhart
+  * Thiago T. Bartolomei
+  * Rob Vermaas

@@ -9,6 +9,7 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 /**
  * Captures the full configuration independent of concrete uploads and
@@ -17,7 +18,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 public class S3Client
 {
   private ListeningExecutorService _s3Executor;
-  private ListeningExecutorService _executor;
+  private ListeningScheduledExecutorService _executor;
   private long _chunkSize;
   private AWSCredentialsProvider _credentials;
   private AmazonS3Client _client;
@@ -35,7 +36,7 @@ public class S3Client
   public S3Client(
     AWSCredentialsProvider credentials,
     ListeningExecutorService s3Executor,
-    ListeningExecutorService executor,
+    ListeningScheduledExecutorService executor,
     long chunkSize,
     KeyProvider keyProvider)
   {
@@ -73,7 +74,7 @@ public class S3Client
    * @param file    File to upload
    * @param s3url   S3 object URL (using same syntax as s3cmd)
    */
-  public ListenableFuture<?> upload(File file, URI s3url)
+  public ListenableFuture<String> upload(File file, URI s3url)
   throws FileNotFoundException, IOException
   {
     return upload(file, s3url, null);
@@ -86,7 +87,7 @@ public class S3Client
    * @param bucket  Bucket to upload to
    * @param object  Path in bucket to upload to
    */
-  public ListenableFuture<?> upload(File file, String bucket, String object)
+  public ListenableFuture<String> upload(File file, String bucket, String object)
   throws FileNotFoundException, IOException
   {
     return upload(file, bucket, object, null);
@@ -100,7 +101,7 @@ public class S3Client
    * @param object  Path in bucket to upload to
    * @param key     Name of encryption key to use
    */
-  public ListenableFuture<?> upload(File file, String bucket, String object, String key)
+  public ListenableFuture<String> upload(File file, String bucket, String object, String key)
   throws FileNotFoundException, IOException
   {
     UploadCommand cmd =
@@ -117,7 +118,7 @@ public class S3Client
    * @param key     Name of encryption key to use
    * @throws IllegalArgumentException If the s3url is not a valid S3 URL.
    */
-  public ListenableFuture<?> upload(File file, URI s3url, String key)
+  public ListenableFuture<String> upload(File file, URI s3url, String key)
   throws FileNotFoundException, IOException
   {
     if(!"s3".equals(s3url.getScheme()))
@@ -127,6 +128,9 @@ public class S3Client
     String object = Utils.getObjectKey(s3url);
     return upload(file, bucket, object, key);
   }
+
+      // TODO would be useful to get a command hash back
+      // (e.g. SHA-512) so that we can use that in authentication.
 
   /**
    * Download file from S3
@@ -159,5 +163,35 @@ public class S3Client
     String bucket = Utils.getBucket(s3url);
     String object = Utils.getObjectKey(s3url);
     return download(file, bucket, object);
+  }
+
+  public void shutdown()
+  {
+    try
+    {
+      _client.shutdown();
+    }
+    catch(Exception exc)
+    {
+      exc.printStackTrace();
+    }
+
+    try
+    {
+      _s3Executor.shutdown();
+    }
+    catch(Exception exc)
+    {
+      exc.printStackTrace();
+    }
+    
+    try
+    {
+      _executor.shutdown();
+    }
+    catch(Exception exc)
+    {
+      exc.printStackTrace();
+    }
   }
 }

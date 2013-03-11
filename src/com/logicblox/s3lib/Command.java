@@ -7,19 +7,27 @@ import java.io.ObjectInputStream;
 import java.security.Key;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3Client;
+
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 public class Command
 {
   protected boolean _stubborn = true;
-  protected int _retryCount = 50;
+  protected int _retryCount = 15;
   protected File file;
   protected long chunkSize;
   protected Key encKey;
   protected long fileLength;
+
+  private Function<Integer, Integer> _retryDelayFunction = Utils.createLinearDelayFunction(1);
 
   private AmazonS3Client _client = null;
 
@@ -60,36 +68,25 @@ public class Command
     return null;
   }
 
-  protected <V> ListenableFuture<V> withFallback(
-    ListenableFuture<V> future,
-    FutureFallback<V> fallback)
+  protected <V> ListenableFuture<V> executeWithRetry(ListeningScheduledExecutorService executor, Callable<ListenableFuture<V>> callable)
   {
-    return Utils.withFallback(future, fallback);
+    return Utils.executeWithRetry(executor, callable, _retryCondition, _retryDelayFunction, TimeUnit.SECONDS, _retryCount);
   }
 
-  /**
-   * Utility to rethrow the given throwable as an exception if the
-   * retryCount has exceeded the configured maximum.
-   */
-  protected void rethrowOnMaxRetry(Throwable thrown, int retryCount) throws Exception
+  private Predicate<Throwable> _retryCondition = new Predicate<Throwable>()
   {
-    if(!_stubborn && thrown instanceof AmazonServiceException)
+    public boolean apply(Throwable thrown)
     {
-      AmazonServiceException exc = (AmazonServiceException) thrown;
-      if(exc.getErrorType() == AmazonServiceException.ErrorType.Client)
-        throw exc;
-    }
+      if(!_stubborn && thrown instanceof AmazonServiceException)
+      {
+        AmazonServiceException exc = (AmazonServiceException) thrown;
+        if(exc.getErrorType() == AmazonServiceException.ErrorType.Client)
+          return false;
+      }
 
-    if(retryCount >= _retryCount)
-    {
-      if(thrown instanceof Exception)
-        throw (Exception) thrown;
-      if(thrown instanceof Error)
-        throw (Error) thrown;
-      else
-        throw new RuntimeException(thrown);
+      return true;
     }
-  }
+  };
 
   protected static void rethrow(Throwable thrown) throws Exception
   {

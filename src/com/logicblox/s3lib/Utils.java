@@ -3,7 +3,15 @@ package com.logicblox.s3lib;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.util.concurrent.FutureFallback;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
 public class Utils
@@ -46,13 +54,95 @@ public class Utils
     return path.substring(1);
   }
 
-  /**
-   * TODO remove once Guava 14.0 is out.
-   */ 
-  public static <V> ListenableFuture<V> withFallback(
-    ListenableFuture<V> future,
-    FutureFallback<V> fallback)
+  public static Function<Integer, Integer> createExponentialDelayFunction(final int initialDelay)
   {
-    return new FallbackFuture<V>(future, fallback, MoreExecutors.sameThreadExecutor());
+    return new Function<Integer, Integer>()
+    {
+      public Integer apply(Integer retryCount)
+      {
+        if(retryCount > 0)
+        {
+          return initialDelay * (int) Math.pow(2, retryCount - 1);
+        }
+        else
+        {
+          return 0;
+        }
+      }
+    };
+  }
+
+  public static Function<Integer, Integer> createLinearDelayFunction(final int increment)
+  {
+    return new Function<Integer, Integer>()
+    {
+      public Integer apply(Integer retryCount)
+      {
+        return increment * retryCount;
+      }
+    };
+  }
+
+  public static <V> ListenableFuture<V> executeWithRetry(
+    ListeningScheduledExecutorService executor,
+    Callable<ListenableFuture<V>> callable,
+    Predicate<Throwable> retryCondition,
+    Function<Integer, Integer> delayFun,
+    TimeUnit timeUnit,
+    int maxRetryCount)
+  {
+    return retry(executor, callable, retryCondition, delayFun, timeUnit, 0, maxRetryCount);
+  }
+
+  private static <V> ListenableFuture<V> retry(
+    final ListeningScheduledExecutorService executor,
+    final Callable<ListenableFuture<V>> callable,
+    final Predicate<Throwable> retryCondition,
+    final Function<Integer, Integer> delayFun,
+    final TimeUnit timeUnit,
+    final int retryCount,
+    final int maxRetryCount)
+  {
+    int delay = delayFun.apply(retryCount);
+
+    // TODO actually use the scheduled executor once Guava 15 is out
+    // Futures.dereference(executor.schedule(callable, delay, timeUnit));
+    if(delay > 0)
+    {
+      try
+      {
+        Thread.sleep(timeUnit.toMillis(delay));
+      }
+      catch(InterruptedException exc)
+      {}
+    }
+
+    ListenableFuture<V> future;
+    try
+    {
+      future = callable.call();
+    }
+    catch(Exception exc)
+    {
+      future = Futures.immediateFailedFuture(exc);
+    }
+
+    return Futures.withFallback(
+      future,
+      new FutureFallback<V>()
+      {
+        public ListenableFuture<V> create(Throwable t)
+        {
+          if(retryCondition.apply(t) && retryCount < maxRetryCount)
+          {
+            System.err.println("retriable error: " + callable.toString() + ": " + t.getMessage());
+            return retry(executor, callable, retryCondition, delayFun, timeUnit, retryCount + 1, maxRetryCount);
+          }
+          else
+          {
+            return Futures.immediateFailedFuture(t);
+          }
+        }
+      });
   }
 }

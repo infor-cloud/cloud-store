@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 
 import java.security.Key;
@@ -40,16 +41,17 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 public class DownloadCommand extends Command
 {
   private ListeningExecutorService _downloadExecutor;
-  private ListeningExecutorService _executor;
+  private ListeningScheduledExecutorService _executor;
   private KeyProvider _encKeyProvider;
 
   public DownloadCommand(
     ListeningExecutorService downloadExecutor,
-    ListeningExecutorService internalExecutor,
+    ListeningScheduledExecutorService internalExecutor,
     File file,
     KeyProvider encKeyProvider)
   throws IOException
@@ -81,7 +83,7 @@ public class DownloadCommand extends Command
 
   public ListenableFuture<Object> run(final String bucket, final String key)
   {
-    ListenableFuture<Download> download = startDownload(bucket, key, 0);
+    ListenableFuture<Download> download = startDownload(bucket, key);
     download = Futures.transform(download, startPartsAsyncFunction());
     return Futures.transform(download, Functions.constant(null));
   }
@@ -89,23 +91,28 @@ public class DownloadCommand extends Command
   /**
    * Step 1: Start download and fetch metadata.
    */
-  private ListenableFuture<Download> startDownload(final String bucket, final String key, final int retryCount)
+  private ListenableFuture<Download> startDownload(final String bucket, final String key)
+  {
+    return executeWithRetry(
+      _executor,
+      new Callable<ListenableFuture<Download>>()
+      {
+        public ListenableFuture<Download> call()
+        {
+          return startDownloadActual(bucket, key);
+        }
+
+        public String toString()
+        {
+          return "starting download " + bucket + "/" + key;
+        }
+      });
+  }
+
+  private ListenableFuture<Download> startDownloadActual(final String bucket, final String key)
   {
     DownloadFactory factory = new AmazonDownloadFactory(getAmazonS3Client(), _downloadExecutor);
-
-    ListenableFuture<Download> startDownloadFuture = factory.startDownload(bucket, key);
-    
-    FutureFallback<Download> startAgain = new FutureFallback<Download>()
-      {
-        public ListenableFuture<Download> create(Throwable thrown) throws Exception
-        {
-          rethrowOnMaxRetry(thrown, retryCount);
-
-            System.err.println("Error starting download: " + thrown.getMessage());
-          return DownloadCommand.this.startDownload(bucket, key, retryCount + 1);
-        }
-      };
-    return withFallback(startDownloadFuture, startAgain);
+    return factory.startDownload(bucket, key);
   }
 
   /**
@@ -180,19 +187,41 @@ public class DownloadCommand extends Command
     List<ListenableFuture<Integer>> parts = new ArrayList<ListenableFuture<Integer>>();
     for (long position = 0; position < fileLength; position += chunkSize)
     {
-      parts.add(startPartDownload(download, position, 0));
+      parts.add(startPartDownload(download, position));
     }
 
     return Futures.transform(Futures.allAsList(parts), Functions.constant(download));
   }
 
-  private ListenableFuture<Integer> startPartDownload(final Download download, final long position, final int retryCount)
+
+  private ListenableFuture<Integer> startPartDownload(final Download download, final long position)
+  {
+    final int partNumber = (int) (position / chunkSize);
+
+    return executeWithRetry(
+      _executor,
+      new Callable<ListenableFuture<Integer>>()
+      {
+        public ListenableFuture<Integer> call()
+        {
+          return startPartDownloadActual(download, position);
+        }
+
+        public String toString()
+        {
+          return "downloading part " + partNumber;
+        }
+      });
+  }
+
+  private ListenableFuture<Integer> startPartDownloadActual(final Download download, final long position)
   {
     final int partNumber = (int) (position / chunkSize);
     long start;
     long partSize;
 
-    if (encKey != null) {
+    if (encKey != null)
+    {
       long blockSize;
       try {
         blockSize = Cipher.getInstance("AES/CBC/PKCS5Padding").getBlockSize();
@@ -205,39 +234,30 @@ public class DownloadCommand extends Command
       long postCryptSize = Math.min(fileLength - position, chunkSize);
       start = partNumber * blockSize * (chunkSize/blockSize + 2);
       partSize = blockSize * (postCryptSize/blockSize + 2);
-    } else {
+    }
+    else
+    {
       start = position;
       partSize = Math.min(fileLength - position, chunkSize);
     }
 
-    System.err.println("Downloading part " + partNumber);    
-    ListenableFuture<InputStream> getPartFuture = download.getPart(start, start + partSize - 1);
+    System.err.println("Downloading part " + partNumber);
 
-    FutureFallback<Integer> getPartAgain = new FutureFallback<Integer>()
-      {
-        public ListenableFuture<Integer> create(Throwable thrown) throws Exception
-        {
-          System.err.println("Error downloading part " + partNumber + ": " + thrown.getMessage());
-          rethrowOnMaxRetry(thrown, retryCount);
-          return DownloadCommand.this.startPartDownload(download, position, retryCount + 1);
-        }
-      };
+    ListenableFuture<InputStream> getPartFuture = download.getPart(start, start + partSize - 1);
 
     AsyncFunction<InputStream, Integer> readDownloadFunction = new AsyncFunction<InputStream, Integer>()
       {
         public ListenableFuture<Integer> apply(InputStream stream) throws Exception
         {
-          readDownload(download, stream, position, partNumber, retryCount);
+          readDownload(download, stream, position, partNumber);
           return Futures.immediateFuture(partNumber);
         }
       };
 
-    return withFallback(
-      Futures.transform(getPartFuture, readDownloadFunction),
-      getPartAgain);
+    return Futures.transform(getPartFuture, readDownloadFunction);
   }
   
-  private void readDownload(Download download, InputStream stream, long position, int partNumber, int retryCount) throws Exception
+  private void readDownload(Download download, InputStream stream, long position, int partNumber) throws Exception
   {
     RandomAccessFile out = new RandomAccessFile(file, "rw");
     out.seek(position);
@@ -245,71 +265,74 @@ public class DownloadCommand extends Command
     Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 
     InputStream in;
-    if (encKey != null) {
-      try {
-        in = new CipherWithInlineIVInputStream(stream, cipher, Cipher.DECRYPT_MODE, encKey);
-      } catch (IOException e) {
-        System.err.println("Error initiating cipher stream for part " + partNumber + ": " + e.getMessage());
-        startPartDownload(download, position, retryCount + 1);
-        return;
-      } catch (InvalidKeyException e) {
-        throw new RuntimeException(e);
-      } catch (InvalidAlgorithmParameterException e) {
-        System.err.println("Error downloading part " + partNumber + ": " + e.getMessage());
-        startPartDownload(download, position, retryCount + 1);
-        return;
-      }
-    } else {
+    if (encKey != null)
+    {
+      in = new CipherWithInlineIVInputStream(stream, cipher, Cipher.DECRYPT_MODE, encKey);
+    }
+    else
+    {
       in = stream;
     }
+
     int postCryptSize = (int) Math.min(fileLength - position, chunkSize);
     int offset = 0;
     byte[] buf = new byte[postCryptSize];
-    while (offset < postCryptSize) {
+    while (offset < postCryptSize)
+    {
       int result;
-      try {
+
+      try
+      {
         result = in.read(buf, offset, postCryptSize - offset);
-      } catch (IOException e) {
-        System.err.println("Error reading part " + partNumber + ": " + e.getMessage());
-        try {
+      }
+      catch (IOException e)
+      {
+        try
+        {
           out.close();
           stream.close();
-        } catch (IOException ignored) {
         }
-        startPartDownload(download, position, retryCount + 1);
-        return;
+        catch (IOException ignored) {}
+        throw e;
       }
-      if (result == -1) {
-        System.err.println("Error downloading part " + partNumber + ": unexpected EOF");
-        try {
+
+      if (result == -1)
+      {
+        try
+        {
           out.close();
           stream.close();
-        } catch (IOException e) {
         }
-        startPartDownload(download, position, retryCount + 1);
-        return;
+        catch (IOException e) {}
+
+        throw new IOException("unexpected EOF");
       }
-      try {
+
+      try
+      {
         out.write(buf, offset, result);
-      } catch (IOException e) {
-        System.err.println("Error writing part " + partNumber + ": " + e.getMessage());
-        try {
+      }
+      catch (IOException e)
+      {
+        try
+        {
           out.close();
           stream.close();
-        } catch (IOException ignored) {
         }
-        startPartDownload(download, position, retryCount + 1);
-        return;
+        catch (IOException ignored) {}
+        throw e;
       }
+
       offset += result;
     }
 
-    try {
+    try
+    {
       out.close();
       stream.close();
-    } catch (IOException e) {
     }
-
+    catch (IOException e) {}
+    
     System.err.println("Finished part " + partNumber);
   }
 }

@@ -21,6 +21,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import com.amazonaws.AmazonServiceException;
 
@@ -83,22 +84,37 @@ class Main
     boolean _stubborn = false;
 
     @Parameter(names = "--retry", description = "Number of retries on failures")
-    int _retryCount = 50;
+    int _retryCount = 10;
+
+    @Parameter(names = {"--chunk-size"}, description = "The size of each chunk read from the file")
+    long chunkSize = Utils.getDefaultChunkSize();
 
     protected ListeningExecutorService getHttpExecutor()
     {
       return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(maxConcurrentConnections));
     }
 
-    protected ListeningExecutorService getInternalExecutor()
+    protected ListeningScheduledExecutorService getInternalExecutor()
     {
-      return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(50));
+      return MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(50));
     }
 
-    protected void configure(Command cmd)
+    protected S3Client createS3Client()
     {
-      cmd.setRetryClientException(_stubborn);
-      cmd.setRetryCount(_retryCount);
+      ListeningExecutorService uploadExecutor = getHttpExecutor();
+      ListeningScheduledExecutorService internalExecutor = getInternalExecutor();
+
+      S3Client client = new S3Client(
+        null,
+        uploadExecutor,
+        internalExecutor,
+        chunkSize,
+        getKeyProvider());
+
+      client.setRetryClientException(_stubborn);
+      client.setRetryCount(_retryCount);
+
+      return client;
     }
 
     protected URI getURI() throws URISyntaxException
@@ -138,32 +154,15 @@ class Main
     @Parameter(names = "-i", description = "File to upload", required = true)
     String file;
 
-    @Parameter(names = {"--chunk-size"}, description = "The size of each chunk read from the file")
-    long chunkSize = Utils.getDefaultChunkSize();
-
     @Parameter(names = "--key", description = "The name of the encryption key to use")
     String encKeyName = null;
 
     public void invoke() throws Exception
     {
-      ListeningExecutorService uploadExecutor = getHttpExecutor();
-      ListeningExecutorService internalExecutor = getInternalExecutor();
-
-      UploadCommand command = new UploadCommand(
-        uploadExecutor,
-        internalExecutor,
-        new File(file),
-        chunkSize,
-        encKeyName,
-        getKeyProvider());
-
-      configure(command);
-
-      ListenableFuture<String> etag = command.run(getBucket(), getObjectKey());
+      S3Client client = createS3Client();
+      ListenableFuture<String> etag = client.upload(new File(file), getBucket(), getObjectKey(), encKeyName);
       System.out.println("File uploaded with etag " + etag.get());
-
-      uploadExecutor.shutdown();
-      internalExecutor.shutdown();
+      client.shutdown();
     }
   }
 
@@ -180,7 +179,7 @@ class Main
     public void invoke() throws Exception
     {
       ListeningExecutorService downloadExecutor = getHttpExecutor();
-      ListeningExecutorService internalExecutor = getInternalExecutor();
+      ListeningScheduledExecutorService internalExecutor = getInternalExecutor();
 
       File f = new File(file);
 
@@ -195,17 +194,8 @@ class Main
           throw new UsageException("File '" + file + "' already exists. Please delete or use --overwrite");
       }
 
-      DownloadCommand command = new DownloadCommand(
-        downloadExecutor,
-        internalExecutor,
-        f,
-        getKeyProvider());
-
-      configure(command);
-
-      // TODO would be useful to get a command hash back
-      // (e.g. SHA-512) so that we can use that in authentication.
-      ListenableFuture<Object> result = command.run(getBucket(), getObjectKey());
+      S3Client client = createS3Client();
+      ListenableFuture<?> result = client.download(f, getBucket(), getObjectKey());
 
       try
       {
@@ -217,8 +207,7 @@ class Main
         rethrow(exc.getCause());
       }
 
-      downloadExecutor.shutdown();
-      internalExecutor.shutdown();
+      client.shutdown();
     }
   }
 

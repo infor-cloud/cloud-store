@@ -19,7 +19,7 @@ emit('all : jars')
 
 
 deps = [
-    '$(guava)/lib/java/guava-14.0.jar',
+    '$(guava)/lib/java/guava.jar',
     '$(logicblox)/lib/java/jcommander-1.29.jar',
     '$(logicblox)/lib/java/commons-logging-1.1.1.jar',
     '$(logicblox)/lib/java/httpcore-4.1.jar',

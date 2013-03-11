@@ -10,7 +10,7 @@ prefix = os.path.dirname(bindir)
 def run(args):
     deps = ['s3lib-0.1.jar',
             'jcommander-1.29.jar',
-            'guava-14.0.jar',
+            'guava.jar',
             'commons-logging-1.1.1.jar',
             'httpcore-4.1.jar',
             'httpclient-4.1.1.jar',

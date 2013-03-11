@@ -27,4 +27,4 @@ cd $PREFIX
 
 echo "Downloading guava..."
 mkdir -p guava-14.0/lib/java
-curl -o guava-14.0/lib/java/guava-14.0.jar http://search.maven.org/remotecontent?filepath=com/google/guava/guava/14.0/guava-14.0.jar
+curl -o guava-14.0/lib/java/guava.jar http://search.maven.org/remotecontent?filepath=com/google/guava/guava/14.0/guava-14.0.jar

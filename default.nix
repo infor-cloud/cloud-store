@@ -22,7 +22,7 @@ let
 
   guava = 
     buildjar {
-      name = "guava-14.0";
+      name = "guava";
       url = http://search.maven.org/remotecontent?filepath=com/google/guava/guava/14.0/guava-14.0.jar;
       sha256 = "c0127b076e3056f58294e4ae6c01a96599b8f58200345eb6f859192a2d9b2962";
     };

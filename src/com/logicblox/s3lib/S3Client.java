@@ -24,7 +24,7 @@ public class S3Client
   private AmazonS3Client _client;
   private KeyProvider _keyProvider;
   private boolean _retryClientException = false;
-  private int _retryCount = 50;
+  private int _retryCount = 15;
 
   /**
    * @param credentials   AWS Credentials

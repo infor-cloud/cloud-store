@@ -92,6 +92,9 @@ public class DirectoryKeyProvider implements KeyProvider
   {
     File result = null;
 
+    if( !_directory.exists() || !_directory.isDirectory() )
+        throw new NoSuchKeyException("Invalid key directory: " + _directory.getPath());
+
     // iterate of the actual files to avoid security issues with alias
     // that are not simple file names.
     for(File file : _directory.listFiles())

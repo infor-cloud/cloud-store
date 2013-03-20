@@ -52,6 +52,7 @@ class Main
     _commander.setProgramName("s3tool");
     _commander.addCommand("upload", new UploadCommandOptions());
     _commander.addCommand("download", new DownloadCommandOptions());
+    _commander.addCommand("exists", new ExistsCommandOptions());
     _commander.addCommand("help", new HelpCommand());
   }
 
@@ -145,6 +146,19 @@ class Main
         throw new UsageException("specified key directory '" + encKeyDirectory + "' is not a directory");
 
       return new DirectoryKeyProvider(dir);
+    }
+  }
+
+  @Parameters(commandDescription = "Check if a file exists in S3")
+  class ExistsCommandOptions extends S3CommandOptions
+  {
+    public void invoke() throws Exception
+    {
+      S3Client client = createS3Client();
+      boolean exists = client.exists(getBucket(), getObjectKey());
+      client.shutdown();
+      if (!exists)
+        System.exit(1);
     }
   }
 

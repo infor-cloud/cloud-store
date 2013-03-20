@@ -7,6 +7,7 @@ import java.net.URI;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -131,6 +132,25 @@ public class S3Client
 
       // TODO would be useful to get a command hash back
       // (e.g. SHA-512) so that we can use that in authentication.
+
+  /**
+   * Check if a file exists in the bucket
+   *
+   * @param bucket  Bucket to check
+   * @param object  Path in bucket to check
+   */
+  public boolean exists(String bucket, String object)
+  {
+    try {
+      _client.getObjectMetadata(bucket, object);
+    } catch (AmazonS3Exception e) {
+      if (e.getStatusCode() == 404) {
+        return false;
+      }
+      throw e;
+    }
+    return true;
+  }
 
   /**
    * Download file from S3

@@ -275,15 +275,16 @@ public class DownloadCommand extends Command
     }
 
     int postCryptSize = (int) Math.min(fileLength - position, chunkSize);
+    int bufSize = 8192;
     int offset = 0;
-    byte[] buf = new byte[postCryptSize];
+    byte[] buf = new byte[bufSize];
     while (offset < postCryptSize)
     {
       int result;
 
       try
       {
-        result = in.read(buf, offset, postCryptSize - offset);
+        result = in.read(buf, 0, Math.min(bufSize, postCryptSize - offset));
       }
       catch (IOException e)
       {
@@ -310,7 +311,7 @@ public class DownloadCommand extends Command
 
       try
       {
-        out.write(buf, offset, result);
+        out.write(buf, 0, result);
       }
       catch (IOException e)
       {

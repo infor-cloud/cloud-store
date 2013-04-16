@@ -180,7 +180,7 @@ public class DownloadCommand extends Command
     } else {
       fileLength = download.getLength();
       if (chunkSize == 0) {
-        setChunkSize(fileLength);
+        setChunkSize(Math.min(fileLength, Utils.getDefaultChunkSize()));
       }
     }
 

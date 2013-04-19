@@ -1,6 +1,6 @@
 package com.logicblox.s3lib;
 
-class NoSuchKeyException extends Exception
+public class NoSuchKeyException extends Exception
 {
   public NoSuchKeyException(String msg)
   {

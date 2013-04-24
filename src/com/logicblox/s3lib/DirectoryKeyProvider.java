@@ -1,6 +1,7 @@
 package com.logicblox.s3lib;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
@@ -12,6 +13,9 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
@@ -29,6 +33,9 @@ public class DirectoryKeyProvider implements KeyProvider
   private static final Pattern beginPrivate = Pattern.compile("^----[\\-\\ ]BEGIN PRIVATE KEY---[-]+$");
   private static final Pattern endPrivate = Pattern.compile("^----[\\-\\ ]END PRIVATE KEY---[-]+$");
 
+  private static final Pattern beginCertificate = Pattern.compile("^----[\\-\\ ]BEGIN CERTIFICATE---[-]+$");
+  private static final Pattern endCertificate = Pattern.compile("^----[\\-\\ ]END CERTIFICATE---[-]+$");
+
   private File _directory;
 
   public DirectoryKeyProvider(File directory)
@@ -41,7 +48,7 @@ public class DirectoryKeyProvider implements KeyProvider
   {
     try
     {
-      byte[] bytes = extractKey(getFile(alias), beginPrivate, endPrivate);
+      byte[] bytes = extractKey(getFile(alias, "pem"), beginPrivate, endPrivate);
       PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(bytes);
       KeyFactory keyFactory = KeyFactory.getInstance("RSA");
       return keyFactory.generatePrivate(keySpec);
@@ -65,7 +72,7 @@ public class DirectoryKeyProvider implements KeyProvider
   {
     try
     {
-      byte[] bytes = extractKey(getFile(alias), beginPublic, endPublic);
+      byte[] bytes = extractKey(getFile(alias, "pem"), beginPublic, endPublic);
       X509EncodedKeySpec keySpec = new X509EncodedKeySpec(bytes);
       KeyFactory keyFactory = KeyFactory.getInstance("RSA");
       return keyFactory.generatePublic(keySpec);
@@ -84,10 +91,30 @@ public class DirectoryKeyProvider implements KeyProvider
     }
   }
 
+  public Certificate getCertificate(String alias)
+  throws NoSuchKeyException
+  {
+    try
+    {
+      byte[] bytes = extractKey(getFile(alias, "cer"), beginCertificate, endCertificate);
+      CertificateFactory certFact = CertificateFactory.getInstance("X.509");
+      ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+      return certFact.generateCertificate(bis);
+    }
+    catch(CertificateException exc)
+    {
+      throw new NoSuchKeyException(exc);
+    }
+    catch(IOException exc)
+    {
+      throw new NoSuchKeyException(exc);      
+    }
+  }
+
   /**
    * Returns the .pem file for the given alias.
    */
-  private File getFile(String alias)
+  private File getFile(String alias, String extension)
   throws NoSuchKeyException
   {
     File result = null;
@@ -99,7 +126,7 @@ public class DirectoryKeyProvider implements KeyProvider
     // that are not simple file names.
     for(File file : _directory.listFiles())
     {
-      if(file.getName().equals(alias + ".pem"))
+      if(file.getName().equals(alias + "." + extension))
         result = file;
     }
 

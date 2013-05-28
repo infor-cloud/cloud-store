@@ -1,9 +1,10 @@
 { nixpkgs ? <nixpkgs>
+, config ? <config>
 , logicblox ? "3.9.2.64075_4a330b01c9f9"
 , s3lib ? { outPath = ./.; rev = "1234"; }
 }:
 
-with import <config/lib> { inherit nixpkgs; };
+with import (config + "/lib") { inherit nixpkgs; };
 let
 
   lb = if builtins.isString logicblox

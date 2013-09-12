@@ -1,6 +1,6 @@
 { nixpkgs ? <nixpkgs>
 , config ? <config>
-, logicblox ? "3.9.2.64075_4a330b01c9f9"
+, logicblox ? (import <LogicBlox> { inherit nixpkgs config; }).package
 , s3lib ? { outPath = ./.; rev = "1234"; }
 }:
 

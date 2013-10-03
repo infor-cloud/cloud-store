@@ -21,11 +21,18 @@ let
       '';
     };
 
-  guava = 
+  guava =
     buildjar {
       name = "guava";
       url = http://search.maven.org/remotecontent?filepath=com/google/guava/guava/14.0/guava-14.0.jar;
       sha256 = "c0127b076e3056f58294e4ae6c01a96599b8f58200345eb6f859192a2d9b2962";
+    };
+
+  httpcore =
+    buildjar {
+      name = "httpcore";
+      url = http://search.maven.org/remotecontent?filepath=org/apache/httpcomponents/httpcore/4.1/httpcore-4.1.jar;
+      sha256 = "1kr95c4q7w32yk81klyj2plgjhc5s2l5fh0qdn66c92f3zjqvqrw";
     };
 
   revision = version s3lib;
@@ -46,7 +53,7 @@ let
         inherit name;
         src = source_tarball;
         # TODO refine the dependencies to refer to specifc packages and add configure options
-        configureFlags = [ "--with-logicblox=${lb} --with-guava=${guava}"];
+        configureFlags = [ "--with-logicblox=${lb} --with-guava=${guava} --with-httpcore=${httpcore}"];
         buildInputs = [lb pkgs.python26 jdk_jce];
         propagatedBuildInputs = [pkgs.python26Packages.argparse];
       };

@@ -8,7 +8,8 @@ parse_arguments(
   prefix='/opt/logicblox/s3lib',
   # TODO should probably use separate aws dependencies here.
   deps = { 'logicblox' : '$(LOGICBLOX_HOME)',
-           'guava' : bloxweb_deps + '/guava-14.0'
+           'guava' : bloxweb_deps + '/guava-14.0',
+           'httpcore' : bloxweb_deps + '/httpcore-4.1'
          })
 
 open_makefile()
@@ -22,7 +23,7 @@ deps = [
     '$(guava)/lib/java/guava.jar',
     '$(logicblox)/lib/java/jcommander-1.29.jar',
     '$(logicblox)/lib/java/commons-logging-1.1.1.jar',
-    '$(logicblox)/lib/java/httpcore-4.1.jar',
+    '$(httpcore)/lib/java/httpcore-4.1.jar',
     '$(logicblox)/lib/java/httpclient-4.1.1.jar',
     '$(logicblox)/lib/java/commons-codec-1.6.jar',
     '$(logicblox)/lib/java/log4j-1.2.13.jar',

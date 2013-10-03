@@ -30,7 +30,7 @@ let
 
   httpcore =
     buildjar {
-      name = "httpcore";
+      name = "httpcore-4.1";
       url = http://search.maven.org/remotecontent?filepath=org/apache/httpcomponents/httpcore/4.1/httpcore-4.1.jar;
       sha256 = "1kr95c4q7w32yk81klyj2plgjhc5s2l5fh0qdn66c92f3zjqvqrw";
     };

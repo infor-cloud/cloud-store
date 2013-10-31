@@ -6,10 +6,15 @@ bloxweb_deps=os.getenv('BLOXWEB_DEPS', '/opt/logicblox')
 
 parse_arguments(
   prefix='/opt/logicblox/s3lib',
-  # TODO should probably use separate aws dependencies here.
-  deps = { 'logicblox' : '$(LOGICBLOX_HOME)',
+  deps = { 
            'guava' : bloxweb_deps + '/guava-14.0',
-           'httpcore' : bloxweb_deps + '/httpcore-4.1'
+           'jcommander' : bloxweb_deps + '/jcommander-1.29',
+           'commons-logging' : bloxweb_deps + '/commons-logging-1.1.1',
+           'httpcore' : bloxweb_deps + '/httpcore-4.1',
+           'httpclient' : bloxweb_deps + '/httpclient-4.1.1',
+           'commons-codec' : bloxweb_deps + '/commons-codec-1.6',
+           'log4j' : bloxweb_deps + '/log4j-1.2.13',
+           'aws-java-sdk' : bloxweb_deps + '/aws-java-sdk-1.3.18'
          })
 
 open_makefile()
@@ -21,13 +26,13 @@ emit('all : jars')
 
 deps = [
     '$(guava)/lib/java/guava.jar',
-    '$(logicblox)/lib/java/jcommander-1.29.jar',
-    '$(logicblox)/lib/java/commons-logging-1.1.1.jar',
+    '$(jcommander)/lib/java/jcommander-1.29.jar',
+    '$(commons_logging)/lib/java/commons-logging-1.1.1.jar',
     '$(httpcore)/lib/java/httpcore-4.1.jar',
-    '$(logicblox)/lib/java/httpclient-4.1.1.jar',
-    '$(logicblox)/lib/java/commons-codec-1.6.jar',
-    '$(logicblox)/lib/java/log4j-1.2.13.jar',
-    '$(logicblox)/lib/java/aws-java-sdk-1.3.18.jar']
+    '$(httpclient)/lib/java/httpclient-4.1.1.jar',
+    '$(commons_codec)/lib/java/commons-codec-1.6.jar',
+    '$(log4j)/lib/java/log4j-1.2.13.jar',
+    '$(aws_java_sdk)/lib/java/aws-java-sdk-1.3.18.jar']
 
 jar(
    name = 's3lib-$(version)',

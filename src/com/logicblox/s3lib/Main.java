@@ -4,10 +4,16 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
+import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import com.beust.jcommander.JCommander;
@@ -55,6 +61,7 @@ class Main
     _commander.addCommand("upload", new UploadCommandOptions());
     _commander.addCommand("download", new DownloadCommandOptions());
     _commander.addCommand("exists", new ExistsCommandOptions());
+    _commander.addCommand("list-buckets", new ListBucketsCommandOptions());
     _commander.addCommand("help", new HelpCommand());
   }
 
@@ -72,11 +79,11 @@ class Main
     public abstract void invoke() throws Exception;
   }
 
+  /**
+   * Abstraction for all S3 commands
+   */
   abstract class S3CommandOptions extends CommandOptions
   {
-    @Parameter(description = "S3URL", required = true)
-    List<String> urls;
-
     @Parameter(names = {"--max-concurrent-connections"}, description = "The maximum number of concurrent HTTP connections to S3")
     int maxConcurrentConnections = 10;
 
@@ -120,6 +127,28 @@ class Main
       return client;
     }
 
+    protected KeyProvider getKeyProvider()
+    {
+      File dir = new File(encKeyDirectory);
+      if(!dir.exists() && !dir.mkdirs())
+        throw new UsageException("specified key directory '" + encKeyDirectory + "' does not exist");
+
+      if(!dir.isDirectory())
+        throw new UsageException("specified key directory '" + encKeyDirectory + "' is not a directory");
+
+      return new DirectoryKeyProvider(dir);
+    }
+  }
+
+
+  /**
+   * Abstraction for commands that deal with S3 objects
+   */
+  abstract class S3ObjectCommandOptions extends S3CommandOptions
+  {
+    @Parameter(description = "S3URL", required = true)
+    List<String> urls;
+
     protected URI getURI() throws URISyntaxException
     {
       if(urls.size() != 1)
@@ -137,22 +166,51 @@ class Main
     {
       return Utils.getObjectKey(getURI());
     }
+  }
 
-    protected KeyProvider getKeyProvider()
+  @Parameters(commandDescription = "List S3 buckets")
+  class ListBucketsCommandOptions extends S3CommandOptions
+  {
+    public void invoke() throws Exception
     {
-      File dir = new File(encKeyDirectory);
-      if(!dir.exists() && !dir.mkdirs())
-        throw new UsageException("specified key directory '" + encKeyDirectory + "' does not exist");
+      S3Client client = createS3Client();
+      ListenableFuture<List<Bucket>> result = client.listBuckets();
 
-      if(!dir.isDirectory())
-        throw new UsageException("specified key directory '" + encKeyDirectory + "' is not a directory");
+      List<Bucket> buckets = result.get();
+      Collections.sort(buckets, new Comparator<Bucket>(){
+          public int compare(Bucket b1, Bucket b2) {
+            return b1.getName().toLowerCase().compareTo(b2.getName().toLowerCase());
+          }});
 
-      return new DirectoryKeyProvider(dir);
+      String[][] table = new String[buckets.size()][3];
+      int[] max = new int[3];
+
+      TimeZone tz = TimeZone.getTimeZone("UTC");
+      DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+      df.setTimeZone(tz);
+
+      for(int i = 0; i < buckets.size(); i++)
+      {
+        Bucket b = buckets.get(i);
+        table[i][0] = b.getName();
+        table[i][1] = df.format(b.getCreationDate());
+        table[i][2] = b.getOwner().getDisplayName();
+
+        for(int j = 0; j < 3; j++)
+          max[j] = Math.max(table[i][j].length(), max[j]);
+      }
+
+      for (final String[] row : table)
+      {
+        System.out.format("%-" + (max[2] + 3) + "s%-" + (max[1] + 3) + "s%-" + (max[0] + 3) + "s\n", row[2], row[1], row[0]);
+      }
+
+      client.shutdown();
     }
   }
 
   @Parameters(commandDescription = "Check if a file exists in S3")
-  class ExistsCommandOptions extends S3CommandOptions
+  class ExistsCommandOptions extends S3ObjectCommandOptions
   {
     @Parameter(names = "--verbose", description = "Print information about success/failure and metadata if object exists")
     boolean _verbose = false;
@@ -187,7 +245,7 @@ class Main
   }
 
   @Parameters(commandDescription = "Upload a file to S3")
-  class UploadCommandOptions extends S3CommandOptions
+  class UploadCommandOptions extends S3ObjectCommandOptions
   {
     @Parameter(names = "-i", description = "File to upload", required = true)
     String file;
@@ -205,7 +263,7 @@ class Main
   }
 
   @Parameters(commandDescription = "Download a file from S3")
-  class DownloadCommandOptions extends S3CommandOptions
+  class DownloadCommandOptions extends S3ObjectCommandOptions
   {
     @Parameter(names = "-o", description = "Write output to file", required = true)
     String file;

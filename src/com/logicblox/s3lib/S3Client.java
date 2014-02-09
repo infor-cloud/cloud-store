@@ -4,11 +4,15 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
+import java.util.List;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -130,6 +134,18 @@ public class S3Client
 
       // TODO would be useful to get a command hash back
       // (e.g. SHA-512) so that we can use that in authentication.
+
+  /**
+   * Check if a file exists in the bucket
+   *
+   * @param bucket  Bucket to check
+   * @param object  Path in bucket to check
+   */
+  public ListenableFuture<List<Bucket>> listBuckets()
+  {
+      List<Bucket> result = _client.listBuckets();
+      return Futures.immediateFuture(result);
+  }
 
   /**
    * Check if a file exists in the bucket

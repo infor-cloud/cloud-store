@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
+import com.amazonaws.services.s3.model.ObjectMetadata;
+
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
@@ -152,11 +154,33 @@ class Main
   @Parameters(commandDescription = "Check if a file exists in S3")
   class ExistsCommandOptions extends S3CommandOptions
   {
+    @Parameter(names = "--verbose", description = "Print information about success/failure and metadata if object exists")
+    boolean _verbose = false;
+
     public void invoke() throws Exception
     {
       S3Client client = createS3Client();
-      boolean exists = client.exists(getBucket(), getObjectKey());
+      String bucket = getBucket();
+      String key = getObjectKey();
+      ListenableFuture<ObjectMetadata> result = client.exists(bucket, key);
+
+      boolean exists = false;
+      ObjectMetadata metadata = result.get();
+      if(metadata == null)
+      {
+        if(_verbose)
+          System.err.println("Object s3://" + bucket + "/" + key + " does not exist.");
+      }
+      else
+      {
+        exists = true;
+
+        if(_verbose)
+          Utils.print(metadata);
+      }
+      
       client.shutdown();
+
       if (!exists)
         System.exit(1);
     }
@@ -175,7 +199,7 @@ class Main
     {
       S3Client client = createS3Client();
       ListenableFuture<String> etag = client.upload(new File(file), getBucket(), getObjectKey(), encKeyName);
-      System.out.println("File uploaded with etag " + etag.get());
+      System.err.println("File uploaded with etag " + etag.get());
       client.shutdown();
     }
   }
@@ -214,7 +238,7 @@ class Main
       try
       {
         result.get();
-        System.out.println("Download complete.");
+        System.err.println("Download complete.");
       }
       catch(ExecutionException exc)
       {

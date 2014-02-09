@@ -7,32 +7,31 @@ bloxweb_deps=os.getenv('BLOXWEB_DEPS', '/opt/logicblox')
 parse_arguments(
   prefix='/opt/logicblox/s3lib',
   deps = { 
-           'guava' : bloxweb_deps + '/guava-14.0',
+           'guava' : bloxweb_deps + '/guava-15.0',
            'jcommander' : bloxweb_deps + '/jcommander-1.29',
-           'commons-logging' : bloxweb_deps + '/commons-logging-1.1.1',
-           'httpcore' : bloxweb_deps + '/httpcore-4.1',
-           'httpclient' : bloxweb_deps + '/httpclient-4.1.1',
-           'commons-codec' : bloxweb_deps + '/commons-codec-1.6',
            'log4j' : bloxweb_deps + '/log4j-1.2.13',
-           'aws-java-sdk' : bloxweb_deps + '/aws-java-sdk-1.3.18'
+           'aws-java-sdk' : bloxweb_deps + '/aws-java-sdk-1.7.1'
          })
 
 open_makefile()
 
-emit('version = 0.1')
+emit('version = 0.2')
 emit('package_name = s3lib-$(version)')
 emit('all : jars')
 
 
 deps = [
-    '$(guava)/lib/java/guava.jar',
+    '$(guava)/lib/java/guava-15.0.jar',
     '$(jcommander)/lib/java/jcommander-1.29.jar',
-    '$(commons_logging)/lib/java/commons-logging-1.1.1.jar',
-    '$(httpcore)/lib/java/httpcore-4.1.jar',
-    '$(httpclient)/lib/java/httpclient-4.1.1.jar',
-    '$(commons_codec)/lib/java/commons-codec-1.6.jar',
     '$(log4j)/lib/java/log4j-1.2.13.jar',
-    '$(aws_java_sdk)/lib/java/aws-java-sdk-1.3.18.jar']
+    '$(aws_java_sdk)/lib/java/commons-logging-1.1.1.jar',
+    '$(aws_java_sdk)/lib/java/httpcore-4.2.jar',
+    '$(aws_java_sdk)/lib/java/httpclient-4.2.3.jar',
+    '$(aws_java_sdk)/lib/java/commons-codec-1.3.jar',
+    '$(aws_java_sdk)/lib/java/jackson-annotations-2.1.1.jar',
+    '$(aws_java_sdk)/lib/java/jackson-core-2.1.1.jar',
+    '$(aws_java_sdk)/lib/java/jackson-databind-2.1.1.jar',
+    '$(aws_java_sdk)/lib/java/aws-java-sdk-1.7.1.jar']
 
 jar(
    name = 's3lib-$(version)',

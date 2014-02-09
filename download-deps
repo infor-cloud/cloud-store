@@ -26,5 +26,30 @@ mkdir -p $PREFIX
 cd $PREFIX
 
 echo "Downloading guava..."
-mkdir -p guava-14.0/lib/java
-curl -o guava-14.0/lib/java/guava.jar http://search.maven.org/remotecontent?filepath=com/google/guava/guava/14.0/guava-14.0.jar
+mkdir -p guava-15.0/lib/java
+curl -o guava-15.0/lib/java/guava-15.0.jar \
+   http://search.maven.org/remotecontent?filepath=com/google/guava/guava/15.0/guava-15.0.jar
+
+echo "Downloading log4j..."
+mkdir -p log4j-1.2.13/lib/java
+curl -o log4j-1.2.13/lib/java/log4j-1.2.13.jar \
+   http://mirrors.ibiblio.org/maven2/log4j/log4j/1.2.13/log4j-1.2.13.jar
+
+echo "Downloading jcommander..."
+mkdir -p jcommander-1.29/lib/java
+curl -o jcommander-1.29/lib/java/jcommander-1.29.jar \
+   http://search.maven.org/remotecontent?filepath=com/beust/jcommander/1.29/jcommander-1.29.jar
+
+echo "Downloading aws-java-sdk..."
+
+name="aws-java-sdk-1.7.1"
+rm -rf ${name}
+mkdir -p ${name}/lib/java
+pushd ${name}/lib/java
+curl -O http://sdk-for-java.amazonwebservices.com/${name}.zip
+unzip ${name}.zip
+for j in $(find ${name} -name '*.jar'); do
+  cp $j .
+done
+rm -rf ${name}
+popd

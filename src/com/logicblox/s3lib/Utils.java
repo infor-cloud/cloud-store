@@ -3,8 +3,12 @@ package com.logicblox.s3lib;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
+
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+
+import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
@@ -29,6 +33,17 @@ public class Utils
   public static URI getURI(String s) throws URISyntaxException
   {
     URI uri = new URI(s);
+
+    if("https".equals(uri.getScheme()) && uri.getHost().endsWith("amazonaws.com"))
+    {
+      String path = uri.getPath();
+      if(path == null || path.length() < 3 || path.charAt(0) != '/' || path.indexOf('/', 1) == -1)
+        throw new UsageException("https S3 URLs have the format https://s3.amazonaws.com/bucket/key");
+
+      String bucket = path.substring(1, path.indexOf('/', 1));
+      String key = path.substring(path.indexOf('/', 1) + 1);
+      uri = new URI("s3://" + bucket + "/" + key);
+    }
     
     if(!"s3".equals(uri.getScheme()))
       throw new UsageException("S3 object URL needs to have 's3' as scheme");
@@ -38,6 +53,9 @@ public class Utils
 
   public static String getBucket(URI uri)
   {
+    if(!"s3".equals(uri.getScheme()))
+      throw new IllegalArgumentException("S3 object URL needs to have 's3' as scheme");
+
     return uri.getAuthority();
   }
 
@@ -144,5 +162,27 @@ public class Utils
           }
         }
       });
+  }
+
+  protected static void print(ObjectMetadata m)
+  {
+    System.out.println("Cache-Control: " + m.getCacheControl());
+    System.out.println("Content-Disposition: " + m.getContentDisposition());
+    System.out.println("Content-Encoding: " + m.getContentEncoding());
+    System.out.println("Content-Length: " + m.getContentLength());
+    System.out.println("Content-MD5: " + m.getContentMD5());
+    System.out.println("Content-Type: " + m.getContentType());
+    System.out.println("ETag: " + m.getETag());
+    System.out.println("Expiration-Time: " + m.getExpirationTime());
+    System.out.println("Expiration-Time-Rule-Id: " + m.getExpirationTimeRuleId());
+    System.out.println("Http-Expires: " + m.getHttpExpiresDate());
+    System.out.println("Last-Modified: " + m.getLastModified());
+    System.out.println("Server-Side-Encryption: " + m.getServerSideEncryption());
+    System.out.println("Version-Id: " + m.getVersionId());
+    System.out.println("");
+    for(Map.Entry<String, String> entry : m.getUserMetadata().entrySet())
+    {
+      System.out.println(entry.getKey() + ": " + entry.getValue());
+    }
   }
 }

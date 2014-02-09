@@ -1,13 +1,18 @@
-{ nixpkgs ? <nixpkgs>
+{ system ? builtins.currentSystem
+, nixpkgs ? <nixpkgs>
 , config ? <config>
+, pkgs ? import nixpkgs { inherit system; }
+, stdenv ? pkgs.stdenv
+, fetchurl ? pkgs.fetchurl
+, python ? pkgs.pythonFull
+, jdk ? pkgs.jdk
+, unzip ? pkgs.unzip
 , s3lib ? { outPath = ./.; rev = "1234"; }
 }:
 
-with import (config + "/lib") { inherit nixpkgs; };
 let
-
   buildjar = {name, url, sha256} : 
-    with pkgs; stdenv.mkDerivation rec {
+    stdenv.mkDerivation rec {
       inherit name;
       src = fetchurl { inherit url sha256; };
       buildCommand = ''
@@ -18,16 +23,9 @@ let
 
   guava =
     buildjar {
-      name = "guava";
-      url = http://search.maven.org/remotecontent?filepath=com/google/guava/guava/14.0/guava-14.0.jar;
-      sha256 = "c0127b076e3056f58294e4ae6c01a96599b8f58200345eb6f859192a2d9b2962";
-    };
-
-  httpcore =
-    buildjar {
-      name = "httpcore-4.1";
-      url = http://search.maven.org/remotecontent?filepath=org/apache/httpcomponents/httpcore/4.1/httpcore-4.1.jar;
-      sha256 = "1kr95c4q7w32yk81klyj2plgjhc5s2l5fh0qdn66c92f3zjqvqrw";
+      name = "guava-15.0";
+      url = http://search.maven.org/remotecontent?filepath=com/google/guava/guava/15.0/guava-15.0.jar;
+      sha256 = "7a34575770eebc60a5476616e3676a6cb6f2975c78c415e2a6014ac724ba5783";
     };
 
   jcommander =
@@ -37,51 +35,44 @@ let
       sha256 = "0b6gjgh028jb1fk39rb3yxs9f1ywdcdlvvhas81h6527p5sxhx8n";
     };
 
-   commons-logging =
-    buildjar {
-      name = "commons-logging-1.1.1";
-      url = http://search.maven.org/remotecontent?filepath=org/ow2/util/bundles/commons-logging-1.1.1/1.0.0/commons-logging-1.1.1-1.0.0.jar;
-      sha256 = "18hi4jd2ic4vywi5nj2avq9zhy7c5fjkbay2ijh70dangg1iv8ss";
-    };
-
-   httpclient =
-    buildjar {
-      name = "httpclient-4.1.1";
-      url = http://search.maven.org/remotecontent?filepath=org/apache/httpcomponents/httpclient/4.1.1/httpclient-4.1.1.jar;
-      sha256 = "0la7iqy72w09h6z8h9s09bnac2xj0l05mm1ql5nbyyb6ib82drga";
-    };
-
-   commons-codec =
-    buildjar {
-      name = "commons-codec-1.6";
-      url = http://search.maven.org/remotecontent?filepath=commons-codec/commons-codec/1.6/commons-codec-1.6.jar;
-      sha256 = "11ix43vckkj5mbv9ccnv4vf745s8sgpkdms07syi854f3fa4xcsl";
-    };
-
-   log4j =
+  log4j =
     buildjar {
       name = "log4j-1.2.13";
       url = http://mirrors.ibiblio.org/maven2/log4j/log4j/1.2.13/log4j-1.2.13.jar;
       sha256 = "053zkljmfsaj4p1vmnlfr04g7fchsb8v0i7aqibpjbd6i5c63vf8";
     };
 
-   aws-java-sdk =
-    buildjar {
-      name = "aws-java-sdk-1.3.18";
-      url = http://search.maven.org/remotecontent?filepath=com/amazonaws/aws-java-sdk/1.3.18/aws-java-sdk-1.3.18.jar;
-      sha256 = "1wj5r7smml0lwyrlqv8gjc7cpnv4f66vak5lqqh9l2a30pvk335d";
+  aws-java-sdk =
+    pkgs.stdenv.mkDerivation rec {
+      name = "aws-java-sdk-1.7.1";
+      src = fetchurl {
+        url = http://sdk-for-java.amazonwebservices.com/aws-java-sdk-1.7.1.zip;
+        sha256 = "afc1a93635b5e77fb2f1fac4025a3941300843dce7fc5af4f2a99ff9bf4af05b";
+      };
+      buildInputs = [unzip];
+      buildCommand = ''
+        unzip $src
+
+        ensureDir $out/lib/java
+
+        for f in $(find ${name} -name '*.jar'); do
+          cp $f $out/lib/java
+        done
+      '';
     };
+
+  version = src: stdenv.lib.optionalString (src ? revCount) (toString src.revCount + "_" ) + toString (src.rev or src.tag or "unknown");
 
   revision = version s3lib;
   name = "s3lib-${revision}";
+  builder_config = import (config + "/lib") { inherit nixpkgs; };
 
   jobs = rec {
     source_tarball = 
       pkgs.releaseTools.sourceTarball { 
         inherit name;
         src = "${s3lib}";
-        buildInputs = [pkgs.python26 jdk_jce];
-        propagatedBuildInputs = [pkgs.python26Packages.argparse];
+        buildInputs = [python jdk];
         preConfigure = "patchShebangs .";
       };
 
@@ -93,19 +84,14 @@ let
         configureFlags = [
           "--with-guava=${guava}"
           "--with-jcommander=${jcommander}"
-          "--with-commons-logging=${commons-logging}"
-          "--with-httpcore=${httpcore}"
-          "--with-httpclient=${httpclient}"
-          "--with-commons-codec=${commons-codec}"
           "--with-log4j=${log4j}"
           "--with-aws-java-sdk=${aws-java-sdk}"
         ];
-        buildInputs = [ pkgs.python26 jdk_jce];
-        propagatedBuildInputs = [pkgs.python26Packages.argparse];
+        buildInputs = [ python jdk];
       };
 
      binary_tarball =
-      release_helper {
+      builder_config.release_helper {
         inherit name build;
         unixify = "bin/s3tool bin/s3lib-keygen";
         };

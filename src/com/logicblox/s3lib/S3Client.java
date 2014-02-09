@@ -8,6 +8,7 @@ import java.net.URI;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -122,9 +123,6 @@ public class S3Client
   public ListenableFuture<String> upload(File file, URI s3url, String key)
   throws FileNotFoundException, IOException
   {
-    if(!"s3".equals(s3url.getScheme()))
-      throw new IllegalArgumentException("S3 object URL needs to have 's3' as scheme");
-
     String bucket = Utils.getBucket(s3url);
     String object = Utils.getObjectKey(s3url);
     return upload(file, bucket, object, key);
@@ -139,17 +137,11 @@ public class S3Client
    * @param bucket  Bucket to check
    * @param object  Path in bucket to check
    */
-  public boolean exists(String bucket, String object)
+  public ListenableFuture<ObjectMetadata> exists(String bucket, String object)
   {
-    try {
-      _client.getObjectMetadata(bucket, object);
-    } catch (AmazonS3Exception e) {
-      if (e.getStatusCode() == 404) {
-        return false;
-      }
-      throw e;
-    }
-    return true;
+    ExistsCommand cmd = new ExistsCommand(_s3Executor, _executor);
+    configure(cmd);
+    return cmd.run(bucket, object);
   }
 
   /**
@@ -177,9 +169,6 @@ public class S3Client
   public ListenableFuture<?> download(File file, URI s3url)
   throws IOException
   {
-    if(!"s3".equals(s3url.getScheme()))
-      throw new IllegalArgumentException("S3 object URL needs to have 's3' as scheme");
-
     String bucket = Utils.getBucket(s3url);
     String object = Utils.getObjectKey(s3url);
     return download(file, bucket, object);

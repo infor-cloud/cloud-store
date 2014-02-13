@@ -241,7 +241,7 @@ public class DownloadCommand extends Command
       partSize = Math.min(fileLength - position, chunkSize);
     }
 
-    System.err.println("Downloading part " + partNumber);
+    System.err.print(".");
 
     ListenableFuture<InputStream> getPartFuture = download.getPart(start, start + partSize - 1);
 
@@ -333,7 +333,5 @@ public class DownloadCommand extends Command
       stream.close();
     }
     catch (IOException e) {}
-    
-    System.err.println("Finished part " + partNumber);
   }
 }

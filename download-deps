@@ -40,6 +40,11 @@ mkdir -p jcommander-1.29/lib/java
 curl -o jcommander-1.29/lib/java/jcommander-1.29.jar \
    http://search.maven.org/remotecontent?filepath=com/beust/jcommander/1.29/jcommander-1.29.jar
 
+echo "Downloading commons-io..."
+mkdir -p commons-io-2.4/lib/java
+curl -o commons-io-2.4/lib/java/commons-io-2.4.jar \
+   http://repo1.maven.org/maven2/commons-io/commons-io/2.4/commons-io-2.4.jar
+
 echo "Downloading aws-java-sdk..."
 
 name="aws-java-sdk-1.7.1"

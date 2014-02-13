@@ -96,7 +96,7 @@ public class UploadCommand extends Command
       }
     }
   }
-  
+
   /**
    * Run ties Step 1, Step 2, and Step 3 together. The return result is the ETag of the upload.
    */
@@ -109,7 +109,6 @@ public class UploadCommand extends Command
       throw new UsageException("File does not exist or is a special file");
     }
 
-    System.out.println("Initiating upload");
     ListenableFuture<Upload> upload = startUpload(bucket, key);
     upload = Futures.transform(upload, startPartsAsyncFunction());
     ListenableFuture<String> result = Futures.transform(upload, completeAsyncFunction());
@@ -121,7 +120,7 @@ public class UploadCommand extends Command
    */
   private ListenableFuture<Upload> startUpload(final String bucket, final String key)
   {
-    return executeWithRetry(_executor, 
+    return executeWithRetry(_executor,
       new Callable<ListenableFuture<Upload>>()
       {
         public ListenableFuture<Upload> call()
@@ -139,7 +138,7 @@ public class UploadCommand extends Command
   private ListenableFuture<Upload> startUploadActual(final String bucket, final String key)
   {
     UploadFactory factory = new MultipartAmazonUploadFactory(getAmazonS3Client(), _uploadExecutor);
-    
+
     Map<String,String> meta = new HashMap<String,String>();
     meta.put("s3tool-version", String.valueOf(Version.CURRENT));
     if (this.encKeyName != null) {
@@ -169,7 +168,7 @@ public class UploadCommand extends Command
   private ListenableFuture<Upload> startParts(final Upload upload)
   {
     List<ListenableFuture<Void>> parts = new ArrayList<ListenableFuture<Void>>();
-    
+
     for (long position = 0; position < fileLength; position += chunkSize)
     {
       parts.add(startPartUploadThread(upload, position));
@@ -181,7 +180,7 @@ public class UploadCommand extends Command
       Futures.allAsList(parts),
       Functions.constant(upload));
   }
-  
+
   private ListenableFuture<Void> startPartUploadThread(final Upload upload, final long position)
   {
     ListenableFuture<ListenableFuture<Void>> result =
@@ -203,7 +202,7 @@ public class UploadCommand extends Command
   {
     final int partNumber = (int) (position / chunkSize);
 
-    return executeWithRetry(_executor, 
+    return executeWithRetry(_executor,
       new Callable<ListenableFuture<Void>>()
       {
         public ListenableFuture<Void> call() throws Exception
@@ -217,7 +216,7 @@ public class UploadCommand extends Command
         }
       });
   }
-  
+
   private ListenableFuture<Void> startPartUploadActual(final Upload upload, final long position)
   throws Exception
   {
@@ -237,7 +236,7 @@ public class UploadCommand extends Command
     {
       Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
       in = new CipherWithInlineIVInputStream(bs, cipher, Cipher.ENCRYPT_MODE, encKey);
-      
+
       long preCryptSize = Math.min(fileLength - position, chunkSize);
       long blockSize = cipher.getBlockSize();
       partSize = blockSize * (preCryptSize/blockSize + 2);
@@ -248,7 +247,7 @@ public class UploadCommand extends Command
       partSize = Math.min(fileLength - position, chunkSize);
     }
 
-    System.out.println("Uploading part " + partNumber);
+    System.out.print(".");
     ListenableFuture<Void> uploadPartFuture = upload.uploadPart(partNumber, in, partSize);
 
     FutureFallback<Void> closeFile = new FutureFallback<Void>()
@@ -274,7 +273,7 @@ public class UploadCommand extends Command
           }
         }
       });
-    
+
     return Futures.withFallback(uploadPartFuture, closeFile);
   }
 
@@ -297,7 +296,7 @@ public class UploadCommand extends Command
    */
   private ListenableFuture<String> complete(final Upload upload, final int retryCount)
   {
-    return executeWithRetry(_executor, 
+    return executeWithRetry(_executor,
       new Callable<ListenableFuture<String>>()
       {
         public ListenableFuture<String> call()
@@ -309,12 +308,11 @@ public class UploadCommand extends Command
         {
           return "completing upload";
         }
-      });    
+      });
   }
 
   private ListenableFuture<String> completeActual(final Upload upload, final int retryCount)
   {
-    System.out.println("Finished all parts, now completing upload");
     return upload.completeUpload();
   }
 }

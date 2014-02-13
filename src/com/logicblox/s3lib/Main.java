@@ -6,10 +6,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
@@ -32,6 +29,9 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.TrueFileFilter;
 
 import com.amazonaws.AmazonServiceException;
 
@@ -247,10 +247,10 @@ class Main
     }
   }
 
-  @Parameters(commandDescription = "Upload a file to S3")
+  @Parameters(commandDescription = "Upload a file or directory to S3")
   class UploadCommandOptions extends S3ObjectCommandOptions
   {
-    @Parameter(names = "-i", description = "File to upload", required = true)
+    @Parameter(names = "-i", description = "File or directory to upload", required = true)
     String file;
 
     @Parameter(names = "--key", description = "The name of the encryption key to use")
@@ -259,9 +259,28 @@ class Main
     public void invoke() throws Exception
     {
       S3Client client = createS3Client();
-      ListenableFuture<String> etag = client.upload(new File(file), getBucket(), getObjectKey(), encKeyName);
-      System.err.println("File uploaded with etag " + etag.get());
+      File f = new File(file);
+      if(f.isFile()) {
+        upload(client, f, getObjectKey());
+      } else if(f.isDirectory()) {
+
+        Collection<File> found = FileUtils.listFiles(f, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
+        for (File uf : found) {
+          String relPath = uf.getPath().substring(f.getPath().length()+1);
+          String key = getObjectKey() + "/" + relPath;
+          upload(client, uf, key);
+        }
+
+      } else {
+        throw new UsageException("File '"+file+"' is not a file or a directory.");
+      }
       client.shutdown();
+    }
+
+    private void upload(S3Client client, File f, String key) throws IOException, URISyntaxException, InterruptedException, ExecutionException {
+      System.out.print(f.getPath() + " [");
+      ListenableFuture<String> etag = client.upload(f, getBucket(), key, encKeyName);
+      System.err.println("] Upload completed with etag " + etag.get());
     }
   }
 

@@ -9,6 +9,7 @@ parse_arguments(
   deps = { 
            'guava' : bloxweb_deps + '/guava-15.0',
            'jcommander' : bloxweb_deps + '/jcommander-1.29',
+           'commons-io' : bloxweb_deps + '/commons-io-2.4',
            'log4j' : bloxweb_deps + '/log4j-1.2.13',
            'aws-java-sdk' : bloxweb_deps + '/aws-java-sdk-1.7.1'
          })
@@ -24,6 +25,7 @@ deps = [
     '$(guava)/lib/java/guava-15.0.jar',
     '$(jcommander)/lib/java/jcommander-1.29.jar',
     '$(log4j)/lib/java/log4j-1.2.13.jar',
+    '$(commons_io)/lib/java/commons-io-2.4.jar',
     '$(aws_java_sdk)/lib/java/commons-logging-1.1.1.jar',
     '$(aws_java_sdk)/lib/java/httpcore-4.2.jar',
     '$(aws_java_sdk)/lib/java/httpclient-4.2.3.jar',

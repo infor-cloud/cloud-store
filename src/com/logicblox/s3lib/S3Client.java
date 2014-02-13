@@ -16,6 +16,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.amazonaws.services.s3.model.ObjectListing;
 
 /**
  * Captures the full configuration independent of concrete uploads and
@@ -189,6 +190,21 @@ public class S3Client
     String object = Utils.getObjectKey(s3url);
     return download(file, bucket, object);
   }
+
+  /**
+   * List object in S3
+   *
+   * @param bucket  Bucket to check
+   * @param object  Path in bucket to check
+   */
+  public ListenableFuture<ObjectListing> listObjects(String bucket, String prefix, boolean recursive)
+  {
+    ListObjectsCommand cmd =
+            new ListObjectsCommand(_s3Executor, _executor);
+    configure(cmd);
+    return cmd.run(bucket, prefix, recursive);
+  }
+
 
   public void shutdown()
   {

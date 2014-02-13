@@ -14,8 +14,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
 import com.amazonaws.services.s3.model.Bucket;
+import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
@@ -60,6 +62,7 @@ class Main
     _commander.setProgramName("s3tool");
     _commander.addCommand("upload", new UploadCommandOptions());
     _commander.addCommand("download", new DownloadCommandOptions());
+    _commander.addCommand("ls", new ListCommandOptions());
     _commander.addCommand("exists", new ExistsCommandOptions());
     _commander.addCommand("list-buckets", new ListBucketsCommandOptions());
     _commander.addCommand("help", new HelpCommand());
@@ -236,7 +239,7 @@ class Main
         if(_verbose)
           Utils.print(metadata);
       }
-      
+
       client.shutdown();
 
       if (!exists)
@@ -262,14 +265,11 @@ class Main
     }
   }
 
-  @Parameters(commandDescription = "Download a file from S3")
-  class DownloadCommandOptions extends S3ObjectCommandOptions
+  @Parameters(commandDescription = "List objects in S3")
+  class ListCommandOptions extends S3ObjectCommandOptions
   {
-    @Parameter(names = "-o", description = "Write output to file", required = true)
-    String file;
-
-    @Parameter(names = "--overwrite", description = "Overwrite existing file if existing")
-    boolean overwrite = false;
+    @Parameter(names = "-r", description = "List all objects that match the provided S3 URL prefix.")
+    boolean recursive = false;
 
     @Override
     public void invoke() throws Exception
@@ -277,26 +277,102 @@ class Main
       ListeningExecutorService downloadExecutor = getHttpExecutor();
       ListeningScheduledExecutorService internalExecutor = getInternalExecutor();
 
-      File f = new File(file);
-
-      if(f.exists())
-      {
-        if(overwrite)
-        {
-          if(!f.delete())
-            throw new UsageException("Could not overwrite existing file '" + file + "'");
-        }
-        else
-          throw new UsageException("File '" + file + "' already exists. Please delete or use --overwrite");
-      }
-
       S3Client client = createS3Client();
-      ListenableFuture<?> result = client.download(f, getBucket(), getObjectKey());
+      ListenableFuture<ObjectListing> result = client.listObjects(getBucket(), getObjectKey(), recursive);
 
       try
       {
-        result.get();
-        System.err.println("Download complete.");
+        ObjectListing lst = result.get();
+        for (S3ObjectSummary obj : lst.getObjectSummaries()) {
+          // print the full s3 url for each object
+          if (! getObjectKey().equals(obj.getKey()))
+            System.out.println("s3://"+obj.getBucketName()+"/"+obj.getKey());
+        }
+
+      }
+      catch(ExecutionException exc)
+      {
+        rethrow(exc.getCause());
+      }
+
+      client.shutdown();
+    }
+  }
+
+
+  @Parameters(commandDescription = "Download a file, or a set of files from S3")
+  class DownloadCommandOptions extends S3ObjectCommandOptions
+  {
+    @Parameter(names = "-o", description = "Write output to file, or directory", required = true)
+    String file;
+
+    @Parameter(names = "--overwrite", description = "Overwrite existing file(s) if existing")
+    boolean overwrite = false;
+
+    @Parameter(names = "-r", description = "Download recursively")
+    boolean recursive = false;
+
+    @Override
+    public void invoke() throws Exception
+    {
+      ListeningExecutorService downloadExecutor = getHttpExecutor();
+      ListeningScheduledExecutorService internalExecutor = getInternalExecutor();
+
+      S3Client client = createS3Client();
+
+      // Test if S3 url exists.
+      if(client.exists(getBucket(), getObjectKey()).get() == null) {
+        throw new UsageException("Object not found at "+getURI());
+      }
+
+      ListenableFuture<ObjectListing> results = client.listObjects(getBucket(), getObjectKey(), recursive);
+
+      File output = new File(file);
+      try
+      {
+        List<S3ObjectSummary> lst = results.get().getObjectSummaries();
+
+        if (lst.size() > 1) {
+          if( !output.exists())
+            if (! output.mkdirs())
+              throw new UsageException("Could not create directory '"+file+"'");
+        }
+
+        for (S3ObjectSummary obj : lst) {
+          String relFile = obj.getKey().substring(getObjectKey().length());
+          File outputFile = new File(output.getAbsoluteFile(), relFile);
+          File outputPath = new File(outputFile.getParent());
+
+          if(! outputPath.exists())
+            if( ! outputPath.mkdirs())
+              throw new UsageException("Could not create directory '"+file+"'");
+
+          if (! obj.getKey().endsWith("/")) {
+            if(outputFile.exists())
+            {
+              if(overwrite)
+              {
+                if(!outputFile.delete())
+                  throw new UsageException("Could not overwrite existing file '" + file + "'");
+              }
+              else
+                throw new UsageException("File '" + file + "' already exists. Please delete or use --overwrite");
+            }
+
+            ListenableFuture<?> result = client.download(outputFile, getBucket(), obj.getKey());
+
+            try
+            {
+              System.err.print(outputFile + " [");
+              result.get();
+              System.err.println("] Download complete.");
+            }
+            catch(ExecutionException exc)
+            {
+              rethrow(exc.getCause());
+            }
+          }
+        }
       }
       catch(ExecutionException exc)
       {

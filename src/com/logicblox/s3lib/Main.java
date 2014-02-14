@@ -261,26 +261,13 @@ class Main
       S3Client client = createS3Client();
       File f = new File(file);
       if(f.isFile()) {
-        upload(client, f, getObjectKey());
+        client.upload(f, getBucket(), getObjectKey(), encKeyName).get();
       } else if(f.isDirectory()) {
-
-        Collection<File> found = FileUtils.listFiles(f, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
-        for (File uf : found) {
-          String relPath = uf.getPath().substring(f.getPath().length()+1);
-          String key = getObjectKey() + "/" + relPath;
-          upload(client, uf, key);
-        }
-
+        client.uploadDirectory(f, getURI(), encKeyName).get();
       } else {
         throw new UsageException("File '"+file+"' is not a file or a directory.");
       }
       client.shutdown();
-    }
-
-    private void upload(S3Client client, File f, String key) throws IOException, URISyntaxException, InterruptedException, ExecutionException {
-      System.out.print(f.getPath() + " [");
-      ListenableFuture<String> etag = client.upload(f, getBucket(), key, encKeyName);
-      System.err.println("] Upload completed with etag " + etag.get());
     }
   }
 

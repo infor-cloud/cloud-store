@@ -22,17 +22,14 @@ public class DownloadDirectoryCommand extends Command
   public DownloadDirectoryCommand(
           ListeningExecutorService httpExecutor,
           ListeningScheduledExecutorService internalExecutor,
-          File file,
           S3Client client)
   {
     _httpExecutor = httpExecutor;
     _executor = internalExecutor;
     _client = client;
-
-    this.file = file;
   }
 
-  public ListenableFuture<?> run(final String bucket, final String key, final boolean recursive, final boolean overwrite) throws ExecutionException, InterruptedException, IOException {
+  public ListenableFuture<?> run(final File file, final String bucket, final String key, final boolean recursive, final boolean overwrite) throws ExecutionException, InterruptedException, IOException {
     ListenableFuture<ObjectListing> results = _client.listObjects(bucket, key, recursive);
 
     List<S3ObjectSummary> lst = results.get().getObjectSummaries();

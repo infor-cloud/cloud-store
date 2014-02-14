@@ -135,7 +135,25 @@ public class S3Client
     return upload(file, bucket, object, key);
   }
 
-      // TODO would be useful to get a command hash back
+  /**
+   * Upload directory from S3
+   *
+   * @param file    Directory to download
+   * @param s3url   S3 object URL to download from
+   * @throws IllegalArgumentException If the s3url is not a valid S3 URL.
+   */
+  public ListenableFuture<?> uploadDirectory(File file, URI s3url, String encKey)
+          throws IOException, ExecutionException, InterruptedException {
+    UploadDirectoryCommand cmd = new UploadDirectoryCommand(_s3Executor, _executor, this);
+    configure(cmd);
+
+    String bucket = Utils.getBucket(s3url);
+    String object = Utils.getObjectKey(s3url);
+    return cmd.run(file, bucket, object, encKey);
+  }
+
+
+  // TODO would be useful to get a command hash back
       // (e.g. SHA-512) so that we can use that in authentication.
 
   /**
@@ -202,12 +220,12 @@ public class S3Client
    */
   public ListenableFuture<?> downloadDirectory(File file, URI s3url, boolean recursive, boolean overwrite)
           throws IOException, ExecutionException, InterruptedException {
-    DownloadDirectoryCommand cmd = new DownloadDirectoryCommand(_s3Executor, _executor, file, this);
+    DownloadDirectoryCommand cmd = new DownloadDirectoryCommand(_s3Executor, _executor, this);
     configure(cmd);
 
     String bucket = Utils.getBucket(s3url);
     String object = Utils.getObjectKey(s3url);
-    return cmd.run(bucket, object, recursive, overwrite);
+    return cmd.run(file, bucket, object, recursive, overwrite);
   }
 
   /**

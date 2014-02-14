@@ -125,6 +125,7 @@ public class UploadCommand extends Command
       {
         public ListenableFuture<Upload> call()
         {
+          System.err.println("Uploading s3://"+bucket+"/"+key);
           return startUploadActual(bucket, key);
         }
 
@@ -247,7 +248,6 @@ public class UploadCommand extends Command
       partSize = Math.min(fileLength - position, chunkSize);
     }
 
-    System.out.print(".");
     ListenableFuture<Void> uploadPartFuture = upload.uploadPart(partNumber, in, partSize);
 
     FutureFallback<Void> closeFile = new FutureFallback<Void>()

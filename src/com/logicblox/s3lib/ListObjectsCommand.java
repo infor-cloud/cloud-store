@@ -32,35 +32,16 @@ public class ListObjectsCommand extends Command
           {
             return runActual(bucket, prefix, recursive);
           }
-            
+
           public String toString()
           {
             return "list all object of s3://" + bucket + "/" + prefix;
           }
         });
-    
-    // The result will throw a 404 exception if after possible retries
-    // the object is still not found. We transform this here into a
-    // null value.
-    return Futures.withFallback(
-      future,
-      new FutureFallback<ObjectListing>()
-      {
-        public ListenableFuture<ObjectListing> create(Throwable t)
-        {
-          if(t instanceof AmazonS3Exception)
-          {
-            AmazonS3Exception exc = (AmazonS3Exception) t;
-            if (exc.getStatusCode() == 404)
-              return Futures.immediateFuture(null);
-          }
-          
-          
-          return Futures.immediateFailedFuture(t);
-        }
-      });    
+
+    return future;
   }
-  
+
   private ListenableFuture<ObjectListing> runActual(final String bucket, final String prefix, final boolean recursive)
   {
     return _httpExecutor.submit(
@@ -68,10 +49,6 @@ public class ListObjectsCommand extends Command
       {
         public ObjectListing call()
         {
-          // Note: we on purpose do not catch the 404 exception here
-          // to make sure that the retry facility works when the
-          // --stubborn option is used, which retries client
-          // exceptions as well.
           ListObjectsRequest req = new ListObjectsRequest().withBucketName(bucket).withPrefix(prefix);
           if (! recursive) req.setDelimiter("/");
 

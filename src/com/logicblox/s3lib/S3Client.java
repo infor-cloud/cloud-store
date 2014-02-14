@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -17,6 +18,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.amazonaws.services.s3.model.ObjectListing;
+
 
 /**
  * Captures the full configuration independent of concrete uploads and
@@ -114,7 +116,7 @@ public class S3Client
     UploadCommand cmd =
       new UploadCommand(_s3Executor, _executor, file, _chunkSize, key, _keyProvider);
     configure(cmd);
-    return cmd.run(bucket, object); 
+    return cmd.run(bucket, object);
   }
 
   /**
@@ -173,7 +175,7 @@ public class S3Client
   {
     DownloadCommand cmd = new DownloadCommand(_s3Executor, _executor, file, _keyProvider);
     configure(cmd);
-    return cmd.run(bucket, object); 
+    return cmd.run(bucket, object);
   }
 
   /**
@@ -184,11 +186,28 @@ public class S3Client
    * @throws IllegalArgumentException If the s3url is not a valid S3 URL.
    */
   public ListenableFuture<?> download(File file, URI s3url)
-  throws IOException
+          throws IOException
   {
     String bucket = Utils.getBucket(s3url);
     String object = Utils.getObjectKey(s3url);
     return download(file, bucket, object);
+  }
+
+  /**
+   * Download directory from S3
+   *
+   * @param file    Directory to download
+   * @param s3url   S3 object URL to download from
+   * @throws IllegalArgumentException If the s3url is not a valid S3 URL.
+   */
+  public ListenableFuture<?> downloadDirectory(File file, URI s3url, boolean recursive, boolean overwrite)
+          throws IOException, ExecutionException, InterruptedException {
+    DownloadDirectoryCommand cmd = new DownloadDirectoryCommand(_s3Executor, _executor, file, this);
+    configure(cmd);
+
+    String bucket = Utils.getBucket(s3url);
+    String object = Utils.getObjectKey(s3url);
+    return cmd.run(bucket, object, recursive, overwrite);
   }
 
   /**
@@ -225,7 +244,7 @@ public class S3Client
     {
       exc.printStackTrace();
     }
-    
+
     try
     {
       _executor.shutdown();

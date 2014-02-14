@@ -344,54 +344,18 @@ class Main
         throw new UsageException("Object not found at "+getURI());
       }
 
-      ListenableFuture<ObjectListing> results = client.listObjects(getBucket(), getObjectKey(), recursive);
-
       File output = new File(file);
+      ListenableFuture<?> result;
+
+      if(getObjectKey().endsWith("/")) {
+        result = client.downloadDirectory(output, getURI(), recursive, overwrite);
+      } else {
+        result = client.download(output, getURI());
+      }
+
       try
       {
-        List<S3ObjectSummary> lst = results.get().getObjectSummaries();
-
-        if (lst.size() > 1) {
-          if( !output.exists())
-            if (! output.mkdirs())
-              throw new UsageException("Could not create directory '"+file+"'");
-        }
-
-        for (S3ObjectSummary obj : lst) {
-          String relFile = obj.getKey().substring(getObjectKey().length());
-          File outputFile = new File(output.getAbsoluteFile(), relFile);
-          File outputPath = new File(outputFile.getParent());
-
-          if(! outputPath.exists())
-            if( ! outputPath.mkdirs())
-              throw new UsageException("Could not create directory '"+file+"'");
-
-          if (! obj.getKey().endsWith("/")) {
-            if(outputFile.exists())
-            {
-              if(overwrite)
-              {
-                if(!outputFile.delete())
-                  throw new UsageException("Could not overwrite existing file '" + file + "'");
-              }
-              else
-                throw new UsageException("File '" + file + "' already exists. Please delete or use --overwrite");
-            }
-
-            ListenableFuture<?> result = client.download(outputFile, getBucket(), obj.getKey());
-
-            try
-            {
-              System.err.print(outputFile + " [");
-              result.get();
-              System.err.println("] Download complete.");
-            }
-            catch(ExecutionException exc)
-            {
-              rethrow(exc.getCause());
-            }
-          }
-        }
+        result.get();
       }
       catch(ExecutionException exc)
       {

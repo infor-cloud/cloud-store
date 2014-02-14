@@ -87,7 +87,7 @@ public class DownloadCommand extends Command
     download = Futures.transform(download, startPartsAsyncFunction());
     return Futures.transform(download, Functions.constant(null));
   }
-  
+
   /**
    * Step 1: Start download and fetch metadata.
    */
@@ -99,6 +99,7 @@ public class DownloadCommand extends Command
       {
         public ListenableFuture<Download> call()
         {
+          System.err.println("Downloading s3://"+bucket+"/"+key);
           return startDownloadActual(bucket, key);
         }
 
@@ -241,8 +242,6 @@ public class DownloadCommand extends Command
       partSize = Math.min(fileLength - position, chunkSize);
     }
 
-    System.err.print(".");
-
     ListenableFuture<InputStream> getPartFuture = download.getPart(start, start + partSize - 1);
 
     AsyncFunction<InputStream, Integer> readDownloadFunction = new AsyncFunction<InputStream, Integer>()
@@ -256,7 +255,7 @@ public class DownloadCommand extends Command
 
     return Futures.transform(getPartFuture, readDownloadFunction);
   }
-  
+
   private void readDownload(Download download, InputStream stream, long position, int partNumber) throws Exception
   {
     RandomAccessFile out = new RandomAccessFile(file, "rw");

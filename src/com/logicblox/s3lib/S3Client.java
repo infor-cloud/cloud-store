@@ -138,8 +138,8 @@ public class S3Client
   /**
    * Upload directory from S3
    *
-   * @param file    Directory to download
-   * @param s3url   S3 object URL to download from
+   * @param file    Directory to upload
+   * @param s3url   S3 URL to upload to
    * @throws IllegalArgumentException If the s3url is not a valid S3 URL.
    */
   public ListenableFuture<?> uploadDirectory(File file, URI s3url, String encKey)

@@ -9,9 +9,11 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,7 +38,29 @@ public class UploadDirectoryCommand extends Command
   }
 
   public ListenableFuture<?> run(final File f, final String bucket, final String object, final String encKey) throws ExecutionException, InterruptedException, IOException {
-    Collection<File> found = FileUtils.listFiles(f, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
+    final IOFileFilter noSymlinks = new IOFileFilter() {
+      @Override
+      public boolean accept(File file, String s) {
+        return isSymlink(file);
+      }
+
+      private boolean isSymlink(File file) {
+        try {
+          boolean res = ! FileUtils.isSymlink(file);
+          return res;
+        } catch (FileNotFoundException e) {
+          return false;
+        } catch (IOException e) {
+          return false;
+        }
+      }
+
+      @Override
+      public boolean accept(File file) {
+        return isSymlink(file);
+      }
+    };
+    Collection<File> found = FileUtils.listFiles(f, noSymlinks, noSymlinks);
 
     List<ListenableFuture<?>> files = new ArrayList<ListenableFuture<?>>();
     for (File uf : found) {

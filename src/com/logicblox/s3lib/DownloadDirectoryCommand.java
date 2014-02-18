@@ -65,7 +65,6 @@ public class DownloadDirectoryCommand extends Command
 
         ListenableFuture<?> result = _client.download(outputFile, bucket, obj.getKey());
         files.add(result);
-        result.get();
       }
     }
 

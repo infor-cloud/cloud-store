@@ -49,6 +49,13 @@ let
       sha256 = "108mw2v8ncig29kjvzh8wi76plr01f4x5l3b1929xk5a7vf42snc";
     };
 
+  commonscodec =
+    buildjar {
+      name = "commons-codec-1.9";
+      url = http://repo1.maven.org/maven2/commons-codec/commons-codec/1.9/commons-codec-1.9.jar;
+      sha256 = "ad19d2601c3abf0b946b5c3a4113e226a8c1e3305e395b90013b78dd94a723ce";
+    };
+
   aws-java-sdk =
     pkgs.stdenv.mkDerivation rec {
       name = "aws-java-sdk-1.7.1";
@@ -93,6 +100,7 @@ let
           "--with-jcommander=${jcommander}"
           "--with-log4j=${log4j}"
           "--with-commons-io=${commonsio}"
+          "--with-commons-codec=${commonscodec}"
           "--with-aws-java-sdk=${aws-java-sdk}"
         ];
         buildInputs = [ python jdk];

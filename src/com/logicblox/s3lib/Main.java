@@ -326,17 +326,16 @@ class Main
 
       S3Client client = createS3Client();
 
-      // Test if S3 url exists.
-      if(client.exists(getBucket(), getObjectKey()).get() == null) {
-        throw new UsageException("Object not found at "+getURI());
-      }
-
       File output = new File(file);
       ListenableFuture<?> result;
 
       if(getObjectKey().endsWith("/")) {
         result = client.downloadDirectory(output, getURI(), recursive, overwrite);
       } else {
+        // Test if S3 url exists.
+        if(client.exists(getBucket(), getObjectKey()).get() == null) {
+          throw new UsageException("Object not found at "+getURI());
+        }
         result = client.download(output, getURI());
       }
 

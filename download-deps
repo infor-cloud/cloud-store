@@ -47,7 +47,7 @@ curl -o commons-io-2.4/lib/java/commons-io-2.4.jar \
 
 echo "Downloading commons-codec..."
 mkdir -p commons-codec-1.9/lib/java
-curl -o commons-codec-1.9/lib/java/commons-codec-1.9jar \
+curl -o commons-codec-1.9/lib/java/commons-codec-1.9.jar \
    http://repo1.maven.org/maven2/commons-codec/commons-codec/1.9/commons-codec-1.9.jar
 
 echo "Downloading aws-java-sdk..."

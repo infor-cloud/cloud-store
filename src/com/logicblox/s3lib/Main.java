@@ -284,12 +284,11 @@ class Main
       ListeningScheduledExecutorService internalExecutor = getInternalExecutor();
 
       S3Client client = createS3Client();
-      ListenableFuture<ObjectListing> result = client.listObjects(getBucket(), getObjectKey(), recursive);
 
       try
       {
-        ObjectListing lst = result.get();
-        for (S3ObjectSummary obj : lst.getObjectSummaries()) {
+        List<S3ObjectSummary> result = client.listObjects(getBucket(), getObjectKey(), recursive).get();
+        for (S3ObjectSummary obj : result) {
           // print the full s3 url for each object
           if (! getObjectKey().equals(obj.getKey()))
             System.out.println("s3://"+obj.getBucketName()+"/"+obj.getKey());

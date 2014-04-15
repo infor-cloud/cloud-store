@@ -17,7 +17,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 
 
 /**
@@ -234,7 +234,7 @@ public class S3Client
    * @param bucket  Bucket to check
    * @param object  Path in bucket to check
    */
-  public ListenableFuture<ObjectListing> listObjects(String bucket, String prefix, boolean recursive)
+  public ListenableFuture<List<S3ObjectSummary>> listObjects(String bucket, String prefix, boolean recursive)
   {
     ListObjectsCommand cmd =
             new ListObjectsCommand(_s3Executor, _executor);

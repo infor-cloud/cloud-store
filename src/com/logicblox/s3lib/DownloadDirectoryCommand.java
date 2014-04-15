@@ -1,7 +1,6 @@
 package com.logicblox.s3lib;
 
 
-import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.common.base.Functions;
 import com.google.common.util.concurrent.*;
@@ -30,9 +29,7 @@ public class DownloadDirectoryCommand extends Command
   }
 
   public ListenableFuture<?> run(final File file, final String bucket, final String key, final boolean recursive, final boolean overwrite) throws ExecutionException, InterruptedException, IOException {
-    ListenableFuture<ObjectListing> results = _client.listObjects(bucket, key, recursive);
-
-    List<S3ObjectSummary> lst = results.get().getObjectSummaries();
+    List<S3ObjectSummary> lst = _client.listObjects(bucket, key, recursive).get();
 
     if (lst.size() > 1) {
       if( !file.exists())

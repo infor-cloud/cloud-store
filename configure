@@ -2,17 +2,17 @@
 
 from buildlib import *
 
-bloxweb_deps=os.getenv('BLOXWEB_DEPS', '/opt/logicblox')
+deps='/opt/logicblox/deps'
 
 parse_arguments(
   prefix='/opt/logicblox/s3lib',
   deps = { 
-           'guava' : bloxweb_deps + '/guava-15.0',
-           'jcommander' : bloxweb_deps + '/jcommander-1.29',
-           'commons-io' : bloxweb_deps + '/commons-io-2.4',
-           'commons-codec' : bloxweb_deps + '/commons-codec-1.9',
-           'log4j' : bloxweb_deps + '/log4j-1.2.13',
-           'aws-java-sdk' : bloxweb_deps + '/aws-java-sdk-1.7.1'
+           'guava' : deps + '/guava-15.0',
+           'jcommander' : deps + '/jcommander-1.29',
+           'commons-io' : deps + '/commons-io-2.4',
+           'commons-codec' : deps + '/commons-codec-1.9',
+           'log4j' : deps + '/log4j-1.2.13',
+           'aws-java-sdk' : deps + '/aws-java-sdk-1.7.1'
          })
 
 open_makefile()

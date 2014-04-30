@@ -83,7 +83,7 @@ public class S3Client
    * @param file    File to upload
    * @param s3url   S3 object URL (using same syntax as s3cmd)
    */
-  public ListenableFuture<String> upload(File file, URI s3url)
+  public ListenableFuture<S3File> upload(File file, URI s3url)
   throws FileNotFoundException, IOException
   {
     return upload(file, s3url, null);
@@ -96,7 +96,7 @@ public class S3Client
    * @param bucket  Bucket to upload to
    * @param object  Path in bucket to upload to
    */
-  public ListenableFuture<String> upload(File file, String bucket, String object)
+  public ListenableFuture<S3File> upload(File file, String bucket, String object)
   throws FileNotFoundException, IOException
   {
     return upload(file, bucket, object, null);
@@ -110,7 +110,7 @@ public class S3Client
    * @param object  Path in bucket to upload to
    * @param key     Name of encryption key to use
    */
-  public ListenableFuture<String> upload(File file, String bucket, String object, String key)
+  public ListenableFuture<S3File> upload(File file, String bucket, String object, String key)
   throws FileNotFoundException, IOException
   {
     UploadCommand cmd =
@@ -127,7 +127,7 @@ public class S3Client
    * @param key     Name of encryption key to use
    * @throws IllegalArgumentException If the s3url is not a valid S3 URL.
    */
-  public ListenableFuture<String> upload(File file, URI s3url, String key)
+  public ListenableFuture<S3File> upload(File file, URI s3url, String key)
   throws FileNotFoundException, IOException
   {
     String bucket = Utils.getBucket(s3url);
@@ -142,7 +142,7 @@ public class S3Client
    * @param s3url   S3 URL to upload to
    * @throws IllegalArgumentException If the s3url is not a valid S3 URL.
    */
-  public ListenableFuture<?> uploadDirectory(File file, URI s3url, String encKey)
+  public ListenableFuture<List<S3File>> uploadDirectory(File file, URI s3url, String encKey)
           throws IOException, ExecutionException, InterruptedException {
     UploadDirectoryCommand cmd = new UploadDirectoryCommand(_s3Executor, _executor, this);
     configure(cmd);
@@ -151,10 +151,6 @@ public class S3Client
     String object = Utils.getObjectKey(s3url);
     return cmd.run(file, bucket, object, encKey);
   }
-
-
-  // TODO would be useful to get a command hash back
-      // (e.g. SHA-512) so that we can use that in authentication.
 
   /**
    * Check if a file exists in the bucket

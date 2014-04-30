@@ -135,52 +135,66 @@ public class DownloadCommand extends Command
   {
     Map<String,String> meta = download.getMeta();
 
-    if (meta.containsKey("s3tool-version")) {
+    if (meta.containsKey("s3tool-version"))
+    {
       String objectVersion = meta.get("s3tool-version");
 
       if (!String.valueOf(Version.CURRENT).equals(objectVersion))
         throw new UsageException("file uploaded with unsupported version: " + objectVersion + ", should be " + Version.CURRENT);
 
-      if (meta.containsKey("s3tool-key-name")) {
+      if (meta.containsKey("s3tool-key-name"))
+      {
         String keyName = meta.get("s3tool-key-name");
         Key privKey;
-        try {
+        try
+        {
           privKey = _encKeyProvider.getPrivateKey(keyName);
-        } catch (NoSuchKeyException e) {
+        }
+        catch (NoSuchKeyException e)
+        {
           throw new UsageException("private key '" + keyName + "' is not available to decrypt");
         }
 
         Cipher cipher;
+        byte[] encKeyBytes;
         try
         {
           cipher = Cipher.getInstance("RSA");
-        } catch (NoSuchAlgorithmException e) {
-          throw new RuntimeException(e);
-        } catch (NoSuchPaddingException e) {
-          throw new RuntimeException(e);
-        }
-        try
-        {
           cipher.init(Cipher.DECRYPT_MODE, privKey);
-        } catch (InvalidKeyException e) {
-          throw new RuntimeException(e);
-        }
-        byte[] encKeyBytes;
-        try {
           encKeyBytes = cipher.doFinal(DatatypeConverter.parseBase64Binary(meta.get("s3tool-symmetric-key")));
-        } catch (IllegalBlockSizeException e) {
-          throw new RuntimeException(e);
-        } catch (BadPaddingException e) {
+        }
+        catch (NoSuchAlgorithmException e)
+        {
           throw new RuntimeException(e);
         }
+        catch (NoSuchPaddingException e)
+        {
+          throw new RuntimeException(e);
+        }
+        catch (InvalidKeyException e)
+        {
+          throw new RuntimeException(e);
+        }
+        catch (IllegalBlockSizeException e)
+        {
+          throw new RuntimeException(e);
+        }
+        catch (BadPaddingException e)
+        {
+          throw new RuntimeException(e);
+        }
+
         encKey = new SecretKeySpec(encKeyBytes, "AES");
       }
 
       setChunkSize(Long.valueOf(meta.get("s3tool-chunk-size")));
       fileLength = Long.valueOf(meta.get("s3tool-file-length"));
-    } else {
+    }
+    else
+    {
       fileLength = download.getLength();
-      if (chunkSize == 0) {
+      if (chunkSize == 0)
+      {
         setChunkSize(Math.min(fileLength, Utils.getDefaultChunkSize()));
       }
     }
@@ -193,7 +207,6 @@ public class DownloadCommand extends Command
 
     return Futures.transform(Futures.allAsList(parts), Functions.constant(download));
   }
-
 
   private ListenableFuture<Integer> startPartDownload(final Download download, final long position)
   {
@@ -224,11 +237,16 @@ public class DownloadCommand extends Command
     if (encKey != null)
     {
       long blockSize;
-      try {
+      try
+      {
         blockSize = Cipher.getInstance("AES/CBC/PKCS5Padding").getBlockSize();
-      } catch (NoSuchAlgorithmException e) {
+      }
+      catch (NoSuchAlgorithmException e)
+      {
         throw new RuntimeException(e);
-      } catch (NoSuchPaddingException e) {
+      }
+      catch (NoSuchPaddingException e)
+      {
         throw new RuntimeException(e);
       }
 

@@ -32,6 +32,7 @@ import javax.xml.bind.DatatypeConverter;
 
 import com.amazonaws.services.s3.AmazonS3Client;
 
+import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
@@ -100,7 +101,7 @@ public class UploadCommand extends Command
   /**
    * Run ties Step 1, Step 2, and Step 3 together. The return result is the ETag of the upload.
    */
-  public ListenableFuture<String> run(final String bucket, final String key) throws FileNotFoundException
+  public ListenableFuture<S3File> run(final String bucket, final String key) throws FileNotFoundException
   {
     if (!file.exists())
       throw new FileNotFoundException(file.getPath());
@@ -112,7 +113,19 @@ public class UploadCommand extends Command
     ListenableFuture<Upload> upload = startUpload(bucket, key);
     upload = Futures.transform(upload, startPartsAsyncFunction());
     ListenableFuture<String> result = Futures.transform(upload, completeAsyncFunction());
-    return result;
+    return Futures.transform(result,
+      new Function<String, S3File>()
+      {
+        public S3File apply(String etag)
+        {
+          S3File f = new S3File();
+          f.setLocalFile(file);
+          f.setETag(etag);
+          f.setBucketName(bucket);
+          f.setKey(key);
+          return f;
+        }
+      });
   }
 
   /**

@@ -1,6 +1,5 @@
 package com.logicblox.s3lib;
 
-
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.common.base.Functions;
@@ -29,47 +28,59 @@ public class UploadDirectoryCommand extends Command
   public UploadDirectoryCommand(
           ListeningExecutorService httpExecutor,
           ListeningScheduledExecutorService internalExecutor,
-          S3Client client
-  )
+          S3Client client)
   {
     _httpExecutor = httpExecutor;
     _executor = internalExecutor;
     _client = client;
   }
 
-  public ListenableFuture<?> run(final File f, final String bucket, final String object, final String encKey) throws ExecutionException, InterruptedException, IOException {
-    final IOFileFilter noSymlinks = new IOFileFilter() {
+  public ListenableFuture<List<S3File>> run(final File dir, final String bucket, final String object, final String encKey)
+  throws ExecutionException, InterruptedException, IOException
+  {
+    final IOFileFilter noSymlinks = new IOFileFilter()
+    {
       @Override
-      public boolean accept(File file, String s) {
+      public boolean accept(File file, String s)
+      {
         return isSymlink(file);
       }
 
-      private boolean isSymlink(File file) {
-        try {
+      private boolean isSymlink(File file)
+      {
+        try
+        {
           boolean res = ! FileUtils.isSymlink(file);
           return res;
-        } catch (FileNotFoundException e) {
+        }
+        catch (FileNotFoundException e)
+        {
           return false;
-        } catch (IOException e) {
+        }
+        catch (IOException e)
+        {
           return false;
         }
       }
 
       @Override
-      public boolean accept(File file) {
+      public boolean accept(File file)
+      {
         return isSymlink(file);
       }
     };
-    Collection<File> found = FileUtils.listFiles(f, noSymlinks, noSymlinks);
 
-    List<ListenableFuture<?>> files = new ArrayList<ListenableFuture<?>>();
-    for (File uf : found) {
-      String relPath = uf.getPath().substring(f.getPath().length()+1);
+    Collection<File> found = FileUtils.listFiles(dir, noSymlinks, noSymlinks);
+
+    List<ListenableFuture<S3File>> files = new ArrayList<ListenableFuture<S3File>>();
+    for (File file : found)
+    {
+      String relPath = file.getPath().substring(dir.getPath().length()+1);
       String key = object + "/" + relPath;
-      files.add(_client.upload(uf, bucket, key, encKey));
+      files.add(_client.upload(file, bucket, key, encKey));
     }
 
-    return Futures.transform(Futures.allAsList(files), Functions.constant(null));
+    return Futures.allAsList(files);
   }
 
 }

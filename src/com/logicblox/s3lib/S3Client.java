@@ -155,10 +155,6 @@ public class S3Client
   /**
    * Check if a file exists in the bucket
    *
-   * Returns a null future if the file does not exist, and an
-   * exception if the metadata of the file could not be fetched for
-   * different reasons.
-   *
    * @param bucket  Bucket to check
    * @param object  Path in bucket to check
    */
@@ -171,6 +167,10 @@ public class S3Client
   /**
    * Check if a file exists in the bucket
    *
+   * Returns a null future if the file does not exist, and an
+   * exception if the metadata of the file could not be fetched for
+   * different reasons.
+   *
    * @param bucket  Bucket to check
    * @param object  Path in bucket to check
    */
@@ -179,6 +179,20 @@ public class S3Client
     ExistsCommand cmd = new ExistsCommand(_s3Executor, _executor);
     configure(cmd);
     return cmd.run(bucket, object);
+  }
+
+  /**
+   * Check if a file exists in the bucket
+   *
+   * Returns a null future if the file does not exist, and an
+   * exception if the metadata of the file could not be fetched for
+   * different reasons.
+   */
+  public ListenableFuture<ObjectMetadata> exists(URI s3url)
+  {
+    String bucket = Utils.getBucket(s3url);
+    String object = Utils.getObjectKey(s3url);
+    return exists(bucket, object);
   }
 
   /**

@@ -155,6 +155,10 @@ public class S3Client
   /**
    * Check if a file exists in the bucket
    *
+   * Returns a null future if the file does not exist, and an
+   * exception if the metadata of the file could not be fetched for
+   * different reasons.
+   *
    * @param bucket  Bucket to check
    * @param object  Path in bucket to check
    */

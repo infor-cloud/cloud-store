@@ -35,6 +35,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
+import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
@@ -81,23 +82,37 @@ public class DownloadCommand extends Command
       throw new IOException("File '" + file + "' already exists");
   }
 
-  public ListenableFuture<Object> run(final String bucket, final String key)
+  public ListenableFuture<S3File> run(final String bucket, final String key)
   {
-    ListenableFuture<Download> download = startDownload(bucket, key);
+    ListenableFuture<AmazonDownload> download = startDownload(bucket, key);
     download = Futures.transform(download, startPartsAsyncFunction());
-    return Futures.transform(download, Functions.constant(null));
+    return Futures.transform(
+      download,
+      new Function<AmazonDownload, S3File>()
+      {
+        public S3File apply(AmazonDownload download)
+        {
+          S3File f = new S3File();
+          f.setLocalFile(DownloadCommand.this.file);
+          f.setETag(download.getETag());
+          f.setBucketName(bucket);
+          f.setKey(key);
+          return f;
+        }
+      }
+    );
   }
 
   /**
    * Step 1: Start download and fetch metadata.
    */
-  private ListenableFuture<Download> startDownload(final String bucket, final String key)
+  private ListenableFuture<AmazonDownload> startDownload(final String bucket, final String key)
   {
     return executeWithRetry(
       _executor,
-      new Callable<ListenableFuture<Download>>()
+      new Callable<ListenableFuture<AmazonDownload>>()
       {
-        public ListenableFuture<Download> call()
+        public ListenableFuture<AmazonDownload> call()
         {
           System.err.println("Downloading s3://"+bucket+"/"+key);
           return startDownloadActual(bucket, key);
@@ -110,27 +125,27 @@ public class DownloadCommand extends Command
       });
   }
 
-  private ListenableFuture<Download> startDownloadActual(final String bucket, final String key)
+  private ListenableFuture<AmazonDownload> startDownloadActual(final String bucket, final String key)
   {
-    DownloadFactory factory = new AmazonDownloadFactory(getAmazonS3Client(), _downloadExecutor);
+    AmazonDownloadFactory factory = new AmazonDownloadFactory(getAmazonS3Client(), _downloadExecutor);
     return factory.startDownload(bucket, key);
   }
 
   /**
    * Step 2: Start downloading parts
    */
-  private AsyncFunction<Download, Download> startPartsAsyncFunction()
+  private AsyncFunction<AmazonDownload, AmazonDownload> startPartsAsyncFunction()
   {
-    return new AsyncFunction<Download, Download>()
+    return new AsyncFunction<AmazonDownload, AmazonDownload>()
     {
-      public ListenableFuture<Download> apply(Download download) throws Exception
+      public ListenableFuture<AmazonDownload> apply(AmazonDownload download) throws Exception
       {
         return startParts(download);
       }
     };
   }
 
-  private ListenableFuture<Download> startParts(Download download)
+  private ListenableFuture<AmazonDownload> startParts(AmazonDownload download)
   throws IOException, UsageException
   {
     Map<String,String> meta = download.getMeta();
@@ -140,7 +155,8 @@ public class DownloadCommand extends Command
       String objectVersion = meta.get("s3tool-version");
 
       if (!String.valueOf(Version.CURRENT).equals(objectVersion))
-        throw new UsageException("file uploaded with unsupported version: " + objectVersion + ", should be " + Version.CURRENT);
+        throw new UsageException(
+          "file uploaded with unsupported version: " + objectVersion + ", should be " + Version.CURRENT);
 
       if (meta.containsKey("s3tool-key-name"))
       {
@@ -208,7 +224,7 @@ public class DownloadCommand extends Command
     return Futures.transform(Futures.allAsList(parts), Functions.constant(download));
   }
 
-  private ListenableFuture<Integer> startPartDownload(final Download download, final long position)
+  private ListenableFuture<Integer> startPartDownload(final AmazonDownload download, final long position)
   {
     final int partNumber = (int) (position / chunkSize);
 
@@ -228,7 +244,7 @@ public class DownloadCommand extends Command
       });
   }
 
-  private ListenableFuture<Integer> startPartDownloadActual(final Download download, final long position)
+  private ListenableFuture<Integer> startPartDownloadActual(final AmazonDownload download, final long position)
   {
     final int partNumber = (int) (position / chunkSize);
     long start;
@@ -274,7 +290,8 @@ public class DownloadCommand extends Command
     return Futures.transform(getPartFuture, readDownloadFunction);
   }
 
-  private void readDownload(Download download, InputStream stream, long position, int partNumber) throws Exception
+  private void readDownload(AmazonDownload download, InputStream stream, long position, int partNumber)
+  throws Exception
   {
     RandomAccessFile out = new RandomAccessFile(file, "rw");
     out.seek(position);

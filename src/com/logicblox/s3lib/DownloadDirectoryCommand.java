@@ -28,27 +28,35 @@ public class DownloadDirectoryCommand extends Command
     _client = client;
   }
 
-  public ListenableFuture<?> run(final File file, final String bucket, final String key, final boolean recursive, final boolean overwrite) throws ExecutionException, InterruptedException, IOException {
+  public ListenableFuture<List<S3File>> run(
+    final File file,
+    final String bucket,
+    final String key,
+    final boolean recursive,
+    final boolean overwrite)
+  throws ExecutionException, InterruptedException, IOException
+  {
     List<S3ObjectSummary> lst = _client.listObjects(bucket, key, recursive).get();
 
-    if (lst.size() > 1) {
-      if( !file.exists())
-        if (! file.mkdirs())
-          throw new UsageException("Could not create directory '"+file+"'");
-    }
+    if (lst.size() > 1)
+      if(!file.exists())
+        if(!file.mkdirs())
+          throw new UsageException("Could not create directory '" + file + "'");
 
-    List<ListenableFuture<?>> files = new ArrayList<ListenableFuture<?>>();
+    List<ListenableFuture<S3File>> files = new ArrayList<ListenableFuture<S3File>>();
 
-    for (S3ObjectSummary obj : lst) {
+    for (S3ObjectSummary obj : lst)
+    {
       String relFile = obj.getKey().substring(key.length());
       File outputFile = new File(file.getAbsoluteFile(), relFile);
       File outputPath = new File(outputFile.getParent());
 
-      if(! outputPath.exists())
-        if( ! outputPath.mkdirs())
+      if(!outputPath.exists())
+        if(!outputPath.mkdirs())
           throw new UsageException("Could not create directory '"+file+"'");
 
-      if (! obj.getKey().endsWith("/")) {
+      if (!obj.getKey().endsWith("/"))
+      {
         if(outputFile.exists())
         {
           if(overwrite)
@@ -57,15 +65,16 @@ public class DownloadDirectoryCommand extends Command
               throw new UsageException("Could not overwrite existing file '" + file + "'");
           }
           else
-            throw new UsageException("File '" + file + "' already exists. Please delete or use --overwrite");
+            throw new UsageException(
+              "File '" + file + "' already exists. Please delete or use --overwrite");
         }
 
-        ListenableFuture<?> result = _client.download(outputFile, bucket, obj.getKey());
+        ListenableFuture<S3File> result = _client.download(outputFile, bucket, obj.getKey());
         files.add(result);
       }
     }
 
-    return Futures.transform(Futures.allAsList(files), Functions.constant(null));
+    return Futures.allAsList(files);
   }
 
 }

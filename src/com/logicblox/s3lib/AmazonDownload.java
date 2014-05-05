@@ -11,23 +11,26 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 
-class AmazonDownload implements Download
+class AmazonDownload
 {
   private AmazonS3 client;
   private ListeningExecutorService executor;
-  private Map<String,String> meta;
+  private ObjectMetadata meta;
   private String key;
   private String bucketName;
-  private long length;
 
-  public AmazonDownload(AmazonS3 client, String key, String bucketName, Map<String,String> meta, long length, ListeningExecutorService executor)
+  public AmazonDownload(
+    AmazonS3 client,
+    String key,
+    String bucketName,
+    ObjectMetadata meta,
+    ListeningExecutorService executor)
   {
     this.client = client;
     this.key = key;
     this.bucketName = bucketName;
     this.executor = executor;
     this.meta = meta;
-    this.length = length;
   }
 
   public ListenableFuture<InputStream> getPart(long start, long end)
@@ -37,12 +40,17 @@ class AmazonDownload implements Download
 
   public Map<String,String> getMeta()
   {
-    return meta;
+    return meta.getUserMetadata();
   }
 
   public long getLength()
   {
-    return length;
+    return meta.getContentLength();
+  }
+
+  public String getETag()
+  {
+    return meta.getETag();
   }
 
   private class DownloadCallable implements Callable<InputStream>

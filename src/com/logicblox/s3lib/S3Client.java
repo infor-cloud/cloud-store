@@ -202,7 +202,7 @@ public class S3Client
    * @param bucket  Bucket to download from
    * @param object  Path in bucket to download
    */
-  public ListenableFuture<?> download(File file, String bucket, String object)
+  public ListenableFuture<S3File> download(File file, String bucket, String object)
   throws IOException
   {
     DownloadCommand cmd = new DownloadCommand(_s3Executor, _executor, file, _keyProvider);
@@ -217,7 +217,7 @@ public class S3Client
    * @param s3url   S3 object URL to download from
    * @throws IllegalArgumentException If the s3url is not a valid S3 URL.
    */
-  public ListenableFuture<?> download(File file, URI s3url)
+  public ListenableFuture<S3File> download(File file, URI s3url)
           throws IOException
   {
     String bucket = Utils.getBucket(s3url);
@@ -232,8 +232,10 @@ public class S3Client
    * @param s3url   S3 object URL to download from
    * @throws IllegalArgumentException If the s3url is not a valid S3 URL.
    */
-  public ListenableFuture<?> downloadDirectory(File file, URI s3url, boolean recursive, boolean overwrite)
-          throws IOException, ExecutionException, InterruptedException {
+  public ListenableFuture<List<S3File>> downloadDirectory(
+    File file, URI s3url, boolean recursive, boolean overwrite)
+  throws IOException, ExecutionException, InterruptedException
+  {
     DownloadDirectoryCommand cmd = new DownloadDirectoryCommand(_s3Executor, _executor, this);
     configure(cmd);
 
@@ -248,7 +250,8 @@ public class S3Client
    * @param bucket  Bucket to check
    * @param object  Path in bucket to check
    */
-  public ListenableFuture<List<S3ObjectSummary>> listObjects(String bucket, String prefix, boolean recursive)
+  public ListenableFuture<List<S3ObjectSummary>> listObjects(
+    String bucket, String prefix, boolean recursive)
   {
     ListObjectsCommand cmd =
             new ListObjectsCommand(_s3Executor, _executor);

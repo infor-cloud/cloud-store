@@ -90,6 +90,9 @@ class Main
     @Parameter(names = {"--max-concurrent-connections"}, description = "The maximum number of concurrent HTTP connections to S3")
     int maxConcurrentConnections = 10;
 
+    @Parameter(names = "--endpoint", description = "Endpoint")
+    String endpoint = null;
+
     @Parameter(names = "--keydir", description = "Directory where encryption keys are found")
     String encKeyDirectory = Utils.getDefaultKeyDirectory();
 
@@ -126,6 +129,10 @@ class Main
 
       client.setRetryClientException(_stubborn);
       client.setRetryCount(_retryCount);
+      if(endpoint != null)
+      {
+        client.setEndpoint(endpoint);
+      }
 
       return client;
     }

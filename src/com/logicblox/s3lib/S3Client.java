@@ -70,6 +70,11 @@ public class S3Client
     _retryClientException = retry;
   }
 
+  public void setEndpoint(String endpoint)
+  {
+    _client.setEndpoint(endpoint);
+  }
+
   private void configure(Command cmd)
   {
     cmd.setRetryClientException(_retryClientException);

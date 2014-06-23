@@ -138,7 +138,6 @@ public class UploadCommand extends Command
       {
         public ListenableFuture<Upload> call()
         {
-          System.err.println("Uploading s3://"+bucket+"/"+key);
           return startUploadActual(bucket, key);
         }
 

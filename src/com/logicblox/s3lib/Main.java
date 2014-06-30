@@ -13,6 +13,7 @@ import java.util.concurrent.Executors;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
 
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.beust.jcommander.JCommander;
@@ -263,14 +264,37 @@ class Main
     @Parameter(names = "--key", description = "The name of the encryption key to use")
     String encKeyName = null;
 
+    @Parameter(names = "--canned-acl", description = "The canned ACL to use, choose one of: "+
+                       "private, public-read, public-read-write, authenticated-read, bucket-owner-read, "+
+                       "bucket-owner-full-control (default: bucket-owner-full-control)")
+    String cannedAcl = "bucket-owner-full-control";
+
+    private CannedAccessControlList getAcl(String value)
+    {
+      for (CannedAccessControlList acl : CannedAccessControlList.values())
+      {
+        if (acl.toString().equals(value))
+        {
+          return acl;
+        }
+      }
+      return null;
+    }
+
     public void invoke() throws Exception
     {
+      CannedAccessControlList acl = getAcl(cannedAcl);
+      if(acl == null)
+      {
+        throw new UsageException("Unknown canned ACL '"+cannedAcl+"'");
+      }
+
       S3Client client = createS3Client();
       File f = new File(file);
       if(f.isFile()) {
-        client.upload(f, getBucket(), getObjectKey(), encKeyName).get();
+        client.upload(f, getBucket(), getObjectKey(), encKeyName, acl).get();
       } else if(f.isDirectory()) {
-        client.uploadDirectory(f, getURI(), encKeyName).get();
+        client.uploadDirectory(f, getURI(), encKeyName, acl).get();
       } else {
         throw new UsageException("File '"+file+"' is not a file or a directory.");
       }

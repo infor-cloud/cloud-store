@@ -2,6 +2,7 @@ package com.logicblox.s3lib;
 
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.google.common.base.Functions;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -35,7 +36,7 @@ public class UploadDirectoryCommand extends Command
     _client = client;
   }
 
-  public ListenableFuture<List<S3File>> run(final File dir, final String bucket, final String object, final String encKey)
+  public ListenableFuture<List<S3File>> run(final File dir, final String bucket, final String object, final String encKey, final CannedAccessControlList acl)
   throws ExecutionException, InterruptedException, IOException
   {
     final IOFileFilter noSymlinks = new IOFileFilter()
@@ -77,7 +78,7 @@ public class UploadDirectoryCommand extends Command
     {
       String relPath = file.getPath().substring(dir.getPath().length()+1);
       String key = object + "/" + relPath;
-      files.add(_client.upload(file, bucket, key, encKey));
+      files.add(_client.upload(file, bucket, key, encKey, acl));
     }
 
     return Futures.allAsList(files);

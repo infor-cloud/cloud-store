@@ -8,6 +8,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
 
@@ -27,9 +28,9 @@ class MultipartAmazonUploadFactory implements UploadFactory
     this.executor = executor;
   }
 
-  public ListenableFuture<Upload> startUpload(String bucketName, String key, Map<String,String> meta)
+  public ListenableFuture<Upload> startUpload(String bucketName, String key, Map<String,String> meta, CannedAccessControlList cannedAcl)
   {
-    return executor.submit(new StartCallable(bucketName, key, meta));
+    return executor.submit(new StartCallable(bucketName, key, meta, cannedAcl));
   }
 
   private class StartCallable implements Callable<Upload>
@@ -37,12 +38,14 @@ class MultipartAmazonUploadFactory implements UploadFactory
     private String key;
     private String bucketName;
     private Map<String,String> meta;
+    private CannedAccessControlList cannedAcl;
 
-    public StartCallable(String bucketName, String key, Map<String,String> meta)
+    public StartCallable(String bucketName, String key, Map<String,String> meta, CannedAccessControlList cannedAcl)
     {
       this.bucketName = bucketName;
       this.key = key;
       this.meta = meta;
+      this.cannedAcl = cannedAcl;
     }
 
     public Upload call() throws Exception
@@ -50,6 +53,7 @@ class MultipartAmazonUploadFactory implements UploadFactory
       ObjectMetadata metadata = new ObjectMetadata();
       metadata.setUserMetadata(meta);
       InitiateMultipartUploadRequest req = new InitiateMultipartUploadRequest(bucketName, key, metadata);
+      req.setCannedACL(cannedAcl);
       InitiateMultipartUploadResult res = client.initiateMultipartUpload(req);
       return new MultipartAmazonUpload(client, bucketName, key, res.getUploadId(), executor);
     }

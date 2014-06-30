@@ -12,6 +12,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -118,8 +119,23 @@ public class S3Client
   public ListenableFuture<S3File> upload(File file, String bucket, String object, String key)
   throws FileNotFoundException, IOException
   {
+    return upload(file, bucket, object, key, CannedAccessControlList.BucketOwnerFullControl);
+  }
+
+  /**
+   * Upload file to S3.
+   *
+   * @param file    File to upload
+   * @param bucket  Bucket to upload to
+   * @param object  Path in bucket to upload to
+   * @param key     Name of encryption key to use
+   * @param acl     Access control list to use
+   */
+  public ListenableFuture<S3File> upload(File file, String bucket, String object, String key, CannedAccessControlList acl)
+  throws FileNotFoundException, IOException
+  {
     UploadCommand cmd =
-      new UploadCommand(_s3Executor, _executor, file, _chunkSize, key, _keyProvider);
+      new UploadCommand(_s3Executor, _executor, file, _chunkSize, key, _keyProvider, acl);
     configure(cmd);
     return cmd.run(bucket, object);
   }
@@ -147,14 +163,14 @@ public class S3Client
    * @param s3url   S3 URL to upload to
    * @throws IllegalArgumentException If the s3url is not a valid S3 URL.
    */
-  public ListenableFuture<List<S3File>> uploadDirectory(File file, URI s3url, String encKey)
+  public ListenableFuture<List<S3File>> uploadDirectory(File file, URI s3url, String encKey, CannedAccessControlList acl)
           throws IOException, ExecutionException, InterruptedException {
     UploadDirectoryCommand cmd = new UploadDirectoryCommand(_s3Executor, _executor, this);
     configure(cmd);
 
     String bucket = Utils.getBucket(s3url);
     String object = Utils.getObjectKey(s3url);
-    return cmd.run(file, bucket, object, encKey);
+    return cmd.run(file, bucket, object, encKey, acl);
   }
 
   /**

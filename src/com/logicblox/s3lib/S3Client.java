@@ -161,6 +161,21 @@ public class S3Client
    *
    * @param file    Directory to upload
    * @param s3url   S3 URL to upload to
+   * @param encKey  Encryption key to use
+   * @throws IllegalArgumentException If the s3url is not a valid S3 URL.
+   */
+  public ListenableFuture<List<S3File>> uploadDirectory(File file, URI s3url, String encKey)
+          throws IOException, ExecutionException, InterruptedException {
+    return this.uploadDirectory(file, s3url, encKey, CannedAccessControlList.BucketOwnerFullControl);
+  }
+
+  /**
+   * Upload directory from S3
+   *
+   * @param file    Directory to upload
+   * @param s3url   S3 URL to upload to
+   * @param encKey  Encryption key to use
+   * @param acl     Access control list to use
    * @throws IllegalArgumentException If the s3url is not a valid S3 URL.
    */
   public ListenableFuture<List<S3File>> uploadDirectory(File file, URI s3url, String encKey, CannedAccessControlList acl)

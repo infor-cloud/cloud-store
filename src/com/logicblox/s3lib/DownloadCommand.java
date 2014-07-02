@@ -114,7 +114,6 @@ public class DownloadCommand extends Command
       {
         public ListenableFuture<AmazonDownload> call()
         {
-          System.err.println("Downloading s3://"+bucket+"/"+key);
           return startDownloadActual(bucket, key);
         }
 

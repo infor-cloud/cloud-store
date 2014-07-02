@@ -31,6 +31,7 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
 
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
@@ -46,6 +47,7 @@ public class UploadCommand extends Command
 {
   private String encKeyName;
   private String encryptedSymmetricKeyString;
+  private CannedAccessControlList acl;
 
   private ListeningExecutorService _uploadExecutor;
   private ListeningScheduledExecutorService _executor;
@@ -56,7 +58,8 @@ public class UploadCommand extends Command
     File file,
     long chunkSize,
     String encKeyName,
-    KeyProvider encKeyProvider)
+    KeyProvider encKeyProvider,
+    CannedAccessControlList acl)
   throws IOException
   {
     if(uploadExecutor == null)
@@ -96,6 +99,8 @@ public class UploadCommand extends Command
         throw new RuntimeException(e);
       }
     }
+
+    this.acl = acl;
   }
 
   /**
@@ -138,7 +143,6 @@ public class UploadCommand extends Command
       {
         public ListenableFuture<Upload> call()
         {
-          System.err.println("Uploading s3://"+bucket+"/"+key);
           return startUploadActual(bucket, key);
         }
 
@@ -162,7 +166,7 @@ public class UploadCommand extends Command
     meta.put("s3tool-chunk-size", Long.toString(chunkSize));
     meta.put("s3tool-file-length", Long.toString(fileLength));
 
-    return factory.startUpload(bucket, key, meta);
+    return factory.startUpload(bucket, key, meta, acl);
   }
 
   /**

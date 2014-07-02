@@ -274,7 +274,7 @@ class Main
   @Parameters(commandDescription = "List objects in S3")
   class ListCommandOptions extends S3ObjectCommandOptions
   {
-    @Parameter(names = "-r", description = "List all objects that match the provided S3 URL prefix.")
+    @Parameter(names = {"-r", "--recursive"}, description = "List all objects that match the provided S3 URL prefix.")
     boolean recursive = false;
 
     @Override
@@ -314,7 +314,7 @@ class Main
     @Parameter(names = "--overwrite", description = "Overwrite existing file(s) if existing")
     boolean overwrite = false;
 
-    @Parameter(names = "-r", description = "Download recursively")
+    @Parameter(names = {"-r", "--recursive"}, description = "Download recursively")
     boolean recursive = false;
 
     @Override

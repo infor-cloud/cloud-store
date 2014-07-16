@@ -189,6 +189,34 @@ public class S3Client
   }
 
   /**
+   * Delete a file from S3.  Note that this doesn't return an error if the
+   * file doesn't exist.  If you care, use the exists() functions to check.
+   *
+   * @param bucket  Bucket to delete from
+   * @param object  Path to be deleted from bucket
+   */
+  public ListenableFuture<S3File> delete(String bucket, String object)
+  {
+    DeleteCommand cmd =
+      new DeleteCommand(_s3Executor, _executor);
+    configure(cmd);
+    return cmd.run(bucket, object);
+  }
+
+  /**
+   * Delete a file from S3.  Note that this doesn't return an error if the
+   * file doesn't exist.  If you care, use the exists() functions to check.
+   *
+   * @param s3url   Identifier of file to delete (i.e. s3://bucket/object)
+   */
+  public ListenableFuture<S3File> delete(URI s3url)
+  {
+    String bucket = Utils.getBucket(s3url);
+    String object = Utils.getObjectKey(s3url);
+    return delete(bucket, object);
+  }
+
+  /**
    * Check if a file exists in the bucket
    *
    * @param bucket  Bucket to check

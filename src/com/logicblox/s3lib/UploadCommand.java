@@ -111,10 +111,6 @@ public class UploadCommand extends Command
     if (!file.exists())
       throw new FileNotFoundException(file.getPath());
 
-    if (this.fileLength == 0) {
-      throw new UsageException("File does not exist or is a special file");
-    }
-
     ListenableFuture<Upload> upload = startUpload(bucket, key);
     upload = Futures.transform(upload, startPartsAsyncFunction());
     ListenableFuture<String> result = Futures.transform(upload, completeAsyncFunction());

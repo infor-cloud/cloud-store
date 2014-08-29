@@ -149,13 +149,14 @@ public class DownloadCommand extends Command
   {
     Map<String,String> meta = download.getMeta();
 
+    String errPrefix = "s3://"+download.getBucket()+"/"+download.getKey()+": ";
     if (meta.containsKey("s3tool-version"))
     {
       String objectVersion = meta.get("s3tool-version");
 
       if (!String.valueOf(Version.CURRENT).equals(objectVersion))
         throw new UsageException(
-          "file uploaded with unsupported version: " + objectVersion + ", should be " + Version.CURRENT);
+          errPrefix+"file uploaded with unsupported version: " + objectVersion + ", should be " + Version.CURRENT);
 
       if (meta.containsKey("s3tool-key-name"))
       {
@@ -167,7 +168,7 @@ public class DownloadCommand extends Command
         }
         catch (NoSuchKeyException e)
         {
-          throw new UsageException("private key '" + keyName + "' is not available to decrypt");
+          throw new UsageException(errPrefix + "private key '" + keyName + "' is not available to decrypt");
         }
 
         Cipher cipher;

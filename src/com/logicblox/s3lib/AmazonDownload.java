@@ -53,6 +53,16 @@ class AmazonDownload
     return meta.getETag();
   }
 
+  public String getKey()
+  {
+    return key;
+  }
+
+  public String getBucket()
+  {
+    return bucketName;
+  }
+
   private class DownloadCallable implements Callable<InputStream>
   {
     private long start;

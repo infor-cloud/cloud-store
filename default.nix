@@ -2,6 +2,7 @@
 , nixpkgs ? <nixpkgs>
 , config ? <config>
 , pkgs ? import nixpkgs { inherit system; }
+, builder_config ? import (config + "/lib") { inherit pkgs; }
 , stdenv ? pkgs.stdenv
 , fetchurl ? pkgs.fetchurl
 , python ? pkgs.pythonFull
@@ -79,7 +80,6 @@ let
 
   revision = version s3lib;
   name = "s3lib-${revision}";
-  builder_config = import (config + "/lib") { inherit nixpkgs; };
 
   jobs = rec {
     source_tarball = 

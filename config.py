@@ -2,10 +2,6 @@ from lbconfig.api import *
 
 deps='/opt/logicblox/deps'
 
-jetty_version = '7.6.7.v20120910'
-openam_version = '10.0.0.0-patched'
-lb_web_deps = os.getenv('BLOXWEB_DEPS', '/opt/logicblox/deps')
-
 lbconfig_package(
   's3lib-0.2',
   version='0.2',

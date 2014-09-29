@@ -13,7 +13,7 @@ set -e
 PREFIX=$BLOXWEB_DEPS
 
 if [ -z "$PREFIX" ]; then
-    PREFIX=/opt/logicblox
+    PREFIX=/opt/logicblox/deps
 fi
 
 if [ -n "$1" ]; then

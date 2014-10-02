@@ -279,13 +279,23 @@ public class DownloadCommand extends Command
     ListenableFuture<InputStream> getPartFuture = download.getPart(start, start + partSize - 1);
 
     AsyncFunction<InputStream, Integer> readDownloadFunction = new AsyncFunction<InputStream, Integer>()
+    {
+      public ListenableFuture<Integer> apply(InputStream stream) throws Exception
       {
-        public ListenableFuture<Integer> apply(InputStream stream) throws Exception
+        try
         {
           readDownload(download, stream, position, partNumber);
           return Futures.immediateFuture(partNumber);
+        } finally {
+          // make sure that the stream is always closed
+          try
+          {
+            stream.close();
+          }
+          catch (IOException e) {}
         }
-      };
+      }
+    };
 
     return Futures.transform(getPartFuture, readDownloadFunction);
   }

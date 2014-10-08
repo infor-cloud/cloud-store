@@ -43,6 +43,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.FutureFallback;
 
 public class DownloadCommand extends Command
 {
@@ -86,7 +87,7 @@ public class DownloadCommand extends Command
   {
     ListenableFuture<AmazonDownload> download = startDownload(bucket, key);
     download = Futures.transform(download, startPartsAsyncFunction());
-    return Futures.transform(
+    ListenableFuture<S3File> res = Futures.transform(
       download,
       new Function<AmazonDownload, S3File>()
       {
@@ -101,6 +102,16 @@ public class DownloadCommand extends Command
         }
       }
     );
+
+    return Futures.withFallback(
+      res,
+      new FutureFallback<S3File>()
+      {
+        public ListenableFuture<S3File> create(Throwable t)
+        {
+          return Futures.immediateFailedFuture(new Exception("Error downloading s3://"+bucket+"/"+key+".", t));
+        }
+      });
   }
 
   /**

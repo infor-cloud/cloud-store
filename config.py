@@ -1,6 +1,6 @@
 from lbconfig.api import *
 
-deps='/opt/logicblox/deps'
+depdir = os.getenv('LB_UNIVERSE_DEPS', '/opt/logicblox/lb-universe-deps')
 
 lbconfig_package(
   's3lib-0.2',
@@ -10,12 +10,12 @@ lbconfig_package(
 )
 
 depends_on(
-  guava= deps + '/guava-15.0',
-  jcommander= deps + '/jcommander-1.29',
-  commons_io= deps + '/commons-io-2.4',
-  commons_codec= deps + '/commons-codec-1.9',
-  log4j= deps + '/log4j-1.2.13',
-  aws_java_sdk= deps + '/aws-java-sdk-1.7.1'
+  guava= depdir,
+  jcommander= depdir,
+  commons_io= depdir,
+  commons_codec= depdir,
+  log4j= depdir,
+  aws_java_sdk= depdir
 )
 
 

@@ -2,17 +2,17 @@
 
 from buildlib import *
 
-deps='/opt/logicblox/deps'
+depdir = os.getenv('LB_UNIVERSE_DEPS', '/opt/logicblox/lb-universe-deps')
 
 parse_arguments(
   prefix='/opt/logicblox/s3lib',
   deps = { 
-           'guava' : deps + '/guava-15.0',
-           'jcommander' : deps + '/jcommander-1.29',
-           'commons-io' : deps + '/commons-io-2.4',
-           'commons-codec' : deps + '/commons-codec-1.9',
-           'log4j' : deps + '/log4j-1.2.13',
-           'aws-java-sdk' : deps + '/aws-java-sdk-1.7.1'
+           'guava' : depdir,
+           'jcommander' : depdir,
+           'commons-io' : depdir,
+           'commons-codec' : depdir,
+           'log4j' : depdir,
+           'aws-java-sdk' : depdir
          })
 
 open_makefile()

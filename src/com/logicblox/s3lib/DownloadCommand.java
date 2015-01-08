@@ -109,6 +109,9 @@ public class DownloadCommand extends Command
       {
         public ListenableFuture<S3File> create(Throwable t)
         {
+          if (t instanceof UsageException) {
+            return Futures.immediateFailedFuture(t);
+          }
           return Futures.immediateFailedFuture(new Exception("Error downloading s3://"+bucket+"/"+key+".", t));
         }
       });

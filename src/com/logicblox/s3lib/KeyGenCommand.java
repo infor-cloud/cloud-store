@@ -3,9 +3,7 @@ package com.logicblox.s3lib;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
 
-import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.*;
 
@@ -25,38 +23,45 @@ public class KeyGenCommand {
         privateKey = keypair.getPrivate();
     }
 
-    public void savePemKeypair(String fn) throws IOException {
-        String tmpfn = fn + "~";
+    public void savePemKeypair(File pemf) throws IOException {
         String pem = getPemPublicKey() + "\n" + getPemPrivateKey();
 
-        File tmpf = new File(tmpfn);
-        FileOutputStream fos = new FileOutputStream(tmpf);
-        DataOutputStream dos = new DataOutputStream(fos);
-        dos.writeBytes(pem);
-        dos.flush();
-        dos.close();
-
-        File pemf = new File(fn);
-        FileUtils.moveFile(tmpf, pemf);
+        FileUtils.writeStringToFile(pemf, pem, "UTF-8");
     }
 
     public String getPemPrivateKey() {
-        String encoded = b64encode(privateKey.getEncoded());
-        encoded = "-----BEGIN PRIVATE KEY-----\n" + encoded + "-----END PRIVATE KEY-----\n";
+        // pkcs8_der is PKCS#8-encoded binary (DER) private key
+        byte[] pkcs8_der = privateKey.getEncoded();
 
-        return encoded;
+        // DER to PEM conversion
+        String pem_encoded = pemEncode(pkcs8_der,
+                "-----BEGIN PRIVATE KEY-----\n",
+                "-----END PRIVATE KEY-----\n");
+
+        return pem_encoded;
     }
 
     public String getPemPublicKey() {
-        String encoded = b64encode(publickey.getEncoded());
-        encoded = "-----BEGIN PUBLIC KEY-----\n" + encoded + "-----END PUBLIC KEY-----\n";
+        // x509_der is X.509-encoded binary (DER) public key
+        byte[] x509_der = publickey.getEncoded();
 
-        return encoded;
+        // DER to PEM conversion
+        String pem_encoded = pemEncode(x509_der,
+                "-----BEGIN PUBLIC KEY-----\n",
+                "-----END PUBLIC KEY-----\n");
+
+        return pem_encoded;
     }
 
-    private String b64encode(byte[] keyBytes) {
-        Base64 b64 = new Base64(Base64.PEM_CHUNK_SIZE);
-        return b64.encodeToString(keyBytes);
+    private String pemEncode(byte[] keyBytes,
+                             String startArmour,
+                             String endArmour) {
+        int lineLength = Base64.PEM_CHUNK_SIZE;
+        byte[] lineSeparator = {'\n'};
+        Base64 b64 = new Base64(lineLength, lineSeparator);
+        String encoded = b64.encodeToString(keyBytes);
+
+        return startArmour + encoded + endArmour;
     }
 
 }

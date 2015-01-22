@@ -66,6 +66,7 @@ class Main
     _commander.addCommand("ls", new ListCommandOptions());
     _commander.addCommand("exists", new ExistsCommandOptions());
     _commander.addCommand("list-buckets", new ListBucketsCommandOptions());
+    _commander.addCommand("keygen", new KeyGenCommandOptions());
     _commander.addCommand("help", new HelpCommand());
   }
 
@@ -335,6 +336,36 @@ class Main
     }
   }
 
+  @Parameters(commandDescription = "Generates a public/private keypair in PEM format")
+  class KeyGenCommandOptions extends CommandOptions
+  {
+    @Parameter(names = {"-n", "--name"}, description = "Name of the PEM file", required = true)
+    String name = null;
+
+    @Parameter(names = "--keydir", description = "Directory where PEM file will be stored")
+    String encKeyDirectory = Utils.getDefaultKeyDirectory();
+
+    @Override
+    public void invoke() throws Exception
+    {
+      try
+      {
+        String pemfp = name + ".pem";
+        File pemf = new File(encKeyDirectory, pemfp);
+        if(pemf.exists()) {
+          System.err.println("File " + pemf.getPath() + " already exists.");
+          System.exit(1);
+        }
+
+        KeyGenCommand kgc = new KeyGenCommand("RSA", 2048);
+        kgc.savePemKeypair(pemf);
+      }
+      catch(Exception exc)
+      {
+        rethrow(exc.getCause());
+      }
+    }
+  }
 
   @Parameters(commandDescription = "Download a file, or a set of files from S3")
   class DownloadCommandOptions extends S3ObjectCommandOptions

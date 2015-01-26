@@ -1,7 +1,6 @@
 package com.logicblox.s3lib;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
@@ -27,14 +26,14 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
  */
 public class S3Client
 {
-  private ListeningExecutorService _s3Executor;
-  private ListeningScheduledExecutorService _executor;
-  private long _chunkSize;
-  private AWSCredentialsProvider _credentials;
-  private AmazonS3Client _client;
-  private KeyProvider _keyProvider;
-  private boolean _retryClientException = false;
-  private int _retryCount = 15;
+  ListeningExecutorService _s3Executor;
+  ListeningScheduledExecutorService _executor;
+  long _chunkSize;
+  AWSCredentialsProvider _credentials;
+  AmazonS3Client _client;
+  KeyProvider _keyProvider;
+  boolean _retryClientException = false;
+  int _retryCount = 15;
 
   /**
    * @param credentials   AWS Credentials
@@ -76,7 +75,7 @@ public class S3Client
     _client.setEndpoint(endpoint);
   }
 
-  private void configure(Command cmd)
+  void configure(Command cmd)
   {
     cmd.setRetryClientException(_retryClientException);
     cmd.setRetryCount(_retryCount);
@@ -90,7 +89,7 @@ public class S3Client
    * @param s3url   S3 object URL (using same syntax as s3cmd)
    */
   public ListenableFuture<S3File> upload(File file, URI s3url)
-  throws FileNotFoundException, IOException
+  throws IOException
   {
     return upload(file, s3url, null);
   }
@@ -103,7 +102,7 @@ public class S3Client
    * @param object  Path in bucket to upload to
    */
   public ListenableFuture<S3File> upload(File file, String bucket, String object)
-  throws FileNotFoundException, IOException
+  throws IOException
   {
     return upload(file, bucket, object, null);
   }
@@ -117,7 +116,7 @@ public class S3Client
    * @param key     Name of encryption key to use
    */
   public ListenableFuture<S3File> upload(File file, String bucket, String object, String key)
-  throws FileNotFoundException, IOException
+  throws IOException
   {
     return upload(file, bucket, object, key, CannedAccessControlList.BucketOwnerFullControl);
   }
@@ -132,7 +131,7 @@ public class S3Client
    * @param acl     Access control list to use
    */
   public ListenableFuture<S3File> upload(File file, String bucket, String object, String key, CannedAccessControlList acl)
-  throws FileNotFoundException, IOException
+  throws IOException
   {
     UploadCommand cmd =
       new UploadCommand(_s3Executor, _executor, file, _chunkSize, key, _keyProvider, acl);
@@ -149,7 +148,7 @@ public class S3Client
    * @throws IllegalArgumentException If the s3url is not a valid S3 URL.
    */
   public ListenableFuture<S3File> upload(File file, URI s3url, String key)
-  throws FileNotFoundException, IOException
+  throws IOException
   {
     String bucket = Utils.getBucket(s3url);
     String object = Utils.getObjectKey(s3url);

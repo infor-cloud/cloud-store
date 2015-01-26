@@ -1,7 +1,6 @@
 package com.logicblox.s3lib;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.DateFormat;
@@ -11,7 +10,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
 import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 
@@ -25,14 +23,9 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.TrueFileFilter;
 
 import com.amazonaws.AmazonServiceException;
 
@@ -116,17 +109,32 @@ class Main
       return MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(50));
     }
 
-    protected S3Client createS3Client()
-    {
+    protected S3Client createS3Client() throws URISyntaxException {
       ListeningExecutorService uploadExecutor = getHttpExecutor();
       ListeningScheduledExecutorService internalExecutor = getInternalExecutor();
 
-      S3Client client = new S3Client(
-        null,
-        uploadExecutor,
-        internalExecutor,
-        chunkSize,
-        getKeyProvider());
+      URI endpointUri;
+      if (!endpoint.startsWith("http://"))
+        endpointUri = new URI("http://" + endpoint);
+      else
+        endpointUri = new URI(endpoint);
+      boolean gcsMode = endpointUri.getHost().endsWith("googleapis.com");
+
+      S3Client client;
+      if (gcsMode)
+        client = new GCSClient(
+                null,
+                uploadExecutor,
+                internalExecutor,
+                chunkSize,
+                getKeyProvider());
+      else
+        client = new S3Client(
+                null,
+                uploadExecutor,
+                internalExecutor,
+                chunkSize,
+                getKeyProvider());
 
       client.setRetryClientException(_stubborn);
       client.setRetryCount(_retryCount);

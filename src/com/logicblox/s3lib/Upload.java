@@ -1,5 +1,6 @@
 package com.logicblox.s3lib;
 
+import java.io.File;
 import java.io.InputStream;
 
 import com.google.common.util.concurrent.ListenableFuture;

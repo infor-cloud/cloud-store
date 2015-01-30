@@ -5,7 +5,6 @@ import com.google.api.client.googleapis.media.MediaHttpUploaderProgressListener;
 import com.google.api.client.http.InputStreamContent;
 import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.model.StorageObject;
-import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -20,16 +19,20 @@ class GCSUpload implements Upload {
     private Storage client;
     private String bucketName;
     private String key;
+    private String acl;
     private Map<String, String> meta;
     private ListeningExecutorService executor;
+    private boolean progress;
 
-    public GCSUpload(Storage client, String bucketName, String key, Map<String, String> meta, ListeningExecutorService executor) {
+    public GCSUpload(Storage client, String bucketName, String key, String acl, Map<String, String> meta,
+                     ListeningExecutorService executor, boolean progress) {
         this.client = client;
         this.bucketName = bucketName;
         this.key = key;
-        this.client = client;
+        this.acl = acl;
         this.meta = meta;
         this.executor = executor;
+        this.progress = progress;
     }
 
     public ListenableFuture<Void> uploadPart(int partNumber, InputStream stream, long partSize) {
@@ -74,23 +77,29 @@ class GCSUpload implements Upload {
             // Not strictly necessary, but allows optimization in the cloud.
             mediaContent.setLength(this.partSize);
 
-            // TODO(geokollias): ensure that default object ACLs (a bucket property) are set appropriately:
-            // https://developers.google.com/storage/docs/json_api/v1/buckets#defaultObjectAcl
             StorageObject objectMetadata = new StorageObject()
                     .setName(key)
                     .setMetadata(ImmutableMap.copyOf(meta))
                     .setContentDisposition("attachment");
-//              .setAcl(ImmutableList.of(
-//                      new ObjectAccessControl().setEntity("domain-example.com").setRole("READER"),
-//                      new ObjectAccessControl().setEntity("user-administrator@example.com").setRole("OWNER")
-//              ))
+//                    .setAcl(ImmutableList.of(
+//                            new ObjectAccessControl().setEntity("domain-example.com").setRole("READER"),
+//                            new ObjectAccessControl().setEntity("user-administrator@example.com").setRole("OWNER")
+//                    ));
 
             Storage.Objects.Insert insertObject =
-                    client.objects().insert(bucketName, objectMetadata, mediaContent);
+                    client.objects().insert(bucketName, objectMetadata, mediaContent)
+                            .setPredefinedAcl(acl);
 
-            insertObject.getMediaHttpUploader()
-                    .setProgressListener(new CustomUploadProgressListener()).setDisableGZipContent(true);
+            insertObject.getMediaHttpUploader().setDisableGZipContent(true);
 //              .setDisableGZipContent(true).setDirectUploadEnabled(true);
+
+            if (progress) {
+                insertObject.getMediaHttpUploader().setProgressListener(
+                        new GCSUploadProgressListener(
+                                "part " + (partNumber + 1),
+                                partSize / 10,
+                                partSize));
+            }
 
             StorageObject res = insertObject.execute();
 
@@ -101,38 +110,35 @@ class GCSUpload implements Upload {
             if (serverMD5.equals(clientMD5)) {
                 md5 = serverMD5;
                 return null;
-            }
-            else
+            } else
                 throw new BadHashException();
         }
     }
 
-    private static class CustomUploadProgressListener implements MediaHttpUploaderProgressListener {
-        private final Stopwatch stopwatch = Stopwatch.createUnstarted();
+    private static class GCSUploadProgressListener
+            extends ProgressListener
+            implements MediaHttpUploaderProgressListener {
 
-        public CustomUploadProgressListener() {
+        public GCSUploadProgressListener(String name, long intervalInBytes, long totalSizeInBytes) {
+            super(name, "upload", intervalInBytes, totalSizeInBytes);
         }
 
         @Override
         public void progressChanged(MediaHttpUploader uploader) {
             switch (uploader.getUploadState()) {
                 case INITIATION_STARTED:
-                    stopwatch.start();
-                    System.out.println("Initiation has started!");
-                    break;
-                case INITIATION_COMPLETE:
-                    System.out.println("Initiation is complete!");
+                    started();
                     break;
                 case MEDIA_IN_PROGRESS:
                     // TODO: Progress works iff you have a content length specified.
-                    // System.out.println(uploader.getProgress());
-                    System.out.println(uploader.getNumBytesUploaded());
+                    // progressCum(uploader.getProgress());
+                    progressCum(uploader.getNumBytesUploaded());
                     break;
                 case MEDIA_COMPLETE:
-                    stopwatch.stop();
-                    System.out.println(String.format("Upload is complete! (%s)", stopwatch));
+                    progressCum(uploader.getNumBytesUploaded());
+                    complete();
                     break;
-                case NOT_STARTED:
+                default:
                     break;
             }
         }

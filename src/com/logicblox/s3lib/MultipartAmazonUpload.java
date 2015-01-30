@@ -1,26 +1,17 @@
 package com.logicblox.s3lib;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.concurrent.Callable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.FilterInputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import javax.xml.bind.DatatypeConverter;
-
+import com.amazonaws.event.ProgressEvent;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.*;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.AbortMultipartUploadRequest;
-import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
-import com.amazonaws.services.s3.model.CompleteMultipartUploadResult;
-import com.amazonaws.services.s3.model.UploadPartRequest;
-import com.amazonaws.services.s3.model.UploadPartResult;
-import com.amazonaws.services.s3.model.PartETag;
+import javax.xml.bind.DatatypeConverter;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.Callable;
 
 class MultipartAmazonUpload implements Upload
 {
@@ -30,14 +21,17 @@ class MultipartAmazonUpload implements Upload
   private String key;
   private String uploadId;
   private ListeningExecutorService executor;
+  private boolean progress;
 
-  public MultipartAmazonUpload(AmazonS3 client, String bucketName, String key, String uploadId, ListeningExecutorService executor)
+  public MultipartAmazonUpload(AmazonS3 client, String bucketName, String key, String uploadId,
+                               ListeningExecutorService executor, boolean progress)
   {
     this.bucketName = bucketName;
     this.key = key;
     this.client = client;
     this.uploadId = uploadId;
     this.executor = executor;
+    this.progress = progress;
   }
 
   public ListenableFuture<Void> uploadPart(int partNumber, InputStream stream, long partSize)
@@ -101,6 +95,14 @@ class MultipartAmazonUpload implements Upload
       req.setPartSize(partSize);
       req.setUploadId(uploadId);
       req.setKey(key);
+      if (progress) {
+        req.setGeneralProgressListener(
+                new AmazonUploadProgressListener(
+                        "part " + (partNumber + 1),
+                        partSize / 10,
+                        partSize));
+      }
+
       UploadPartResult res = client.uploadPart(req);
       byte[] etag = DatatypeConverter.parseHexBinary(res.getETag());
       if (Arrays.equals(etag, stream.getDigest()))
@@ -115,6 +117,20 @@ class MultipartAmazonUpload implements Upload
       {
         throw new BadHashException();
       }
+    }
+  }
+
+  private static class AmazonUploadProgressListener
+          extends ProgressListener
+          implements com.amazonaws.event.ProgressListener {
+
+    public AmazonUploadProgressListener(String name, long intervalInBytes, long totalSizeInBytes) {
+      super(name, "upload", intervalInBytes, totalSizeInBytes);
+    }
+
+    @Override
+    public void progressChanged(ProgressEvent event) {
+      progress(event.getBytesTransferred());
     }
   }
 }

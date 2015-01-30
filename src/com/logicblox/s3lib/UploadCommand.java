@@ -47,7 +47,8 @@ public class UploadCommand extends Command
 {
   private String encKeyName;
   private String encryptedSymmetricKeyString;
-  private CannedAccessControlList acl;
+  private String acl;
+  private boolean progress;
 
   private ListeningExecutorService _uploadExecutor;
   private ListeningScheduledExecutorService _executor;
@@ -59,7 +60,8 @@ public class UploadCommand extends Command
     long chunkSize,
     String encKeyName,
     KeyProvider encKeyProvider,
-    CannedAccessControlList acl)
+    String acl,
+    boolean progress)
   throws IOException
   {
     if(uploadExecutor == null)
@@ -101,6 +103,7 @@ public class UploadCommand extends Command
     }
 
     this.acl = acl;
+    this.progress = progress;
   }
 
   /**
@@ -151,7 +154,7 @@ public class UploadCommand extends Command
 
   private ListenableFuture<Upload> startUploadActual(final String bucket, final String key)
   {
-    UploadFactory factory = new MultipartAmazonUploadFactory(getAmazonS3Client(), _uploadExecutor);
+    UploadFactory factory = new MultipartAmazonUploadFactory(getAmazonS3Client(), _uploadExecutor, progress);
 
     Map<String,String> meta = new HashMap<String,String>();
     meta.put("s3tool-version", String.valueOf(Version.CURRENT));

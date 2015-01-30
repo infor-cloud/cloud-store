@@ -115,10 +115,11 @@ public class S3Client
    * @param object  Path in bucket to upload to
    * @param key     Name of encryption key to use
    */
+  @Deprecated
   public ListenableFuture<S3File> upload(File file, String bucket, String object, String key)
   throws IOException
   {
-    return upload(file, bucket, object, key, CannedAccessControlList.BucketOwnerFullControl);
+    return upload(file, bucket, object, key, "bucket-owner-full-control", false);
   }
 
   /**
@@ -130,11 +131,43 @@ public class S3Client
    * @param key     Name of encryption key to use
    * @param acl     Access control list to use
    */
+  @Deprecated
   public ListenableFuture<S3File> upload(File file, String bucket, String object, String key, CannedAccessControlList acl)
+          throws IOException
+  {
+    return upload(file, bucket, object, key, acl.toString(), false);
+  }
+
+  /**
+   * Upload file to S3.
+   *
+   * @param file    File to upload
+   * @param bucket  Bucket to upload to
+   * @param object  Path in bucket to upload to
+   * @param key     Name of encryption key to use
+   * @param acl     Access control list to use
+   */
+  public ListenableFuture<S3File> upload(File file, String bucket, String object, String key, String acl)
+  throws IOException
+  {
+    return upload(file, bucket, object, key, acl, false);
+  }
+
+  /**
+   * Upload file to S3.
+   *
+   * @param file      File to upload
+   * @param bucket    Bucket to upload to
+   * @param object    Path in bucket to upload to
+   * @param key       Name of encryption key to use
+   * @param acl       Access control list to use
+   * @param progress  Enable progress indicator
+   */
+  public ListenableFuture<S3File> upload(File file, String bucket, String object, String key, String acl, boolean progress)
   throws IOException
   {
     UploadCommand cmd =
-      new UploadCommand(_s3Executor, _executor, file, _chunkSize, key, _keyProvider, acl);
+      new UploadCommand(_s3Executor, _executor, file, _chunkSize, key, _keyProvider, acl, progress);
     configure(cmd);
     return cmd.run(bucket, object);
   }
@@ -177,7 +210,23 @@ public class S3Client
    * @param acl     Access control list to use
    * @throws IllegalArgumentException If the s3url is not a valid S3 URL.
    */
+  @Deprecated
   public ListenableFuture<List<S3File>> uploadDirectory(File file, URI s3url, String encKey, CannedAccessControlList acl)
+          throws IOException, ExecutionException, InterruptedException {
+    return this.uploadDirectory(file, s3url, encKey, acl.toString());
+  }
+
+  /**
+   * Upload directory from S3
+   *
+   * @param file    Directory to upload
+   * @param s3url   S3 URL to upload to
+   * @param encKey  Encryption key to use
+   * @param acl     Access control list to use
+   * @throws IllegalArgumentException If the s3url is not a valid S3 URL.
+   */
+  @Deprecated
+  public ListenableFuture<List<S3File>> uploadDirectory(File file, URI s3url, String encKey, String acl)
           throws IOException, ExecutionException, InterruptedException {
     UploadDirectoryCommand cmd = new UploadDirectoryCommand(_s3Executor, _executor, this);
     configure(cmd);
@@ -261,16 +310,30 @@ public class S3Client
   /**
    * Download file from S3
    *
-   * @param file    File to download
-   * @param bucket  Bucket to download from
-   * @param object  Path in bucket to download
+   * @param file      File to download
+   * @param bucket    Bucket to download from
+   * @param object    Path in bucket to download
+   * @param progress  Enable progress indicator
    */
-  public ListenableFuture<S3File> download(File file, String bucket, String object)
+  public ListenableFuture<S3File> download(File file, String bucket, String object, boolean progress)
   throws IOException
   {
-    DownloadCommand cmd = new DownloadCommand(_s3Executor, _executor, file, _keyProvider);
+    DownloadCommand cmd = new DownloadCommand(_s3Executor, _executor, file, _keyProvider, progress);
     configure(cmd);
     return cmd.run(bucket, object);
+  }
+
+  /**
+   * Download file from S3
+   *
+   * @param file      File to download
+   * @param bucket    Bucket to download from
+   * @param object    Path in bucket to download
+   */
+  public ListenableFuture<S3File> download(File file, String bucket, String object)
+          throws IOException
+  {
+    return download(file, bucket, object, false);
   }
 
   /**
@@ -286,6 +349,22 @@ public class S3Client
     String bucket = Utils.getBucket(s3url);
     String object = Utils.getObjectKey(s3url);
     return download(file, bucket, object);
+  }
+
+  /**
+   * Download file from S3
+   *
+   * @param file    File to download
+   * @param s3url   S3 object URL to download from
+   * @throws IllegalArgumentException If the s3url is not a valid S3 URL.\
+   * @param progress  Enable progress indicator
+   */
+  public ListenableFuture<S3File> download(File file, URI s3url, boolean progress)
+          throws IOException
+  {
+    String bucket = Utils.getBucket(s3url);
+    String object = Utils.getObjectKey(s3url);
+    return download(file, bucket, object, progress);
   }
 
   /**

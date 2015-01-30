@@ -36,7 +36,7 @@ public class UploadDirectoryCommand extends Command
     _client = client;
   }
 
-  public ListenableFuture<List<S3File>> run(final File dir, final String bucket, final String object, final String encKey, final CannedAccessControlList acl)
+  public ListenableFuture<List<S3File>> run(final File dir, final String bucket, final String object, final String encKey, final String acl)
   throws ExecutionException, InterruptedException, IOException
   {
     final IOFileFilter noSymlinks = new IOFileFilter()

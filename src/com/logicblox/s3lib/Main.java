@@ -109,16 +109,16 @@ class Main
       return MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(50));
     }
 
+    protected boolean backendIsGCS() throws URISyntaxException
+    {
+      return Utils.backendIsGCS(endpoint, null);
+    }
+
     protected S3Client createS3Client() throws URISyntaxException {
       ListeningExecutorService uploadExecutor = getHttpExecutor();
       ListeningScheduledExecutorService internalExecutor = getInternalExecutor();
 
-      URI endpointUri;
-      if (!endpoint.startsWith("http://"))
-        endpointUri = new URI("http://" + endpoint);
-      else
-        endpointUri = new URI(endpoint);
-      boolean gcsMode = endpointUri.getHost().endsWith("googleapis.com");
+      boolean gcsMode = backendIsGCS();
 
       S3Client client;
       if (gcsMode)
@@ -140,7 +140,14 @@ class Main
       client.setRetryCount(_retryCount);
       if(endpoint != null)
       {
-        client.setEndpoint(endpoint);
+        if (gcsMode)
+        {
+          client.setEndpoint(Utils.normalizeGCSEndpoint(endpoint, _commander.getParsedCommand()));
+        }
+        else
+        {
+          client.setEndpoint(endpoint);
+        }
       }
 
       return client;
@@ -184,6 +191,11 @@ class Main
     protected String getObjectKey() throws URISyntaxException
     {
       return Utils.getObjectKey(getURI());
+    }
+
+    protected boolean backendIsGCS() throws URISyntaxException
+    {
+      return Utils.backendIsGCS(endpoint, urls.get(0));
     }
   }
 
@@ -272,37 +284,56 @@ class Main
     @Parameter(names = "--key", description = "The name of the encryption key to use")
     String encKeyName = null;
 
+    @Parameter(names = "--progress", description = "Enable progress indicator")
+    boolean progress = false;
+
     @Parameter(names = "--canned-acl", description = "The canned ACL to use, choose one of: "+
                        "private, public-read, public-read-write, authenticated-read, bucket-owner-read, "+
                        "bucket-owner-full-control (default: bucket-owner-full-control)")
     String cannedAcl = "bucket-owner-full-control";
 
-    private CannedAccessControlList getAcl(String value)
+    private String getDefaultACL()
+    {
+      try
+      {
+        return Utils.getDefaultACL(backendIsGCS());
+      }
+      catch (URISyntaxException e)
+      {
+        return "bucket-owner-full-control";
+      }
+    }
+
+    private boolean isValidAcl(String value)
     {
       for (CannedAccessControlList acl : CannedAccessControlList.values())
       {
         if (acl.toString().equals(value))
         {
-          return acl;
+          return true;
         }
       }
-      return null;
+      List<String> gcsPredefACLs = Arrays.asList("projectPrivate", "private", "publicRead",
+              "publicReadWrite", "authenticatedRead", "bucketOwnerRead", "bucketOwnerFullControl");
+      return gcsPredefACLs.contains(value);
     }
 
     public void invoke() throws Exception
     {
-      CannedAccessControlList acl = getAcl(cannedAcl);
-      if(acl == null)
+      if(!isValidAcl(cannedAcl))
       {
         throw new UsageException("Unknown canned ACL '"+cannedAcl+"'");
       }
 
+      if (cannedAcl == "bucket-owner-full-control")
+        cannedAcl = getDefaultACL();
+
       S3Client client = createS3Client();
       File f = new File(file);
       if(f.isFile()) {
-        client.upload(f, getBucket(), getObjectKey(), encKeyName, acl).get();
+        client.upload(f, getBucket(), getObjectKey(), encKeyName, cannedAcl, progress).get();
       } else if(f.isDirectory()) {
-        client.uploadDirectory(f, getURI(), encKeyName, acl).get();
+        client.uploadDirectory(f, getURI(), encKeyName, cannedAcl).get();
       } else {
         throw new UsageException("File '"+file+"' is not a file or a directory.");
       }
@@ -356,6 +387,9 @@ class Main
     @Parameter(names = {"-r", "--recursive"}, description = "Download recursively")
     boolean recursive = false;
 
+    @Parameter(names = "--progress", description = "Enable progress indication")
+    boolean progress = false;
+
     @Override
     public void invoke() throws Exception
     {
@@ -367,6 +401,10 @@ class Main
       File output = new File(file);
       ListenableFuture<?> result;
 
+      if (backendIsGCS() && (endpoint == null)) {
+        client.setEndpoint("https://storage.googleapis.com");
+      }
+
       if(getObjectKey().endsWith("/")) {
         result = client.downloadDirectory(output, getURI(), recursive, overwrite);
       } else {
@@ -374,7 +412,7 @@ class Main
         if(client.exists(getBucket(), getObjectKey()).get() == null) {
           throw new UsageException("Object not found at "+getURI());
         }
-        result = client.download(output, getURI());
+        result = client.download(output, getURI(), progress);
       }
 
       try

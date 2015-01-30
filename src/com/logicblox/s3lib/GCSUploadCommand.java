@@ -1,6 +1,8 @@
 package com.logicblox.s3lib;
 
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.util.concurrent.*;
@@ -24,10 +26,15 @@ import java.util.concurrent.Callable;
 public class GCSUploadCommand extends Command {
     private String encKeyName;
     private String encryptedSymmetricKeyString;
-    private CannedAccessControlList acl; // TODO(geokollias): Move to GCS-specific ACL
+    private String acl;
 
     private ListeningExecutorService _uploadExecutor;
     private ListeningScheduledExecutorService _executor;
+
+    private String key;
+    private String bucket;
+
+    private boolean progress;
 
     public GCSUploadCommand(
             ListeningExecutorService uploadExecutor,
@@ -36,7 +43,8 @@ public class GCSUploadCommand extends Command {
             long chunkSize,
             String encKeyName,
             KeyProvider encKeyProvider,
-            CannedAccessControlList acl)
+            String acl,
+            boolean progress)
             throws IOException {
         if (uploadExecutor == null)
             throw new IllegalArgumentException("non-null upload executor is required");
@@ -76,6 +84,7 @@ public class GCSUploadCommand extends Command {
         }
 
         this.acl = acl;
+        this.progress = progress;
     }
 
     /**
@@ -84,6 +93,9 @@ public class GCSUploadCommand extends Command {
     public ListenableFuture<S3File> run(final String bucket, final String key) throws FileNotFoundException {
         if (!file.exists())
             throw new FileNotFoundException(file.getPath());
+
+        this.bucket = bucket;
+        this.key = key;
 
         ListenableFuture<Upload> upload = startUpload(bucket, key);
         upload = Futures.transform(upload, startPartsAsyncFunction());
@@ -118,7 +130,7 @@ public class GCSUploadCommand extends Command {
     }
 
     private ListenableFuture<Upload> startUploadActual(final String bucket, final String key) {
-        UploadFactory factory = new GCSUploadFactory(getGCSClient(), _uploadExecutor);
+        UploadFactory factory = new GCSUploadFactory(getGCSClient(), _uploadExecutor, progress);
 
         Map<String, String> meta = new HashMap<String, String>();
         meta.put("s3tool-version", String.valueOf(Version.CURRENT));
@@ -126,9 +138,10 @@ public class GCSUploadCommand extends Command {
             meta.put("s3tool-key-name", encKeyName);
             meta.put("s3tool-symmetric-key", encryptedSymmetricKeyString);
         }
-        // meta.put("s3tool-chunk-size", Long.toString(chunkSize));
         // single-part => chunk size == file size
-        meta.put("s3tool-chunk-size", Long.toString(fileLength));
+        // meta.put("s3tool-chunk-size", Long.toString(fileLength));
+        // GCS "multipart" download seems to work fine
+        meta.put("s3tool-chunk-size", Long.toString(chunkSize));
         meta.put("s3tool-file-length", Long.toString(fileLength));
 
         return factory.startUpload(bucket, key, meta, acl);

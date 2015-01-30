@@ -1,6 +1,5 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.google.api.services.storage.Storage;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -11,8 +10,9 @@ import java.util.concurrent.Callable;
 class GCSUploadFactory implements UploadFactory {
     private Storage client;
     private ListeningExecutorService executor;
+    private boolean progress;
 
-    public GCSUploadFactory(Storage client, ListeningExecutorService executor) {
+    public GCSUploadFactory(Storage client, ListeningExecutorService executor, boolean progress) {
         if (client == null)
             throw new IllegalArgumentException("non-null client is required");
         if (executor == null)
@@ -20,9 +20,10 @@ class GCSUploadFactory implements UploadFactory {
 
         this.client = client;
         this.executor = executor;
+        this.progress = progress;
     }
 
-    public ListenableFuture<Upload> startUpload(String bucketName, String key, Map<String, String> meta, CannedAccessControlList cannedAcl) {
+    public ListenableFuture<Upload> startUpload(String bucketName, String key, Map<String, String> meta, String cannedAcl) {
         return executor.submit(new StartCallable(bucketName, key, meta, cannedAcl));
     }
 
@@ -30,9 +31,9 @@ class GCSUploadFactory implements UploadFactory {
         private String key;
         private String bucketName;
         private Map<String, String> meta;
-        private CannedAccessControlList cannedAcl;
+        private String cannedAcl;
 
-        public StartCallable(String bucketName, String key, Map<String, String> meta, CannedAccessControlList cannedAcl) {
+        public StartCallable(String bucketName, String key, Map<String, String> meta, String cannedAcl) {
             this.bucketName = bucketName;
             this.key = key;
             this.meta = meta;
@@ -40,7 +41,7 @@ class GCSUploadFactory implements UploadFactory {
         }
 
         public Upload call() throws Exception {
-            return new GCSUpload(client, bucketName, key, this.meta, executor);
+            return new GCSUpload(client, bucketName, key, cannedAcl, this.meta, executor, progress);
         }
     }
 }

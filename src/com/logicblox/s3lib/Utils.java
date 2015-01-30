@@ -7,6 +7,8 @@ import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
@@ -16,7 +18,6 @@ import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 
 public class Utils
 {
@@ -33,22 +34,147 @@ public class Utils
   public static URI getURI(String s) throws URISyntaxException
   {
     URI uri = new URI(s);
-
     if("https".equals(uri.getScheme()) && uri.getHost().endsWith("amazonaws.com"))
     {
-      String path = uri.getPath();
-      if(path == null || path.length() < 3 || path.charAt(0) != '/' || path.indexOf('/', 1) == -1)
-        throw new UsageException("https S3 URLs have the format https://s3.amazonaws.com/bucket/key");
-
-      String bucket = path.substring(1, path.indexOf('/', 1));
-      String key = path.substring(path.indexOf('/', 1) + 1);
-      uri = new URI("s3://" + bucket + "/" + key);
+      uri = getS3URI(s);
+      return uri;
     }
-    
+
+    uri = new URI(s);
+    if("https".equals(uri.getScheme()) && uri.getHost().endsWith("googleapis.com"))
+    {
+      uri = getGCSURI(s);
+      return uri;
+    }
+
+    uri = new URI(s);
     if(!"s3".equals(uri.getScheme()))
       throw new UsageException("S3 object URL needs to have 's3' as scheme");
     
     return uri;
+  }
+
+  public static URI getS3URI(String s) throws URISyntaxException, UsageException {
+    URI uri = new URI(s);
+
+    String path = uri.getPath();
+    if(path == null || path.length() < 3 || path.charAt(0) != '/' || path.indexOf('/', 1) == -1)
+      throw new UsageException("HTTPS S3 URLs have the format https://s3.amazonaws.com/bucket/key");
+
+    String bucket = path.substring(1, path.indexOf('/', 1));
+    String key = path.substring(path.indexOf('/', 1) + 1);
+    uri = new URI("s3://" + bucket + "/" + key);
+
+    return uri;
+  }
+
+  public static URI getGCSURI(String s) throws URISyntaxException, UsageException {
+    Matcher matcher;
+    matcher = matchesGCSURI("https://storage.googleapis.com/(.+?)/(.+?)$", s);
+    if (matcher.find())
+      return new URI("s3://" + matcher.group(1) + "/" + (matcher.group(2)));
+
+    matcher = matchesGCSURI("https://(.+?).storage.googleapis.com/(.+?)$", s);
+    if (matcher.find())
+      return new URI("s3://" + matcher.group(1) + "/" + (matcher.group(2)));
+
+    matcher = matchesGCSURI("https://www.googleapis.com/upload/storage/v1/b/(.+?)/o/(.+?)$", s);
+    if (matcher.find())
+      return new URI("s3://" + matcher.group(1) + "/" + (matcher.group(2)));
+
+    throw new UsageException("HTTPS GCS URLs have one of the following formats:\n" +
+            "https://storage.googleapis.com/bucket/key (for non-upload operations)\n" +
+            "https://bucket.storage.googleapis.com/key (for non-upload operations)\n" +
+            "https://www.googleapis.com/upload/storage/v1/b/bucket/o/key\n");
+  }
+
+  private static Matcher matchesGCSURI(String pattern, String uri)
+  {
+    return Pattern.compile(pattern).matcher(uri);
+  }
+
+  public static boolean backendIsGCS(String endpoint, String requri)
+  {
+    // To determine if we're going to talk to GCS we check (in this priority):
+    // 1. the endpoint
+    // 2. the request URI
+
+    if (endpoint != null)
+    {
+      URI endpointuri;
+      try {
+        if (!endpoint.startsWith("https://"))
+        {
+            endpointuri = new URI("https://" + endpoint);
+        }
+        else
+        {
+          endpointuri = new URI(endpoint);
+        }
+      } catch (URISyntaxException e)
+      {
+        return false;
+      }
+      if (endpointuri.getHost().endsWith("googleapis.com"))
+      {
+        return true;
+      }
+
+      if (requri == null)
+      {
+        return false;
+      }
+    }
+
+    try
+    {
+      getGCSURI(requri);
+      return true;
+    }
+    catch(UsageException e)
+    {
+      return false;
+    }
+    catch (URISyntaxException e)
+    {
+      return false;
+    }
+  }
+
+  public static String getDefaultACL(boolean gcsMode)
+  {
+    if (gcsMode)
+      return "projectPrivate";
+    else
+      return "bucket-owner-full-control";
+  }
+
+  public static String normalizeGCSEndpoint(String endpoint, String command) throws URISyntaxException
+  {
+    String endpoint0;
+    if (!endpoint.startsWith("https://"))
+    {
+      endpoint0 = "https://" + endpoint;
+    }
+    else
+    {
+      endpoint0 = endpoint;
+    }
+    URI endpointuri = new URI(endpoint0);
+    if (! endpointuri.getHost().endsWith("googleapis.com"))
+      throw new UsageException("Only GCS-specific endpoints can be normalized.");
+
+    if (command == "upload")
+    {
+      // We use GCS-native JSON API for uploads
+      // We use HTTPS since we authenticate with OAuth
+      return "https://www.googleapis.com";
+    }
+    else
+    {
+      // Currently, we use S3-compatible XML API for non-upload operations
+      return "https://storage.googleapis.com";
+    }
   }
 
   public static String getBucket(URI uri)

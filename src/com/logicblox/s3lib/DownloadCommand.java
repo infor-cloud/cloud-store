@@ -50,12 +50,14 @@ public class DownloadCommand extends Command
   private ListeningExecutorService _downloadExecutor;
   private ListeningScheduledExecutorService _executor;
   private KeyProvider _encKeyProvider;
+  private boolean progress;
 
   public DownloadCommand(
     ListeningExecutorService downloadExecutor,
     ListeningScheduledExecutorService internalExecutor,
     File file,
-    KeyProvider encKeyProvider)
+    KeyProvider encKeyProvider,
+    boolean progress)
   throws IOException
   {
     _downloadExecutor = downloadExecutor;
@@ -64,6 +66,7 @@ public class DownloadCommand extends Command
 
     this.file = file;
     createNewFile();
+    this.progress = progress;
   }
 
   private void createNewFile() throws IOException
@@ -140,7 +143,7 @@ public class DownloadCommand extends Command
 
   private ListenableFuture<AmazonDownload> startDownloadActual(final String bucket, final String key)
   {
-    AmazonDownloadFactory factory = new AmazonDownloadFactory(getAmazonS3Client(), _downloadExecutor);
+    AmazonDownloadFactory factory = new AmazonDownloadFactory(getAmazonS3Client(), _downloadExecutor, progress);
     return factory.startDownload(bucket, key);
   }
 

@@ -2,7 +2,6 @@ package com.logicblox.s3lib;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
@@ -15,6 +14,7 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.StorageScopes;
+import com.google.api.services.storage.model.StorageObject;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -69,10 +69,10 @@ public class GCSClient extends S3Client {
      * @param key    Name of encryption key to use
      * @param acl    Access control list to use
      */
-    public ListenableFuture<S3File> upload(File file, String bucket, String object, String key, CannedAccessControlList acl)
+    public ListenableFuture<S3File> upload(File file, String bucket, String object, String key, String acl, boolean progress)
             throws IOException {
         GCSUploadCommand cmd =
-                new GCSUploadCommand(_s3Executor, _executor, file, _chunkSize, key, _keyProvider, acl);
+                new GCSUploadCommand(_s3Executor, _executor, file, _chunkSize, key, _keyProvider, acl, progress);
         configure(cmd);
         return cmd.run(bucket, object);
     }
@@ -86,7 +86,7 @@ public class GCSClient extends S3Client {
      * @param acl    Access control list to use
      * @throws IllegalArgumentException If the s3url is not a valid S3 URL.
      */
-    public ListenableFuture<List<S3File>> uploadDirectory(File file, URI s3url, String encKey, CannedAccessControlList acl)
+    public ListenableFuture<List<S3File>> uploadDirectory(File file, URI s3url, String encKey, String acl)
             throws IOException, ExecutionException, InterruptedException {
         throw new UnsupportedOperationException("Directory uploading operation is not implemented yet.");
     }
@@ -169,10 +169,10 @@ public class GCSClient extends S3Client {
             try {
                 httpTransport0 = GoogleNetHttpTransport.newTrustedTransport();
             } catch (GeneralSecurityException e) {
-                System.out.println("Security error during GCS HTTP Transport layer initialization: " + e.getMessage());
+                System.err.println("Security error during GCS HTTP Transport layer initialization: " + e.getMessage());
                 System.exit(1);
             } catch (IOException e) {
-                System.out.println("I/O error during GCS HTTP Transport layer initialization: " + e.getMessage());
+                System.err.println("I/O error during GCS HTTP Transport layer initialization: " + e.getMessage());
                 System.exit(1);
             }
             assert httpTransport0 != null;
@@ -185,7 +185,7 @@ public class GCSClient extends S3Client {
             try {
                 credential = GoogleCredential.getApplicationDefault();
             } catch (IOException e) {
-                System.out.println(
+                System.err.println(
                         "Error during GCS client secrets JSON file loading. Make sure it exists, you are " +
                                 "loading it with the right path, and a client ID and client secret are " +
                                 "defined in it: " + e.getMessage());

@@ -20,7 +20,13 @@ def run(args):
             'jackson-annotations-2.1.1.jar',
             'jackson-core-2.1.1.jar',
             'jackson-databind-2.1.1.jar',
-            'aws-java-sdk-1.7.1.jar']
+            'aws-java-sdk-1.7.1.jar',
+            'google-api-services-storage-v1-rev25-1.19.1.jar',
+            'google-api-client-1.19.1.jar',
+            'google-oauth-client-1.19.0.jar',
+            'google-http-client-1.19.0.jar',
+            'google-http-client-jackson2-1.19.0.jar',
+            'jsr305-1.3.9.jar']
 
     deps_paths = [prefix +'/lib/java/' + name for name in deps]
     classpath = ':'.join(deps_paths)

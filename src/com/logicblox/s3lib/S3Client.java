@@ -265,10 +265,8 @@ public class S3Client
   }
 
   /**
-   * Check if a file exists in the bucket
+   * List available buckets
    *
-   * @param bucket  Bucket to check
-   * @param object  Path in bucket to check
    */
   public ListenableFuture<List<Bucket>> listBuckets()
   {

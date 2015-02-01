@@ -33,7 +33,8 @@ public class DownloadDirectoryCommand extends Command
     final String bucket,
     final String key,
     final boolean recursive,
-    final boolean overwrite)
+    final boolean overwrite,
+    final boolean progress)
   throws ExecutionException, InterruptedException, IOException
   {
     List<S3ObjectSummary> lst = _client.listObjects(bucket, key, recursive).get();
@@ -69,7 +70,7 @@ public class DownloadDirectoryCommand extends Command
               "File '" + file + "' already exists. Please delete or use --overwrite");
         }
 
-        ListenableFuture<S3File> result = _client.download(outputFile, bucket, obj.getKey());
+        ListenableFuture<S3File> result = _client.download(outputFile, bucket, obj.getKey(), progress);
         files.add(result);
       }
     }

@@ -98,7 +98,7 @@ class MultipartAmazonUpload implements Upload
       if (progress) {
         req.setGeneralProgressListener(
                 new AmazonUploadProgressListener(
-                        "part " + (partNumber + 1),
+                        key + ", part " + (partNumber + 1),
                         partSize / 10,
                         partSize));
       }

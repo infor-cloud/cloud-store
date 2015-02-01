@@ -2,7 +2,6 @@ package com.logicblox.s3lib;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpBackOffIOExceptionHandler;
@@ -14,19 +13,16 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.StorageScopes;
-import com.google.api.services.storage.model.StorageObject;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.security.GeneralSecurityException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 
 /**
@@ -75,52 +71,6 @@ public class GCSClient extends S3Client {
                 new GCSUploadCommand(_s3Executor, _executor, file, _chunkSize, key, _keyProvider, acl, progress);
         configure(cmd);
         return cmd.run(bucket, object);
-    }
-
-    /**
-     * Upload directory from S3
-     *
-     * @param file   Directory to upload
-     * @param s3url  S3 URL to upload to
-     * @param encKey Encryption key to use
-     * @param acl    Access control list to use
-     * @throws IllegalArgumentException If the s3url is not a valid S3 URL.
-     */
-    public ListenableFuture<List<S3File>> uploadDirectory(File file, URI s3url, String encKey, String acl)
-            throws IOException, ExecutionException, InterruptedException {
-        throw new UnsupportedOperationException("Directory uploading operation is not implemented yet.");
-    }
-
-    /**
-     * List available buckets
-     *
-     */
-    public ListenableFuture<List<Bucket>> listBuckets() {
-        throw new UnsupportedOperationException("Bucket listing operation is not implemented yet.");
-    }
-
-    /**
-     * Download directory from S3
-     *
-     * @param file  Directory to download
-     * @param s3url S3 object URL to download from
-     * @throws IllegalArgumentException If the s3url is not a valid S3 URL.
-     */
-    public ListenableFuture<List<S3File>> downloadDirectory(
-            File file, URI s3url, boolean recursive, boolean overwrite)
-            throws IOException, ExecutionException, InterruptedException {
-        throw new UnsupportedOperationException("Directory downloading operation is not implemented yet.");
-    }
-
-    /**
-     * List object in S3
-     *
-     * @param bucket Bucket to check
-     * @param object Path in bucket to check
-     */
-    public ListenableFuture<List<S3ObjectSummary>> listObjects(
-            String bucket, String prefix, boolean recursive) {
-        throw new UnsupportedOperationException("Object listing operation is not implemented yet.");
     }
 
     public void shutdown() {
@@ -193,7 +143,7 @@ public class GCSClient extends S3Client {
             assert credential != null;
 
             Collection scopes =
-                    Collections.singletonList(StorageScopes.DEVSTORAGE_READ_WRITE);
+                    Collections.singletonList(StorageScopes.DEVSTORAGE_FULL_CONTROL);
             if (credential.createScopedRequired()) {
                 credential = credential.createScoped(scopes);
             }

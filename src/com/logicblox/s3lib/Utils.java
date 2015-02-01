@@ -48,8 +48,8 @@ public class Utils
     }
 
     uri = new URI(s);
-    if(!"s3".equals(uri.getScheme()))
-      throw new UsageException("S3 object URL needs to have 's3' as scheme");
+    if((!"s3".equals(uri.getScheme())) && (!"gs".equals(uri.getScheme())))
+      throw new UsageException("Object URL needs to have either 's3' or 'gs' as scheme");
     
     return uri;
   }
@@ -72,15 +72,15 @@ public class Utils
     Matcher matcher;
     matcher = matchesGCSURI("https://storage.googleapis.com/(.+?)/(.+?)$", s);
     if (matcher.find())
-      return new URI("s3://" + matcher.group(1) + "/" + (matcher.group(2)));
+      return new URI("gs://" + matcher.group(1) + "/" + (matcher.group(2)));
 
     matcher = matchesGCSURI("https://(.+?).storage.googleapis.com/(.+?)$", s);
     if (matcher.find())
-      return new URI("s3://" + matcher.group(1) + "/" + (matcher.group(2)));
+      return new URI("gs://" + matcher.group(1) + "/" + (matcher.group(2)));
 
     matcher = matchesGCSURI("https://www.googleapis.com/upload/storage/v1/b/(.+?)/o/(.+?)$", s);
     if (matcher.find())
-      return new URI("s3://" + matcher.group(1) + "/" + (matcher.group(2)));
+      return new URI("gs://" + matcher.group(1) + "/" + (matcher.group(2)));
 
     throw new UsageException("HTTPS GCS URLs have one of the following formats:\n" +
             "https://storage.googleapis.com/bucket/key (for non-upload operations)\n" +
@@ -93,52 +93,31 @@ public class Utils
     return Pattern.compile(pattern).matcher(uri);
   }
 
-  public static boolean backendIsGCS(String endpoint, String requri)
+  public static boolean backendIsGCS(String endpoint, URI uri)
   {
-    // To determine if we're going to talk to GCS we check (in this priority):
-    // 1. the endpoint
-    // 2. the request URI
-
+    // We consider endpoint (if exists) stronger evidence than URI
     if (endpoint != null)
     {
       URI endpointuri;
-      try {
+      try
+      {
         if (!endpoint.startsWith("https://"))
-        {
-            endpointuri = new URI("https://" + endpoint);
-        }
+          endpointuri = new URI("https://" + endpoint);
         else
-        {
           endpointuri = new URI(endpoint);
-        }
-      } catch (URISyntaxException e)
+      }
+      catch (URISyntaxException e)
       {
         return false;
       }
-      if (endpointuri.getHost().endsWith("googleapis.com"))
-      {
-        return true;
-      }
 
-      if (requri == null)
-      {
-        return false;
-      }
+      return endpointuri.getHost().endsWith("googleapis.com");
     }
 
-    try
-    {
-      getGCSURI(requri);
-      return true;
-    }
-    catch(UsageException e)
-    {
-      return false;
-    }
-    catch (URISyntaxException e)
-    {
-      return false;
-    }
+    if (uri != null)
+      return "gs".equals(uri.getScheme());
+
+    return false;
   }
 
   public static String getDefaultACL(boolean gcsMode)
@@ -149,21 +128,8 @@ public class Utils
       return "bucket-owner-full-control";
   }
 
-  public static String normalizeGCSEndpoint(String endpoint, String command) throws URISyntaxException
+  public static String getGCSEndpoint(String command) throws URISyntaxException
   {
-    String endpoint0;
-    if (!endpoint.startsWith("https://"))
-    {
-      endpoint0 = "https://" + endpoint;
-    }
-    else
-    {
-      endpoint0 = endpoint;
-    }
-    URI endpointuri = new URI(endpoint0);
-    if (! endpointuri.getHost().endsWith("googleapis.com"))
-      throw new UsageException("Only GCS-specific endpoints can be normalized.");
-
     if (command == "upload")
     {
       // We use GCS-native JSON API for uploads
@@ -179,8 +145,8 @@ public class Utils
 
   public static String getBucket(URI uri)
   {
-    if(!"s3".equals(uri.getScheme()))
-      throw new IllegalArgumentException("S3 object URL needs to have 's3' as scheme");
+    if((!"s3".equals(uri.getScheme())) && (!"gs".equals(uri.getScheme())))
+      throw new IllegalArgumentException("Object URL needs to have either 's3' or 'gs' as scheme");
 
     return uri.getAuthority();
   }
@@ -190,10 +156,10 @@ public class Utils
     String path = uri.getPath();
 
     if(path == null || path.length() == 0)
-      throw new UsageException("S3 URLs have the format s3://bucket/key");
-    
+      throw new UsageException("URLs have the format scheme://bucket/key, where scheme is either 's3' or 'gs'");
+
     if(path.charAt(0) != '/')
-      throw new UsageException("S3 URLs have the format s3://bucket/key");
+      throw new UsageException("URLs have the format scheme://bucket/key, where scheme is either 's3' or 'gs'");
     
     return path.substring(1);
   }

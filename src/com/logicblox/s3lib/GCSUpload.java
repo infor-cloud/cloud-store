@@ -96,7 +96,7 @@ class GCSUpload implements Upload {
             if (progress) {
                 insertObject.getMediaHttpUploader().setProgressListener(
                         new GCSUploadProgressListener(
-                                "part " + (partNumber + 1),
+                                key + " part " + (partNumber + 1),
                                 partSize / 10,
                                 partSize));
             }

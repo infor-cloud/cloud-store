@@ -84,7 +84,7 @@ class AmazonDownload
       if (progress) {
         req.setGeneralProgressListener(
           new AmazonDownloadProgressListener(
-            "range " + start + ":" + end,
+            key + ", range " + start + ":" + end,
             (end - start + 1) / 10,
             end - start + 1));
       }

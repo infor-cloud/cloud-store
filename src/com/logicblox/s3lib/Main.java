@@ -140,14 +140,11 @@ class Main
       client.setRetryCount(_retryCount);
       if(endpoint != null)
       {
-        if (gcsMode)
-        {
-          client.setEndpoint(Utils.normalizeGCSEndpoint(endpoint, _commander.getParsedCommand()));
-        }
-        else
-        {
-          client.setEndpoint(endpoint);
-        }
+        client.setEndpoint(endpoint);
+      }
+      if(gcsMode)
+      {
+        client.setEndpoint(Utils.getGCSEndpoint(_commander.getParsedCommand()));
       }
 
       return client;
@@ -195,7 +192,7 @@ class Main
 
     protected boolean backendIsGCS() throws URISyntaxException
     {
-      return Utils.backendIsGCS(endpoint, urls.get(0));
+      return Utils.backendIsGCS(endpoint, getURI());
     }
   }
 
@@ -225,7 +222,8 @@ class Main
         Bucket b = buckets.get(i);
         table[i][0] = b.getName();
         table[i][1] = df.format(b.getCreationDate());
-        table[i][2] = b.getOwner().getDisplayName();
+        String ownerName = b.getOwner().getDisplayName();
+        table[i][2] = (ownerName != null) ? ownerName : b.getOwner().getId();
 
         for(int j = 0; j < 3; j++)
           max[j] = Math.max(table[i][j].length(), max[j]);
@@ -253,12 +251,15 @@ class Main
       String key = getObjectKey();
       ListenableFuture<ObjectMetadata> result = client.exists(bucket, key);
 
+      boolean gcsMode = backendIsGCS();
+      String scheme = gcsMode ? "gs://" : "s3://";
+
       boolean exists = false;
       ObjectMetadata metadata = result.get();
       if(metadata == null)
       {
         if(_verbose)
-          System.err.println("Object s3://" + bucket + "/" + key + " does not exist.");
+          System.err.println("Object " + scheme + bucket + "/" + key + " does not exist.");
       }
       else
       {
@@ -287,10 +288,17 @@ class Main
     @Parameter(names = "--progress", description = "Enable progress indicator")
     boolean progress = false;
 
-    @Parameter(names = "--canned-acl", description = "The canned ACL to use, choose one of: "+
-                       "private, public-read, public-read-write, authenticated-read, bucket-owner-read, "+
-                       "bucket-owner-full-control (default: bucket-owner-full-control)")
+    @Parameter(names = "--canned-acl", description = "The canned ACL to use." +
+            "For Amazon S3, choose one of: "+
+            "private, public-read, public-read-write, authenticated-read, bucket-owner-read, "+
+            "bucket-owner-full-control (default: bucket-owner-full-control)\n" +
+            "For Google Cloud Storage, choose one of: " +
+            "projectPrivate, private, publicRead, publicReadWrite, authenticatedRead, "+
+            "bucketOwnerRead, bucketOwnerFullControl (default: projectPrivate")
     String cannedAcl = "bucket-owner-full-control";
+
+    List<String> gcsPredefACLs = Arrays.asList("projectPrivate", "private", "publicRead",
+            "publicReadWrite", "authenticatedRead", "bucketOwnerRead", "bucketOwnerFullControl");
 
     private String getDefaultACL()
     {
@@ -313,8 +321,7 @@ class Main
           return true;
         }
       }
-      List<String> gcsPredefACLs = Arrays.asList("projectPrivate", "private", "publicRead",
-              "publicReadWrite", "authenticatedRead", "bucketOwnerRead", "bucketOwnerFullControl");
+
       return gcsPredefACLs.contains(value);
     }
 
@@ -333,7 +340,7 @@ class Main
       if(f.isFile()) {
         client.upload(f, getBucket(), getObjectKey(), encKeyName, cannedAcl, progress).get();
       } else if(f.isDirectory()) {
-        client.uploadDirectory(f, getURI(), encKeyName, cannedAcl).get();
+        client.uploadDirectory(f, getURI(), encKeyName, cannedAcl, progress).get();
       } else {
         throw new UsageException("File '"+file+"' is not a file or a directory.");
       }
@@ -354,17 +361,24 @@ class Main
       ListeningScheduledExecutorService internalExecutor = getInternalExecutor();
 
       S3Client client = createS3Client();
+      boolean gcsMode = backendIsGCS();
+      String scheme = gcsMode ? "gs://" : "s3://";
 
       try
       {
         List<S3ObjectSummary> result = client.listObjects(getBucket(), getObjectKey(), recursive).get();
+        if((result.size() == 0) && (!getObjectKey().endsWith("/")))
+        {
+          // Re-try in case we ls a folder
+          result = client.listObjects(getBucket(), getObjectKey()+"/", recursive).get();
+        }
         for (S3ObjectSummary obj : result) {
           // print the full s3 url for each object
           if (! getObjectKey().equals(obj.getKey()))
-            System.out.println("s3://"+obj.getBucketName()+"/"+obj.getKey());
+            System.out.println(scheme+obj.getBucketName()+"/"+obj.getKey());
         }
-
       }
+
       catch(ExecutionException exc)
       {
         rethrow(exc.getCause());
@@ -401,12 +415,8 @@ class Main
       File output = new File(file);
       ListenableFuture<?> result;
 
-      if (backendIsGCS() && (endpoint == null)) {
-        client.setEndpoint("https://storage.googleapis.com");
-      }
-
       if(getObjectKey().endsWith("/")) {
-        result = client.downloadDirectory(output, getURI(), recursive, overwrite);
+        result = client.downloadDirectory(output, getURI(), recursive, overwrite, progress);
       } else {
         // Test if S3 url exists.
         if(client.exists(getBucket(), getObjectKey()).get() == null) {
@@ -501,6 +511,11 @@ class Main
         exc.printStackTrace();
       }
 
+      System.exit(1);
+    }
+    catch(UnsupportedOperationException exc)
+    {
+      System.err.println("error: " + exc.getMessage());
       System.exit(1);
     }
     catch(Exception exc)

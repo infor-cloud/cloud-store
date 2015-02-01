@@ -191,14 +191,18 @@ public class S3Client
   /**
    * Upload directory from S3
    *
-   * @param file    Directory to upload
-   * @param s3url   S3 URL to upload to
-   * @param encKey  Encryption key to use
+   * @param file      Directory to upload
+   * @param s3url     S3 URL to upload to
+   * @param encKey    Encryption key to use
+   * @param acl       Access control list to use
+   * @param progress  Enable progress indicator
    * @throws IllegalArgumentException If the s3url is not a valid S3 URL.
    */
-  public ListenableFuture<List<S3File>> uploadDirectory(File file, URI s3url, String encKey)
+  @Deprecated
+  public ListenableFuture<List<S3File>> uploadDirectory(File file, URI s3url, String encKey, CannedAccessControlList acl,
+                                                        boolean progress)
           throws IOException, ExecutionException, InterruptedException {
-    return this.uploadDirectory(file, s3url, encKey, CannedAccessControlList.BucketOwnerFullControl);
+    return this.uploadDirectory(file, s3url, encKey, acl.toString(), progress);
   }
 
   /**
@@ -210,30 +214,15 @@ public class S3Client
    * @param acl     Access control list to use
    * @throws IllegalArgumentException If the s3url is not a valid S3 URL.
    */
-  @Deprecated
-  public ListenableFuture<List<S3File>> uploadDirectory(File file, URI s3url, String encKey, CannedAccessControlList acl)
-          throws IOException, ExecutionException, InterruptedException {
-    return this.uploadDirectory(file, s3url, encKey, acl.toString());
-  }
-
-  /**
-   * Upload directory from S3
-   *
-   * @param file    Directory to upload
-   * @param s3url   S3 URL to upload to
-   * @param encKey  Encryption key to use
-   * @param acl     Access control list to use
-   * @throws IllegalArgumentException If the s3url is not a valid S3 URL.
-   */
-  @Deprecated
-  public ListenableFuture<List<S3File>> uploadDirectory(File file, URI s3url, String encKey, String acl)
+  public ListenableFuture<List<S3File>> uploadDirectory(File file, URI s3url, String encKey, String acl,
+                                                        boolean progress)
           throws IOException, ExecutionException, InterruptedException {
     UploadDirectoryCommand cmd = new UploadDirectoryCommand(_s3Executor, _executor, this);
     configure(cmd);
 
     String bucket = Utils.getBucket(s3url);
     String object = Utils.getObjectKey(s3url);
-    return cmd.run(file, bucket, object, encKey, acl);
+    return cmd.run(file, bucket, object, encKey, acl, progress);
   }
 
   /**
@@ -373,7 +362,7 @@ public class S3Client
    * @throws IllegalArgumentException If the s3url is not a valid S3 URL.
    */
   public ListenableFuture<List<S3File>> downloadDirectory(
-    File file, URI s3url, boolean recursive, boolean overwrite)
+    File file, URI s3url, boolean recursive, boolean overwrite, boolean progress)
   throws IOException, ExecutionException, InterruptedException
   {
     DownloadDirectoryCommand cmd = new DownloadDirectoryCommand(_s3Executor, _executor, this);
@@ -381,7 +370,7 @@ public class S3Client
 
     String bucket = Utils.getBucket(s3url);
     String object = Utils.getObjectKey(s3url);
-    return cmd.run(file, bucket, object, recursive, overwrite);
+    return cmd.run(file, bucket, object, recursive, overwrite, progress);
   }
 
   /**

@@ -139,9 +139,9 @@ public class GCSUploadCommand extends Command {
             meta.put("s3tool-symmetric-key", encryptedSymmetricKeyString);
         }
         // single-part => chunk size == file size
-        // meta.put("s3tool-chunk-size", Long.toString(fileLength));
+        meta.put("s3tool-chunk-size", Long.toString(fileLength));
         // GCS "multipart" download seems to work fine
-        meta.put("s3tool-chunk-size", Long.toString(chunkSize));
+        // meta.put("s3tool-chunk-size", Long.toString(chunkSize));
         meta.put("s3tool-file-length", Long.toString(fileLength));
 
         return factory.startUpload(bucket, key, meta, acl);

@@ -9,6 +9,8 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
@@ -122,13 +124,15 @@ class Main
       boolean gcsMode = backendIsGCS();
 
       S3Client client;
-      if (gcsMode)
+      if (gcsMode) {
+        AWSCredentialsProvider gcsXMLProvider = Utils.getGCSXMLEnvironmentVariableCredentialsProvider();
         client = new GCSClient(
-                null,
+                gcsXMLProvider,
                 uploadExecutor,
                 internalExecutor,
                 chunkSize,
                 getKeyProvider());
+      }
       else
         client = new S3Client(
                 null,

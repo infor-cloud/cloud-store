@@ -10,6 +10,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import com.google.common.base.Function;
@@ -141,6 +144,37 @@ public class Utils
       // Currently, we use S3-compatible XML API for non-upload operations
       return "https://storage.googleapis.com";
     }
+  }
+
+  public static final String GCS_XML_ACCESS_KEY_ENV_VAR = "GCS_XML_ACCESS_KEY";
+
+  public static final String GCS_XML_SECRET_KEY_ENV_VAR = "GCS_XML_SECRET_KEY";
+
+  static class GCSXMLEnvironmentVariableCredentialsProvider implements AWSCredentialsProvider {
+
+    public AWSCredentials getCredentials() {
+      String accessKey = System.getenv(GCS_XML_ACCESS_KEY_ENV_VAR);
+      String secretKey = System.getenv(GCS_XML_SECRET_KEY_ENV_VAR);
+
+      if (accessKey == null || secretKey == null) {
+        throw new UsageException(
+            "Unable to load GCS credentials from environment variables " +
+                GCS_XML_ACCESS_KEY_ENV_VAR + " and " + GCS_XML_SECRET_KEY_ENV_VAR);
+      }
+
+      return new BasicAWSCredentials(accessKey, secretKey);
+    }
+
+    public void refresh() {}
+
+    @Override
+    public String toString() {
+      return getClass().getSimpleName();
+    }
+  }
+
+  public static GCSXMLEnvironmentVariableCredentialsProvider getGCSXMLEnvironmentVariableCredentialsProvider() {
+    return new GCSXMLEnvironmentVariableCredentialsProvider();
   }
 
   public static String getBucket(URI uri)

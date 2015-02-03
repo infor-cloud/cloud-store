@@ -105,7 +105,7 @@ public class GCSClient extends S3Client {
     public enum GCStorage {
         INSTANCE;
 
-        private final String APPLICATION_NAME = "LogicBlox-s3tool/1.0";
+        private final String APPLICATION_NAME = "LogicBlox-cloud-store/1.0";
         private final HttpTransport httpTransport;
         private final JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
         private final GoogleCredential credential;

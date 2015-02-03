@@ -55,7 +55,7 @@ class Main
   public Main()
   {
     _commander = new JCommander(new MainCommand());
-    _commander.setProgramName("s3tool");
+    _commander.setProgramName("cloud-store");
     _commander.addCommand("upload", new UploadCommandOptions());
     _commander.addCommand("download", new DownloadCommandOptions());
     _commander.addCommand("ls", new ListCommandOptions());
@@ -567,7 +567,7 @@ class Main
     // Hack to avoid printing the commands, which are not formatted
     // correctly.
     JCommander tmp = new JCommander(new MainCommand());
-    tmp.setProgramName("s3tool");
+    tmp.setProgramName("cloud-store");
 
     // Hack to avoid printing the usage line, which is not correct in
     // this incomplete commander object.
@@ -580,7 +580,7 @@ class Main
 
   private void printUsage()
   {
-    System.err.println("Usage: s3tool [options] command [command options]");
+    System.err.println("Usage: cloud-store [options] command [command options]");
     printOptions();
 
     System.err.println("   Commands: ");

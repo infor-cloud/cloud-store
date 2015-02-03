@@ -37,7 +37,7 @@ deps = [
     '$(aws_java_sdk)/lib/java/jackson-core-2.1.1.jar',
     '$(aws_java_sdk)/lib/java/jackson-databind-2.1.1.jar',
     '$(aws_java_sdk)/lib/java/aws-java-sdk-1.7.1.jar',
-    '$(gcs_java_sdk)/lib/java/google-api-services-storage-v1-rev25-1.19.1.jar',
+    '$(gcs_java_sdk)/lib/java/google-api-services-storage-v1-rev26-1.19.1.jar',
     '$(gcs_java_sdk)/lib/java/google-api-client-1.19.1.jar',
     '$(gcs_java_sdk)/lib/java/google-oauth-client-1.19.0.jar',
     '$(gcs_java_sdk)/lib/java/google-http-client-1.19.0.jar',
@@ -52,6 +52,7 @@ jar(
      {'title' : "s3lib $(version) API Documentation" })
 
 
+bin_program('cloud-store')
 bin_program('s3tool')
 bin_program('s3lib-keygen')
 

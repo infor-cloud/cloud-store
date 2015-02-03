@@ -46,6 +46,7 @@ jar(
 
 
 
+bin_program('cloud-store')
 bin_program('s3tool')
 bin_program('s3lib-keygen')
 

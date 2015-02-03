@@ -14,9 +14,9 @@ function exec_no_encryption()
   f=$1
   base=$(basename $f)
 
-  s3tool upload s3://mbravenboer.wagfm.request/$base  -i $f
+  cloud-store upload s3://mbravenboer.wagfm.request/$base  -i $f
   rm -f $base.tmp
-  s3tool download s3://mbravenboer.wagfm.request/$base -o $base.tmp
+  cloud-store download s3://mbravenboer.wagfm.request/$base -o $base.tmp
   test $(md5 $base.tmp) = $(md5 $f)
 }
 
@@ -25,9 +25,9 @@ function exec_encryption()
   f=$1
   base=$(basename $f)
 
-  s3tool upload s3://mbravenboer.wagfm.request/$base  -i $f --key martin
+  cloud-store upload s3://mbravenboer.wagfm.request/$base  -i $f --key martin
   rm -f $base.tmp
-  s3tool download s3://mbravenboer.wagfm.request/$base -o $base.tmp
+  cloud-store download s3://mbravenboer.wagfm.request/$base -o $base.tmp
   test $(md5 $base.tmp) = $(md5 $f)
 }
 

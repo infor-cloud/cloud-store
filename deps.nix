@@ -127,9 +127,6 @@ in {
         cp ${google_http_client}/lib/java/*.jar $out/lib/java
         cp ${jsr305}/lib/java/*.jar $out/lib/java
         cp ${google_http_client_jackson2}/lib/java/*.jar $out/lib/java
-
-        echo "ll $out/lib/java"
-        ls -l $out/lib/java
       '';
     };
 }

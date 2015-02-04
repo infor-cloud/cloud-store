@@ -314,6 +314,9 @@ class Main
     @Parameter(names = {"-r", "--recursive"}, description = "List all objects that match the provided S3 URL prefix.")
     boolean recursive = false;
 
+    @Parameter(names = {"--include-dirs"}, description = "List all objects and (first-level) directories that match the provided S3 URL prefix.")
+    boolean include_dirs = false;
+
     @Override
     public void invoke() throws Exception
     {
@@ -324,11 +327,21 @@ class Main
 
       try
       {
-        List<String> result = client.listObjects(getBucket(), getObjectKey(), recursive).get();
-        for (String key : result) {
-          // print the full s3 url for each object
-          if (! getObjectKey().equals(key))
-            System.out.println("s3://"+getBucket()+"/"+key);
+        if (include_dirs) {
+          List<String> result = client.listObjectsAndDirs(getBucket(), getObjectKey(), recursive).get();
+          for (String obj_dir : result) {
+            // print the full s3 url for each object and (first-level) directory
+            if (!getObjectKey().equals(obj_dir))
+              System.out.println("s3://" + getBucket() + "/" + obj_dir);
+          }
+        }
+        else {
+          List<S3ObjectSummary> result = client.listObjects(getBucket(), getObjectKey(), recursive).get();
+          for (S3ObjectSummary obj : result) {
+            // print the full s3 url for each object
+            if (!getObjectKey().equals(obj.getKey()))
+              System.out.println("s3://" + obj.getBucketName() + "/" + obj.getKey());
+          }
         }
 
       }

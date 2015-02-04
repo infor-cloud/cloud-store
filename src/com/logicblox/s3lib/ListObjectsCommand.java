@@ -22,14 +22,14 @@ public class ListObjectsCommand extends Command
     _executor = internalExecutor;
   }
 
-  public ListenableFuture<List<S3ObjectSummary>> run(final String bucket, final String prefix, final boolean recursive)
+  public ListenableFuture<List<String>> run(final String bucket, final String prefix, final boolean recursive)
   {
-    ListenableFuture<List<S3ObjectSummary>> future =
+    ListenableFuture<List<String>> future =
       executeWithRetry(
         _executor,
-        new Callable<ListenableFuture<List<S3ObjectSummary>>>()
+        new Callable<ListenableFuture<List<String>>>()
         {
-          public ListenableFuture<List<S3ObjectSummary>> call()
+          public ListenableFuture<List<String>> call()
           {
             return runActual(bucket, prefix, recursive);
           }
@@ -43,27 +43,35 @@ public class ListObjectsCommand extends Command
     return future;
   }
 
-  private ListenableFuture<List<S3ObjectSummary>> runActual(final String bucket, final String prefix, final boolean recursive)
+  private ListenableFuture<List<String>> runActual(final String bucket, final String prefix, final boolean recursive)
   {
     return _httpExecutor.submit(
-      new Callable<List<S3ObjectSummary>>()
+      new Callable<List<String>>()
       {
-        public List<S3ObjectSummary> call()
+        public List<String> call()
         {
           ListObjectsRequest req = new ListObjectsRequest().withBucketName(bucket).withPrefix(prefix);
           if (! recursive) req.setDelimiter("/");
 
           ObjectListing current = getAmazonS3Client().listObjects(req);
           List<S3ObjectSummary> keyList = current.getObjectSummaries();
+          List<String> all = current.getCommonPrefixes();
           current = getAmazonS3Client().listNextBatchOfObjects(current);
 
           while (current.isTruncated()){
             keyList.addAll(current.getObjectSummaries());
+            all.addAll(current.getCommonPrefixes());
             current = getAmazonS3Client().listNextBatchOfObjects(current);
           }
           keyList.addAll(current.getObjectSummaries());
+          all.addAll(current.getCommonPrefixes());
 
-          return keyList;
+          for (S3ObjectSummary key: keyList)
+          {
+            all.add(key.getKey());
+          }
+
+          return all;
         }
       });
   }

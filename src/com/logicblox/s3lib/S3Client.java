@@ -314,7 +314,7 @@ public class S3Client
    * @param bucket  Bucket to check
    * @param object  Path in bucket to check
    */
-  public ListenableFuture<List<S3ObjectSummary>> listObjects(
+  public ListenableFuture<List<String>> listObjects(
     String bucket, String prefix, boolean recursive)
   {
     ListObjectsCommand cmd =

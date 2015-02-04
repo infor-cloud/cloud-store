@@ -324,11 +324,11 @@ class Main
 
       try
       {
-        List<S3ObjectSummary> result = client.listObjects(getBucket(), getObjectKey(), recursive).get();
-        for (S3ObjectSummary obj : result) {
+        List<String> result = client.listObjects(getBucket(), getObjectKey(), recursive).get();
+        for (String key : result) {
           // print the full s3 url for each object
-          if (! getObjectKey().equals(obj.getKey()))
-            System.out.println("s3://"+obj.getBucketName()+"/"+obj.getKey());
+          if (! getObjectKey().equals(key))
+            System.out.println("s3://"+getBucket()+"/"+key);
         }
 
       }

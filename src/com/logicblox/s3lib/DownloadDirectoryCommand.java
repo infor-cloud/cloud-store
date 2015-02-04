@@ -36,7 +36,7 @@ public class DownloadDirectoryCommand extends Command
     final boolean overwrite)
   throws ExecutionException, InterruptedException, IOException
   {
-    List<S3ObjectSummary> lst = _client.listObjects(bucket, key, recursive).get();
+    List<String> lst = _client.listObjects(bucket, key, recursive).get();
 
     if (lst.size() > 1)
       if(!file.exists())
@@ -45,9 +45,9 @@ public class DownloadDirectoryCommand extends Command
 
     List<ListenableFuture<S3File>> files = new ArrayList<ListenableFuture<S3File>>();
 
-    for (S3ObjectSummary obj : lst)
+    for (String obj : lst)
     {
-      String relFile = obj.getKey().substring(key.length());
+      String relFile = obj.substring(key.length());
       File outputFile = new File(file.getAbsoluteFile(), relFile);
       File outputPath = new File(outputFile.getParent());
 
@@ -55,7 +55,7 @@ public class DownloadDirectoryCommand extends Command
         if(!outputPath.mkdirs())
           throw new UsageException("Could not create directory '"+file+"'");
 
-      if (!obj.getKey().endsWith("/"))
+      if (!obj.endsWith("/"))
       {
         if(outputFile.exists())
         {
@@ -69,7 +69,7 @@ public class DownloadDirectoryCommand extends Command
               "File '" + file + "' already exists. Please delete or use --overwrite");
         }
 
-        ListenableFuture<S3File> result = _client.download(outputFile, bucket, obj.getKey());
+        ListenableFuture<S3File> result = _client.download(outputFile, bucket, obj);
         files.add(result);
       }
     }

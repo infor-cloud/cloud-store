@@ -23,7 +23,8 @@ def run(args):
             'aws-java-sdk-1.7.1.jar']
 
     deps_paths = [prefix +'/lib/java/' + name for name in deps]
-    classpath = ':'.join(deps_paths)
+    config_path = os.path.join(prefix, 'config')
+    classpath = ':'.join(deps_paths + [config_path])
 
     subenv = os.environ.copy()
     subenv['S3LIB_HOME'] = prefix

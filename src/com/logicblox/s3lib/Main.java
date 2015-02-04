@@ -290,6 +290,11 @@ class Main
         throw new UsageException("Unknown canned ACL '"+cannedAcl+"'");
       }
 
+      if (getObjectKey().endsWith("/")) {
+        throw new UsageException("Destination key should be fully qualified. " +
+            "No trailing '/' is permitted.");
+      }
+
       S3Client client = createS3Client();
       File f = new File(file);
       if(f.isFile()) {

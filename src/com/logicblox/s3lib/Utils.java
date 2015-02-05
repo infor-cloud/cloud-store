@@ -4,6 +4,7 @@ import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -112,6 +113,8 @@ public class Utils
     return retry(executor, callable, retryCondition, delayFun, timeUnit, 0, maxRetryCount);
   }
 
+  private static Map<String, Integer> failed = new HashMap();
+
   private static <V> ListenableFuture<V> retry(
     final ListeningScheduledExecutorService executor,
     final Callable<ListenableFuture<V>> callable,
@@ -139,6 +142,10 @@ public class Utils
     try
     {
       future = callable.call();
+      if(failed.containsKey(callable.toString())) {
+        System.err.println(callable.toString() + " succeeded after " +
+            failed.get(callable.toString()) + " retries.");
+      }
     }
     catch(Exception exc)
     {
@@ -153,11 +160,15 @@ public class Utils
         {
           if(retryCondition.apply(t) && retryCount < maxRetryCount)
           {
-            System.err.println("retriable error: " + callable.toString() + ": " + t.getMessage());
+            System.err.println("error: " + callable.toString() + ": " + t.getMessage());
+            t.printStackTrace();
+            System.err.println("retrying: " + callable.toString());
+            failed.put(callable.toString(), retryCount + 1);
             return retry(executor, callable, retryCondition, delayFun, timeUnit, retryCount + 1, maxRetryCount);
           }
           else
           {
+            System.err.println("aborting (after " + retryCount + " retries): " + callable.toString());
             return Futures.immediateFailedFuture(t);
           }
         }

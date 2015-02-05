@@ -328,11 +328,11 @@ class Main
       try
       {
         if (include_dirs) {
-          List<String> result = client.listObjectsAndDirs(getBucket(), getObjectKey(), recursive).get();
-          for (String obj_dir : result) {
+          List<S3File> result = client.listObjectsAndDirs(getBucket(), getObjectKey(), recursive).get();
+          for (S3File obj : result) {
             // print the full s3 url for each object and (first-level) directory
-            if (!getObjectKey().equals(obj_dir))
-              System.out.println("s3://" + getBucket() + "/" + obj_dir);
+            if (!getObjectKey().equals(obj.getKey()))
+              System.out.println("s3://" + obj.getBucketName() + "/" + obj.getKey());
           }
         }
         else {

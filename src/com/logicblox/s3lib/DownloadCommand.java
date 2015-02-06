@@ -1,28 +1,12 @@
 package com.logicblox.s3lib;
 
 
-import java.io.InputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.BufferedInputStream;
-import java.io.RandomAccessFile;
-import java.io.ObjectInputStream;
-import java.io.IOException;
+import java.io.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+import java.security.*;
+import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
 
-import java.security.Key;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.InvalidAlgorithmParameterException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -30,16 +14,12 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
 
-import com.amazonaws.services.s3.AmazonS3Client;
-
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.commons.codec.digest.DigestUtils;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -50,6 +30,7 @@ public class DownloadCommand extends Command
   private ListeningExecutorService _downloadExecutor;
   private ListeningScheduledExecutorService _executor;
   private KeyProvider _encKeyProvider;
+  private TreeMap<Integer, byte[]> etags = new TreeMap<Integer, byte[]>();
 
   public DownloadCommand(
     ListeningExecutorService downloadExecutor,
@@ -87,6 +68,7 @@ public class DownloadCommand extends Command
   {
     ListenableFuture<AmazonDownload> download = startDownload(bucket, key);
     download = Futures.transform(download, startPartsAsyncFunction());
+    download = Futures.transform(download, validate());
     ListenableFuture<S3File> res = Futures.transform(
       download,
       new Function<AmazonDownload, S3File>()
@@ -314,9 +296,10 @@ public class DownloadCommand extends Command
     return Futures.transform(getPartFuture, readDownloadFunction);
   }
 
-  private void readDownload(AmazonDownload download, InputStream stream, long position, int partNumber)
+  private void readDownload(AmazonDownload download, InputStream inStream, long position, int partNumber)
   throws Exception
   {
+    HashingInputStream stream = new HashingInputStream(inStream);
     RandomAccessFile out = new RandomAccessFile(file, "rw");
     out.seek(position);
 
@@ -391,5 +374,50 @@ public class DownloadCommand extends Command
       stream.close();
     }
     catch (IOException e) {}
+
+    synchronized(DownloadCommand.this)
+    {
+      etags.put(partNumber, stream.getDigest());
+    }
+  }
+  
+  private AsyncFunction<AmazonDownload, AmazonDownload> validate()
+  {
+    return new AsyncFunction<AmazonDownload, AmazonDownload>()
+    {
+      public ListenableFuture<AmazonDownload> apply(AmazonDownload download)
+      {
+        return validateChecksum(download);
+      }
+    };
+  }
+
+  private ListenableFuture<AmazonDownload> validateChecksum(final AmazonDownload download)
+  {
+    ListenableFuture<AmazonDownload> result =
+        _executor.submit(new Callable<AmazonDownload>()
+        {
+          public AmazonDownload call() throws Exception
+          {
+            String multipartDigest;
+            synchronized(DownloadCommand.this) {
+              ByteArrayOutputStream os = new ByteArrayOutputStream();
+              for (Integer pNum : etags.keySet()) {
+                os.write(etags.get(pNum));
+              }
+
+              multipartDigest = DigestUtils.md5Hex(os.toByteArray()) + "-" + etags.size();
+            }
+
+            if(download.getETag().equals(multipartDigest)) {
+              return download;
+            }
+            else {
+              throw new BadHashException();
+            }
+          }
+        });
+
+    return result;
   }
 }

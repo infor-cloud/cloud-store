@@ -1,6 +1,8 @@
 package com.logicblox.s3lib;
 
 import java.io.File;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -113,8 +115,6 @@ public class Utils
     return retry(executor, callable, retryCondition, delayFun, timeUnit, 0, maxRetryCount);
   }
 
-  private static Map<String, Integer> failed = new HashMap();
-
   private static <V> ListenableFuture<V> retry(
     final ListeningScheduledExecutorService executor,
     final Callable<ListenableFuture<V>> callable,
@@ -142,10 +142,6 @@ public class Utils
     try
     {
       future = callable.call();
-      if(failed.containsKey(callable.toString())) {
-        System.err.println(callable.toString() + " succeeded after " +
-            failed.get(callable.toString()) + " retries.");
-      }
     }
     catch(Exception exc)
     {
@@ -160,10 +156,16 @@ public class Utils
         {
           if(retryCondition.apply(t) && retryCount < maxRetryCount)
           {
-            System.err.println("error: " + callable.toString() + ": " + t.getMessage());
-            t.printStackTrace();
-            System.err.println("retrying: " + callable.toString());
-            failed.put(callable.toString(), retryCount + 1);
+            StringWriter sw = new StringWriter();
+            t.printStackTrace(new PrintWriter(sw));
+            String tStr = sw.toString();
+
+            String msg =
+                "error in task: " + callable.toString() + ": " + t.getMessage() + '\n' +
+                tStr +
+                "retrying task: " + callable.toString() + '\n';
+
+            System.err.println(msg);
             return retry(executor, callable, retryCondition, delayFun, timeUnit, retryCount + 1, maxRetryCount);
           }
           else

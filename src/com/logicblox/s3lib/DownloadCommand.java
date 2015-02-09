@@ -399,17 +399,39 @@ public class DownloadCommand extends Command
         {
           public AmazonDownload call() throws Exception
           {
-            String multipartDigest;
-            synchronized(DownloadCommand.this) {
-              ByteArrayOutputStream os = new ByteArrayOutputStream();
-              for (Integer pNum : etags.keySet()) {
-                os.write(etags.get(pNum));
+            String remoteEtag = download.getETag();
+            String localDigest = "";
+            if ((remoteEtag.length() > 32) &&
+                (remoteEtag.charAt(32) == '-')) {
+              // Object has been uploaded using S3's multipart upload protocol,
+              // so it has a special Etag documented here:
+              // http://permalink.gmane.org/gmane.comp.file-systems.s3.s3tools/583
+              synchronized(DownloadCommand.this) {
+                ByteArrayOutputStream os = new ByteArrayOutputStream();
+                for (Integer pNum : etags.keySet()) {
+                  os.write(etags.get(pNum));
+                }
+
+                localDigest = DigestUtils.md5Hex(os.toByteArray()) + "-" + etags.size();
               }
-
-              multipartDigest = DigestUtils.md5Hex(os.toByteArray()) + "-" + etags.size();
             }
-
-            if(download.getETag().equals(multipartDigest)) {
+            else {
+              // Object has been uploaded using S3's simple upload protocol,
+              // so its Etag should be equal to object's MD5.
+              // Same should hold for objects uploaded to GCS (if "compose" operation
+              // wasn't used).
+              if (etags.size() == 1) {
+                // Single-part download (1 range GET).
+                synchronized(DownloadCommand.this) {
+                  localDigest = DatatypeConverter.printHexBinary(etags.get(0)).toLowerCase();
+                }
+              }
+              else {
+                // Multi-part download (>1 range GETs).
+                localDigest = DigestUtils.md5Hex(new FileInputStream(DownloadCommand.this.file));
+              }
+            }
+            if(remoteEtag.equals(localDigest)) {
               return download;
             }
             else {

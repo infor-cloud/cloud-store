@@ -8,28 +8,10 @@ bindir = os.path.dirname(os.path.realpath( __file__ ))
 prefix = os.path.dirname(bindir)
 
 def run(args):
-    deps = ['s3lib-0.2.jar',
-            'jcommander-1.29.jar',
-            'guava-15.0.jar',
-            'commons-codec-1.9.jar',
-            'commons-logging-1.1.1.jar',
-            'commons-io-2.4.jar',
-            'log4j-1.2.13.jar',
-            'httpcore-4.2.jar',
-            'httpclient-4.2.3.jar',
-            'jackson-annotations-2.1.1.jar',
-            'jackson-core-2.1.1.jar',
-            'jackson-databind-2.1.1.jar',
-            'aws-java-sdk-1.7.1.jar']
-
-    deps_paths = [prefix +'/lib/java/' + name for name in deps]
-    config_path = os.path.join(prefix, 'config')
-    classpath = ':'.join(deps_paths + [config_path])
-
     subenv = os.environ.copy()
     subenv['S3LIB_HOME'] = prefix
 
-    java_args = ['java', '-cp', classpath, 'com.logicblox.s3lib.Main']
+    java_args = ['java', '-jar', prefix + '/lib/java/s3lib-0.2.jar']
     java_args.extend(args)
 
     os.execvpe('java', java_args, subenv)

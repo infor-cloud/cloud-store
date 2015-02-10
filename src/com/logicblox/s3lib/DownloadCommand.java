@@ -1,11 +1,21 @@
 package com.logicblox.s3lib;
 
 
-import java.io.*;
-
-import java.security.*;
-import java.util.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.RandomAccessFile;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.BadPaddingException;
@@ -30,7 +40,7 @@ public class DownloadCommand extends Command
   private ListeningExecutorService _downloadExecutor;
   private ListeningScheduledExecutorService _executor;
   private KeyProvider _encKeyProvider;
-  private TreeMap<Integer, byte[]> etags = new TreeMap<Integer, byte[]>();
+  private ConcurrentMap<Integer, byte[]> etags = new ConcurrentSkipListMap<Integer, byte[]>();
 
   public DownloadCommand(
     ListeningExecutorService downloadExecutor,
@@ -375,10 +385,7 @@ public class DownloadCommand extends Command
     }
     catch (IOException e) {}
 
-    synchronized(DownloadCommand.this)
-    {
-      etags.put(partNumber, stream.getDigest());
-    }
+    etags.put(partNumber, stream.getDigest());
   }
   
   private AsyncFunction<AmazonDownload, AmazonDownload> validate()
@@ -406,14 +413,12 @@ public class DownloadCommand extends Command
               // Object has been uploaded using S3's multipart upload protocol,
               // so it has a special Etag documented here:
               // http://permalink.gmane.org/gmane.comp.file-systems.s3.s3tools/583
-              synchronized(DownloadCommand.this) {
-                ByteArrayOutputStream os = new ByteArrayOutputStream();
-                for (Integer pNum : etags.keySet()) {
-                  os.write(etags.get(pNum));
-                }
-
-                localDigest = DigestUtils.md5Hex(os.toByteArray()) + "-" + etags.size();
+              ByteArrayOutputStream os = new ByteArrayOutputStream();
+              for (Integer pNum : etags.keySet()) {
+                os.write(etags.get(pNum));
               }
+
+              localDigest = DigestUtils.md5Hex(os.toByteArray()) + "-" + etags.size();
             }
             else {
               // Object has been uploaded using S3's simple upload protocol,
@@ -422,9 +427,7 @@ public class DownloadCommand extends Command
               // wasn't used).
               if (etags.size() == 1) {
                 // Single-part download (1 range GET).
-                synchronized(DownloadCommand.this) {
-                  localDigest = DatatypeConverter.printHexBinary(etags.get(0)).toLowerCase();
-                }
+                localDigest = DatatypeConverter.printHexBinary(etags.get(0)).toLowerCase();
               }
               else {
                 // Multi-part download (>1 range GETs).
@@ -435,7 +438,10 @@ public class DownloadCommand extends Command
               return download;
             }
             else {
-              throw new BadHashException();
+              throw new BadHashException("Failed download checksum validation for " +
+                  download.getBucket() + "/" + download.getKey() + ". " +
+                  "Calculated MD5: " + localDigest +
+                  ", Expected MD5: " + remoteEtag);
             }
           }
         });

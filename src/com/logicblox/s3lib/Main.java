@@ -291,8 +291,8 @@ class Main
       }
 
       if (getObjectKey().endsWith("/")) {
-        throw new UsageException("Destination key should be fully qualified. " +
-            "No trailing '/' is permitted.");
+        throw new UsageException("Destination key " + getBucket() + "/" + getObjectKey() +
+            " should be fully qualified. No trailing '/' is permitted.");
       }
 
       S3Client client = createS3Client();

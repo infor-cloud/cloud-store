@@ -2,9 +2,10 @@ package com.logicblox.s3lib;
 
 
 import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.google.common.base.Functions;
-import com.google.common.util.concurrent.*;
-import com.logicblox.s3lib.Command;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.io.File;
 import java.io.IOException;

@@ -155,7 +155,8 @@ def jar(name,
         javadoc = None,
         resources = [],
         install = True,
-        java_version = "1.6"):
+        java_version = "1.6",
+        manifest=None):
     '''Build a jar by compiling Java files with javac'''
     java_files = []
 
@@ -182,8 +183,33 @@ def jar(name,
          ' '.join(java_files))
     for f in resources:
         emit('\tcp ' + f + ' ' + classes_dir)
-    emit('\t(cd ' + classes_dir + '; ' +
-         'jar cf ../' + name + '.jar' + ' .)')
+
+    if manifest is not None:
+        manifest_file = '%s/Manifest.txt' % classes_dir
+	
+        # clear out previous file
+        emit("\tcat /dev/null > %s" % manifest_file)
+
+        if manifest.get('add_classpath'):
+           manifest_classpath = [os.path.split(p)[1] for p in classpath] # gets filename only
+
+           # need to write the classpath this way to avoid a "line to long" error in the jar command
+           if len(manifest_classpath) >= 1:
+               emit("\techo 'Class-Path: %s' >> %s" % (manifest_classpath.pop(), manifest_file))
+               for cp in manifest_classpath:
+                   emit("\techo '  %s' >> %s" % (cp, manifest_file))
+
+        if manifest.get('main_class'):
+           emit("\techo 'Main-Class: %s' >> %s" % (manifest.get('main_class'), manifest_file))
+
+        # manifest files need empty line at end
+        emit("\techo ' ' >> %s" % manifest_file)
+
+        emit('\t(cd ' + classes_dir + '; ' +
+             'jar cfm ../' + name + '.jar Manifest.txt .)')
+    else:
+        emit('\t(cd ' + classes_dir + '; ' +
+             'jar cf ../' + name + '.jar' + ' .)')
 
     emit_clean_file(jar_file)
     emit_clean_dir(classes_dir)

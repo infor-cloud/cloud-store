@@ -110,8 +110,12 @@ class GCSUpload implements Upload {
             if (serverMD5.equals(clientMD5)) {
                 md5 = serverMD5;
                 return null;
-            } else
-                throw new BadHashException();
+            } else {
+              throw new BadHashException("Failed upload checksum validation for " +
+                  bucketName + "/" + key + ". " +
+                  "Calculated MD5: " + clientMD5 +
+                  ", Expected MD5: " + serverMD5);
+            }
         }
     }
 

@@ -1,6 +1,8 @@
 package com.logicblox.s3lib;
 
 import java.io.File;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -279,11 +281,21 @@ public class Utils
         {
           if(retryCondition.apply(t) && retryCount < maxRetryCount)
           {
-            System.err.println("retriable error: " + callable.toString() + ": " + t.getMessage());
+            StringWriter sw = new StringWriter();
+            t.printStackTrace(new PrintWriter(sw));
+            String tStr = sw.toString();
+
+            String msg =
+                "error in task: " + callable.toString() + ": " + t.getMessage() + '\n' +
+                tStr +
+                "retrying task: " + callable.toString() + '\n';
+
+            System.err.println(msg);
             return retry(executor, callable, retryCondition, delayFun, timeUnit, retryCount + 1, maxRetryCount);
           }
           else
           {
+            System.err.println("aborting (after " + retryCount + " retries): " + callable.toString());
             return Futures.immediateFailedFuture(t);
           }
         }

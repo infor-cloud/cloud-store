@@ -5,11 +5,14 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.TimeZone;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
-import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -340,6 +343,11 @@ class Main
       if (cannedAcl == "bucket-owner-full-control")
         cannedAcl = getDefaultACL();
 
+      if (getObjectKey().endsWith("/")) {
+        throw new UsageException("Destination key " + getBucket() + "/" + getObjectKey() +
+            " should be fully qualified. No trailing '/' is permitted.");
+      }
+
       S3Client client = createS3Client();
       File f = new File(file);
       if(f.isFile()) {
@@ -359,6 +367,9 @@ class Main
     @Parameter(names = {"-r", "--recursive"}, description = "List all objects that match the provided S3 URL prefix.")
     boolean recursive = false;
 
+    @Parameter(names = {"--include-dirs"}, description = "List all objects and (first-level) directories that match the provided S3 URL prefix.")
+    boolean include_dirs = false;
+
     @Override
     public void invoke() throws Exception
     {
@@ -371,19 +382,39 @@ class Main
 
       try
       {
-        List<S3ObjectSummary> result = client.listObjects(getBucket(), getObjectKey(), recursive).get();
-        if((result.size() == 0) && (!getObjectKey().endsWith("/")))
+        if (include_dirs)
         {
-          // Re-try in case we ls a folder
-          result = client.listObjects(getBucket(), getObjectKey()+"/", recursive).get();
+          List<S3File> result = client.listObjectsAndDirs(getBucket(), getObjectKey(), recursive).get();
+
+          if((result.size() == 0) && (!getObjectKey().endsWith("/")))
+          {
+            // Re-try in case we ls a folder
+            result = client.listObjectsAndDirs(getBucket(), getObjectKey()+"/", recursive).get();
+          }
+          for (S3File obj : result)
+          {
+            // print the full s3 url for each object and (first-level) directory
+            if (!getObjectKey().equals(obj.getKey()))
+              System.out.println(scheme + obj.getBucketName() + "/" + obj.getKey());
+          }
         }
-        for (S3ObjectSummary obj : result) {
-          // print the full s3 url for each object
-          if (! getObjectKey().equals(obj.getKey()))
-            System.out.println(scheme+obj.getBucketName()+"/"+obj.getKey());
+        else
+        {
+          List<S3ObjectSummary> result = client.listObjects(getBucket(), getObjectKey(), recursive).get();
+
+          if ((result.size() == 0) && (!getObjectKey().endsWith("/")))
+          {
+            // Re-try in case we ls a folder
+            result = client.listObjects(getBucket(), getObjectKey() + "/", recursive).get();
+          }
+          for (S3ObjectSummary obj : result)
+          {
+            // print the full s3 url for each object
+            if (!getObjectKey().equals(obj.getKey()))
+              System.out.println(scheme + obj.getBucketName() + "/" + obj.getKey());
+          }
         }
       }
-
       catch(ExecutionException exc)
       {
         rethrow(exc.getCause());

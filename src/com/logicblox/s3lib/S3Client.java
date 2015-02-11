@@ -8,7 +8,6 @@ import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
@@ -388,6 +387,20 @@ public class S3Client
     return cmd.run(bucket, prefix, recursive);
   }
 
+  /**
+   * List objects and (first-level) directories in S3
+   *
+   * @param bucket  Bucket to check
+   * @param object  Path in bucket to check
+   */
+  public ListenableFuture<List<S3File>> listObjectsAndDirs(
+    String bucket, String prefix, boolean recursive)
+  {
+    ListObjectsAndDirsCommand cmd =
+            new ListObjectsAndDirsCommand(_s3Executor, _executor);
+    configure(cmd);
+    return cmd.run(bucket, prefix, recursive);
+  }
 
   public void shutdown()
   {

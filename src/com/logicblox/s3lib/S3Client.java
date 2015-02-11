@@ -323,6 +323,20 @@ public class S3Client
     return cmd.run(bucket, prefix, recursive);
   }
 
+  /**
+   * List objects and (first-level) directories in S3
+   *
+   * @param bucket  Bucket to check
+   * @param object  Path in bucket to check
+   */
+  public ListenableFuture<List<S3File>> listObjectsAndDirs(
+    String bucket, String prefix, boolean recursive)
+  {
+    ListObjectsAndDirsCommand cmd =
+            new ListObjectsAndDirsCommand(_s3Executor, _executor);
+    configure(cmd);
+    return cmd.run(bucket, prefix, recursive);
+  }
 
   public void shutdown()
   {

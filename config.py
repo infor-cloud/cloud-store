@@ -51,4 +51,6 @@ bin_program('s3lib-keygen')
 
 install_files(deps, 'lib/java')
 
+config_file('log4j.xml')
+
 dist_files(['README'])

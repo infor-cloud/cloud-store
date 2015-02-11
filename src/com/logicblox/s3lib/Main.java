@@ -290,6 +290,11 @@ class Main
         throw new UsageException("Unknown canned ACL '"+cannedAcl+"'");
       }
 
+      if (getObjectKey().endsWith("/")) {
+        throw new UsageException("Destination key " + getBucket() + "/" + getObjectKey() +
+            " should be fully qualified. No trailing '/' is permitted.");
+      }
+
       S3Client client = createS3Client();
       File f = new File(file);
       if(f.isFile()) {
@@ -309,6 +314,9 @@ class Main
     @Parameter(names = {"-r", "--recursive"}, description = "List all objects that match the provided S3 URL prefix.")
     boolean recursive = false;
 
+    @Parameter(names = {"--include-dirs"}, description = "List all objects and (first-level) directories that match the provided S3 URL prefix.")
+    boolean include_dirs = false;
+
     @Override
     public void invoke() throws Exception
     {
@@ -319,11 +327,21 @@ class Main
 
       try
       {
-        List<S3ObjectSummary> result = client.listObjects(getBucket(), getObjectKey(), recursive).get();
-        for (S3ObjectSummary obj : result) {
-          // print the full s3 url for each object
-          if (! getObjectKey().equals(obj.getKey()))
-            System.out.println("s3://"+obj.getBucketName()+"/"+obj.getKey());
+        if (include_dirs) {
+          List<S3File> result = client.listObjectsAndDirs(getBucket(), getObjectKey(), recursive).get();
+          for (S3File obj : result) {
+            // print the full s3 url for each object and (first-level) directory
+            if (!getObjectKey().equals(obj.getKey()))
+              System.out.println("s3://" + obj.getBucketName() + "/" + obj.getKey());
+          }
+        }
+        else {
+          List<S3ObjectSummary> result = client.listObjects(getBucket(), getObjectKey(), recursive).get();
+          for (S3ObjectSummary obj : result) {
+            // print the full s3 url for each object
+            if (!getObjectKey().equals(obj.getKey()))
+              System.out.println("s3://" + obj.getBucketName() + "/" + obj.getKey());
+          }
         }
 
       }

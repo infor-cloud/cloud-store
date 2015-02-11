@@ -1,14 +1,12 @@
 package com.logicblox.s3lib;
 
-import java.util.Arrays;
-import java.util.List;
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.Callable;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.FilterInputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import javax.xml.bind.DatatypeConverter;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -21,10 +19,11 @@ import com.amazonaws.services.s3.model.CompleteMultipartUploadResult;
 import com.amazonaws.services.s3.model.UploadPartRequest;
 import com.amazonaws.services.s3.model.UploadPartResult;
 import com.amazonaws.services.s3.model.PartETag;
+import org.apache.commons.codec.digest.DigestUtils;
 
 class MultipartAmazonUpload implements Upload
 {
-  private List<PartETag> etags = new ArrayList<PartETag>();
+  private ConcurrentMap<Integer, PartETag> etags = new ConcurrentSkipListMap<Integer, PartETag>();
   private AmazonS3 client;
   private String bucketName;
   private String key;
@@ -69,13 +68,29 @@ class MultipartAmazonUpload implements Upload
   {
     public String call() throws Exception
     {
+      String multipartDigest;
       CompleteMultipartUploadRequest req;
-      synchronized(MultipartAmazonUpload.this)
-      {
-        req = new CompleteMultipartUploadRequest(bucketName, key, uploadId, etags);
+
+      req = new CompleteMultipartUploadRequest(bucketName, key, uploadId,
+          new ArrayList<PartETag>(etags.values()));
+      ByteArrayOutputStream os = new ByteArrayOutputStream();
+      for (Integer pNum : etags.keySet()) {
+        os.write(DatatypeConverter.parseHexBinary(etags.get(pNum).getETag()));
       }
+
+      multipartDigest = DigestUtils.md5Hex(os.toByteArray()) + "-" + etags.size();
+
       CompleteMultipartUploadResult res = client.completeMultipartUpload(req);
-      return res.getETag();
+
+      if(res.getETag().equals(multipartDigest)){
+        return res.getETag();
+      }
+      else {
+        throw new BadHashException("Failed upload checksum validation for " +
+            bucketName + "/" + key + ". " +
+            "Calculated MD5: " + multipartDigest +
+            ", Expected MD5: " + res.getETag());
+      }
     }
   }
 
@@ -105,78 +120,18 @@ class MultipartAmazonUpload implements Upload
       byte[] etag = DatatypeConverter.parseHexBinary(res.getETag());
       if (Arrays.equals(etag, stream.getDigest()))
       {
-        synchronized(MultipartAmazonUpload.this)
-        {
-          etags.add(res.getPartETag());
-        }
+        etags.put(partNumber, res.getPartETag());
+
         return null;
       }
       else
       {
-        throw new BadHashException();
-      }
-    }
-
-    private class HashingInputStream extends FilterInputStream
-    {
-      private MessageDigest md;
-      private byte[] digest;
-
-      public HashingInputStream(InputStream in)
-      {
-        super(in);
-        try
-        {
-          md = MessageDigest.getInstance("MD5");
-        }
-        catch (NoSuchAlgorithmException e)
-        {
-          // No MD5, give up
-          throw new RuntimeException(e);
-        }
-      }
-
-      public byte[] getDigest()
-      {
-        if (digest == null)
-        {
-          digest = md.digest();
-        }
-
-        return digest;
-      }
-
-      @Override
-      public int read() throws IOException
-      {
-        int res = in.read();
-        if (res != -1)
-        {
-          md.update((byte) res);
-        }
-        return res;
-      }
-
-      @Override
-      public int read(byte[] b) throws IOException
-      {
-        int count = in.read(b);
-        if (count != -1)
-        {
-          md.update(b, 0, count);
-        }
-        return count;
-      }
-
-      @Override
-      public int read(byte[] b, int off, int len) throws IOException
-      {
-        int count = in.read(b, off, len);
-        if (count != -1)
-        {
-          md.update(b, off, count);
-        }
-        return count;
+        String calculatedMD5 = DatatypeConverter.printHexBinary(stream.getDigest()).toLowerCase();
+        throw new BadHashException("Failed upload checksum validation for part " +
+            (partNumber + 1) + " of " +
+            bucketName + "/" + key + ". " +
+            "Calculated MD5: " + calculatedMD5 +
+            ", Expected MD5: " + res.getETag());
       }
     }
   }

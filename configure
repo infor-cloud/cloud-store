@@ -42,10 +42,10 @@ jar(
    srcdirs = ['src'],
    classpath = deps,
    javadoc =
-     {'title' : "s3lib $(version) API Documentation" },
+     {'title' : "s3lib $(version) API Documentation"},
    resources = ['log4j.xml'],
-   manifest={ 'add_classpath': True,
-              'main_class': "com.logicblox.s3lib.Main" })
+   manifest = {'add_classpath': True,
+               'main_class': "com.logicblox.s3lib.Main"})
 
 
 bin_program('s3tool')

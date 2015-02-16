@@ -7,6 +7,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
@@ -31,6 +32,7 @@ public class S3Client
   private ListeningScheduledExecutorService _executor;
   private long _chunkSize;
   private AWSCredentialsProvider _credentials;
+  private ClientConfiguration _clientConfiguration;
   private AmazonS3Client _client;
   private KeyProvider _keyProvider;
   private boolean _retryClientException = false;
@@ -61,6 +63,42 @@ public class S3Client
       _client = new AmazonS3Client();
   }
 
+  /**
+   * @param credentials         AWS Credentials
+   * @param clientConfiguration AWS Client Configuration
+   * @param s3Executor          Executor for executing S3 API calls
+   * @param executor            Executor for internally initiating uploads
+   * @param chunkSize           Size of chunks
+   * @param keyProvider         Provider of encryption keys
+   */
+  public S3Client(
+      AWSCredentialsProvider credentials,
+      ClientConfiguration clientConfiguration,
+      ListeningExecutorService s3Executor,
+      ListeningScheduledExecutorService executor,
+      long chunkSize,
+      KeyProvider keyProvider)
+  {
+    _executor = executor;
+    _s3Executor = s3Executor;
+    _chunkSize = chunkSize;
+    _keyProvider = keyProvider;
+    _credentials = credentials;
+    _clientConfiguration = clientConfiguration;
+    
+    if((_credentials != null) && (_clientConfiguration != null))
+      _client = new AmazonS3Client(_credentials, _clientConfiguration);
+    else if (_credentials != null) {
+      _client = new AmazonS3Client(_credentials);
+    }
+    else if (_clientConfiguration != null) {
+      _client = new AmazonS3Client(_clientConfiguration);
+    }
+    else {
+      _client = new AmazonS3Client();
+    }
+  }
+  
   public void setRetryCount(int retryCount)
   {
     _retryCount = retryCount;

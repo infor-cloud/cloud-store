@@ -413,6 +413,18 @@ public class DownloadCommand extends Command
               // Object has been uploaded using S3's multipart upload protocol,
               // so it has a special Etag documented here:
               // http://permalink.gmane.org/gmane.comp.file-systems.s3.s3tools/583
+              
+              // Since, the Etag value depends on the value of the chuck size (and 
+              // the number of the chucks) we cannot validate robustly checksums for
+              // files uploaded with tool other than s3tool.
+              Map<String,String> meta = download.getMeta();
+              if (!meta.containsKey("s3tool-version")) {
+                String fn = "/" + download.getBucket() + "/" + download.getKey();
+                System.err.println("Warning: Skipped download checksum validation. " +
+                    fn + " uploaded using the multipart protocol with tool other than s3tool.");
+                return download;
+              }
+                
               ByteArrayOutputStream os = new ByteArrayOutputStream();
               for (Integer pNum : etags.keySet()) {
                 os.write(etags.get(pNum));
@@ -431,6 +443,8 @@ public class DownloadCommand extends Command
               }
               else {
                 // Multi-part download (>1 range GETs).
+                // TODO(geokollias): Blocking call (esp. for large files). Hopefully, this case
+                // should not take place too often.
                 localDigest = DigestUtils.md5Hex(new FileInputStream(DownloadCommand.this.file));
               }
             }

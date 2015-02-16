@@ -1,5 +1,7 @@
 Sample program to show how s3lib can be integrated into customer applications.
 
+Will do the work in s3lib-example branch until the example stabilizes.
+
 Project was created by running
    mvn archetype:create -DgroupId=com.logicblox -DartifactId=s3lib-example
 and then updating pom.xml with immediate level dependencies.
@@ -10,5 +12,6 @@ To load a new s3lib*.jar file into the local repo, something like:
 
 To check dependency versions:
    mvn versions:display-dependency-updates
+
 
 

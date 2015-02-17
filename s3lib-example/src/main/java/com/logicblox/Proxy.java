@@ -1,5 +1,7 @@
 package com.logicblox;
 
+import com.logicblox.s3lib.*;
+
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -57,5 +59,7 @@ public class Proxy {
         getInternalExecutor(),
         chunkSize,
         getKeyProvider());
+    
+    client.shutdown();
   }
 }

@@ -10,6 +10,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -142,7 +143,7 @@ class Main
       ListeningScheduledExecutorService internalExecutor = getInternalExecutor();
 
       S3Client client = new S3Client(
-        null,
+        (AWSCredentialsProvider)null,
         uploadExecutor,
         internalExecutor,
         chunkSize,

@@ -340,9 +340,6 @@ class Main
     @Override
     public void invoke() throws Exception
     {
-      ListeningExecutorService downloadExecutor = getHttpExecutor();
-      ListeningScheduledExecutorService internalExecutor = getInternalExecutor();
-
       S3Client client = createS3Client();
 
       try
@@ -420,9 +417,6 @@ class Main
     @Override
     public void invoke() throws Exception
     {
-      ListeningExecutorService downloadExecutor = getHttpExecutor();
-      ListeningScheduledExecutorService internalExecutor = getInternalExecutor();
-
       S3Client client = createS3Client();
 
       File output = new File(file);

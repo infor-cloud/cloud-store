@@ -9,17 +9,14 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
-import com.google.common.util.concurrent.FutureFallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.*;
 
 public class Utils
 {
@@ -73,6 +70,30 @@ public class Utils
       throw new UsageException("S3 URLs have the format s3://bucket/key");
     
     return path.substring(1);
+  }
+  
+  public static ListeningExecutorService getHttpExecutor(int nThreads)
+  {
+    return MoreExecutors.listeningDecorator(
+        Executors.newFixedThreadPool(nThreads));
+  }
+
+  public static ListeningScheduledExecutorService getInternalExecutor(int poolSize)
+  {
+    return MoreExecutors.listeningDecorator(
+        Executors.newScheduledThreadPool(poolSize));
+  }
+
+  public static KeyProvider getKeyProvider(String encKeyDirectory)
+  {
+    File dir = new File(encKeyDirectory);
+    if(!dir.exists() && !dir.mkdirs())
+      throw new UsageException("specified key directory '" + encKeyDirectory + "' does not exist");
+
+    if(!dir.isDirectory())
+      throw new UsageException("specified key directory '" + encKeyDirectory + "' is not a directory");
+
+    return new DirectoryKeyProvider(dir);
   }
 
   public static Function<Integer, Integer> createExponentialDelayFunction(final int initialDelay)

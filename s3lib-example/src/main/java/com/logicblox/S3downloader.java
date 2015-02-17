@@ -6,43 +6,16 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
-import com.logicblox.s3lib.DirectoryKeyProvider;
-import com.logicblox.s3lib.KeyProvider;
 import com.logicblox.s3lib.S3Client;
 import com.logicblox.s3lib.UsageException;
 import com.logicblox.s3lib.Utils;
 
 public class S3downloader {
-
-    private static ListeningExecutorService getHttpExecutor() {
-        int maxConcurrentConnections = 10;
-        return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(maxConcurrentConnections));
-    }
-
-    private static ListeningScheduledExecutorService getInternalExecutor() {
-        return MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(50));
-    }
-
-    private static KeyProvider getKeyProvider() {
-        String encKeyDirectory = Utils.getDefaultKeyDirectory();
-        File dir = new File(encKeyDirectory);
-        if (!dir.exists() && !dir.mkdirs()) {
-            throw new UsageException(String.format("specified key directory '%s' does not exist", encKeyDirectory));
-        }
-        if (!dir.isDirectory()) {
-            throw new UsageException(String.format("specified key directory '%s' is not a directory", encKeyDirectory));
-        }
-        return new DirectoryKeyProvider(dir);
-    }
 
     protected static URI getURI(List<String> urls) throws URISyntaxException {
         if (urls.size() != 1) {
@@ -112,9 +85,7 @@ public class S3downloader {
 
         AmazonS3Client s3Client = new AmazonS3Client(clientCfg);
 
-        long chunkSize = Utils.getDefaultChunkSize();
-
-        S3Client client = new S3Client(s3Client, getHttpExecutor(), getInternalExecutor(), chunkSize, getKeyProvider());
+        S3Client client = new S3Client(s3Client);
         List<String> urls = new ArrayList<String>();
         urls.add("s3://kiabi-fred-dev/fmachine/test.gz");
         System.out.println("Downloading test.gz");

@@ -16,7 +16,12 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
-import com.google.common.util.concurrent.*;
+import com.google.common.util.concurrent.FutureFallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 
 public class Utils
 {

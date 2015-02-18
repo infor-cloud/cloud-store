@@ -111,9 +111,7 @@ public class S3downloader {
         ClientConfiguration clientCfg = new ClientConfiguration();
         clientCfg.setProtocol(Protocol.HTTPS);
         
-        //setup proxy connection:
-        clientCfg.setProxyHost("localhost");
-        clientCfg.setProxyPort(8118);
+
         
         Map<String, String> env = System.getenv();
         

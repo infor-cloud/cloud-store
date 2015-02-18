@@ -1,17 +1,16 @@
 package com.logicblox;
-
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
+import java.util.Map;
 import java.util.concurrent.Executors;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.google.common.util.concurrent.ListenableFuture;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -21,11 +20,8 @@ import com.logicblox.s3lib.S3Client;
 import com.logicblox.s3lib.UsageException;
 import com.logicblox.s3lib.Utils;
 
-import java.util.Map;
-
-public class S3downloader {
-
-    private static ListeningExecutorService getHttpExecutor() {
+public class S3uploader {
+   private static ListeningExecutorService getHttpExecutor() {
         int maxConcurrentConnections = 10;
         return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(maxConcurrentConnections));
     }
@@ -33,6 +29,10 @@ public class S3downloader {
     private static ListeningScheduledExecutorService getInternalExecutor() {
         return MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(50));
     }
+
+    static String file="test.dat";
+    static String encKeyName = "kiabi-dev";
+    static String cannedAcl = "bucket-owner-full-control";
 
     private static KeyProvider getKeyProvider(String encKeyDirectory) {
         File dir = new File(encKeyDirectory);
@@ -60,61 +60,45 @@ public class S3downloader {
         return Utils.getObjectKey(getURI(urls));
     }
 
-    private static void download(S3Client client, List<String> urls, String output_file) throws Exception {
-       
-        File output = new File(output_file);
-        ListenableFuture<?> result;
-        boolean recursive = false;
-        boolean overwrite = true;
-
-        if (getObjectKey(urls).endsWith("/")) {
-            result = client.downloadDirectory(output, getURI(urls), recursive, overwrite);
-        } else {
-            // Test if S3 url exists.
-            if (client.exists(getBucket(urls), getObjectKey(urls)).get() == null) {
-                throw new UsageException("Object not found at " + getURI(urls));
-            }
-            result = client.download(output, getURI(urls));
+    private static CannedAccessControlList getAcl(String value)
+    {
+      for (CannedAccessControlList acl : CannedAccessControlList.values())
+      {
+        if (acl.toString().equals(value))
+        {
+          return acl;
         }
-
-        try {
-            result.get();
-        } catch (ExecutionException exc) {
-            rethrow(exc.getCause());
-        }
-
-        client.shutdown();
+      }
+      return null;
     }
 
-    private static void rethrow(Throwable thrown) throws Exception {
-        if (thrown instanceof Exception) {
-            throw (Exception) thrown;
-        }
-        if (thrown instanceof Error) {
-            throw (Error) thrown;
-        } else {
-            throw new RuntimeException(thrown);
-        }
+    public static void  upload(S3Client client, String file, List<String> urls) throws Exception
+    {
+      CannedAccessControlList acl = getAcl(cannedAcl);
+      if(acl == null)
+      {
+        throw new UsageException("Unknown canned ACL '"+cannedAcl+"'");
+      }
+
+      if (getObjectKey(urls).endsWith("/")) {
+        throw new UsageException("Destination key " + getBucket(urls) + "/" + getObjectKey(urls) +
+            " should be fully qualified. No trailing '/' is permitted.");
+      }
+
+      File f = new File(file);
+      if(f.isFile()) {
+        client.upload(f, getBucket(urls), getObjectKey(urls), encKeyName, acl).get();
+      } else if(f.isDirectory()) {
+        client.uploadDirectory(f, getURI(urls), encKeyName, acl).get();
+      } else {
+        throw new UsageException("File '"+file+"' is not a file or a directory.");
+      }
+      client.shutdown();
     }
-
-
-    /*
-     * This is a bare bones implementation of downloading a file from S3. No error
-     * checking for things like
-     *   AWS_ACCESS_KEY_ID defined?
-     *   AWS_SECRET_KEY defined?
-     *   s3lib-keys directory defined?
-     *   file being requested actually exists?
-     */
-
+    
     public static void main(String[] args) throws Exception {
         ClientConfiguration clientCfg = new ClientConfiguration();
         clientCfg.setProtocol(Protocol.HTTPS);
-        
-        //setup proxy connection:
-        clientCfg.setProxyHost("localhost");
-        clientCfg.setProxyPort(8118);
-        
         Map<String, String> env = System.getenv();
         
         System.out.format("%s=%s%n","AWS_ACCESS_KEY_ID",env.get("AWS_ACCESS_KEY_ID"));
@@ -127,9 +111,11 @@ public class S3downloader {
         S3Client client = new S3Client(s3Client, getHttpExecutor(), getInternalExecutor(), chunkSize, getKeyProvider(key_dir));
         List<String> urls = new ArrayList<String>();
         urls.add("s3://kiabi-fred-dev/test/test.gz");
-        String output_file="test.gz";
-        System.out.println("Downloading test.gz");
-        download(client, urls,output_file);
+        String file="test.gz";
+        System.out.println(urls);
+        upload(client, file, urls);
         client.shutdown();
     }
+
+
 }

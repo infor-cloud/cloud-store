@@ -123,7 +123,7 @@ public class S3downloader {
         AmazonS3Client s3Client = new AmazonS3Client(clientCfg);
 
         long chunkSize = Utils.getDefaultChunkSize();
-        String key_dir="/home/.s3lib-keys";
+        String key_dir=String.format("%s/.s3lib-keys",env.get("HOME") );
         S3Client client = new S3Client(s3Client, getHttpExecutor(), getInternalExecutor(), chunkSize, getKeyProvider(key_dir));
         List<String> urls = new ArrayList<String>();
         urls.add("s3://kiabi-fred-dev/test/test.gz");

@@ -107,7 +107,7 @@ public class DownloadCommand extends Command
           if (t instanceof UsageException) {
             return Futures.immediateFailedFuture(t);
           }
-          return Futures.immediateFailedFuture(new Exception("Error downloading s3://"+bucket+"/"+key+".", t));
+          return Futures.immediateFailedFuture(new Exception("Error downloading " +getScheme()+bucket+"/"+key+".", t));
         }
       });
   }
@@ -158,7 +158,7 @@ public class DownloadCommand extends Command
   {
     Map<String,String> meta = download.getMeta();
 
-    String errPrefix = "s3://"+download.getBucket()+"/"+download.getKey()+": ";
+    String errPrefix = getScheme()+download.getBucket()+"/"+download.getKey()+": ";
     if (meta.containsKey("s3tool-version"))
     {
       String objectVersion = meta.get("s3tool-version");

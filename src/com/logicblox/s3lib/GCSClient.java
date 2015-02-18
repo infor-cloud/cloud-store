@@ -54,6 +54,7 @@ public class GCSClient extends S3Client {
         cmd.setRetryCount(_retryCount);
         cmd.setAmazonS3Client(_client);
         cmd.setGCSClient(_gcs_client);
+        cmd.setScheme("gs://");
     }
 
     /**

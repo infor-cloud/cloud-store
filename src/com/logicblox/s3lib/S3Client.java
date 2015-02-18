@@ -79,6 +79,7 @@ public class S3Client
     cmd.setRetryClientException(_retryClientException);
     cmd.setRetryCount(_retryCount);
     cmd.setAmazonS3Client(_client);
+    cmd.setScheme("s3://");
   }
 
   /**
@@ -243,7 +244,7 @@ public class S3Client
    * Delete a file from S3.  Note that this doesn't return an error if the
    * file doesn't exist.  If you care, use the exists() functions to check.
    *
-   * @param s3url   Identifier of file to delete (i.e. s3://bucket/object)
+   * @param s3url   Identifier of file to delete (e.g. s3://bucket/object)
    */
   public ListenableFuture<S3File> delete(URI s3url)
   {

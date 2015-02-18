@@ -27,6 +27,7 @@ public class Command
   protected long chunkSize;
   protected Key encKey;
   protected long fileLength;
+  protected String scheme;
 
   private Function<Integer, Integer> _retryDelayFunction = Utils.createLinearDelayFunction(1);
 
@@ -49,6 +50,16 @@ public class Command
     _stubborn = retry;
   }
   
+  public String getScheme() 
+  {
+    return scheme;
+  }
+
+  public void setScheme(String scheme)
+  {
+    this.scheme = scheme;
+  }
+
   public void setAmazonS3Client(AmazonS3Client client)
   {
     _client = client;

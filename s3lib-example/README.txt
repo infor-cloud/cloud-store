@@ -19,6 +19,19 @@ To compile and run at the command line:
    mvn -q clean compile exec:java -Dexec.mainClass=com.logicblox.S3downloader
    zcat test.gz
 
+Note that the s3upload class uses an encryption key called kiabi-dev for now and
+expects to find it under /home/.s3lib-keys
+  mvn -q clean compile exec:java -Dexec.mainClass=com.logicblox.S3uploader
+
+Get a proxy running in your local machine 
+   sudo apt-get install Privoxy
+   When you install it, it'll bind to 8118 automatically 
+
+To setup a proxy connection, check the Proxy example 
+  These two lines setup the proxy: 
+    clientCfg.setProxyHost("localhost");
+    clientCfg.setProxyPort(8118);
+  We can add them to either the s3dowbloader or s3uploader main. 
 
 
 To check dependency versions:

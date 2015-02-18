@@ -32,7 +32,6 @@ public class S3Client
   private ListeningScheduledExecutorService _executor;
   private long _chunkSize;
   private AWSCredentialsProvider _credentials;
-  private ClientConfiguration _clientConfiguration;
   private AmazonS3Client _client;
   private KeyProvider _keyProvider;
   private boolean _retryClientException = false;
@@ -359,6 +358,22 @@ public class S3Client
             new ListObjectsAndDirsCommand(_s3Executor, _executor);
     configure(cmd);
     return cmd.run(bucket, prefix, recursive);
+  }
+  
+  /**
+   * Returns s3lib package version in this format:
+   * "Version RevNum_RevHash_BuildDatetime"
+   * 
+   * Example:
+   *   "1.0 272_2dab7d1c9c69_201502181542"
+   * 
+   */
+  public static String version()
+  {
+    Package p = S3Client.class.getPackage();
+    String v = p.getSpecificationVersion() + ' ' + p.getImplementationVersion();
+    
+    return v;
   }
 
   public void shutdown()

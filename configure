@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 from buildlib import *
+from time import gmtime, strftime
 
 depdir = os.getenv('LB_UNIVERSE_DEPS', '/opt/logicblox/lb-universe-deps')
 
@@ -37,6 +38,8 @@ deps = [
     '$(aws_java_sdk)/lib/java/jackson-databind-2.1.1.jar',
     '$(aws_java_sdk)/lib/java/aws-java-sdk-1.7.1.jar']
 
+impl_version = (os.getenv('name', 's3lib-1234-0pre').split('-')[1] +
+                '_' + strftime("%Y%m%d%H%M", gmtime()))
 jar(
    name = 's3lib-$(version)',
    srcdirs = ['src'],
@@ -44,7 +47,14 @@ jar(
    javadoc =
      {'title' : "s3lib $(version) API Documentation"},
    manifest = {'add_classpath': True,
-               'main_class': "com.logicblox.s3lib.Main"})
+               'main_class': "com.logicblox.s3lib.Main",
+               'package_version': [('Name', "com.logicblox.s3lib"),
+                                   ('Specification-Title', "APIs for cloud storage"),
+                                   ('Specification-Version', "1.0"),
+                                   ('Specification-Vendor', "LogicBlox, Inc."),
+                                   ('Implementation-Title', "com.logicblox.s3lib"),
+                                   ('Implementation-Version', impl_version),
+                                   ('Implementation-Vendor', "LogicBlox, Inc.")]})
 
 
 bin_program('s3tool')

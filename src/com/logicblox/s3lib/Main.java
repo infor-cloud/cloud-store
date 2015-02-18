@@ -87,6 +87,7 @@ class Main
     _commander.addCommand("exists", new ExistsCommandOptions());
     _commander.addCommand("list-buckets", new ListBucketsCommandOptions());
     _commander.addCommand("keygen", new KeyGenCommandOptions());
+    _commander.addCommand("version", new VersionCommand());
     _commander.addCommand("help", new HelpCommand());
   }
 
@@ -445,6 +446,18 @@ class Main
     }
   }
 
+  /**
+   * Version
+   */
+  @Parameters(commandDescription = "Print version")
+  class VersionCommand extends CommandOptions
+  {
+    public void invoke()
+    {
+      System.out.println(S3Client.version());
+    }
+  }
+  
   /**
    * Help
    */

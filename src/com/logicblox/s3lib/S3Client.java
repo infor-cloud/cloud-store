@@ -82,6 +82,19 @@ public class S3Client
     _keyProvider = keyProvider;
     _client = s3Client;
   }
+
+  /**
+   * @param s3Client    AWS S3 Client
+   */
+  public S3Client(AmazonS3Client s3Client)
+  {
+    _executor = Utils.getInternalExecutor(50);
+    _s3Executor = Utils.getHttpExecutor(10);
+    _chunkSize = Utils.getDefaultChunkSize();
+    _keyProvider = Utils.getKeyProvider(Utils.getDefaultKeyDirectory());
+    _client = s3Client;
+    _retryCount = 10;
+  }
   
   public void setRetryCount(int retryCount)
   {

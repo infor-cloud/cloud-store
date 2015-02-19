@@ -2,22 +2,31 @@ package com.logicblox;
 
 import com.logicblox.s3lib.*;
 
+import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+
+
+
+
+
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+
+
+
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 
-import java.io.File;
-import java.util.concurrent.Executors;
-
-/**
- * Proxy
- */
 public class Proxy {
-  private long chunkSize = Utils.getDefaultChunkSize();
-
+  
   private static ListeningExecutorService getHttpExecutor() {
     int maxConcurrentConnections = 10;
     return MoreExecutors.listeningDecorator(
@@ -40,7 +49,7 @@ public class Proxy {
 
     return new DirectoryKeyProvider(dir);
   }
-
+  
   public static void main(String[] args) {
     ClientConfiguration clientCfg = new ClientConfiguration();
     clientCfg.setProtocol(Protocol.HTTPS);

@@ -27,7 +27,6 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 
-import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -128,27 +127,17 @@ class Main
     @Parameter(names = {"--chunk-size"}, description = "The size of each chunk read from the file")
     long chunkSize = Utils.getDefaultChunkSize();
 
-    protected ListeningExecutorService getHttpExecutor()
-    {
-      return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(maxConcurrentConnections));
-    }
-
-    protected ListeningScheduledExecutorService getInternalExecutor()
-    {
-      return MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(50));
-    }
-
     protected S3Client createS3Client()
     {
-      ListeningExecutorService uploadExecutor = getHttpExecutor();
-      ListeningScheduledExecutorService internalExecutor = getInternalExecutor();
+      ListeningExecutorService uploadExecutor = Utils.getHttpExecutor(maxConcurrentConnections);
+      ListeningScheduledExecutorService internalExecutor = Utils.getInternalExecutor(50);
 
       S3Client client = new S3Client(
         (AWSCredentialsProvider)null,
         uploadExecutor,
         internalExecutor,
         chunkSize,
-        getKeyProvider());
+        Utils.getKeyProvider(encKeyDirectory));
 
       client.setRetryClientException(_stubborn);
       client.setRetryCount(_retryCount);
@@ -158,18 +147,6 @@ class Main
       }
 
       return client;
-    }
-
-    protected KeyProvider getKeyProvider()
-    {
-      File dir = new File(encKeyDirectory);
-      if(!dir.exists() && !dir.mkdirs())
-        throw new UsageException("specified key directory '" + encKeyDirectory + "' does not exist");
-
-      if(!dir.isDirectory())
-        throw new UsageException("specified key directory '" + encKeyDirectory + "' is not a directory");
-
-      return new DirectoryKeyProvider(dir);
     }
   }
 

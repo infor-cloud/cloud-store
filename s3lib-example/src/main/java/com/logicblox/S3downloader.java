@@ -61,7 +61,7 @@ public class S3downloader {
     }
 
     private static void download(S3Client client, List<String> urls, String output_file) throws Exception {
-       
+
         File output = new File(output_file);
         ListenableFuture<?> result;
         boolean recursive = false;
@@ -97,10 +97,9 @@ public class S3downloader {
         }
     }
 
-
     /*
-     * This is a bare bones implementation of downloading a file from S3. No error
-     * checking for things like
+     * This is a bare bones implementation of downloading a file from S3. No
+     * error checking for things like
      *   AWS_ACCESS_KEY_ID defined?
      *   AWS_SECRET_KEY defined?
      *   s3lib-keys directory defined?
@@ -110,24 +109,24 @@ public class S3downloader {
     public static void main(String[] args) throws Exception {
         ClientConfiguration clientCfg = new ClientConfiguration();
         clientCfg.setProtocol(Protocol.HTTPS);
-        
 
-        
         Map<String, String> env = System.getenv();
-        
-        System.out.format("%s=%s%n","AWS_ACCESS_KEY_ID",env.get("AWS_ACCESS_KEY_ID"));
-        System.out.format("%s=%s%n","AWS_SECRET_KEY",env.get("AWS_SECRET_KEY"));
-        
+
+        // System.out.format("%s=%s%n","AWS_ACCESS_KEY_ID",env.get("AWS_ACCESS_KEY_ID"));
+        // System.out.format("%s=%s%n","AWS_SECRET_KEY",env.get("AWS_SECRET_KEY"));
+
         AmazonS3Client s3Client = new AmazonS3Client(clientCfg);
 
         long chunkSize = Utils.getDefaultChunkSize();
-        String key_dir=String.format("%s/.s3lib-keys",env.get("HOME") );
+        String key_dir = String.format("%s/.s3lib-keys", env.get("HOME"));
+        System.out.println(String.format("key_dir = '%s", key_dir));
         S3Client client = new S3Client(s3Client, getHttpExecutor(), getInternalExecutor(), chunkSize, getKeyProvider(key_dir));
         List<String> urls = new ArrayList<String>();
-        urls.add("s3://kiabi-fred-dev/test/test.gz");
-        String output_file="test.gz";
-        System.out.println("Downloading test.gz");
-        download(client, urls,output_file);
+        String target = "s3://kiabi-fred-dev/test/test.gz";
+        urls.add(target);
+        String output_file = "test.gz";
+        System.out.println(String.format("Downloading '%s' to '%s'.", target, output_file));
+        download(client, urls, output_file);
         client.shutdown();
     }
 }

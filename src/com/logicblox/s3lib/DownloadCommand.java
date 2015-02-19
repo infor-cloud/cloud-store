@@ -443,9 +443,10 @@ public class DownloadCommand extends Command
               }
               else {
                 // Multi-part download (>1 range GETs).
-                // TODO(geokollias): Blocking call (esp. for large files). Hopefully, this case
-                // should not take place too often.
-                localDigest = DigestUtils.md5Hex(new FileInputStream(DownloadCommand.this.file));
+                String fn = "/" + download.getBucket() + "/" + download.getKey();
+                System.err.println("Warning: Skipped download checksum validation for " + fn + 
+                    ". No efficient way to compute MD5 on multipart downloads of files with singlepart ETag.");
+                return download;
               }
             }
             if(remoteEtag.equals(localDigest)) {

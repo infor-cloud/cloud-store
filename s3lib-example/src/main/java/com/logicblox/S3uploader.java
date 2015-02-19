@@ -30,7 +30,7 @@ public class S3uploader {
         return MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(50));
     }
 
-    static String file="test.dat";
+    // static String file="test.dat";
     static String encKeyName = "kiabi-dev";
     static String cannedAcl = "bucket-owner-full-control";
 
@@ -95,25 +95,28 @@ public class S3uploader {
       }
       client.shutdown();
     }
-    
+
     public static void main(String[] args) throws Exception {
         ClientConfiguration clientCfg = new ClientConfiguration();
         clientCfg.setProtocol(Protocol.HTTPS);
         Map<String, String> env = System.getenv();
-        
-        System.out.format("%s=%s%n","AWS_ACCESS_KEY_ID",env.get("AWS_ACCESS_KEY_ID"));
-        System.out.format("%s=%s%n","AWS_SECRET_KEY",env.get("AWS_SECRET_KEY"));
-        
+
+        // System.out.format("%s=%s%n","AWS_ACCESS_KEY_ID",env.get("AWS_ACCESS_KEY_ID"));
+        // System.out.format("%s=%s%n","AWS_SECRET_KEY",env.get("AWS_SECRET_KEY"));
+
         AmazonS3Client s3Client = new AmazonS3Client(clientCfg);
 
         long chunkSize = Utils.getDefaultChunkSize();
         String key_dir=String.format("%s/.s3lib-keys",env.get("HOME") );
-      
+
         S3Client client = new S3Client(s3Client, getHttpExecutor(), getInternalExecutor(), chunkSize, getKeyProvider(key_dir));
         List<String> urls = new ArrayList<String>();
-        urls.add("s3://kiabi-fred-dev/test/inventory_available.dat.gz");
+        String target = "s3://kiabi-fred-dev/test/inventory_available.dat.gz";
+        urls.add(target);
         String file="inventory_available.dat.gz";
-        System.out.println(urls);
+
+        System.out.println(String.format("Encryption key is '%s'.", encKeyName));
+        System.out.println(String.format("Uploading '%s' to '%s'.", file, target));
         upload(client, file, urls);
         client.shutdown();
     }

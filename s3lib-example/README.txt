@@ -18,6 +18,10 @@ To load a new s3lib*.jar file into the local repo, do something like:
    # Then you should regenerate the eclipse classpath as well:
    mvn eclipse:eclipse
 
+
+Confirm downloads work using the command line utility, s3lib:
+  ./s3lib-272_2dab7d1c9c69/bin/s3tool download -o test.gz s3://kiabi-fred-dev/test/test.gz
+
 To compile and run at the command line:
    mvn -q clean compile exec:java -Dexec.mainClass=com.logicblox.S3downloader
    zcat test.gz

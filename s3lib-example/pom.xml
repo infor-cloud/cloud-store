@@ -47,7 +47,7 @@
         <dependency>
             <groupId>com.logicblox</groupId>
             <artifactId>s3lib</artifactId>
-            <version>0.2.272</version>
+            <version>0.2.279</version>
         </dependency>
 
         <dependency>

@@ -427,11 +427,11 @@ public class DownloadCommand extends Command
 
               int expectedPartsNum = (int) Math.ceil(fileLength / (double) chunkSize);
               int actualPartsNum = Integer.parseInt(remoteEtag.substring(33));
-              
+
               if (expectedPartsNum != actualPartsNum) {
                 String fn = "/" + download.getBucket() + "/" + download.getKey();
                 System.err.println("Warning: Skipped download checksum validation for " + fn +
-                    ". Actual parts number: "  + actualPartsNum + 
+                    ". Actual number of parts: "  + actualPartsNum +
                     ", Expected number of parts: " + expectedPartsNum + 
                     ". Probably the ETag was changed by using another tool.");
                 return download;

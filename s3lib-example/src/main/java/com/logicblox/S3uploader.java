@@ -30,8 +30,7 @@ public class S3uploader {
         return MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(50));
     }
 
-    // static String file="test.dat";
-    static String encKeyName = "kiabi-dev";
+    static String encKeyName = "kiabi-encryption-key";
     static String cannedAcl = "bucket-owner-full-control";
 
     private static KeyProvider getKeyProvider(String encKeyDirectory) {
@@ -99,6 +98,11 @@ public class S3uploader {
     public static void main(String[] args) throws Exception {
         ClientConfiguration clientCfg = new ClientConfiguration();
         clientCfg.setProtocol(Protocol.HTTPS);
+        // Defining the client configuration 
+        // You can define a proxy connection here if needed as follow : 
+        //    clientCfg.setProxyHost("localhost");
+        //    clientCfg.setProxyPort(8118);
+        
         Map<String, String> env = System.getenv();
 
         // System.out.format("%s=%s%n","AWS_ACCESS_KEY_ID",env.get("AWS_ACCESS_KEY_ID"));
@@ -107,13 +111,18 @@ public class S3uploader {
         AmazonS3Client s3Client = new AmazonS3Client(clientCfg);
 
         long chunkSize = Utils.getDefaultChunkSize();
+        
+        // This specify the encryption key directory. It's setup to be $HOME/.s3lib-keys here
         String key_dir=String.format("%s/.s3lib-keys",env.get("HOME") );
-
+        
+        // Define the s3 client
         S3Client client = new S3Client(s3Client, getHttpExecutor(), getInternalExecutor(), chunkSize, getKeyProvider(key_dir));
         List<String> urls = new ArrayList<String>();
-        String target = "s3://kiabi-fred-dev/test/inventory_available.dat.gz";
+        
+        // upload the file to this url
+        String target = "s3://kiabi-s3-poc/test/test.dat.gz";
         urls.add(target);
-        String file="inventory_available.dat.gz";
+        String file="test.dat.gz";
 
         System.out.println(String.format("Encryption key is '%s'.", encKeyName));
         System.out.println(String.format("Uploading '%s' to '%s'.", file, target));

@@ -43,7 +43,7 @@ To setup a proxy connection, check the Proxy example
 
 
 To check dependency versions:
-    k
+   mvn versions:display-dependency-updates
 
 To generate project reports:
    mvn site

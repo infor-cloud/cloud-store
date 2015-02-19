@@ -97,9 +97,10 @@ public class S3downloader {
         }
     }
 
+
     /*
-     * This is a bare bones implementation of downloading a file from S3. No
-     * error checking for things like
+     * This is a bare bones implementation of downloading a file from S3. No error
+     * checking for things like
      *   AWS_ACCESS_KEY_ID defined?
      *   AWS_SECRET_KEY defined?
      *   s3lib-keys directory defined?
@@ -109,7 +110,9 @@ public class S3downloader {
     public static void main(String[] args) throws Exception {
         ClientConfiguration clientCfg = new ClientConfiguration();
         clientCfg.setProtocol(Protocol.HTTPS);
+        
 
+        
         Map<String, String> env = System.getenv();
 
         // System.out.format("%s=%s%n","AWS_ACCESS_KEY_ID",env.get("AWS_ACCESS_KEY_ID"));
@@ -118,15 +121,24 @@ public class S3downloader {
         AmazonS3Client s3Client = new AmazonS3Client(clientCfg);
 
         long chunkSize = Utils.getDefaultChunkSize();
-        String key_dir = String.format("%s/.s3lib-keys", env.get("HOME"));
-        System.out.println(String.format("key_dir = '%s", key_dir));
+        
+        // This specify the encryption key directory. It's setup to be $HOME/.s3lib-keys here
+        String key_dir=String.format("%s/.s3lib-keys",env.get("HOME") );
+        
+        // Define the s3 client 
         S3Client client = new S3Client(s3Client, getHttpExecutor(), getInternalExecutor(), chunkSize, getKeyProvider(key_dir));
         List<String> urls = new ArrayList<String>();
-        String target = "s3://kiabi-fred-dev/test/test.gz";
+        
+        // file url to download
+        String target = "s3://kiabi-s3-poc/test/test.dat.gz";
         urls.add(target);
-        String output_file = "test.gz";
-        System.out.println(String.format("Downloading '%s' to '%s'.", target, output_file));
-        download(client, urls, output_file);
+        
+        // output file
+        String output_file="test-downloaded.gz";
+        System.out.println(String.format("Downloading '%s' from '%s'.", output_file, target));
+        
+        // Download the file from urls to output_file using the client
+        download(client, urls,output_file);
         client.shutdown();
     }
 }

@@ -375,10 +375,10 @@ public class S3Client
   
   /**
    * Returns s3lib package version in this format:
-   * "Version RevNum_RevHash_BuildDatetime"
+   * "Version.RevNum-RevHash_BuildDatetime"
    * 
    * Example:
-   *   "1.0 272_2dab7d1c9c69_201502181542"
+   *   "1.0.272-2dab7d1c9c69_201502181542"
    * 
    */
   public static String version()

@@ -420,8 +420,20 @@ public class DownloadCommand extends Command
               Map<String,String> meta = download.getMeta();
               if (!meta.containsKey("s3tool-version")) {
                 String fn = "/" + download.getBucket() + "/" + download.getKey();
-                System.err.println("Warning: Skipped download checksum validation. " +
-                    fn + " uploaded using the multipart protocol with tool other than s3tool.");
+                System.err.println("Warning: Skipped download checksum validation for " + fn + 
+                    ". It was uploaded using the multipart protocol with tool other than s3tool.");
+                return download;
+              }
+
+              int expectedPartsNum = (int) Math.ceil(fileLength / (double) chunkSize);
+              int actualPartsNum = Integer.parseInt(remoteEtag.substring(33));
+              
+              if (expectedPartsNum != actualPartsNum) {
+                String fn = "/" + download.getBucket() + "/" + download.getKey();
+                System.err.println("Warning: Skipped download checksum validation for " + fn +
+                    ". Actual parts number: "  + actualPartsNum + 
+                    ", Expected number of parts: " + expectedPartsNum + 
+                    ". Probably the ETag was changed by using another tool.");
                 return download;
               }
                 

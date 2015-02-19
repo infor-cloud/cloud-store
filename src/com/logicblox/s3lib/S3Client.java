@@ -371,7 +371,7 @@ public class S3Client
   public static String version()
   {
     Package p = S3Client.class.getPackage();
-    String v = p.getSpecificationVersion() + ' ' + p.getImplementationVersion();
+    String v = p.getSpecificationVersion() + '.' + p.getImplementationVersion();
     
     return v;
   }

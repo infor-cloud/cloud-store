@@ -38,8 +38,8 @@ deps = [
     '$(aws_java_sdk)/lib/java/jackson-databind-2.1.1.jar',
     '$(aws_java_sdk)/lib/java/aws-java-sdk-1.7.1.jar']
 
-impl_version = (os.getenv('name', 's3lib-1234-0pre').split('-')[1] +
-                '_' + strftime("%Y%m%d%H%M", gmtime()))
+rev_info = os.getenv('name', 's3lib-1234-0pre').split('-')[1].replace('_', '-')
+impl_version = (rev_info + '_' + strftime("%Y%m%d%H%M", gmtime()))
 jar(
    name = 's3lib-$(version)',
    srcdirs = ['src'],

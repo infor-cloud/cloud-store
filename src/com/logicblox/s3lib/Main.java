@@ -24,10 +24,13 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 
+import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
 
-import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -40,8 +43,7 @@ class Main
 
   public static void main(String[] args)
   {
-    Logger root = Logger.getRootLogger();
-    root.setLevel(Level.INFO);
+    initLogging();
 
     try
     {
@@ -55,6 +57,24 @@ class Main
     }
   }
 
+  private static void initLogging() {
+    Logger root = Logger.getRootLogger();
+    root.setLevel(Level.INFO);
+
+    ConsoleAppender console = new ConsoleAppender();
+    String PATTERN = "%d [%p|%c|%C{1}] %m%n";
+    console.setLayout(new PatternLayout(PATTERN));
+    console.setThreshold(Level.INFO);
+    console.activateOptions();
+
+    Logger s3libLogger = Logger.getLogger("com.logicblox.s3lib");
+    s3libLogger.addAppender(console);
+    Logger awsLogger = Logger.getLogger("com.amazonaws");
+    awsLogger.addAppender(console);
+    Logger apacheLogger = Logger.getLogger("org.apache.http");
+    apacheLogger.addAppender(console);
+  }
+
   public Main()
   {
     _commander = new JCommander(new MainCommand());
@@ -65,6 +85,7 @@ class Main
     _commander.addCommand("exists", new ExistsCommandOptions());
     _commander.addCommand("list-buckets", new ListBucketsCommandOptions());
     _commander.addCommand("keygen", new KeyGenCommandOptions());
+    _commander.addCommand("version", new VersionCommand());
     _commander.addCommand("help", new HelpCommand());
   }
 
@@ -105,24 +126,14 @@ class Main
     @Parameter(names = {"--chunk-size"}, description = "The size of each chunk read from the file")
     long chunkSize = Utils.getDefaultChunkSize();
 
-    protected ListeningExecutorService getHttpExecutor()
-    {
-      return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(maxConcurrentConnections));
-    }
-
-    protected ListeningScheduledExecutorService getInternalExecutor()
-    {
-      return MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(50));
-    }
-
     protected boolean backendIsGCS() throws URISyntaxException
     {
       return Utils.backendIsGCS(endpoint, null);
     }
 
     protected S3Client createS3Client() throws URISyntaxException {
-      ListeningExecutorService uploadExecutor = getHttpExecutor();
-      ListeningScheduledExecutorService internalExecutor = getInternalExecutor();
+      ListeningExecutorService uploadExecutor = Utils.getHttpExecutor(maxConcurrentConnections);
+      ListeningScheduledExecutorService internalExecutor = Utils.getInternalExecutor(50);
 
       boolean gcsMode = backendIsGCS();
 
@@ -134,15 +145,15 @@ class Main
                 uploadExecutor,
                 internalExecutor,
                 chunkSize,
-                getKeyProvider());
+                Utils.getKeyProvider(encKeyDirectory));
       }
       else
         client = new S3Client(
-                null,
+                (AWSCredentialsProvider)null,
                 uploadExecutor,
                 internalExecutor,
                 chunkSize,
-                getKeyProvider());
+                Utils.getKeyProvider(encKeyDirectory));
 
       client.setRetryClientException(_stubborn);
       client.setRetryCount(_retryCount);
@@ -156,18 +167,6 @@ class Main
       }
 
       return client;
-    }
-
-    protected KeyProvider getKeyProvider()
-    {
-      File dir = new File(encKeyDirectory);
-      if(!dir.exists() && !dir.mkdirs())
-        throw new UsageException("specified key directory '" + encKeyDirectory + "' does not exist");
-
-      if(!dir.isDirectory())
-        throw new UsageException("specified key directory '" + encKeyDirectory + "' is not a directory");
-
-      return new DirectoryKeyProvider(dir);
     }
   }
 
@@ -373,9 +372,6 @@ class Main
     @Override
     public void invoke() throws Exception
     {
-      ListeningExecutorService downloadExecutor = getHttpExecutor();
-      ListeningScheduledExecutorService internalExecutor = getInternalExecutor();
-
       S3Client client = createS3Client();
       boolean gcsMode = backendIsGCS();
       String scheme = gcsMode ? "gs://" : "s3://";
@@ -473,9 +469,6 @@ class Main
     @Override
     public void invoke() throws Exception
     {
-      ListeningExecutorService downloadExecutor = getHttpExecutor();
-      ListeningScheduledExecutorService internalExecutor = getInternalExecutor();
-
       S3Client client = createS3Client();
 
       File output = new File(file);
@@ -504,6 +497,18 @@ class Main
     }
   }
 
+  /**
+   * Version
+   */
+  @Parameters(commandDescription = "Print version")
+  class VersionCommand extends CommandOptions
+  {
+    public void invoke()
+    {
+      System.out.println(S3Client.version());
+    }
+  }
+  
   /**
    * Help
    */

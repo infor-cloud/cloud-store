@@ -202,6 +202,10 @@ def jar(name,
         if manifest.get('main_class'):
            emit("\techo 'Main-Class: %s' >> %s" % (manifest.get('main_class'), manifest_file))
 
+        if manifest.get('package_version'):
+            for header, definition in manifest.get('package_version'):
+                emit("\techo '%s: %s' >> %s" % (header, definition, manifest_file))
+
         # manifest files need empty line at end
         emit("\techo ' ' >> %s" % manifest_file)
 

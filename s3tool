@@ -1,4 +1,8 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python
 
-DIR=$(cd "$(dirname "$0")" && pwd)
-${DIR}/cloud-store "$@"
+import sys
+import subprocess
+from os.path import join, dirname
+
+cmd = ' '.join([join(dirname(__file__), "cloud-store")] + sys.argv[1:])
+subprocess.call(cmd, shell=True)

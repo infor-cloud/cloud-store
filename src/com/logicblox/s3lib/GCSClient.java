@@ -74,32 +74,6 @@ public class GCSClient extends S3Client {
         return cmd.run(bucket, object);
     }
 
-    public void shutdown() {
-        try {
-            _client.shutdown();
-        } catch (Exception exc) {
-            exc.printStackTrace();
-        }
-
-        try
-        {
-            _s3Executor.shutdown();
-        }
-        catch(Exception exc)
-        {
-            exc.printStackTrace();
-        }
-
-        try
-        {
-            _executor.shutdown();
-        }
-        catch(Exception exc)
-        {
-            exc.printStackTrace();
-        }
-    }
-
     /**
      * Singleton GCS Storage object for sharing it across all clients.
      */

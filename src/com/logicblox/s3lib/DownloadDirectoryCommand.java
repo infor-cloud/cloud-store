@@ -17,12 +17,12 @@ public class DownloadDirectoryCommand extends Command
 {
   private ListeningExecutorService _httpExecutor;
   private ListeningScheduledExecutorService _executor;
-  private S3Client _client;
+  private CloudStoreClient _client;
 
   public DownloadDirectoryCommand(
           ListeningExecutorService httpExecutor,
           ListeningScheduledExecutorService internalExecutor,
-          S3Client client)
+          CloudStoreClient client)
   {
     _httpExecutor = httpExecutor;
     _executor = internalExecutor;

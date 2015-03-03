@@ -326,16 +326,14 @@ class Main
           List<S3File> result = client.listObjectsAndDirs(getBucket(), getObjectKey(), recursive).get();
           for (S3File obj : result) {
             // print the full s3 url for each object and (first-level) directory
-            if (!getObjectKey().equals(obj.getKey()))
-              System.out.println("s3://" + obj.getBucketName() + "/" + obj.getKey());
+            System.out.println("s3://" + obj.getBucketName() + "/" + obj.getKey());
           }
         }
         else {
           List<S3ObjectSummary> result = client.listObjects(getBucket(), getObjectKey(), recursive).get();
           for (S3ObjectSummary obj : result) {
             // print the full s3 url for each object
-            if (!getObjectKey().equals(obj.getKey()))
-              System.out.println("s3://" + obj.getBucketName() + "/" + obj.getKey());
+            System.out.println("s3://" + obj.getBucketName() + "/" + obj.getKey());
           }
         }
 

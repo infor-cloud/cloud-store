@@ -5,17 +5,7 @@ import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.http.HttpBackOffIOExceptionHandler;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpRequestInitializer;
-import com.google.api.client.http.HttpTransport;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.storage.Storage;
-import com.google.api.services.storage.StorageScopes;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -23,9 +13,6 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.security.GeneralSecurityException;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -35,17 +22,19 @@ import java.util.concurrent.ExecutionException;
  * downloads.
  */
 public class GCSClient implements CloudStoreClient {
-    private static Storage gcsClient;
+    private final Storage gcsClient;
     private final S3ClientDelegatee s3Client;
 
     /**
-     * @param internalS3Client Low-level S3-client
-     * @param apiExecutor      Executor for executing GCS API calls
-     * @param internalExecutor Executor for internally initiating uploads
-     * @param chunkSize        Size of chunks. Currently, it is not used
-     * @param keyProvider      Provider of encryption keys
+     * @param internalGCSClient Low-level GCS-client
+     * @param internalS3Client  Low-level S3-client
+     * @param apiExecutor       Executor for executing GCS API calls
+     * @param internalExecutor  Executor for internally initiating uploads
+     * @param chunkSize         Size of chunks. Currently, it is not used
+     * @param keyProvider       Provider of encryption keys
      */
-    public GCSClient(
+    GCSClient(
+        Storage internalGCSClient,
         AmazonS3Client internalS3Client,
         ListeningExecutorService apiExecutor,
         ListeningScheduledExecutorService internalExecutor,
@@ -53,7 +42,7 @@ public class GCSClient implements CloudStoreClient {
         KeyProvider keyProvider) {
         s3Client = new S3ClientDelegatee(internalS3Client, apiExecutor,
             internalExecutor, chunkSize, keyProvider);
-        GCSClient.this.gcsClient = GCStorage.INSTANCE.storage();
+        gcsClient = internalGCSClient;
     }
 
     @Override
@@ -215,93 +204,6 @@ public class GCSClient implements CloudStoreClient {
     @Override
     public void shutdown() {
         s3Client.shutdown();
-    }
-
-    /**
-     * Singleton GCS Storage object for sharing it across all clients.
-     */
-    public enum GCStorage {
-        INSTANCE;
-
-        private final String APPLICATION_NAME = "LogicBlox-cloud-store/1.0";
-        private final HttpTransport httpTransport;
-        private final JsonFactory jsonFactory = JacksonFactory
-            .getDefaultInstance();
-        private final GoogleCredential credential;
-        private final Storage storage;
-
-
-        private static HttpTransport initHttpTransport() {
-            HttpTransport httpTransport0 = null;
-            try {
-                httpTransport0 = GoogleNetHttpTransport.newTrustedTransport();
-            } catch (GeneralSecurityException e) {
-                System.err.println("Security error during GCS HTTP Transport " +
-                    "layer initialization: " + e.getMessage());
-                System.exit(1);
-            } catch (IOException e) {
-                System.err.println("I/O error during GCS HTTP Transport layer" +
-                    " initialization: " + e.getMessage());
-                System.exit(1);
-            }
-            assert httpTransport0 != null;
-
-            return httpTransport0;
-        }
-
-        private static GoogleCredential authorize() {
-            GoogleCredential credential = null;
-            try {
-                credential = GoogleCredential.getApplicationDefault();
-            } catch (IOException e) {
-                System.err.println(
-                    "Error during GCS client secrets JSON file loading. Make " +
-                        "sure it exists, you are loading it with the right " +
-                        "path, and a client ID and client secret are defined " +
-                        "in it: " + e
-                        .getMessage());
-                System.exit(1);
-            }
-
-            assert credential != null;
-
-            Collection scopes =
-                Collections.singletonList(StorageScopes
-                    .DEVSTORAGE_FULL_CONTROL);
-            if (credential.createScopedRequired()) {
-                credential = credential.createScoped(scopes);
-            }
-
-            return credential;
-        }
-
-        GCStorage() {
-            httpTransport = initHttpTransport();
-            credential = authorize();
-
-            // By default, Google HTTP client doesn't resume uploads in case of
-            // IOExceptions.
-            // To make it cope with IOExceptions, we attach a back-off based
-            // IOException handler during each HTTP request's initialization.
-            HttpRequestInitializer requestInitializer = new
-                HttpRequestInitializer() {
-                @Override
-                public void initialize(HttpRequest request) throws IOException {
-                    credential.initialize(request);
-                    request.setIOExceptionHandler(new
-                        HttpBackOffIOExceptionHandler(new
-                        ExponentialBackOff()));
-                }
-            };
-            storage = new Storage.Builder(httpTransport, jsonFactory,
-                requestInitializer)
-                .setApplicationName(APPLICATION_NAME)
-                .build();
-        }
-
-        public Storage storage() {
-            return storage;
-        }
     }
 
     private class S3ClientDelegatee extends S3Client {

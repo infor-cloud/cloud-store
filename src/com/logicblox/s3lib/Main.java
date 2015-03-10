@@ -1,8 +1,10 @@
 package com.logicblox.s3lib;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.GeneralSecurityException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -128,17 +130,20 @@ class Main
       return Utils.backendIsGCS(endpoint, null);
     }
 
-    protected CloudStoreClient createS3Client() throws URISyntaxException {
-      ListeningExecutorService uploadExecutor = Utils.getHttpExecutor(maxConcurrentConnections);
+    protected CloudStoreClient createS3Client()
+        throws URISyntaxException, IOException, GeneralSecurityException {
+      ListeningExecutorService uploadExecutor = Utils.getHttpExecutor
+          (maxConcurrentConnections);
 
       boolean gcsMode = backendIsGCS();
 
       CloudStoreClient client;
       if (gcsMode) {
-        AWSCredentialsProvider gcsXMLProvider = Utils.getGCSXMLEnvironmentVariableCredentialsProvider();
+        AWSCredentialsProvider gcsXMLProvider = Utils
+            .getGCSXMLEnvironmentVariableCredentialsProvider();
         AmazonS3Client s3Client = new AmazonS3Client(gcsXMLProvider);
         client = new GCSClientBuilder()
-            .setS3Client(s3Client)
+            .setInternalS3Client(s3Client)
             .setApiExecutor(uploadExecutor)
             .createGCSClient();
       }

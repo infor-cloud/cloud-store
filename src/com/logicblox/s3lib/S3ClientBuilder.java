@@ -9,10 +9,9 @@ public class S3ClientBuilder {
     private ListeningExecutorService apiExecutor;
     private ListeningScheduledExecutorService internalExecutor;
     private long chunkSize = Utils.getDefaultChunkSize();
-    private KeyProvider keyProvider = Utils.getKeyProvider(Utils
-        .getDefaultKeyDirectory());
+    private KeyProvider keyProvider;
 
-    public S3ClientBuilder setS3Client(AmazonS3Client s3Client) {
+    public S3ClientBuilder setInternalS3Client(AmazonS3Client s3Client) {
         this.s3Client = s3Client;
         return this;
     }
@@ -41,13 +40,16 @@ public class S3ClientBuilder {
 
     public S3Client createS3Client() {
         if (s3Client == null) {
-            s3Client = new AmazonS3Client();
+            setInternalS3Client(new AmazonS3Client());
         }
         if (apiExecutor == null) {
-            apiExecutor = Utils.getHttpExecutor(10);
+            setApiExecutor(Utils.getHttpExecutor(10));
         }
         if (internalExecutor == null) {
-            internalExecutor = Utils.getInternalExecutor(50);
+            setInternalExecutor(Utils.getInternalExecutor(50));
+        }
+        if (keyProvider == null) {
+            setKeyProvider(Utils.getKeyProvider(Utils.getDefaultKeyDirectory()));
         }
         return new S3Client(s3Client, apiExecutor, internalExecutor, chunkSize,
             keyProvider);

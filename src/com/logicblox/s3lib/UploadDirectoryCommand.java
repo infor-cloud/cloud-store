@@ -1,5 +1,6 @@
 package com.logicblox.s3lib;
 
+import com.amazonaws.event.ProgressListener;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -31,8 +32,13 @@ public class UploadDirectoryCommand extends Command
     _client = client;
   }
 
-  public ListenableFuture<List<S3File>> run(final File dir, final String bucket, final String object, final String encKey, final String acl,
-                                            boolean progress)
+  public ListenableFuture<List<S3File>> run(final File dir,
+                                            final String bucket,
+                                            final String object,
+                                            final String encKey,
+                                            final String acl,
+                                            S3ProgressListenerFactory
+                                                progressListenerFactory)
   throws ExecutionException, InterruptedException, IOException
   {
     final IOFileFilter noSymlinks = new IOFileFilter()
@@ -74,7 +80,17 @@ public class UploadDirectoryCommand extends Command
     {
       String relPath = file.getPath().substring(dir.getPath().length()+1);
       String key = object + "/" + relPath;
-      files.add(_client.upload(file, bucket, key, encKey, acl, progress));
+
+      UploadOptions options = new UploadOptionsBuilder()
+          .setFile(file)
+          .setBucket(bucket)
+          .setObjectKey(key)
+          .setEncKey(encKey)
+          .setAcl(acl)
+          .setS3ProgressListenerFactory(progressListenerFactory)
+          .createUploadOptions();
+
+      files.add(_client.upload(options));
     }
 
     return Futures.allAsList(files);

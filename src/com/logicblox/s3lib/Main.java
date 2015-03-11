@@ -341,18 +341,39 @@ class Main
         cannedAcl = getDefaultACL();
 
       if (getObjectKey().endsWith("/")) {
-        throw new UsageException("Destination key " + getBucket() + "/" + getObjectKey() +
+        throw new UsageException("Destination key " + getBucket() + "/" +
+            getObjectKey() +
             " should be fully qualified. No trailing '/' is permitted.");
       }
 
       CloudStoreClient client = createS3Client();
       File f = new File(file);
+
+      UploadOptionsBuilder uob = new UploadOptionsBuilder();
+      uob.setFile(f)
+          .setBucket(getBucket())
+          .setObjectKey(getObjectKey())
+          .setEncKey(encKeyName)
+          .setAcl(cannedAcl);
+      if (progress) {
+        if(backendIsGCS()) {
+          uob.setGCSProgressListenerFactory(new
+              GCSConsoleProgressListenerFactory());
+        }
+        else {
+          uob.setS3ProgressListenerFactory(new
+              S3ConsoleProgressListenerFactory());
+        }
+      }
+      UploadOptions options = uob.createUploadOptions();
+
       if(f.isFile()) {
-        client.upload(f, getBucket(), getObjectKey(), encKeyName, cannedAcl, progress).get();
+        client.upload(options).get();
       } else if(f.isDirectory()) {
-        client.uploadDirectory(f, getURI(), encKeyName, cannedAcl, progress).get();
+        client.uploadDirectory(options).get();
       } else {
-        throw new UsageException("File '"+file+"' is not a file or a directory.");
+        throw new UsageException("File '" + file + "' is not a file or a " +
+            "directory.");
       }
       client.shutdown();
     }
@@ -472,14 +493,24 @@ class Main
       File output = new File(file);
       ListenableFuture<?> result;
 
+      DownloadOptions options = new DownloadOptionsBuilder()
+          .setFile(output)
+          .setBucket(getBucket())
+          .setObjectKey(getObjectKey())
+          .setRecursive(recursive)
+          .setOverwrite(overwrite)
+          .setS3ProgressListenerFactory(new
+              S3ConsoleProgressListenerFactory())
+          .createDownloadOptions();
+
       if(getObjectKey().endsWith("/")) {
-        result = client.downloadDirectory(output, getURI(), recursive, overwrite, progress);
+        result = client.downloadDirectory(options);
       } else {
         // Test if S3 url exists.
         if(client.exists(getBucket(), getObjectKey()).get() == null) {
           throw new UsageException("Object not found at "+getURI());
         }
-        result = client.download(output, getBucket(), getObjectKey(), progress);
+        result = client.download(options);
       }
 
       try

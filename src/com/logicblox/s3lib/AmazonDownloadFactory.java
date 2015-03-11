@@ -1,6 +1,5 @@
 package com.logicblox.s3lib;
 
-import java.util.Map;
 import java.util.concurrent.Callable;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -13,13 +12,14 @@ class AmazonDownloadFactory
 {
   private ListeningExecutorService executor;
   private AmazonS3 client;
-  private boolean progress;
+  private S3ProgressListenerFactory progressListenerFactory;
 
-  public AmazonDownloadFactory(AmazonS3 client, ListeningExecutorService executor, boolean progress)
+  public AmazonDownloadFactory(AmazonS3 client, ListeningExecutorService
+      executor, S3ProgressListenerFactory progressListenerFactory)
   {
     this.client = client;
     this.executor = executor;
-    this.progress = progress;
+    this.progressListenerFactory = progressListenerFactory;
   }
 
   public ListenableFuture<AmazonDownload> startDownload(String bucketName, String key)
@@ -42,7 +42,7 @@ class AmazonDownloadFactory
     {
       ObjectMetadata data = client.getObjectMetadata(bucketName, key);
       return new AmazonDownload(
-        client, key, bucketName, data, executor, progress);
+        client, key, bucketName, data, executor, progressListenerFactory);
     }
   }
 }

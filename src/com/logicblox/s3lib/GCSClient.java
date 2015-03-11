@@ -18,8 +18,14 @@ import java.util.concurrent.ExecutionException;
 
 
 /**
- * Captures the full configuration independent of concrete uploads and
- * downloads.
+ * Provides the client for accessing the Google Cloud Storage web service.
+ * <p/>
+ * Captures the full configuration independent of concrete operations like
+ * uploads or downloads.
+ * <p/>
+ * For more information about Google Cloud Storage, please see <a
+ * href="https://cloud.google.com/storage/">https://cloud.google
+ * .com/storage/</a>
  */
 public class GCSClient implements CloudStoreClient {
     private final Storage gcsClient;
@@ -61,16 +67,23 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<S3File> upload(File file, String bucket, String
-        object, String key, String acl, boolean progress) throws IOException {
-        return s3Client.upload(file, bucket, object, key, acl, progress);
+    public ListenableFuture<S3File> upload(UploadOptions options) throws IOException {
+        return s3Client.upload(options);
     }
 
     @Override
     public ListenableFuture<S3File> upload(File file, String bucket, String
         object, String key, CannedAccessControlList acl)
         throws IOException {
-        return upload(file, bucket, object, key, acl.toString(), false);
+        UploadOptions options = new UploadOptionsBuilder()
+            .setFile(file)
+            .setBucket(bucket)
+            .setObjectKey(object)
+            .setEncKey(key)
+            .setAcl(acl.toString())
+            .createUploadOptions();
+
+        return upload(options);
     }
 
     @Override
@@ -98,16 +111,21 @@ public class GCSClient implements CloudStoreClient {
     public ListenableFuture<S3File> upload(File file, String bucket, String
         object, String key)
         throws IOException {
-        return upload(file, bucket, object, key, Utils.getDefaultACL(true),
-            false);
+        UploadOptions options = new UploadOptionsBuilder()
+            .setFile(file)
+            .setBucket(bucket)
+            .setObjectKey(object)
+            .setEncKey(key)
+            .createUploadOptions();
+
+        return upload(options);
     }
 
     @Override
-    public ListenableFuture<List<S3File>> uploadDirectory(File directory, URI
-        s3url, String encKey, String acl, boolean progress) throws IOException,
+    public ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
+        throws IOException,
         ExecutionException, InterruptedException {
-        return s3Client.uploadDirectory(directory, s3url, encKey, acl,
-            progress);
+        return s3Client.uploadDirectory(options);
     }
 
     @Override
@@ -151,9 +169,9 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<S3File> download(File file, String bucket, String
-        object, boolean progress) throws IOException {
-        return s3Client.download(file, bucket, object, progress);
+    public ListenableFuture<S3File> download(DownloadOptions options) throws
+        IOException {
+        return s3Client.download(options);
     }
 
     @Override
@@ -169,12 +187,11 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<List<S3File>> downloadDirectory(File directory, URI
-        s3url, boolean recursive, boolean overwrite, boolean progress) throws
+    public ListenableFuture<List<S3File>> downloadDirectory(DownloadOptions
+                                                                    options)
+        throws
         IOException, ExecutionException, InterruptedException {
-        return s3Client.downloadDirectory(directory, s3url, recursive,
-            overwrite,
-            progress);
+        return s3Client.downloadDirectory(options);
     }
 
     @Override
@@ -226,22 +243,23 @@ public class GCSClient implements CloudStoreClient {
         }
 
         /**
-         * Upload file to S3.
+         * Upload file to GCS.
          *
-         * @param file   File to upload
-         * @param bucket Bucket to upload to
-         * @param object Path in bucket to upload to
-         * @param key    Name of encryption key to use
-         * @param acl    Access control list to use
+         * @param options Upload options
          */
-        public ListenableFuture<S3File> upload(File file, String bucket, String
-            object, String key, String acl, boolean progress)
+        public ListenableFuture<S3File> upload(UploadOptions options)
             throws IOException {
+            File file = options.getFile();
+            String acl = options.getAcl().or("projectPrivate");
+            String encKey = options.getEncKey().orNull();
+            GCSProgressListenerFactory progressListenerFactory = options
+                .getGCSProgressListenerFactory().orNull();
+
             GCSUploadCommand cmd =
-                new GCSUploadCommand(_s3Executor, _executor, file, _chunkSize, key,
-                    _keyProvider, acl, progress);
+                new GCSUploadCommand(_s3Executor, _executor, file,
+                    _chunkSize, encKey, _keyProvider, acl, progressListenerFactory);
             s3Client.configure(cmd);
-            return cmd.run(bucket, object);
+            return cmd.run(options.getBucket(), options.getObjectKey());
         }
     }
 }

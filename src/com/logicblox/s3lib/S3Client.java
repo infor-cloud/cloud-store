@@ -218,15 +218,21 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> upload(File file, String bucket, String
-      object, String key, String acl, boolean progress)
+  public ListenableFuture<S3File> upload(UploadOptions options)
       throws IOException
   {
+    File file = options.getFile();
+    String acl = options.getAcl().or("bucket-owner-full-control");
+    String encKey = options.getEncKey().orNull();
+    S3ProgressListenerFactory progressListenerFactory = options
+        .getS3ProgressListenerFactory().orNull();
+
     UploadCommand cmd =
-        new UploadCommand(_s3Executor, _executor, file, _chunkSize, key,
-            _keyProvider, acl, progress);
+        new UploadCommand(_s3Executor, _executor, file, _chunkSize, encKey,
+            _keyProvider, acl, progressListenerFactory);
     configure(cmd);
-    return cmd.run(bucket, object);
+
+    return cmd.run(options.getBucket(), options.getObjectKey());
   }
 
   @Override
@@ -234,7 +240,15 @@ public class S3Client implements CloudStoreClient {
       object, String key, CannedAccessControlList acl)
   throws IOException
   {
-    return upload(file, bucket, object, key, acl.toString(), false);
+    UploadOptions options = new UploadOptionsBuilder()
+        .setFile(file)
+        .setBucket(bucket)
+        .setObjectKey(object)
+        .setEncKey(key)
+        .setAcl(acl.toString())
+        .createUploadOptions();
+
+    return upload(options);
   }
 
   @Override
@@ -253,7 +267,6 @@ public class S3Client implements CloudStoreClient {
     return upload(file, bucket, object, key);
   }
 
-
   @Override
   public ListenableFuture<S3File> upload(File file, String bucket, String
       object)
@@ -267,36 +280,60 @@ public class S3Client implements CloudStoreClient {
       object, String key)
   throws IOException
   {
-    return upload(file, bucket, object, key, "bucket-owner-full-control", false);
+    UploadOptions options = new UploadOptionsBuilder()
+        .setFile(file)
+        .setBucket(bucket)
+        .setObjectKey(object)
+        .setEncKey(key)
+        .createUploadOptions();
+
+    return upload(options);
   }
 
   @Override
-  public ListenableFuture<List<S3File>> uploadDirectory(File directory, URI
-      s3url, String encKey, String acl, boolean progress)
+  public ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
       throws IOException, ExecutionException, InterruptedException {
     UploadDirectoryCommand cmd = new UploadDirectoryCommand(_s3Executor,
         _executor, this);
     configure(cmd);
 
-    String bucket = Utils.getBucket(s3url);
-    String object = Utils.getObjectKey(s3url);
-    return cmd.run(directory, bucket, object, encKey, acl, progress);
+    File directory = options.getFile();
+    String bucket = options.getBucket();
+    String object = options.getObjectKey();
+    String encKey = options.getEncKey().orNull();
+    String acl = options.getAcl().or("bucket-owner-full-control");
+    S3ProgressListenerFactory progressListenerFactory = options
+        .getS3ProgressListenerFactory().orNull();
+
+    return cmd.run(directory, bucket, object, encKey, acl, progressListenerFactory);
   }
 
   @Override
   public ListenableFuture<List<S3File>> uploadDirectory(File directory, URI
       s3url, String encKey)
           throws IOException, ExecutionException, InterruptedException {
-    return this.uploadDirectory(directory, s3url, encKey,
-        "bucket-owner-full-control", false);
+    UploadOptions options = new UploadOptionsBuilder()
+        .setFile(directory)
+        .setUri(s3url)
+        .setEncKey(encKey)
+        .setAcl("bucket-owner-full-control")
+        .createUploadOptions();
+
+    return this.uploadDirectory(options);
   }
 
   @Override
   public ListenableFuture<List<S3File>> uploadDirectory(File directory, URI
       s3url, String encKey, CannedAccessControlList acl)
           throws IOException, ExecutionException, InterruptedException {
-    return this.uploadDirectory(directory, s3url, encKey, acl.toString(),
-        false);
+    UploadOptions options = new UploadOptionsBuilder()
+        .setFile(directory)
+        .setUri(s3url)
+        .setEncKey(encKey)
+        .setAcl(acl.toString())
+        .createUploadOptions();
+
+    return this.uploadDirectory(options);
   }
 
   @Override
@@ -340,14 +377,17 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> download(File file, String bucket, String
-      object, boolean progress)
+  public ListenableFuture<S3File> download(DownloadOptions options)
   throws IOException
   {
+    File file = options.getFile();
+    S3ProgressListenerFactory progressListenerFactory = options
+        .getS3ProgressListenerFactory().orNull();
+
     DownloadCommand cmd = new DownloadCommand(_s3Executor, _executor, file,
-        _keyProvider, progress);
+        _keyProvider, progressListenerFactory);
     configure(cmd);
-    return cmd.run(bucket, object);
+    return cmd.run(options.getBucket(), options.getObjectKey());
   }
 
   @Override
@@ -355,7 +395,13 @@ public class S3Client implements CloudStoreClient {
       object)
       throws IOException
   {
-    return download(file, bucket, object, false);
+    DownloadOptions options = new DownloadOptionsBuilder()
+        .setFile(file)
+        .setBucket(bucket)
+        .setObjectKey(object)
+        .createDownloadOptions();
+
+    return download(options);
   }
 
   @Override
@@ -368,18 +414,24 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<List<S3File>> downloadDirectory(
-      File directory, URI s3url, boolean recursive, boolean overwrite, boolean
-      progress)
+  public ListenableFuture<List<S3File>> downloadDirectory(DownloadOptions
+                                                                options)
   throws IOException, ExecutionException, InterruptedException
   {
     DownloadDirectoryCommand cmd = new DownloadDirectoryCommand(_s3Executor,
         _executor, this);
     configure(cmd);
 
-    String bucket = Utils.getBucket(s3url);
-    String object = Utils.getObjectKey(s3url);
-    return cmd.run(directory, bucket, object, recursive, overwrite, progress);
+    File directory = options.getFile();
+    String bucket = options.getBucket();
+    String object = options.getObjectKey();
+    boolean recursive = options.isRecursive();
+    boolean overwrite = options.doesOverwrite();
+    S3ProgressListenerFactory progressListenerFactory = options
+        .getS3ProgressListenerFactory().orNull();
+
+    return cmd.run(directory, bucket, object, recursive, overwrite,
+        progressListenerFactory);
   }
 
   @Override
@@ -387,8 +439,14 @@ public class S3Client implements CloudStoreClient {
       File directory, URI s3url, boolean recursive, boolean overwrite)
   throws IOException, ExecutionException, InterruptedException
   {
-    return this.downloadDirectory(directory, s3url, recursive, overwrite,
-        false);
+    DownloadOptions options = new DownloadOptionsBuilder()
+        .setFile(directory)
+        .setUri(s3url)
+        .setRecursive(recursive)
+        .setOverwrite(overwrite)
+        .createDownloadOptions();
+
+    return this.downloadDirectory(options);
   }
 
   @Override

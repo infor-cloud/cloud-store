@@ -12,7 +12,13 @@ import java.net.URI;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-
+/**
+ * Provides the a general client API for accessing cloud stores like Amazon S3
+ * or Google Cloud Storage.
+ * <p/>
+ * Captures the full configuration independent of concrete operations like
+ * uploads or downloads.
+ */
 public interface CloudStoreClient {
     /**
      * Sets the number of retries after a failure.
@@ -24,26 +30,18 @@ public interface CloudStoreClient {
     void setRetryClientException(boolean retry);
 
     /**
-     * Sets the API endpoint this client should issue the requests to. If it's
-     * not set, then the underlying {@code s3Client} is going to use its default
-     * one for accessing Amazon S3.
+     * Sets the API endpoint this client should issue the requests to.
      * <p/>
-     * This method is mostly useful if we would like to use this client with
-     * services other than S3 (e.g. Google Cloud Storage) that provide a
-     * S3-compatible API or for testing reasons.
+     * This method is mostly useful if we would like to test different services
+     * with compatible APIs or for unit-testing purposes (e.g. mocks).
      *
      * @param endpoint API endpoint
      */
     void setEndpoint(String endpoint);
 
     /**
-     * Uploads the specified {@code file} to Amazon S3 under the specified
-     * {@code bucket} and {@code object} name. The specified {@code acl} is
-     * applied to the uploaded file. If the {@code key} is not null, the {@code
-     * keyProvider} will be asked to provide a public key with that name. This
-     * key will be used to encrypt the {@code file} at the client side. If
-     * {@code progress} is enabled, then progress notifications will be
-     * printed.
+     * Uploads a file according to {@code options}. For more details
+     * check {@link com.logicblox.s3lib.UploadOptions}.
      * <p/>
      * The specified bucket must already exist and the caller must have write
      * permission to the bucket to upload an object.
@@ -59,36 +57,30 @@ public interface CloudStoreClient {
      * transfer.
      * <p/>
      * Low-level upload operations (e.g. file type recognition) are taken care
-     * of by the underlying low-level {@code s3Client}.
+     * of by the underlying low-level service-specific clients.
      * <p/>
      * If during this call an exception wasn't thrown, the entire object has
      * supposedly been stored successfully.
      *
-     * @param file     File to upload
-     * @param bucket   Bucket to upload to
-     * @param object   Path in bucket to upload to
-     * @param key      Name of encryption key to use
-     * @param acl      Access control list to use
-     * @param progress Enable progress indicator
+     * @param options Upload options
+     * @see UploadOptions
      */
-    ListenableFuture<S3File> upload(File file, String bucket, String
-        object, String key, String acl, boolean progress)
+    ListenableFuture<S3File> upload(UploadOptions options)
         throws IOException;
 
     /**
-     * Uploads the specified {@code file} to Amazon S3 under the specified
-     * {@code bucket} and {@code object} name. If the {@code key} is not null,
-     * the {@code keyProvider} will be asked to provide a public key with that
-     * name. This key will be used to encrypt the {@code file} at the client
-     * side. It applies {@code acl} permissions on the uploaded object.
+     * Uploads the specified {@code file} under the specified {@code bucket} and
+     * {@code object} name. If the {@code key} is not null, the {@code
+     * keyProvider} will be asked to provide a public key with that name. This
+     * key will be used to encrypt the {@code file} at the client side. It
+     * applies {@code acl} permissions on the uploaded object.
      *
      * @param file   File to upload
      * @param bucket Bucket to upload to
      * @param object Path in bucket to upload to
      * @param key    Name of encryption key to use
      * @param acl    Access control list to use
-     * @see CloudStoreClient#upload(File, String, String, String, String,
-     * boolean)
+     * @see CloudStoreClient#upload(UploadOptions)
      */
     @Deprecated
     ListenableFuture<S3File> upload(File file, String bucket, String
@@ -96,41 +88,40 @@ public interface CloudStoreClient {
         throws IOException;
 
     /**
-     * Uploads the specified {@code file} to Amazon S3 under the specified
-     * {@code s3url}.
+     * Uploads the specified {@code file} under the specified {@code uri}.
      * <p/>
      * By default, the canned ACL "bucket-owner-full-control" is applied to the
      * uploaded object.
      *
-     * @param file  File to upload
-     * @param s3url Object URI (e.g. s3://bucket/key)
-     * @see CloudStoreClient#upload(File, String, String, String, String,
-     * boolean)
+     * @param file File to upload
+     * @param uri  Object URI (e.g. s3://bucket/key)
+     * @see CloudStoreClient#upload(UploadOptions)
      */
-    ListenableFuture<S3File> upload(File file, URI s3url)
+    @Deprecated
+    ListenableFuture<S3File> upload(File file, URI uri)
         throws IOException;
 
     /**
-     * Uploads the specified {@code file} to Amazon S3 under the specified
-     * {@code s3url}. If the {@code key} is not null, the {@code keyProvider}
-     * will be asked to provide a public key with that name. This key will be
-     * used to encrypt the {@code file} at the client side.
+     * Uploads the specified {@code file} under the specified {@code uri}. If
+     * the {@code key} is not null, the {@code keyProvider} will be asked to
+     * provide a public key with that name. This key will be used to encrypt the
+     * {@code file} at the client side.
      * <p/>
      * By default, the canned ACL "bucket-owner-full-control" is applied to the
      * uploaded object.
      *
-     * @param file  File to upload
-     * @param s3url Object URI (e.g. s3://bucket/key)
-     * @param key   Name of encryption key to use
-     * @see CloudStoreClient#upload(File, String, String, String, String,
-     * boolean)
+     * @param file File to upload
+     * @param uri  Object URI (e.g. s3://bucket/key)
+     * @param key  Name of encryption key to use
+     * @see CloudStoreClient#upload(UploadOptions)
      */
-    ListenableFuture<S3File> upload(File file, URI s3url, String key)
+    @Deprecated
+    ListenableFuture<S3File> upload(File file, URI uri, String key)
         throws IOException;
 
     /**
-     * Uploads the specified {@code file} to Amazon S3 under the specified
-     * {@code bucket} and {@code object} name.
+     * Uploads the specified {@code file} under the specified {@code bucket} and
+     * {@code object} name.
      * <p/>
      * By default, the canned ACL "bucket-owner-full-control" is applied to the
      * uploaded object.
@@ -138,19 +129,17 @@ public interface CloudStoreClient {
      * @param file   File to upload
      * @param bucket Bucket to upload to
      * @param object Path in bucket to upload to
-     * @see CloudStoreClient#upload(File, String, String, String, String,
-     * boolean)
+     * @see CloudStoreClient#upload(UploadOptions)
      */
-    ListenableFuture<S3File> upload(File file, String bucket, String
-        object)
+    @Deprecated
+    ListenableFuture<S3File> upload(File file, String bucket, String object)
         throws IOException;
 
     /**
-     * Uploads the specified {@code file} to Amazon S3 under the specified
-     * {@code bucket} and {@code object} name. If the {@code key} is not null,
-     * the {@code keyProvider} will be asked to provide a public key with that
-     * name. This key will be used to encrypt the {@code file} at the client
-     * side.
+     * Uploads the specified {@code file} under the specified {@code bucket} and
+     * {@code object} name. If the {@code key} is not null, the {@code
+     * keyProvider} will be asked to provide a public key with that name. This
+     * key will be used to encrypt the {@code file} at the client side.
      * <p/>
      * By default, the canned ACL "bucket-owner-full-control" is applied to the
      * uploaded object.
@@ -159,69 +148,61 @@ public interface CloudStoreClient {
      * @param bucket Bucket to upload to
      * @param object Path in bucket to upload to
      * @param key    Name of encryption key to use
-     * @see CloudStoreClient#upload(File, String, String, String, String,
-     * boolean)
+     * @see CloudStoreClient#upload(UploadOptions)
      */
+    @Deprecated
     ListenableFuture<S3File> upload(File file, String bucket, String
         object, String key)
         throws IOException;
 
     /**
-     * Finds every file under {@code directory} recursively and uploads it to
-     * S3. The specified {@code acl} is applied to each created object. If
-     * {@code progress} is enabled, then progress notifications will be
-     * printed.
+     * Uploads a directory according to {@code options}. For more details
+     * check {@link com.logicblox.s3lib.UploadOptions}.
      * <p/>
      * Each individual file is uploaded with {@link CloudStoreClient#upload
-     * (File, String, String, String, CannedAccessControlList)}.
+     * (UploadOptions)}.
      * <p/>
      * Symbolic links are not supported.
      *
-     * @param directory Directory to upload
-     * @param s3url     S3 URL to upload to
-     * @param encKey    Encryption key to use
-     * @param acl       Access control list to use
-     * @param progress  Enable progress indicator
+     * @param options Upload options
+     * @see UploadOptions
      */
-    ListenableFuture<List<S3File>> uploadDirectory(File directory, URI
-        s3url, String encKey, String acl, boolean progress)
+    ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
         throws IOException, ExecutionException, InterruptedException;
 
     /**
-     * Finds every file under {@code directory} recursively and uploads it to
-     * S3.
+     * Uploads every file under {@code directory} recursively.
      * <p/>
      * By default, the canned ACL "bucket-owner-full-control" is applied to each
      * uploaded object.
      *
      * @param directory Directory to upload
-     * @param s3url     S3 URL to upload to
+     * @param uri       URL to upload to
      * @param encKey    Encryption key to use
-     * @see CloudStoreClient#uploadDirectory(File, java.net.URI, String, String,
-     * boolean)
-     */
-    ListenableFuture<List<S3File>> uploadDirectory(File directory, URI
-        s3url, String encKey)
-        throws IOException, ExecutionException, InterruptedException;
-
-    /**
-     * Finds every file under {@code directory} recursively and uploads it to
-     * S3. The specified {@code acl} is applied to each uploaded object.
-     *
-     * @param directory Directory to upload
-     * @param s3url     S3 URL to upload to
-     * @param encKey    Encryption key to use
-     * @param acl       Access control list to use
-     * @see CloudStoreClient#uploadDirectory(File, java.net.URI, String, String,
-     * boolean)
+     * @see CloudStoreClient#uploadDirectory(UploadOptions options)
      */
     @Deprecated
     ListenableFuture<List<S3File>> uploadDirectory(File directory, URI
-        s3url, String encKey, CannedAccessControlList acl)
+        uri, String encKey)
         throws IOException, ExecutionException, InterruptedException;
 
     /**
-     * Deletes the specified {@code object} under S3 {@code bucket}.
+     * Uploads every file under {@code directory} recursively. The specified
+     * {@code acl} is applied to each uploaded object.
+     *
+     * @param directory Directory to upload
+     * @param uri       URL to upload to
+     * @param encKey    Encryption key to use
+     * @param acl       Access control list to use
+     * @see CloudStoreClient#uploadDirectory(UploadOptions options)
+     */
+    @Deprecated
+    ListenableFuture<List<S3File>> uploadDirectory(File directory, URI
+        uri, String encKey, CannedAccessControlList acl)
+        throws IOException, ExecutionException, InterruptedException;
+
+    /**
+     * Deletes the specified {@code object} under {@code bucket}.
      * <p/>
      * No error is returned if the file doesn't exist. If you care, use the
      * {@link CloudStoreClient#exists} methods to check.
@@ -232,18 +213,18 @@ public interface CloudStoreClient {
     ListenableFuture<S3File> delete(String bucket, String object);
 
     /**
-     * Deletes the specified {@code s3url} from S3.
+     * Deletes the specified {@code uri}.
      *
-     * @param s3url Object URI (e.g. s3://bucket/key)
+     * @param uri Object URI (e.g. s3://bucket/key)
      * @see CloudStoreClient#delete(String, String)
      */
-    ListenableFuture<S3File> delete(URI s3url);
+    ListenableFuture<S3File> delete(URI uri);
 
-    /** Lists all S3 buckets visible for this account. */
+    /** Lists all buckets visible for this account. */
     ListenableFuture<List<Bucket>> listBuckets();
 
     /**
-     * Checks if the specified {@code object} exists in the S3 {@code bucket}.
+     * Checks if the specified {@code object} exists in the {@code bucket}.
      * <p/>
      * Returns a null future if the file does not exist.
      * <p/>
@@ -256,17 +237,16 @@ public interface CloudStoreClient {
     ListenableFuture<ObjectMetadata> exists(String bucket, String object);
 
     /**
-     * Checks if the specified {@code s3url} exists in the S3.
+     * Checks if the specified {@code uri} exists.
      *
-     * @param s3url Object URI (e.g. s3://bucket/key)
+     * @param uri Object URI (e.g. s3://bucket/key)
      * @see CloudStoreClient#exists(String, String)
      */
-    ListenableFuture<ObjectMetadata> exists(URI s3url);
+    ListenableFuture<ObjectMetadata> exists(URI uri);
 
     /**
-     * Downloads the specified {@code object}, under {@code bucket}, from S3 to
-     * a local {@code file}. If {@code progress} is enabled, then progress
-     * notifications will be printed.
+     * Downloads a file according to {@code options}. For more details
+     * check {@link com.logicblox.s3lib.DownloadOptions}.
      * <p/>
      * If the {@code object} was encrypted by s3lib at the client-side, this
      * method will try to decrypt it automatically. It knows which key to use by
@@ -277,7 +257,7 @@ public interface CloudStoreClient {
      * <p/>
      * By default, if {@code object}'s size is bigger than the {@code chunkSize}
      * chosen during the upload, then multiple range GETs will be issued,
-     * effectively dowloading different parts of the file concurrently.
+     * effectively downloading different parts of the file concurrently.
      * <p/>
      * The level of parallelism depends on the {@code s3Executor}. Ideally,
      * different parts are downloaded by different threads.
@@ -294,44 +274,42 @@ public interface CloudStoreClient {
      * If during this call an exception wasn't thrown, the entire object has
      * supposedly been stored successfully.
      *
-     * @param file     File to store the object
-     * @param bucket   Bucket to download from
-     * @param object   Path in bucket to download
-     * @param progress Enable progress indicator
+     * @param options Download options
+     * @see DownloadOptions
      */
-    ListenableFuture<S3File> download(File file, String bucket, String
-        object, boolean progress)
+    ListenableFuture<S3File> download(DownloadOptions options)
         throws IOException;
 
     /**
-     * Downloads the specified {@code object}, under {@code bucket}, from S3 to
-     * a local {@code file}.
+     * Downloads the specified {@code object}, under {@code bucket}, to a local
+     * {@code file}.
      *
      * @param file   File to download
      * @param bucket Bucket to download from
      * @param object Path in bucket to download
-     * @see CloudStoreClient#download(File, String, String, boolean)
+     * @see CloudStoreClient#download(DownloadOptions options)
      */
+    @Deprecated
     ListenableFuture<S3File> download(File file, String bucket, String
         object)
         throws IOException;
 
     /**
-     * Downloads the specified {@code s3url} from S3 to a local {@code file}.
+     * Downloads the specified {@code uri} to a local {@code file}.
      *
-     * @param file  File to download
-     * @param s3url S3 object URL to download from
-     * @see CloudStoreClient#download(File, String, String, boolean)
+     * @param file File to download
+     * @param uri  Object URL to download from
+     * @see CloudStoreClient#download(DownloadOptions options)
      */
-    ListenableFuture<S3File> download(File file, URI s3url)
+    @Deprecated
+    ListenableFuture<S3File> download(File file, URI uri)
         throws IOException;
 
     /**
-     * Downloads the conceptual S3 directory, under {@code s3url}, to the local
-     * file system, under {@code directory}. If {@code progress} is enabled,
-     * then progress notifications will be printed.
+     * Downloads a conceptual directory according to {@code options}. For more
+     * details check {@link com.logicblox.s3lib.DownloadOptions}.
      * <p/>
-     * If {@code recursive} is true, then all objects under {@code s3url} will
+     * If {@code recursive} is true, then all objects under {@code uri} will
      * be downloaded. Otherwise, only the first-level objects will be
      * downloaded.
      * <p/>
@@ -341,36 +319,29 @@ public interface CloudStoreClient {
      * Each individual file is downloaded with {@link
      * CloudStoreClient#download(File, String, String)}.
      *
-     * @param directory Directory to download to
-     * @param s3url     Object URI that represents a directory (e.g.
-     *                  s3://bucket/key/)
-     * @param recursive Download all files recursively under s3url
-     * @param overwrite Overwrite a file if it already exists
-     * @param progress  Enable progress indicator
+     * @param options Download options
      */
-    ListenableFuture<List<S3File>> downloadDirectory(
-        File directory, URI s3url, boolean recursive, boolean overwrite, boolean
-        progress)
+    ListenableFuture<List<S3File>> downloadDirectory(DownloadOptions options)
         throws IOException, ExecutionException, InterruptedException;
 
     /**
-     * Downloads the conceptual S3 directory, under {@code s3url}, to the local
-     * file system, under {@code directory}.
+     * Downloads the conceptual directory, under {@code uri}, to the local file
+     * system, under {@code directory}.
      *
      * @param directory Directory to download to
-     * @param s3url     Object URI that represents a directory (e.g.
+     * @param uri       Object URI that represents a directory (e.g.
      *                  s3://bucket/key/)
-     * @param recursive Download all files recursively under s3url
+     * @param recursive Download all files recursively under uri
      * @param overwrite Overwrite a file if it already exists
-     * @see CloudStoreClient#downloadDirectory(File, java.net.URI, boolean,
-     * boolean, boolean)
+     * @see CloudStoreClient#downloadDirectory(DownloadOptions options)
      */
+    @Deprecated
     ListenableFuture<List<S3File>> downloadDirectory(
-        File directory, URI s3url, boolean recursive, boolean overwrite)
+        File directory, URI uri, boolean recursive, boolean overwrite)
         throws IOException, ExecutionException, InterruptedException;
 
     /**
-     * List object in S3
+     * List object
      * <p/>
      * TODO: LB-1187
      */
@@ -378,7 +349,7 @@ public interface CloudStoreClient {
         String bucket, String prefix, boolean recursive);
 
     /**
-     * List objects and (first-level) directories in S3
+     * List objects and (first-level) directories
      * <p/>
      * TODO: LB-1187
      */

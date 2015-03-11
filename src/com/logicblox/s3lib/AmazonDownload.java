@@ -1,9 +1,9 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.event.ProgressEvent;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
@@ -18,7 +18,7 @@ class AmazonDownload
   private ObjectMetadata meta;
   private String key;
   private String bucketName;
-  private boolean progress;
+  private Optional<S3ProgressListenerFactory> progressListenerFactory;
 
   public AmazonDownload(
     AmazonS3 client,
@@ -26,14 +26,15 @@ class AmazonDownload
     String bucketName,
     ObjectMetadata meta,
     ListeningExecutorService executor,
-    boolean progress)
+    S3ProgressListenerFactory progressListenerFactory)
   {
     this.client = client;
     this.key = key;
     this.bucketName = bucketName;
     this.executor = executor;
     this.meta = meta;
-    this.progress = progress;
+    this.progressListenerFactory = Optional.fromNullable
+        (progressListenerFactory);
   }
 
   public ListenableFuture<InputStream> getPart(long start, long end)
@@ -81,30 +82,16 @@ class AmazonDownload
     {
       GetObjectRequest req = new GetObjectRequest(bucketName, key);
       req.setRange(start, end);
-      if (progress) {
-        req.setGeneralProgressListener(
-          new AmazonDownloadProgressListener(
+      if (progressListenerFactory.isPresent()) {
+        S3ProgressListenerFactory f = progressListenerFactory.get();
+        req.setGeneralProgressListener(f.create(
             key + ", range " + start + ":" + end,
+            "download",
             (end - start + 1) / 10,
             end - start + 1));
       }
 
       return client.getObject(req).getObjectContent();
-    }
-  }
-
-  private static class AmazonDownloadProgressListener
-    extends ProgressListener
-    implements com.amazonaws.event.ProgressListener
-  {
-
-    public AmazonDownloadProgressListener(String name, long intervalInBytes, long totalSizeInBytes) {
-      super(name, "download", intervalInBytes, totalSizeInBytes);
-    }
-
-    @Override
-    public void progressChanged(ProgressEvent event) {
-      progress(event.getBytesTransferred());
     }
   }
 }

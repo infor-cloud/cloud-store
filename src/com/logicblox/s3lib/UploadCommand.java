@@ -5,33 +5,24 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.BufferedInputStream;
-import java.io.RandomAccessFile;
-import java.io.ObjectInputStream;
 import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
 
 import java.security.SecureRandom;
 import java.security.Key;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.InvalidAlgorithmParameterException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
-
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
@@ -48,7 +39,7 @@ public class UploadCommand extends Command
   private String encKeyName;
   private String encryptedSymmetricKeyString;
   private String acl;
-  private boolean progress;
+  private S3ProgressListenerFactory progressListenerFactory;
 
   private ListeningExecutorService _uploadExecutor;
   private ListeningScheduledExecutorService _executor;
@@ -61,7 +52,7 @@ public class UploadCommand extends Command
     String encKeyName,
     KeyProvider encKeyProvider,
     String acl,
-    boolean progress)
+    S3ProgressListenerFactory progressListenerFactory)
   throws IOException
   {
     if(uploadExecutor == null)
@@ -103,7 +94,7 @@ public class UploadCommand extends Command
     }
 
     this.acl = acl;
-    this.progress = progress;
+    this.progressListenerFactory = progressListenerFactory;
   }
 
   /**
@@ -154,7 +145,8 @@ public class UploadCommand extends Command
 
   private ListenableFuture<Upload> startUploadActual(final String bucket, final String key)
   {
-    UploadFactory factory = new MultipartAmazonUploadFactory(getAmazonS3Client(), _uploadExecutor, progress);
+    UploadFactory factory = new MultipartAmazonUploadFactory
+        (getAmazonS3Client(), _uploadExecutor, progressListenerFactory);
 
     Map<String,String> meta = new HashMap<String,String>();
     meta.put("s3tool-version", String.valueOf(Version.CURRENT));

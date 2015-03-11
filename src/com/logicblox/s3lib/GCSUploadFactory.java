@@ -1,5 +1,6 @@
 package com.logicblox.s3lib;
 
+import com.google.api.client.googleapis.media.MediaHttpUploaderProgressListener;
 import com.google.api.services.storage.Storage;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -10,9 +11,10 @@ import java.util.concurrent.Callable;
 class GCSUploadFactory implements UploadFactory {
     private Storage client;
     private ListeningExecutorService executor;
-    private boolean progress;
+    private GCSProgressListenerFactory progressListenerFactory;
 
-    public GCSUploadFactory(Storage client, ListeningExecutorService executor, boolean progress) {
+    public GCSUploadFactory(Storage client, ListeningExecutorService executor,
+                            GCSProgressListenerFactory progressListenerFactory) {
         if (client == null)
             throw new IllegalArgumentException("non-null client is required");
         if (executor == null)
@@ -20,7 +22,7 @@ class GCSUploadFactory implements UploadFactory {
 
         this.client = client;
         this.executor = executor;
-        this.progress = progress;
+        this.progressListenerFactory = progressListenerFactory;
     }
 
     public ListenableFuture<Upload> startUpload(String bucketName, String key, Map<String, String> meta, String cannedAcl) {
@@ -41,7 +43,7 @@ class GCSUploadFactory implements UploadFactory {
         }
 
         public Upload call() throws Exception {
-            return new GCSUpload(client, bucketName, key, cannedAcl, this.meta, executor, progress);
+            return new GCSUpload(client, bucketName, key, cannedAcl, this.meta, executor, progressListenerFactory);
         }
     }
 }

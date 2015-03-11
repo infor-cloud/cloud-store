@@ -1,5 +1,6 @@
 package com.logicblox.s3lib;
 
+import com.google.api.client.googleapis.media.MediaHttpUploaderProgressListener;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.util.concurrent.AsyncFunction;
@@ -42,7 +43,7 @@ public class GCSUploadCommand extends Command {
     private String key;
     private String bucket;
 
-    private boolean progress;
+    private GCSProgressListenerFactory progressListenerFactory;
 
     public GCSUploadCommand(
             ListeningExecutorService uploadExecutor,
@@ -52,7 +53,7 @@ public class GCSUploadCommand extends Command {
             String encKeyName,
             KeyProvider encKeyProvider,
             String acl,
-            boolean progress)
+            GCSProgressListenerFactory progressListenerFactory)
             throws IOException {
         if (uploadExecutor == null)
             throw new IllegalArgumentException("non-null upload executor is required");
@@ -92,7 +93,7 @@ public class GCSUploadCommand extends Command {
         }
 
         this.acl = acl;
-        this.progress = progress;
+        this.progressListenerFactory = progressListenerFactory;
     }
 
     /**
@@ -138,7 +139,7 @@ public class GCSUploadCommand extends Command {
     }
 
     private ListenableFuture<Upload> startUploadActual(final String bucket, final String key) {
-        UploadFactory factory = new GCSUploadFactory(getGCSClient(), _uploadExecutor, progress);
+        UploadFactory factory = new GCSUploadFactory(getGCSClient(), _uploadExecutor, progressListenerFactory);
 
         Map<String, String> meta = new HashMap<String, String>();
         meta.put("s3tool-version", String.valueOf(Version.CURRENT));

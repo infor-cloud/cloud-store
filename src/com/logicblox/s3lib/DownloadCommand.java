@@ -3,7 +3,6 @@ package com.logicblox.s3lib;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
@@ -41,14 +40,14 @@ public class DownloadCommand extends Command
   private ListeningScheduledExecutorService _executor;
   private KeyProvider _encKeyProvider;
   private ConcurrentMap<Integer, byte[]> etags = new ConcurrentSkipListMap<Integer, byte[]>();
-  private boolean progress;
+  private S3ProgressListenerFactory progressListenerFactory;
 
   public DownloadCommand(
     ListeningExecutorService downloadExecutor,
     ListeningScheduledExecutorService internalExecutor,
     File file,
     KeyProvider encKeyProvider,
-    boolean progress)
+    S3ProgressListenerFactory progressListenerFactory)
   throws IOException
   {
     _downloadExecutor = downloadExecutor;
@@ -57,7 +56,7 @@ public class DownloadCommand extends Command
 
     this.file = file;
     createNewFile();
-    this.progress = progress;
+    this.progressListenerFactory = progressListenerFactory;
   }
 
   private void createNewFile() throws IOException
@@ -135,7 +134,8 @@ public class DownloadCommand extends Command
 
   private ListenableFuture<AmazonDownload> startDownloadActual(final String bucket, final String key)
   {
-    AmazonDownloadFactory factory = new AmazonDownloadFactory(getAmazonS3Client(), _downloadExecutor, progress);
+    AmazonDownloadFactory factory = new AmazonDownloadFactory
+        (getAmazonS3Client(), _downloadExecutor, progressListenerFactory);
     return factory.startDownload(bucket, key);
   }
 

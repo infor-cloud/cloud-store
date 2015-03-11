@@ -17,12 +17,12 @@ public class DownloadDirectoryCommand extends Command
 {
   private ListeningExecutorService _httpExecutor;
   private ListeningScheduledExecutorService _executor;
-  private S3Client _client;
+  private CloudStoreClient _client;
 
   public DownloadDirectoryCommand(
           ListeningExecutorService httpExecutor,
           ListeningScheduledExecutorService internalExecutor,
-          S3Client client)
+          CloudStoreClient client)
   {
     _httpExecutor = httpExecutor;
     _executor = internalExecutor;
@@ -35,7 +35,7 @@ public class DownloadDirectoryCommand extends Command
     final String key,
     final boolean recursive,
     final boolean overwrite,
-    final boolean progress)
+    final S3ProgressListenerFactory progressListenerFactory)
   throws ExecutionException, InterruptedException, IOException
   {
     List<S3ObjectSummary> lst = _client.listObjects(bucket, key, recursive).get();
@@ -71,7 +71,12 @@ public class DownloadDirectoryCommand extends Command
               "File '" + file + "' already exists. Please delete or use --overwrite");
         }
 
-        ListenableFuture<S3File> result = _client.download(outputFile, bucket, obj.getKey(), progress);
+        DownloadOptions options = new DownloadOptionsBuilder().setFile
+            (outputFile).setBucket(bucket).setObjectKey(obj.getKey())
+            .setS3ProgressListenerFactory(progressListenerFactory)
+            .createDownloadOptions();
+
+        ListenableFuture<S3File> result = _client.download(options);
         files.add(result);
       }
     }

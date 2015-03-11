@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import javax.xml.bind.DatatypeConverter;
 
-import com.amazonaws.event.ProgressEvent;
+import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
@@ -30,17 +30,18 @@ class MultipartAmazonUpload implements Upload
   private String key;
   private String uploadId;
   private ListeningExecutorService executor;
-  private boolean progress;
+  private Optional<S3ProgressListenerFactory> progressListenerFactory;
 
   public MultipartAmazonUpload(AmazonS3 client, String bucketName, String key, String uploadId,
-                               ListeningExecutorService executor, boolean progress)
+                               ListeningExecutorService executor,
+                               S3ProgressListenerFactory progressListenerFactory)
   {
     this.bucketName = bucketName;
     this.key = key;
     this.client = client;
     this.uploadId = uploadId;
     this.executor = executor;
-    this.progress = progress;
+    this.progressListenerFactory = Optional.fromNullable(progressListenerFactory);
   }
 
   public ListenableFuture<Void> uploadPart(int partNumber, InputStream stream, long partSize)
@@ -120,12 +121,13 @@ class MultipartAmazonUpload implements Upload
       req.setPartSize(partSize);
       req.setUploadId(uploadId);
       req.setKey(key);
-      if (progress) {
-        req.setGeneralProgressListener(
-                new AmazonUploadProgressListener(
-                        key + ", part " + (partNumber + 1),
-                        partSize / 10,
-                        partSize));
+      if (progressListenerFactory.isPresent()) {
+        S3ProgressListenerFactory f = progressListenerFactory.get();
+        req.setGeneralProgressListener(f.create(
+            key + ", part " + (partNumber + 1),
+            "upload",
+            partSize / 10,
+            partSize));
       }
 
       UploadPartResult res = client.uploadPart(req);
@@ -145,20 +147,6 @@ class MultipartAmazonUpload implements Upload
             "Calculated MD5: " + calculatedMD5 +
             ", Expected MD5: " + res.getETag());
       }
-    }
-  }
-
-  private static class AmazonUploadProgressListener
-          extends ProgressListener
-          implements com.amazonaws.event.ProgressListener {
-
-    public AmazonUploadProgressListener(String name, long intervalInBytes, long totalSizeInBytes) {
-      super(name, "upload", intervalInBytes, totalSizeInBytes);
-    }
-
-    @Override
-    public void progressChanged(ProgressEvent event) {
-      progress(event.getBytesTransferred());
     }
   }
 }

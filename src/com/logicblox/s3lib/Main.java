@@ -1,8 +1,10 @@
 package com.logicblox.s3lib;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.GeneralSecurityException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -11,9 +13,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
@@ -29,11 +31,8 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import com.amazonaws.AmazonServiceException;
 
@@ -131,29 +130,28 @@ class Main
       return Utils.backendIsGCS(endpoint, null);
     }
 
-    protected S3Client createS3Client() throws URISyntaxException {
-      ListeningExecutorService uploadExecutor = Utils.getHttpExecutor(maxConcurrentConnections);
-      ListeningScheduledExecutorService internalExecutor = Utils.getInternalExecutor(50);
+    protected CloudStoreClient createS3Client()
+        throws URISyntaxException, IOException, GeneralSecurityException {
+      ListeningExecutorService uploadExecutor = Utils.getHttpExecutor
+          (maxConcurrentConnections);
 
       boolean gcsMode = backendIsGCS();
 
-      S3Client client;
+      CloudStoreClient client;
       if (gcsMode) {
-        AWSCredentialsProvider gcsXMLProvider = Utils.getGCSXMLEnvironmentVariableCredentialsProvider();
-        client = new GCSClient(
-                gcsXMLProvider,
-                uploadExecutor,
-                internalExecutor,
-                chunkSize,
-                Utils.getKeyProvider(encKeyDirectory));
+        AWSCredentialsProvider gcsXMLProvider = Utils
+            .getGCSXMLEnvironmentVariableCredentialsProvider();
+        AmazonS3Client s3Client = new AmazonS3Client(gcsXMLProvider);
+        client = new GCSClientBuilder()
+            .setInternalS3Client(s3Client)
+            .setApiExecutor(uploadExecutor)
+            .createGCSClient();
       }
-      else
-        client = new S3Client(
-                (AWSCredentialsProvider)null,
-                uploadExecutor,
-                internalExecutor,
-                chunkSize,
-                Utils.getKeyProvider(encKeyDirectory));
+      else {
+        client = new S3ClientBuilder()
+            .setApiExecutor(uploadExecutor)
+            .createS3Client();
+      }
 
       client.setRetryClientException(_stubborn);
       client.setRetryCount(_retryCount);
@@ -208,7 +206,7 @@ class Main
   {
     public void invoke() throws Exception
     {
-      S3Client client = createS3Client();
+      CloudStoreClient client = createS3Client();
       ListenableFuture<List<Bucket>> result = client.listBuckets();
 
       List<Bucket> buckets = result.get();
@@ -253,7 +251,7 @@ class Main
 
     public void invoke() throws Exception
     {
-      S3Client client = createS3Client();
+      CloudStoreClient client = createS3Client();
       String bucket = getBucket();
       String key = getObjectKey();
       ListenableFuture<ObjectMetadata> result = client.exists(bucket, key);
@@ -343,18 +341,39 @@ class Main
         cannedAcl = getDefaultACL();
 
       if (getObjectKey().endsWith("/")) {
-        throw new UsageException("Destination key " + getBucket() + "/" + getObjectKey() +
+        throw new UsageException("Destination key " + getBucket() + "/" +
+            getObjectKey() +
             " should be fully qualified. No trailing '/' is permitted.");
       }
 
-      S3Client client = createS3Client();
+      CloudStoreClient client = createS3Client();
       File f = new File(file);
+
+      UploadOptionsBuilder uob = new UploadOptionsBuilder();
+      uob.setFile(f)
+          .setBucket(getBucket())
+          .setObjectKey(getObjectKey())
+          .setEncKey(encKeyName)
+          .setAcl(cannedAcl);
+      if (progress) {
+        if(backendIsGCS()) {
+          uob.setGCSProgressListenerFactory(new
+              GCSConsoleProgressListenerFactory());
+        }
+        else {
+          uob.setS3ProgressListenerFactory(new
+              S3ConsoleProgressListenerFactory());
+        }
+      }
+      UploadOptions options = uob.createUploadOptions();
+
       if(f.isFile()) {
-        client.upload(f, getBucket(), getObjectKey(), encKeyName, cannedAcl, progress).get();
+        client.upload(options).get();
       } else if(f.isDirectory()) {
-        client.uploadDirectory(f, getURI(), encKeyName, cannedAcl, progress).get();
+        client.uploadDirectory(options).get();
       } else {
-        throw new UsageException("File '"+file+"' is not a file or a directory.");
+        throw new UsageException("File '" + file + "' is not a file or a " +
+            "directory.");
       }
       client.shutdown();
     }
@@ -372,7 +391,7 @@ class Main
     @Override
     public void invoke() throws Exception
     {
-      S3Client client = createS3Client();
+      CloudStoreClient client = createS3Client();
       boolean gcsMode = backendIsGCS();
       String scheme = gcsMode ? "gs://" : "s3://";
 
@@ -469,19 +488,29 @@ class Main
     @Override
     public void invoke() throws Exception
     {
-      S3Client client = createS3Client();
+      CloudStoreClient client = createS3Client();
 
       File output = new File(file);
       ListenableFuture<?> result;
 
+      DownloadOptions options = new DownloadOptionsBuilder()
+          .setFile(output)
+          .setBucket(getBucket())
+          .setObjectKey(getObjectKey())
+          .setRecursive(recursive)
+          .setOverwrite(overwrite)
+          .setS3ProgressListenerFactory(new
+              S3ConsoleProgressListenerFactory())
+          .createDownloadOptions();
+
       if(getObjectKey().endsWith("/")) {
-        result = client.downloadDirectory(output, getURI(), recursive, overwrite, progress);
+        result = client.downloadDirectory(options);
       } else {
         // Test if S3 url exists.
         if(client.exists(getBucket(), getObjectKey()).get() == null) {
           throw new UsageException("Object not found at "+getURI());
         }
-        result = client.download(output, getURI(), progress);
+        result = client.download(options);
       }
 
       try

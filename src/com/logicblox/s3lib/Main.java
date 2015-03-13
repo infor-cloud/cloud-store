@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutionException;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.Bucket;
@@ -142,14 +143,24 @@ class Main
         AWSCredentialsProvider gcsXMLProvider = Utils
             .getGCSXMLEnvironmentVariableCredentialsProvider();
         AmazonS3Client s3Client = new AmazonS3Client(gcsXMLProvider);
+
         client = new GCSClientBuilder()
             .setInternalS3Client(s3Client)
             .setApiExecutor(uploadExecutor)
+            .setChunkSize(chunkSize)
+            .setKeyProvider(Utils.getKeyProvider(encKeyDirectory))
             .createGCSClient();
       }
       else {
+        ClientConfiguration clientCfg = new ClientConfiguration();
+        clientCfg = Utils.setProxy(clientCfg);
+        AmazonS3Client s3Client = new AmazonS3Client(clientCfg);
+
         client = new S3ClientBuilder()
+            .setInternalS3Client(s3Client)
             .setApiExecutor(uploadExecutor)
+            .setChunkSize(chunkSize)
+            .setKeyProvider(Utils.getKeyProvider(encKeyDirectory))
             .createS3Client();
       }
 
@@ -412,8 +423,7 @@ class Main
           for (S3File obj : result)
           {
             // print the full s3 url for each object and (first-level) directory
-            if (!getObjectKey().equals(obj.getKey()))
-              System.out.println(scheme + obj.getBucketName() + "/" + obj.getKey());
+            System.out.println(scheme + obj.getBucketName() + "/" + obj.getKey());
           }
         }
         else
@@ -428,8 +438,7 @@ class Main
           for (S3ObjectSummary obj : result)
           {
             // print the full s3 url for each object
-            if (!getObjectKey().equals(obj.getKey()))
-              System.out.println(scheme + obj.getBucketName() + "/" + obj.getKey());
+            System.out.println(scheme + obj.getBucketName() + "/" + obj.getKey());
           }
         }
       }

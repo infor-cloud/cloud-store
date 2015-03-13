@@ -3,9 +3,12 @@ package com.logicblox.s3lib;
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
@@ -13,6 +16,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.Protocol;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -225,6 +230,56 @@ public class Utils
       throw new UsageException("specified key directory '" + encKeyDirectory + "' is not a directory");
 
     return new DirectoryKeyProvider(dir);
+  }
+
+  public static boolean viaProxy()
+  {
+    if (System.getenv("HTTP_PROXY") != null || System.getenv("HTTPS_PROXY") != null)
+      return true;
+    return false;
+  }
+
+  public static ClientConfiguration setProxy(ClientConfiguration clientCfg)
+  {
+    if (!Utils.viaProxy())
+      return clientCfg;
+
+    String proxy = System.getenv("HTTPS_PROXY");
+    if (proxy == null)
+    {
+      proxy = System.getenv("HTTP_PROXY");
+    }
+
+    URL url;
+    try
+    {
+      url = new URL(proxy);
+    } catch (MalformedURLException e)
+    {
+      System.err.println("Malformed proxy url: " + proxy);
+      e.printStackTrace();
+      return clientCfg;
+    }
+
+    if (System.getenv("HTTPS_PROXY") != null)
+    {
+      clientCfg.setProtocol(Protocol.HTTPS);
+    }
+    else
+    {
+      clientCfg.setProtocol(Protocol.HTTP);
+    }
+
+    clientCfg.setProxyHost(url.getHost());
+    clientCfg.setProxyPort(url.getPort());
+    if (url.getUserInfo() != null)
+    {
+      String[] userInfo = url.getUserInfo().split(":");
+      clientCfg.setProxyUsername(userInfo[0]);
+      clientCfg.setProxyPassword(userInfo[1]);
+    }
+
+    return clientCfg;
   }
 
   public static Function<Integer, Integer> createExponentialDelayFunction(final int initialDelay)

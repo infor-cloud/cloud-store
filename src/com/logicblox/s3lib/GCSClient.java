@@ -132,14 +132,28 @@ public class GCSClient implements CloudStoreClient {
     public ListenableFuture<List<S3File>> uploadDirectory(File directory, URI
         s3url, String encKey) throws IOException, ExecutionException,
         InterruptedException {
-        return s3Client.uploadDirectory(directory, s3url, encKey);
+        UploadOptions options = new UploadOptionsBuilder()
+            .setFile(directory)
+            .setUri(s3url)
+            .setEncKey(encKey)
+            .setAcl("projectPrivate")
+            .createUploadOptions();
+
+        return uploadDirectory(options);
     }
 
     @Override
     public ListenableFuture<List<S3File>> uploadDirectory(File directory, URI
         s3url, String encKey, CannedAccessControlList acl) throws IOException,
         ExecutionException, InterruptedException {
-        return s3Client.uploadDirectory(directory, s3url, encKey, acl);
+        UploadOptions options = new UploadOptionsBuilder()
+            .setFile(directory)
+            .setUri(s3url)
+            .setEncKey(encKey)
+            .setAcl(acl.toString())
+            .createUploadOptions();
+
+        return uploadDirectory(options);
     }
 
     @Override
@@ -260,6 +274,27 @@ public class GCSClient implements CloudStoreClient {
                     _chunkSize, encKey, _keyProvider, acl, progressListenerFactory);
             s3Client.configure(cmd);
             return cmd.run(options.getBucket(), options.getObjectKey());
+        }
+
+        /**
+         * Upload directory to GCS.
+         *
+         * @param options Upload options
+         */
+        public ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
+            throws IOException, ExecutionException, InterruptedException {
+            File directory = options.getFile();
+            String bucket = options.getBucket();
+            String object = options.getObjectKey();
+            String encKey = options.getEncKey().orNull();
+            String acl = options.getAcl().or("projectPrivate");
+            S3ProgressListenerFactory progressListenerFactory = options
+                .getS3ProgressListenerFactory().orNull();
+
+            UploadDirectoryCommand cmd = new UploadDirectoryCommand(_s3Executor,
+                _executor, this);
+            s3Client.configure(cmd);
+            return cmd.run(directory, bucket, object, encKey, acl, progressListenerFactory);
         }
     }
 }

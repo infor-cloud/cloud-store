@@ -293,9 +293,6 @@ public class S3Client implements CloudStoreClient {
   @Override
   public ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
       throws IOException, ExecutionException, InterruptedException {
-    UploadDirectoryCommand cmd = new UploadDirectoryCommand(_s3Executor,
-        _executor, this);
-    configure(cmd);
 
     File directory = options.getFile();
     String bucket = options.getBucket();
@@ -305,6 +302,9 @@ public class S3Client implements CloudStoreClient {
     S3ProgressListenerFactory progressListenerFactory = options
         .getS3ProgressListenerFactory().orNull();
 
+    UploadDirectoryCommand cmd = new UploadDirectoryCommand(_s3Executor,
+        _executor, this);
+    configure(cmd);
     return cmd.run(directory, bucket, object, encKey, acl, progressListenerFactory);
   }
 

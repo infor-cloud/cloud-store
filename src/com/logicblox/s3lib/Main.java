@@ -317,28 +317,31 @@ class Main
       }
     }
 
-    private boolean isValidAcl(String value)
+    private boolean isValidS3Acl(String value)
     {
       for (CannedAccessControlList acl : CannedAccessControlList.values())
       {
         if (acl.toString().equals(value))
-        {
           return true;
-        }
       }
+      return false;
+    }
 
+    private boolean isValidGCSAcl(String value)
+    {
       return gcsPredefACLs.contains(value);
     }
 
     public void invoke() throws Exception
     {
-      if(!isValidAcl(cannedAcl))
+      if (cannedAcl == "bucket-owner-full-control")
+        cannedAcl = getDefaultACL();
+
+      if((!backendIsGCS() && !isValidS3Acl(cannedAcl)) ||
+          (backendIsGCS() && !isValidGCSAcl(cannedAcl)))
       {
         throw new UsageException("Unknown canned ACL '"+cannedAcl+"'");
       }
-
-      if (cannedAcl == "bucket-owner-full-control")
-        cannedAcl = getDefaultACL();
 
       if (getObjectKey().endsWith("/")) {
         throw new UsageException("Destination key " + getBucket() + "/" +
@@ -493,15 +496,19 @@ class Main
       File output = new File(file);
       ListenableFuture<?> result;
 
-      DownloadOptions options = new DownloadOptionsBuilder()
+      DownloadOptionsBuilder dob = new DownloadOptionsBuilder()
           .setFile(output)
           .setBucket(getBucket())
           .setObjectKey(getObjectKey())
           .setRecursive(recursive)
-          .setOverwrite(overwrite)
-          .setS3ProgressListenerFactory(new
-              S3ConsoleProgressListenerFactory())
-          .createDownloadOptions();
+          .setOverwrite(overwrite);
+
+      if (progress) {
+          dob.setS3ProgressListenerFactory(new
+              S3ConsoleProgressListenerFactory());
+      }
+
+      DownloadOptions options = dob.createDownloadOptions();
 
       if(getObjectKey().endsWith("/")) {
         result = client.downloadDirectory(options);

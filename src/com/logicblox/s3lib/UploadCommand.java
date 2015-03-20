@@ -24,8 +24,10 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
 
+import com.amazonaws.event.ProgressListener;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
+import com.google.common.base.Optional;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.FutureFallback;
@@ -39,7 +41,7 @@ public class UploadCommand extends Command
   private String encKeyName;
   private String encryptedSymmetricKeyString;
   private String acl;
-  private S3ProgressListenerFactory progressListenerFactory;
+  private Optional<OverallProgressListenerFactory> progressListenerFactory;
 
   private ListeningExecutorService _uploadExecutor;
   private ListeningScheduledExecutorService _executor;
@@ -52,7 +54,7 @@ public class UploadCommand extends Command
     String encKeyName,
     KeyProvider encKeyProvider,
     String acl,
-    S3ProgressListenerFactory progressListenerFactory)
+    Optional<OverallProgressListenerFactory> progressListenerFactory)
   throws IOException
   {
     if(uploadExecutor == null)
@@ -146,7 +148,7 @@ public class UploadCommand extends Command
   private ListenableFuture<Upload> startUploadActual(final String bucket, final String key)
   {
     UploadFactory factory = new MultipartAmazonUploadFactory
-        (getAmazonS3Client(), _uploadExecutor, progressListenerFactory);
+        (getAmazonS3Client(), _uploadExecutor);
 
     Map<String,String> meta = new HashMap<String,String>();
     meta.put("s3tool-version", String.valueOf(Version.CURRENT));
@@ -176,11 +178,19 @@ public class UploadCommand extends Command
 
   private ListenableFuture<Upload> startParts(final Upload upload)
   {
+    OverallProgressListener opl = null;
+    if (progressListenerFactory.isPresent()) {
+      opl = progressListenerFactory.get().create(
+          file.getName(),
+          "upload",
+          fileLength);
+    }
+
     List<ListenableFuture<Void>> parts = new ArrayList<ListenableFuture<Void>>();
 
     for (long position = 0; position < fileLength; position += chunkSize)
     {
-      parts.add(startPartUploadThread(upload, position));
+      parts.add(startPartUploadThread(upload, position, opl));
     }
 
     // we do not care about the voids, so we just return the upload
@@ -190,14 +200,16 @@ public class UploadCommand extends Command
       Functions.constant(upload));
   }
 
-  private ListenableFuture<Void> startPartUploadThread(final Upload upload, final long position)
+  private ListenableFuture<Void> startPartUploadThread(final Upload upload,
+                                                       final long position,
+                                                       final OverallProgressListener opl)
   {
     ListenableFuture<ListenableFuture<Void>> result =
       _executor.submit(new Callable<ListenableFuture<Void>>()
         {
           public ListenableFuture<Void> call() throws Exception
           {
-            return UploadCommand.this.startPartUpload(upload, position);
+            return UploadCommand.this.startPartUpload(upload, position, opl);
           }
         });
 
@@ -207,7 +219,9 @@ public class UploadCommand extends Command
   /**
    * Execute startPartUpload with retry
    */
-  private ListenableFuture<Void> startPartUpload(final Upload upload, final long position)
+  private ListenableFuture<Void> startPartUpload(final Upload upload,
+                                                 final long position,
+                                                 final OverallProgressListener opl)
   {
     final int partNumber = (int) (position / chunkSize);
 
@@ -216,7 +230,7 @@ public class UploadCommand extends Command
       {
         public ListenableFuture<Void> call() throws Exception
         {
-          return startPartUploadActual(upload, position);
+          return startPartUploadActual(upload, position, opl);
         }
 
         public String toString()
@@ -226,7 +240,9 @@ public class UploadCommand extends Command
       });
   }
 
-  private ListenableFuture<Void> startPartUploadActual(final Upload upload, final long position)
+  private ListenableFuture<Void> startPartUploadActual(final Upload upload,
+                                                       final long position,
+                                                       final OverallProgressListener opl)
   throws Exception
   {
     final int partNumber = (int) (position / chunkSize);
@@ -256,7 +272,8 @@ public class UploadCommand extends Command
       partSize = Math.min(fileLength - position, chunkSize);
     }
 
-    ListenableFuture<Void> uploadPartFuture = upload.uploadPart(partNumber, in, partSize);
+    ListenableFuture<Void> uploadPartFuture = upload.uploadPart(partNumber,
+        in, partSize, Optional.fromNullable(opl));
 
     FutureFallback<Void> closeFile = new FutureFallback<Void>()
       {

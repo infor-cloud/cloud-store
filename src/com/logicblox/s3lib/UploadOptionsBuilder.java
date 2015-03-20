@@ -18,10 +18,8 @@ public class UploadOptionsBuilder {
     private String objectKey;
     private Optional<String> encKey = Optional.absent();
     private Optional<String> acl = Optional.absent();
-    private Optional<S3ProgressListenerFactory> s3ProgressListenerFactory =
-        Optional.absent();
-    private Optional<GCSProgressListenerFactory> gcsProgressListenerFactory =
-        Optional.absent();
+    private Optional<OverallProgressListenerFactory>
+        overallProgressListenerFactory = Optional.absent();
 
     public UploadOptionsBuilder setFile(File file) {
         this.file = file;
@@ -53,22 +51,15 @@ public class UploadOptionsBuilder {
         return this;
     }
 
-    public UploadOptionsBuilder setS3ProgressListenerFactory
-        (S3ProgressListenerFactory s3ProgressListenerFactory) {
-        this.s3ProgressListenerFactory = Optional.fromNullable
-            (s3ProgressListenerFactory);
-        return this;
-    }
-
-    public UploadOptionsBuilder setGCSProgressListenerFactory
-        (GCSProgressListenerFactory gcsProgressListenerFactory) {
-        this.gcsProgressListenerFactory = Optional.fromNullable
-            (gcsProgressListenerFactory);
+    public UploadOptionsBuilder setOverallProgressListenerFactory
+        (OverallProgressListenerFactory overallProgressListenerFactory) {
+        this.overallProgressListenerFactory = Optional.fromNullable
+            (overallProgressListenerFactory);
         return this;
     }
 
     public UploadOptions createUploadOptions() {
         return new UploadOptions(file, bucket, objectKey, encKey, acl,
-            s3ProgressListenerFactory, gcsProgressListenerFactory);
+            overallProgressListenerFactory);
     }
 }

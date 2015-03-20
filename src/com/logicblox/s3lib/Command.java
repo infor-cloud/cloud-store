@@ -50,9 +50,14 @@ public class Command
     _stubborn = retry;
   }
   
-  public String getScheme() 
+  public String getScheme()
   {
     return scheme;
+  }
+
+  public String getUri(String bucket, String object)
+  {
+    return getScheme() + bucket + "/" + object;
   }
 
   public void setScheme(String scheme)

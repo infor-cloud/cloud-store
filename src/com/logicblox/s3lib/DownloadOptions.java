@@ -15,7 +15,7 @@ import java.io.File;
  * If {@code overwrite} is set, then newly downloaded files is possible to
  * overwrite existing local files.
  * <p/>
- * If progress listener factories have been set, then progress notifications
+ * If progress listener factory has been set, then progress notifications
  * will be recorded.
  * <p/>
  * {@code DownloadOptions} objects are meant to be built by {@code
@@ -27,25 +27,22 @@ public class DownloadOptions {
     private String objectKey;
     private boolean recursive;
     private boolean overwrite;
-    private Optional<S3ProgressListenerFactory> s3ProgressListenerFactory;
-    private Optional<GCSProgressListenerFactory> gcsProgressListenerFactory;
+    private Optional<OverallProgressListenerFactory>
+        overallProgressListenerFactory;
 
     DownloadOptions(File file,
                     String bucket,
                     String objectKey,
                     boolean recursive,
                     boolean overwrite,
-                    Optional<S3ProgressListenerFactory>
-                        s3ProgressListenerFactory,
-                    Optional<GCSProgressListenerFactory>
-                        gcsProgressListenerFactory) {
+                    Optional<OverallProgressListenerFactory>
+                        overallProgressListenerFactory) {
         this.file = file;
         this.bucket = bucket;
         this.objectKey = objectKey;
         this.recursive = recursive;
         this.overwrite = overwrite;
-        this.s3ProgressListenerFactory = s3ProgressListenerFactory;
-        this.gcsProgressListenerFactory = gcsProgressListenerFactory;
+        this.overallProgressListenerFactory = overallProgressListenerFactory;
     }
 
     public File getFile() {
@@ -68,11 +65,8 @@ public class DownloadOptions {
         return overwrite;
     }
 
-    public Optional<S3ProgressListenerFactory> getS3ProgressListenerFactory() {
-        return s3ProgressListenerFactory;
-    }
-
-    public Optional<GCSProgressListenerFactory> getGCSProgressListenerFactory() {
-        return gcsProgressListenerFactory;
+    public Optional<OverallProgressListenerFactory>
+    getOverallProgressListenerFactory() {
+        return overallProgressListenerFactory;
     }
 }

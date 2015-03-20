@@ -1,5 +1,6 @@
 package com.logicblox.s3lib;
 
+import com.google.api.client.googleapis.media.MediaHttpUploaderProgressListener;
 import com.google.api.client.http.InputStreamContent;
 import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.model.StorageObject;
@@ -21,26 +22,30 @@ class GCSUpload implements Upload {
     private String acl;
     private Map<String, String> meta;
     private ListeningExecutorService executor;
-    private Optional<GCSProgressListenerFactory> progressListenerFactory;
 
     public GCSUpload(Storage client,
                      String bucketName,
                      String key,
                      String acl,
                      Map<String, String> meta,
-                     ListeningExecutorService executor,
-                     GCSProgressListenerFactory progressListenerFactory) {
+                     ListeningExecutorService executor) {
         this.client = client;
         this.bucketName = bucketName;
         this.key = key;
         this.acl = acl;
         this.meta = meta;
         this.executor = executor;
-        this.progressListenerFactory = Optional.fromNullable(progressListenerFactory);
     }
 
     public ListenableFuture<Void> uploadPart(int partNumber, InputStream stream, long partSize) {
-        return executor.submit(new UploadCallable(partNumber, stream, partSize));
+        return uploadPart(partNumber, stream, partSize,
+            Optional.<OverallProgressListener>absent());
+    }
+
+    public ListenableFuture<Void> uploadPart(int partNumber, InputStream
+        stream, long partSize, Optional<OverallProgressListener> progressListener) {
+        return executor.submit(new UploadCallable(partNumber, stream,
+            partSize, progressListener));
     }
 
     public ListenableFuture<String> completeUpload() {
@@ -67,11 +72,14 @@ class GCSUpload implements Upload {
         private int partNumber;
         private HashingInputStream stream;
         private long partSize;
+        private Optional<OverallProgressListener> progressListener;
 
-        public UploadCallable(int partNumber, InputStream stream, long partSize) {
+        public UploadCallable(int partNumber, InputStream stream, long
+            partSize, Optional<OverallProgressListener> progressListener) {
             this.partNumber = partNumber;
             this.partSize = partSize;
             this.stream = new HashingInputStream(stream);
+            this.progressListener = progressListener;
         }
 
         public Void call() throws Exception {
@@ -97,14 +105,13 @@ class GCSUpload implements Upload {
             insertObject.getMediaHttpUploader().setDisableGZipContent(true);
 //              .setDisableGZipContent(true).setDirectUploadEnabled(true);
 
-            if (progressListenerFactory.isPresent()) {
-                GCSProgressListenerFactory f = progressListenerFactory.get();
+            if (progressListener.isPresent()) {
+                PartProgressEvent ppe = new PartProgressEvent(Integer.toString
+                    (partNumber));
+                MediaHttpUploaderProgressListener gcspl =
+                    new GCSProgressListener(progressListener.get(), ppe);
                 insertObject.getMediaHttpUploader()
-                    .setProgressListener(f.create(
-                        key + ", part " + (partNumber + 1),
-                        "upload",
-                        partSize / 10,
-                        partSize));
+                    .setProgressListener(gcspl);
             }
 
             StorageObject res = insertObject.execute();

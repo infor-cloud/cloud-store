@@ -1,5 +1,6 @@
 package com.logicblox.s3lib;
 
+import com.amazonaws.event.ProgressListener;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -18,28 +19,31 @@ class AmazonDownload
   private ObjectMetadata meta;
   private String key;
   private String bucketName;
-  private Optional<S3ProgressListenerFactory> progressListenerFactory;
 
   public AmazonDownload(
     AmazonS3 client,
     String key,
     String bucketName,
     ObjectMetadata meta,
-    ListeningExecutorService executor,
-    S3ProgressListenerFactory progressListenerFactory)
+    ListeningExecutorService executor)
   {
     this.client = client;
     this.key = key;
     this.bucketName = bucketName;
     this.executor = executor;
     this.meta = meta;
-    this.progressListenerFactory = Optional.fromNullable
-        (progressListenerFactory);
   }
 
   public ListenableFuture<InputStream> getPart(long start, long end)
   {
-    return executor.submit(new DownloadCallable(start, end));
+    return getPart(start, end, Optional.<OverallProgressListener>absent());
+  }
+
+  public ListenableFuture<InputStream> getPart(long start, long end,
+                                               Optional<OverallProgressListener>
+                                                   progressListener)
+  {
+    return executor.submit(new DownloadCallable(start, end, progressListener));
   }
 
   public Map<String,String> getMeta()
@@ -71,24 +75,26 @@ class AmazonDownload
   {
     private long start;
     private long end;
+    private Optional<OverallProgressListener> progressListener;
 
-    public DownloadCallable(long start, long end)
+    public DownloadCallable(long start, long end,
+                            Optional<OverallProgressListener> progressListener)
     {
       this.start = start;
       this.end = end;
+      this.progressListener = progressListener;
     }
 
     public InputStream call() throws Exception
     {
       GetObjectRequest req = new GetObjectRequest(bucketName, key);
       req.setRange(start, end);
-      if (progressListenerFactory.isPresent()) {
-        S3ProgressListenerFactory f = progressListenerFactory.get();
-        req.setGeneralProgressListener(f.create(
-            key + ", range " + start + ":" + end,
-            "download",
-            (end - start + 1) / 10,
-            end - start + 1));
+      if (progressListener.isPresent()) {
+        PartProgressEvent ppe = new PartProgressEvent(
+            Long.toString(start) + ':' + Long.toString(end));
+        ProgressListener s3pl = new S3ProgressListener(progressListener.get(),
+            ppe);
+        req.setGeneralProgressListener(s3pl);
       }
 
       return client.getObject(req).getObjectContent();

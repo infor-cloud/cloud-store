@@ -1,23 +1,19 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.event.ProgressEvent;
-import com.amazonaws.event.ProgressListener;
-import com.google.api.client.googleapis.media.MediaHttpUploader;
-import com.google.api.client.googleapis.media.MediaHttpUploaderProgressListener;
-import com.google.common.base.Stopwatch;
-
 import java.text.MessageFormat;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 
-abstract class ConsoleProgressListener {
-    protected final Stopwatch stopwatch = Stopwatch.createUnstarted();
-
+class ConsoleProgressListener implements OverallProgressListener {
+    protected ConcurrentMap<String, PartProgressEvent> partsProgressEvents =
+        new ConcurrentHashMap<String, PartProgressEvent>();
     protected final long intervalInBytes;
     protected final String reportName;
     protected final String operation;
     protected final long totalSizeInBytes;
-    protected long bytesTransferred = 0L;
-    protected long lastReportBytes = 0L;
-
+    protected AtomicLong lastReportBytes = new AtomicLong();
 
     ConsoleProgressListener(String reportName, String operation, long
         intervalInBytes, long totalSizeInBytes) {
@@ -27,104 +23,48 @@ abstract class ConsoleProgressListener {
         this.totalSizeInBytes = totalSizeInBytes;
     }
 
-    void started() {
-        stopwatch.start();
-        System.out.println(MessageFormat.format("{0} of {1} started...",
-                operation, reportName));
-    }
+    synchronized public void progress(PartProgressEvent partProgressEvent) {
+        partsProgressEvents.put(partProgressEvent.getPartId(),
+            partProgressEvent);
 
-    /**
-     * Used for listeners that report number of bytes per transfer.
-     */
-    void progress(long numBytesTransferred) {
-        _progressCum(bytesTransferred + numBytesTransferred);
-    }
-
-    /**
-     * Used for listeners that report cumulative number of transferred bytes.
-     */
-    void progressCum(long numBytesTransferred) {
-        _progressCum(numBytesTransferred);
-    }
-
-    private void _progressCum(long cumBytesTransferred) {
-        if (((cumBytesTransferred - lastReportBytes) >= intervalInBytes) ||
-                (cumBytesTransferred == totalSizeInBytes)) {
-            if (totalSizeInBytes >= 0) {
-                System.out.println(MessageFormat.format(
-                                "{0}: ({1}%) {2}ed {3}/{4} bytes...",
-                                reportName,
-                                100 * cumBytesTransferred / totalSizeInBytes,
-                                operation,
-                                cumBytesTransferred,
-                                totalSizeInBytes)
-                );
-            } else {
-                System.out.println(MessageFormat.format("{0}: {1}ed {2} bytes...",
-                        reportName, operation, cumBytesTransferred));
-            }
-            lastReportBytes = cumBytesTransferred;
-        }
-        bytesTransferred = cumBytesTransferred;
-    }
-
-    void complete() {
-        if (stopwatch.isRunning()) {
-            stopwatch.stop();
-            System.out.println(MessageFormat.format("{0} of {1} completed in {2}",
-                    operation, reportName, stopwatch));
-        } else {
-            System.out.println(MessageFormat.format("{0} of {1} completed",
-                    operation, reportName));
+        long totalTransferredBytes = getTotalTransferredBytes();
+        long unreportedBytes = getUreportedBytes(totalTransferredBytes);
+        if (isReportTime(unreportedBytes) ||
+            (isComplete(totalTransferredBytes) && !allBytesReported())) {
+            System.out.println(MessageFormat.format(
+                "{0}: ({1}%) {2}ed {3}/{4} bytes...",
+                reportName,
+                100 * totalTransferredBytes / totalSizeInBytes,
+                operation,
+                totalTransferredBytes,
+                totalSizeInBytes));
+            lastReportBytes.set(totalTransferredBytes);
         }
     }
 
-    public static class S3ConsoleProgressListener
-        extends ConsoleProgressListener
-        implements ProgressListener {
-
-        public S3ConsoleProgressListener(String name,
-                                         String operation,
-                                         long intervalInBytes,
-                                         long totalSizeInBytes) {
-            super(name, operation, intervalInBytes, totalSizeInBytes);
+    private long getTotalTransferredBytes() {
+        AtomicLong bytes = new AtomicLong();
+        for (Map.Entry<String, PartProgressEvent> e :
+            partsProgressEvents.entrySet()) {
+            bytes.addAndGet(e.getValue().getTransferredBytes());
         }
 
-        @Override
-        public void progressChanged(ProgressEvent event) {
-            progress(event.getBytesTransferred());
-        }
+        return bytes.get();
     }
 
-    public static class GCSConsoleProgressListener
-        extends ConsoleProgressListener
-        implements MediaHttpUploaderProgressListener {
+    private long getUreportedBytes(long totalTransferredBytes) {
+        return totalTransferredBytes - lastReportBytes.get();
+    }
 
-        public GCSConsoleProgressListener(String name,
-                                          String operation,
-                                          long intervalInBytes,
-                                          long totalSizeInBytes) {
-            super(name, operation, intervalInBytes, totalSizeInBytes);
-        }
+    private boolean isReportTime(long unreportedBytes) {
+        return unreportedBytes >= intervalInBytes;
+    }
 
-        @Override
-        public void progressChanged(MediaHttpUploader uploader) {
-            switch (uploader.getUploadState()) {
-                case INITIATION_STARTED:
-                    started();
-                    break;
-                case MEDIA_IN_PROGRESS:
-                    // TODO: Progress works iff you have a content length specified.
-                    // progressCum(uploader.getProgress());
-                    progressCum(uploader.getNumBytesUploaded());
-                    break;
-                case MEDIA_COMPLETE:
-                    progressCum(uploader.getNumBytesUploaded());
-                    complete();
-                    break;
-                default:
-                    break;
-            }
-        }
+    private boolean allBytesReported() {
+        return lastReportBytes.get() == totalSizeInBytes;
+    }
+
+    private boolean isComplete(long totalTransferredBytes) {
+        return totalTransferredBytes == totalSizeInBytes;
     }
 }

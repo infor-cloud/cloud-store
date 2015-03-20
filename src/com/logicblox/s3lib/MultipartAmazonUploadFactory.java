@@ -16,11 +16,9 @@ class MultipartAmazonUploadFactory implements UploadFactory
 {
   private AmazonS3 client;
   private ListeningExecutorService executor;
-  private S3ProgressListenerFactory progressListenerFactory;
 
   public MultipartAmazonUploadFactory(AmazonS3 client,
-                                      ListeningExecutorService executor,
-                                      S3ProgressListenerFactory progressListenerFactory)
+                                      ListeningExecutorService executor)
   {
     if(client == null)
       throw new IllegalArgumentException("non-null client is required");
@@ -29,10 +27,10 @@ class MultipartAmazonUploadFactory implements UploadFactory
 
     this.client = client;
     this.executor = executor;
-    this.progressListenerFactory = progressListenerFactory;
   }
 
-  public ListenableFuture<Upload> startUpload(String bucketName, String key, Map<String,String> meta, String cannedAcl)
+  public ListenableFuture<Upload> startUpload(String bucketName, String key,
+                                              Map<String,String> meta, String cannedAcl)
   {
     return executor.submit(new StartCallable(bucketName, key, meta, cannedAcl));
   }
@@ -60,7 +58,7 @@ class MultipartAmazonUploadFactory implements UploadFactory
       req.setCannedACL(getAcl(cannedAcl));
       InitiateMultipartUploadResult res = client.initiateMultipartUpload(req);
       return new MultipartAmazonUpload(client, bucketName, key,
-          res.getUploadId(), executor, progressListenerFactory);
+          res.getUploadId(), executor);
     }
 
     private CannedAccessControlList getAcl(String value)

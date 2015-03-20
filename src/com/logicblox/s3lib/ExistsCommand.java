@@ -57,7 +57,7 @@ public class ExistsCommand extends Command
             
             public String toString()
           {
-            return "check for existence of " + getScheme() + bucket + "/" + key;
+            return "check for existence of " + getUri(bucket, key);
           }
         });
     

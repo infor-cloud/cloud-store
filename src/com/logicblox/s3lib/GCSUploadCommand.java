@@ -3,6 +3,7 @@ package com.logicblox.s3lib;
 import com.google.api.client.googleapis.media.MediaHttpUploaderProgressListener;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
+import com.google.common.base.Optional;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.FutureFallback;
@@ -43,7 +44,7 @@ public class GCSUploadCommand extends Command {
     private String key;
     private String bucket;
 
-    private GCSProgressListenerFactory progressListenerFactory;
+    private Optional<OverallProgressListenerFactory> progressListenerFactory;
 
     public GCSUploadCommand(
             ListeningExecutorService uploadExecutor,
@@ -53,7 +54,7 @@ public class GCSUploadCommand extends Command {
             String encKeyName,
             KeyProvider encKeyProvider,
             String acl,
-            GCSProgressListenerFactory progressListenerFactory)
+            Optional<OverallProgressListenerFactory> progressListenerFactory)
             throws IOException {
         if (uploadExecutor == null)
             throw new IllegalArgumentException("non-null upload executor is required");
@@ -139,7 +140,7 @@ public class GCSUploadCommand extends Command {
     }
 
     private ListenableFuture<Upload> startUploadActual(final String bucket, final String key) {
-        UploadFactory factory = new GCSUploadFactory(getGCSClient(), _uploadExecutor, progressListenerFactory);
+        UploadFactory factory = new GCSUploadFactory(getGCSClient(), _uploadExecutor);
 
         Map<String, String> meta = new HashMap<String, String>();
         meta.put("s3tool-version", String.valueOf(Version.CURRENT));
@@ -149,8 +150,6 @@ public class GCSUploadCommand extends Command {
         }
         // single-part => chunk size == file size
         meta.put("s3tool-chunk-size", Long.toString(fileLength));
-        // GCS "multipart" download seems to work fine
-        // meta.put("s3tool-chunk-size", Long.toString(chunkSize));
         meta.put("s3tool-file-length", Long.toString(fileLength));
 
         return factory.startUpload(bucket, key, meta, acl);
@@ -168,7 +167,15 @@ public class GCSUploadCommand extends Command {
     }
 
     private ListenableFuture<Upload> startParts(final Upload upload) {
-        ListenableFuture<Void> part = startPartUploadThread(upload);
+        OverallProgressListener opl = null;
+        if (progressListenerFactory.isPresent()) {
+            opl = progressListenerFactory.get().create(
+                file.getName(),
+                "upload",
+                fileLength);
+        }
+
+        ListenableFuture<Void> part = startPartUploadThread(upload, opl);
 
         // we do not care about the voids, so we just return the upload
         // object.
@@ -177,13 +184,14 @@ public class GCSUploadCommand extends Command {
                 Functions.constant(upload));
     }
 
-    private ListenableFuture<Void> startPartUploadThread(final Upload upload) {
+    private ListenableFuture<Void> startPartUploadThread(final Upload upload,
+                                                         final OverallProgressListener opl) {
         ListenableFuture<ListenableFuture<Void>> result =
-                _executor.submit(new Callable<ListenableFuture<Void>>() {
-                    public ListenableFuture<Void> call() throws Exception {
-                        return GCSUploadCommand.this.startPartUpload(upload);
-                    }
-                });
+            _executor.submit(new Callable<ListenableFuture<Void>>() {
+                public ListenableFuture<Void> call() throws Exception {
+                    return GCSUploadCommand.this.startPartUpload(upload, opl);
+                }
+            });
 
         return Futures.dereference(result);
     }
@@ -191,13 +199,14 @@ public class GCSUploadCommand extends Command {
     /**
      * Execute startPartUpload with retry
      */
-    private ListenableFuture<Void> startPartUpload(final Upload upload) {
+    private ListenableFuture<Void> startPartUpload(final Upload upload,
+                                                   final OverallProgressListener opl) {
         final int partNumber = 0;
 
         return executeWithRetry(_executor,
                 new Callable<ListenableFuture<Void>>() {
                     public ListenableFuture<Void> call() throws Exception {
-                        return startPartUploadActual(upload);
+                        return startPartUploadActual(upload, opl);
                     }
 
                     public String toString() {
@@ -206,7 +215,8 @@ public class GCSUploadCommand extends Command {
                 });
     }
 
-    private ListenableFuture<Void> startPartUploadActual(final Upload upload)
+    private ListenableFuture<Void> startPartUploadActual(final Upload upload,
+                                                         final OverallProgressListener opl)
             throws Exception {
         final int partNumber = 0;
         final FileInputStream fs = new FileInputStream(file);
@@ -226,7 +236,8 @@ public class GCSUploadCommand extends Command {
             partSize = fileLength;
         }
 
-        ListenableFuture<Void> uploadPartFuture = upload.uploadPart(partNumber, in, partSize);
+        ListenableFuture<Void> uploadPartFuture = upload.uploadPart(partNumber,
+            in, partSize, Optional.fromNullable(opl));
 
         FutureFallback<Void> closeFile = new FutureFallback<Void>() {
             public ListenableFuture<Void> create(Throwable thrown) throws Exception {

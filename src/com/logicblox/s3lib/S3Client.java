@@ -12,6 +12,7 @@ import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 
+import com.google.common.base.Optional;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -224,8 +225,8 @@ public class S3Client implements CloudStoreClient {
     File file = options.getFile();
     String acl = options.getAcl().or("bucket-owner-full-control");
     String encKey = options.getEncKey().orNull();
-    S3ProgressListenerFactory progressListenerFactory = options
-        .getS3ProgressListenerFactory().orNull();
+    Optional<OverallProgressListenerFactory> progressListenerFactory = options
+        .getOverallProgressListenerFactory();
 
     UploadCommand cmd =
         new UploadCommand(_s3Executor, _executor, file, _chunkSize, encKey,
@@ -299,8 +300,8 @@ public class S3Client implements CloudStoreClient {
     String object = options.getObjectKey();
     String encKey = options.getEncKey().orNull();
     String acl = options.getAcl().or("bucket-owner-full-control");
-    S3ProgressListenerFactory progressListenerFactory = options
-        .getS3ProgressListenerFactory().orNull();
+    OverallProgressListenerFactory progressListenerFactory = options
+        .getOverallProgressListenerFactory().orNull();
 
     UploadDirectoryCommand cmd = new UploadDirectoryCommand(_s3Executor,
         _executor, this);
@@ -381,8 +382,8 @@ public class S3Client implements CloudStoreClient {
   throws IOException
   {
     File file = options.getFile();
-    S3ProgressListenerFactory progressListenerFactory = options
-        .getS3ProgressListenerFactory().orNull();
+    OverallProgressListenerFactory progressListenerFactory = options
+        .getOverallProgressListenerFactory().orNull();
 
     DownloadCommand cmd = new DownloadCommand(_s3Executor, _executor, file,
         _keyProvider, progressListenerFactory);
@@ -427,8 +428,8 @@ public class S3Client implements CloudStoreClient {
     String object = options.getObjectKey();
     boolean recursive = options.isRecursive();
     boolean overwrite = options.doesOverwrite();
-    S3ProgressListenerFactory progressListenerFactory = options
-        .getS3ProgressListenerFactory().orNull();
+    OverallProgressListenerFactory progressListenerFactory = options
+        .getOverallProgressListenerFactory().orNull();
 
     return cmd.run(directory, bucket, object, recursive, overwrite,
         progressListenerFactory);

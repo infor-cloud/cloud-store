@@ -18,9 +18,7 @@ public class DownloadOptionsBuilder {
     private String objectKey;
     private boolean recursive = false;
     private boolean overwrite = false;
-    private Optional<S3ProgressListenerFactory> s3ProgressListenerFactory =
-        Optional.absent();
-    private Optional<GCSProgressListenerFactory> gcsProgressListenerFactory =
+    private Optional<OverallProgressListenerFactory> overallProgressListenerFactory =
         Optional.absent();
 
     public DownloadOptionsBuilder setFile(File file) {
@@ -53,22 +51,15 @@ public class DownloadOptionsBuilder {
         return this;
     }
 
-    public DownloadOptionsBuilder setS3ProgressListenerFactory
-        (S3ProgressListenerFactory s3ProgressListenerFactory) {
-        this.s3ProgressListenerFactory = Optional.fromNullable
-            (s3ProgressListenerFactory);
-        return this;
-    }
-
-    public DownloadOptionsBuilder setGcsProgressListenerFactory(
-        GCSProgressListenerFactory gcsProgressListenerFactory) {
-        this.gcsProgressListenerFactory = Optional.fromNullable
-            (gcsProgressListenerFactory);
+    public DownloadOptionsBuilder setOverallProgressListenerFactory
+        (OverallProgressListenerFactory overallProgressListenerFactory) {
+        this.overallProgressListenerFactory = Optional.fromNullable
+            (overallProgressListenerFactory);
         return this;
     }
 
     public DownloadOptions createDownloadOptions() {
         return new DownloadOptions(file, bucket, objectKey, recursive,
-            overwrite, s3ProgressListenerFactory, gcsProgressListenerFactory);
+            overwrite, overallProgressListenerFactory);
     }
 }

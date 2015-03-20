@@ -39,7 +39,7 @@ public class ListObjectsAndDirsCommand extends Command
 
           public String toString()
           {
-            return "list all object of " + getScheme() + bucket + "/" + prefix;
+            return "list all object of " + getUri(bucket, prefix);
           }
         });
 

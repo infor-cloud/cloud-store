@@ -15,7 +15,7 @@ import java.io.File;
  * provide a public key with that name. This key will be used to encrypt the
  * {@code file} at the client side.
  * <p/>
- * If progress listener factories have been set, then progress notifications
+ * If progress listener factory has been set, then progress notifications
  * will be recorded.
  * <p/>
  * {@code UploadOptions} objects are meant to be built by {@code
@@ -27,24 +27,22 @@ public class UploadOptions {
     private String objectKey;
     private Optional<String> encKey;
     private Optional<String> acl;
-    private Optional<S3ProgressListenerFactory> s3ProgressListenerFactory;
-    private Optional<GCSProgressListenerFactory> gcsProgressListenerFactory;
+    private Optional<OverallProgressListenerFactory>
+        overallProgressListenerFactory;
 
     UploadOptions(File file,
                   String bucket,
                   String objectKey,
                   Optional<String> encKey,
                   Optional<String> acl,
-                  Optional<S3ProgressListenerFactory> s3ProgressListenerFactory,
-                  Optional<GCSProgressListenerFactory>
-                      gcsProgressListenerFactory) {
+                  Optional<OverallProgressListenerFactory>
+                      overallProgressListenerFactory) {
         this.file = file;
         this.bucket = bucket;
         this.objectKey = objectKey;
         this.encKey = encKey;
         this.acl = acl;
-        this.s3ProgressListenerFactory = s3ProgressListenerFactory;
-        this.gcsProgressListenerFactory = gcsProgressListenerFactory;
+        this.overallProgressListenerFactory = overallProgressListenerFactory;
     }
 
     public File getFile() {
@@ -67,11 +65,8 @@ public class UploadOptions {
         return acl;
     }
 
-    public Optional<S3ProgressListenerFactory> getS3ProgressListenerFactory() {
-        return s3ProgressListenerFactory;
-    }
-
-    public Optional<GCSProgressListenerFactory> getGCSProgressListenerFactory() {
-        return gcsProgressListenerFactory;
+    public Optional<OverallProgressListenerFactory>
+    getOverallProgressListenerFactory() {
+        return overallProgressListenerFactory;
     }
 }

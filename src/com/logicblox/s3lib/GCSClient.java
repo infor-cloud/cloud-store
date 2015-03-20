@@ -6,6 +6,7 @@ import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.api.services.storage.Storage;
+import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -266,8 +267,8 @@ public class GCSClient implements CloudStoreClient {
             File file = options.getFile();
             String acl = options.getAcl().or("projectPrivate");
             String encKey = options.getEncKey().orNull();
-            GCSProgressListenerFactory progressListenerFactory = options
-                .getGCSProgressListenerFactory().orNull();
+            Optional<OverallProgressListenerFactory> progressListenerFactory =
+                options.getOverallProgressListenerFactory();
 
             GCSUploadCommand cmd =
                 new GCSUploadCommand(_s3Executor, _executor, file,
@@ -288,13 +289,14 @@ public class GCSClient implements CloudStoreClient {
             String object = options.getObjectKey();
             String encKey = options.getEncKey().orNull();
             String acl = options.getAcl().or("projectPrivate");
-            S3ProgressListenerFactory progressListenerFactory = options
-                .getS3ProgressListenerFactory().orNull();
+            OverallProgressListenerFactory progressListenerFactory = options
+                .getOverallProgressListenerFactory().orNull();
 
             UploadDirectoryCommand cmd = new UploadDirectoryCommand(_s3Executor,
                 _executor, this);
             s3Client.configure(cmd);
-            return cmd.run(directory, bucket, object, encKey, acl, progressListenerFactory);
+            return cmd.run(directory, bucket, object, encKey, acl,
+                progressListenerFactory);
         }
     }
 }

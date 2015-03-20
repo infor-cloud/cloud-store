@@ -35,7 +35,7 @@ public class DownloadDirectoryCommand extends Command
     final String key,
     final boolean recursive,
     final boolean overwrite,
-    final S3ProgressListenerFactory progressListenerFactory)
+    final OverallProgressListenerFactory progressListenerFactory)
   throws ExecutionException, InterruptedException, IOException
   {
     List<S3ObjectSummary> lst = _client.listObjects(bucket, key, recursive).get();
@@ -73,7 +73,7 @@ public class DownloadDirectoryCommand extends Command
 
         DownloadOptions options = new DownloadOptionsBuilder().setFile
             (outputFile).setBucket(bucket).setObjectKey(obj.getKey())
-            .setS3ProgressListenerFactory(progressListenerFactory)
+            .setOverallProgressListenerFactory(progressListenerFactory)
             .createDownloadOptions();
 
         ListenableFuture<S3File> result = _client.download(options);

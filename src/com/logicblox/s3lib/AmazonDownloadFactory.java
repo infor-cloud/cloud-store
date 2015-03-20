@@ -12,14 +12,12 @@ class AmazonDownloadFactory
 {
   private ListeningExecutorService executor;
   private AmazonS3 client;
-  private S3ProgressListenerFactory progressListenerFactory;
 
   public AmazonDownloadFactory(AmazonS3 client, ListeningExecutorService
-      executor, S3ProgressListenerFactory progressListenerFactory)
+      executor)
   {
     this.client = client;
     this.executor = executor;
-    this.progressListenerFactory = progressListenerFactory;
   }
 
   public ListenableFuture<AmazonDownload> startDownload(String bucketName, String key)
@@ -41,8 +39,7 @@ class AmazonDownloadFactory
     public AmazonDownload call()
     {
       ObjectMetadata data = client.getObjectMetadata(bucketName, key);
-      return new AmazonDownload(
-        client, key, bucketName, data, executor, progressListenerFactory);
+      return new AmazonDownload(client, key, bucketName, data, executor);
     }
   }
 }

@@ -131,7 +131,7 @@ class Main
       return Utils.backendIsGCS(endpoint, null);
     }
 
-    protected CloudStoreClient createS3Client()
+    protected CloudStoreClient createCloudStoreClient()
         throws URISyntaxException, IOException, GeneralSecurityException {
       ListeningExecutorService uploadExecutor = Utils.getHttpExecutor
           (maxConcurrentConnections);
@@ -217,7 +217,7 @@ class Main
   {
     public void invoke() throws Exception
     {
-      CloudStoreClient client = createS3Client();
+      CloudStoreClient client = createCloudStoreClient();
       ListenableFuture<List<Bucket>> result = client.listBuckets();
 
       List<Bucket> buckets = result.get();
@@ -262,7 +262,7 @@ class Main
 
     public void invoke() throws Exception
     {
-      CloudStoreClient client = createS3Client();
+      CloudStoreClient client = createCloudStoreClient();
       String bucket = getBucket();
       String key = getObjectKey();
       ListenableFuture<ObjectMetadata> result = client.exists(bucket, key);
@@ -360,7 +360,7 @@ class Main
             " should be fully qualified. No trailing '/' is permitted.");
       }
 
-      CloudStoreClient client = createS3Client();
+      CloudStoreClient client = createCloudStoreClient();
       File f = new File(file);
 
       UploadOptionsBuilder uob = new UploadOptionsBuilder();
@@ -370,14 +370,9 @@ class Main
           .setEncKey(encKeyName)
           .setAcl(cannedAcl);
       if (progress) {
-        if(backendIsGCS()) {
-          uob.setGCSProgressListenerFactory(new
-              GCSConsoleProgressListenerFactory());
-        }
-        else {
-          uob.setS3ProgressListenerFactory(new
-              S3ConsoleProgressListenerFactory());
-        }
+        OverallProgressListenerFactory cplf = new
+            ConsoleProgressListenerFactory();
+        uob.setOverallProgressListenerFactory(cplf);
       }
       UploadOptions options = uob.createUploadOptions();
 
@@ -405,7 +400,7 @@ class Main
     @Override
     public void invoke() throws Exception
     {
-      CloudStoreClient client = createS3Client();
+      CloudStoreClient client = createCloudStoreClient();
       boolean gcsMode = backendIsGCS();
       String scheme = gcsMode ? "gs://" : "s3://";
 
@@ -500,7 +495,7 @@ class Main
     @Override
     public void invoke() throws Exception
     {
-      CloudStoreClient client = createS3Client();
+      CloudStoreClient client = createCloudStoreClient();
 
       File output = new File(file);
       ListenableFuture<?> result;
@@ -513,8 +508,9 @@ class Main
           .setOverwrite(overwrite);
 
       if (progress) {
-          dob.setS3ProgressListenerFactory(new
-              S3ConsoleProgressListenerFactory());
+          OverallProgressListenerFactory cplf = new
+              ConsoleProgressListenerFactory();
+          dob.setOverallProgressListenerFactory(cplf);
       }
 
       DownloadOptions options = dob.createDownloadOptions();

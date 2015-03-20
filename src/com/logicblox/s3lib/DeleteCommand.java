@@ -41,7 +41,7 @@ public class DeleteCommand extends Command
 
           public String toString()
           {
-            return "delete " + getScheme() + bucket + "/" + object;
+            return "delete " + getUri(bucket, object);
           }
         });
 

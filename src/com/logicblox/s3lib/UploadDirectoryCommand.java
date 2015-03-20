@@ -37,7 +37,7 @@ public class UploadDirectoryCommand extends Command
                                             final String object,
                                             final String encKey,
                                             final String acl,
-                                            S3ProgressListenerFactory
+                                            OverallProgressListenerFactory
                                                 progressListenerFactory)
   throws ExecutionException, InterruptedException, IOException
   {
@@ -87,7 +87,7 @@ public class UploadDirectoryCommand extends Command
           .setObjectKey(key)
           .setEncKey(encKey)
           .setAcl(acl)
-          .setS3ProgressListenerFactory(progressListenerFactory)
+          .setOverallProgressListenerFactory(progressListenerFactory)
           .createUploadOptions();
 
       files.add(_client.upload(options));

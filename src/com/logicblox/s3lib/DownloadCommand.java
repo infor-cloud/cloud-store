@@ -442,8 +442,9 @@ public class DownloadCommand extends Command
               Map<String,String> meta = download.getMeta();
               if (!meta.containsKey("s3tool-version")) {
                 String fn = "/" + download.getBucket() + "/" + download.getKey();
-                System.err.println("Warning: Skipped download checksum validation for " + fn + 
-                    ". It was uploaded using the multipart protocol with tool other than s3tool.");
+                System.err.println("Warning: Skipped download checksum " +
+                    "validation for " + fn + ". It was uploaded using the " +
+                    "multipart protocol with tool other than cloud-store.");
                 return download;
               }
 

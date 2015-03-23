@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3Client;
 
+import com.google.api.services.storage.Storage;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -26,10 +27,13 @@ public class Command
   protected long chunkSize;
   protected Key encKey;
   protected long fileLength;
+  protected String scheme;
 
   private Function<Integer, Integer> _retryDelayFunction = Utils.createLinearDelayFunction(1);
 
   private AmazonS3Client _client = null;
+
+  private Storage _gcs_client = null;
 
   public void setChunkSize(long chunkSize)
   {
@@ -46,6 +50,21 @@ public class Command
     _stubborn = retry;
   }
   
+  public String getScheme()
+  {
+    return scheme;
+  }
+
+  public String getUri(String bucket, String object)
+  {
+    return getScheme() + bucket + "/" + object;
+  }
+
+  public void setScheme(String scheme)
+  {
+    this.scheme = scheme;
+  }
+
   public void setAmazonS3Client(AmazonS3Client client)
   {
     _client = client;
@@ -54,6 +73,16 @@ public class Command
   protected AmazonS3Client getAmazonS3Client()
   {
     return _client;
+  }
+
+  public void setGCSClient(Storage client)
+  {
+    _gcs_client = client;
+  }
+
+  protected Storage getGCSClient()
+  {
+    return _gcs_client;
   }
 
   protected static Key readKeyFromFile(String encKeyName, File encKeyFile) throws IOException, ClassNotFoundException

@@ -1,8 +1,12 @@
-#! /bin/bash
+#! /usr/bin/env bash
 
 set -e
-set -x
+# set -x
 set -u
+
+file=$1
+dir_uri=$2
+enc_key=$3
 
 function md5
 {
@@ -14,10 +18,14 @@ function exec_no_encryption()
   f=$1
   base=$(basename $f)
 
-  s3tool upload s3://mbravenboer.wagfm.request/$base  -i $f
+  echo "cloud-store upload ${dir_uri%%/}/$base -i $f"
+  cloud-store upload ${dir_uri%%/}/$base -i $f
   rm -f $base.tmp
-  s3tool download s3://mbravenboer.wagfm.request/$base -o $base.tmp
+  echo "cloud-store download ${dir_uri%%/}/$base -o $base.tmp"
+  cloud-store download ${dir_uri%%/}/$base -o $base.tmp
   test $(md5 $base.tmp) = $(md5 $f)
+  echo "md5 $(md5 $f)"
+  diff -q $base.tmp $f
 }
 
 function exec_encryption()
@@ -25,11 +33,15 @@ function exec_encryption()
   f=$1
   base=$(basename $f)
 
-  s3tool upload s3://mbravenboer.wagfm.request/$base  -i $f --key martin
+  echo "cloud-store upload ${dir_uri%%/}/$base.enc -i $f --key $enc_key"
+  cloud-store upload ${dir_uri%%/}/$base.enc -i $f --key $enc_key
   rm -f $base.tmp
-  s3tool download s3://mbravenboer.wagfm.request/$base -o $base.tmp
+  echo "cloud-store download ${dir_uri%%/}/$base.enc -o $base.tmp"
+  cloud-store download ${dir_uri%%/}/$base.enc -o $base.tmp
   test $(md5 $base.tmp) = $(md5 $f)
+  echo "md5 $(md5 $f)"
+  diff -q $base.tmp $f
 }
 
-exec_encryption $HOME/log.tgz
-exec_no_encryption $HOME/log.tgz
+exec_no_encryption $file
+exec_encryption $file

@@ -13,7 +13,8 @@ parse_arguments(
            'commons-io' : depdir,
            'commons-codec' : depdir,
            'log4j' : depdir,
-           'aws-java-sdk' : depdir
+           'aws-java-sdk' : depdir,
+           'gcs-java-sdk' : depdir
          })
 
 open_makefile()
@@ -36,7 +37,13 @@ deps = [
     '$(aws_java_sdk)/lib/java/jackson-annotations-2.1.1.jar',
     '$(aws_java_sdk)/lib/java/jackson-core-2.1.1.jar',
     '$(aws_java_sdk)/lib/java/jackson-databind-2.1.1.jar',
-    '$(aws_java_sdk)/lib/java/aws-java-sdk-1.7.1.jar']
+    '$(aws_java_sdk)/lib/java/aws-java-sdk-1.7.1.jar',
+    '$(gcs_java_sdk)/lib/java/google-api-services-storage-v1-rev26-1.19.1.jar',
+    '$(gcs_java_sdk)/lib/java/google-api-client-1.19.1.jar',
+    '$(gcs_java_sdk)/lib/java/google-oauth-client-1.19.0.jar',
+    '$(gcs_java_sdk)/lib/java/google-http-client-1.19.0.jar',
+    '$(gcs_java_sdk)/lib/java/google-http-client-jackson2-1.19.0.jar',
+    '$(gcs_java_sdk)/lib/java/jsr305-1.3.9.jar']
 
 rev_info = os.getenv('name', 's3lib-1234-0pre').split('-')[1].replace('_', '-')
 impl_version = (rev_info + '_' + strftime("%Y%m%d%H%M", gmtime()))
@@ -57,6 +64,7 @@ jar(
                                    ('Implementation-Vendor', "LogicBlox, Inc.")]})
 
 
+bin_program('cloud-store')
 bin_program('s3tool')
 bin_program('s3lib-keygen')
 

@@ -1,20 +1,18 @@
 package com.logicblox.s3lib;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 
+import com.google.common.base.Optional;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -32,44 +30,43 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
  * For more information about Amazon S3, please see <a href="http://aws
  * .amazon.com/s3">http://aws.amazon.com/s3</a>
  */
-public class S3Client
-{
+public class S3Client implements CloudStoreClient {
   /**
    * Responsible for executing S3 HTTP API calls asynchronously. It, also,
    * determines the level of parallelism of an operation, e.g. number of
    * threads used for uploading/downloading a file.
    */
-  private ListeningExecutorService _s3Executor;
+  ListeningExecutorService _s3Executor;
 
   /**
-   * Responsible for executing internal s3lib tasks asynchrounsly. Such
+   * Responsible for executing internal s3lib tasks asynchronously. Such
    * tasks include file I/O, file encryption, file splitting and error handling.
    */
-  private ListeningScheduledExecutorService _executor;
+  ListeningScheduledExecutorService _executor;
 
   /** The size of an upload/download chunk (part) in bytes. */
-  private long _chunkSize;
+  long _chunkSize;
 
   /** The AWS credentials to use when making requests to the service. */
-  private AWSCredentialsProvider _credentials;
+  AWSCredentialsProvider _credentials;
 
   /**
    * Low-level AWS S3 client responsible for authentication, proxying and
    * HTTP requests.
    */
-  private AmazonS3Client _client;
+  AmazonS3Client _client;
 
   /**
    * The provider of key-pairs used to encrypt/decrypt files during
    * upload/download.
    */
-  private KeyProvider _keyProvider;
+  KeyProvider _keyProvider;
 
   /** Whether or not to retry client side exception unconditionally. */
-  private boolean _retryClientException = false;
+  boolean _retryClientException = false;
 
   /** The number of times we want to retry in case of an error. */
-  private int _retryCount = 15;
+  int _retryCount = 15;
 
   /**
    * Constructs a new high-level S3 client to invoke operations on S3 or
@@ -89,7 +86,8 @@ public class S3Client
    *
    * @param s3Client Low-level AWS S3 client responsible for authentication,
    *                 proxying and HTTP requests
-   * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService, ListeningScheduledExecutorService, long, KeyProvider)
+   * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService,
+   * ListeningScheduledExecutorService, long, KeyProvider)
    */
   public S3Client(AmazonS3Client s3Client)
   {
@@ -110,7 +108,8 @@ public class S3Client
    * @param keyProvider The provider of key-pairs used to encrypt/decrypt files
    *                    during upload/download.
    * @see S3Client#S3Client(AmazonS3Client)
-   * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService, ListeningScheduledExecutorService, long, KeyProvider)
+   * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService,
+   * ListeningScheduledExecutorService, long, KeyProvider)
    */
   public S3Client(AmazonS3Client s3Client,
                   KeyProvider keyProvider)
@@ -140,7 +139,8 @@ public class S3Client
    * @param keyProvider The provider of key-pairs used to encrypt/decrypt files
    *                    during upload/download.
    * @see S3Client#S3Client(AmazonS3Client)
-   * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService, ListeningScheduledExecutorService, long, KeyProvider)
+   * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService,
+   * ListeningScheduledExecutorService, long, KeyProvider)
    */
   public S3Client(
     AWSCredentialsProvider credentials,
@@ -192,116 +192,74 @@ public class S3Client
     _client = s3Client;
   }
 
-  /**
-   * Sets the number of retries after a failure.
-   *
-   * @param retryCount Number of retries
-   */
+  @Override
   public void setRetryCount(int retryCount)
   {
     _retryCount = retryCount;
   }
 
+  @Override
   public void setRetryClientException(boolean retry)
   {
     _retryClientException = retry;
   }
 
-  /**
-   * Sets the API endpoint this client should issue the requests to. If it's
-   * not set, then the underlying {@code s3Client} is going to use its
-   * default one for accessing Amazon S3.
-   * </p>
-   * This method is mostly useful if we would like to use this client with
-   * services other than S3 (e.g. Google Cloud Storage) that provide a
-   * S3-compatible API or for testing reasons.
-   *
-   * @param endpoint API endpoint
-   */
+  @Override
   public void setEndpoint(String endpoint)
   {
     _client.setEndpoint(endpoint);
   }
 
-  private void configure(Command cmd)
+  void configure(Command cmd)
   {
     cmd.setRetryClientException(_retryClientException);
     cmd.setRetryCount(_retryCount);
     cmd.setAmazonS3Client(_client);
+    cmd.setScheme("s3://");
   }
 
-  /**
-   * Uploads the specified {@code file} to Amazon S3 under the specified
-   * {@code bucket} and {@code object} name. The specified {@code acl} is
-   * applied to the uploaded file. If the {@code key} is not null, the {@code
-   * keyProvider} will be asked to provide a public key with that name. This
-   * key will be used to encrypt the {@code file} at the client side.
-   * </p>
-   * The specified bucket must already exist and the caller must
-   * have write permission to the bucket to upload an object.
-   * </p>
-   * By default, the upload is multi-part with each part being {@code chunkSize}
-   * bytes.
-   * </p>
-   * The level of parallelism depends on the {@code s3Executor}. Ideally,
-   * different parts are uploaded by different threads.
-   * </p>
-   * The client automatically does checksum validation both for each part and
-   * for the final object, making sure there is no file corruption during the
-   * transfer.
-   * </p>
-   * Low-level upload operations (e.g. file type recognition) are taken care of
-   * by the underlying low-level {@code s3Client}.
-   * </p>
-   * If during this call an exception wasn't thrown, the entire object has
-   * supposedly been stored successfully.
-   *
-   * @param file    File to upload
-   * @param bucket  Bucket to upload to
-   * @param object  Path in bucket to upload to
-   * @param key     Name of encryption key to use
-   * @param acl     Access control list to use
-   */
-  public ListenableFuture<S3File> upload(File file, String bucket, String object, String key, CannedAccessControlList acl)
+  @Override
+  public ListenableFuture<S3File> upload(UploadOptions options)
+      throws IOException
+  {
+    File file = options.getFile();
+    String acl = options.getAcl().or("bucket-owner-full-control");
+    String encKey = options.getEncKey().orNull();
+    Optional<OverallProgressListenerFactory> progressListenerFactory = options
+        .getOverallProgressListenerFactory();
+
+    UploadCommand cmd =
+        new UploadCommand(_s3Executor, _executor, file, _chunkSize, encKey,
+            _keyProvider, acl, progressListenerFactory);
+    configure(cmd);
+
+    return cmd.run(options.getBucket(), options.getObjectKey());
+  }
+
+  @Override
+  public ListenableFuture<S3File> upload(File file, String bucket, String
+      object, String key, CannedAccessControlList acl)
   throws IOException
   {
-    UploadCommand cmd =
-      new UploadCommand(_s3Executor, _executor, file, _chunkSize, key, _keyProvider, acl);
-    configure(cmd);
-    return cmd.run(bucket, object);
+    UploadOptions options = new UploadOptionsBuilder()
+        .setFile(file)
+        .setBucket(bucket)
+        .setObjectKey(object)
+        .setEncKey(key)
+        .setAcl(acl.toString())
+        .createUploadOptions();
+
+    return upload(options);
   }
 
-  /**
-   * Uploads the specified {@code file} to Amazon S3 under the specified
-   * {@code s3url}.
-   * </p>
-   * By default, the canned ACL "bucket-owner-full-control" is applied to the
-   * uploaded object.
-   *
-   * @param file    File to upload
-   * @param s3url   Object URI (e.g. s3://bucket/key)
-   * @see S3Client#upload(File, String, String, String, CannedAccessControlList)
-   */
+  @Override
   public ListenableFuture<S3File> upload(File file, URI s3url)
   throws IOException
   {
     return upload(file, s3url, null);
   }
 
-  /**
-   * Uploads the specified {@code file} to Amazon S3 under the specified
-   * {@code s3url}. If the {@code key} is not null, the {@code keyProvider}
-   * will be asked to provide a public key with that name. This key will be
-   * used to encrypt the {@code file} at the client side.
-   * </p>
-   * By default, the canned ACL "bucket-owner-full-control" is applied to the
-   * uploaded object.
-   *
-   * @param file    File to upload
-   * @param s3url   Object URI (e.g. s3://bucket/key)
-   * @param key     Name of encryption key to use
-   * @see S3Client#upload(File, String, String, String, CannedAccessControlList)
-   */
+  @Override
   public ListenableFuture<S3File> upload(File file, URI s3url, String key)
       throws IOException
   {
@@ -310,96 +268,76 @@ public class S3Client
     return upload(file, bucket, object, key);
   }
 
-
-  /**
-   * Uploads the specified {@code file} to Amazon S3 under the specified
-   * {@code bucket} and {@code object} name.
-   * </p>
-   * By default, the canned ACL "bucket-owner-full-control" is applied to the
-   * uploaded object.
-   *
-   * @param file    File to upload
-   * @param bucket  Bucket to upload to
-   * @param object  Path in bucket to upload to
-   * @see S3Client#upload(File, String, String, String, CannedAccessControlList)
-   */
-  public ListenableFuture<S3File> upload(File file, String bucket, String object)
+  @Override
+  public ListenableFuture<S3File> upload(File file, String bucket, String
+      object)
   throws IOException
   {
     return upload(file, bucket, object, null);
   }
 
-  /**
-   * Uploads the specified {@code file} to Amazon S3 under the specified
-   * {@code bucket} and {@code object} name. If the {@code key} is not null,
-   * the {@code keyProvider} will be asked to provide a public key with that
-   * name. This key will be used to encrypt the {@code file} at the client side.
-   * </p>
-   * By default, the canned ACL "bucket-owner-full-control" is applied to the
-   * uploaded object.
-   *
-   * @param file    File to upload
-   * @param bucket  Bucket to upload to
-   * @param object  Path in bucket to upload to
-   * @param key     Name of encryption key to use
-   * @see S3Client#upload(File, String, String, String, CannedAccessControlList)
-   */
-  public ListenableFuture<S3File> upload(File file, String bucket, String object, String key)
+  @Override
+  public ListenableFuture<S3File> upload(File file, String bucket, String
+      object, String key)
   throws IOException
   {
-    return upload(file, bucket, object, key, CannedAccessControlList
-        .BucketOwnerFullControl);
+    UploadOptions options = new UploadOptionsBuilder()
+        .setFile(file)
+        .setBucket(bucket)
+        .setObjectKey(object)
+        .setEncKey(key)
+        .createUploadOptions();
+
+    return upload(options);
   }
 
-  /**
-   * Finds every file under {@code directory} recursively and uploads it to S3.
-   * </p>
-   * By default, the canned ACL "bucket-owner-full-control" is applied to each
-   * created object.
-   *
-   * @param directory Directory to upload
-   * @param s3url     S3 URL to upload to
-   * @param encKey    Encryption key to use
-   * @see S3Client#uploadDirectory(File, URI, String, CannedAccessControlList)
-   */
-  public ListenableFuture<List<S3File>> uploadDirectory(File directory, URI s3url, String encKey)
-          throws IOException, ExecutionException, InterruptedException {
-    return this.uploadDirectory(directory, s3url, encKey, CannedAccessControlList.BucketOwnerFullControl);
-  }
+  @Override
+  public ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
+      throws IOException, ExecutionException, InterruptedException {
 
-  /**
-   * Finds every file under {@code directory} recursively and uploads it to S3.
-   * The specified {@code acl} is applied to each created object.
-   * </p>
-   * Each individual file is uploaded with {@link S3Client#upload(File,
-   * String,String, String, CannedAccessControlList)}.
-   * </p>
-   * Symbolic links are not supported.
-   *
-   * @param directory Directory to upload
-   * @param s3url     S3 URL to upload to
-   * @param encKey    Encryption key to use
-   * @param acl       Access control list to use
-   */
-  public ListenableFuture<List<S3File>> uploadDirectory(File directory, URI s3url, String encKey, CannedAccessControlList acl)
-          throws IOException, ExecutionException, InterruptedException {
-    UploadDirectoryCommand cmd = new UploadDirectoryCommand(_s3Executor, _executor, this);
+    File directory = options.getFile();
+    String bucket = options.getBucket();
+    String object = options.getObjectKey();
+    String encKey = options.getEncKey().orNull();
+    String acl = options.getAcl().or("bucket-owner-full-control");
+    OverallProgressListenerFactory progressListenerFactory = options
+        .getOverallProgressListenerFactory().orNull();
+
+    UploadDirectoryCommand cmd = new UploadDirectoryCommand(_s3Executor,
+        _executor, this);
     configure(cmd);
-
-    String bucket = Utils.getBucket(s3url);
-    String object = Utils.getObjectKey(s3url);
-    return cmd.run(directory, bucket, object, encKey, acl);
+    return cmd.run(directory, bucket, object, encKey, acl, progressListenerFactory);
   }
 
-  /**
-   * Deletes the specified {@code object} under S3 {@code bucket}.
-   * </p>
-   * No error is returned if the file doesn't exist. If you care, use the
-   * {@link S3Client#exists} methods to check.
-   *
-   * @param bucket  Bucket to delete from
-   * @param object  Object to be deleted from bucket
-   */
+  @Override
+  public ListenableFuture<List<S3File>> uploadDirectory(File directory, URI
+      s3url, String encKey)
+          throws IOException, ExecutionException, InterruptedException {
+    UploadOptions options = new UploadOptionsBuilder()
+        .setFile(directory)
+        .setUri(s3url)
+        .setEncKey(encKey)
+        .setAcl("bucket-owner-full-control")
+        .createUploadOptions();
+
+    return this.uploadDirectory(options);
+  }
+
+  @Override
+  public ListenableFuture<List<S3File>> uploadDirectory(File directory, URI
+      s3url, String encKey, CannedAccessControlList acl)
+          throws IOException, ExecutionException, InterruptedException {
+    UploadOptions options = new UploadOptionsBuilder()
+        .setFile(directory)
+        .setUri(s3url)
+        .setEncKey(encKey)
+        .setAcl(acl.toString())
+        .createUploadOptions();
+
+    return this.uploadDirectory(options);
+  }
+
+  @Override
   public ListenableFuture<S3File> delete(String bucket, String object)
   {
     DeleteCommand cmd =
@@ -408,12 +346,7 @@ public class S3Client
     return cmd.run(bucket, object);
   }
 
-  /**
-   * Deletes the specified {@code s3url} from S3.
-   *
-   * @param s3url Object URI (e.g. s3://bucket/key)
-   * @see S3Client#delete(String, String)
-   */
+  @Override
   public ListenableFuture<S3File> delete(URI s3url)
   {
     String bucket = Utils.getBucket(s3url);
@@ -421,24 +354,14 @@ public class S3Client
     return delete(bucket, object);
   }
 
-  /** Lists all S3 buckets visible for this account. */
+  @Override
   public ListenableFuture<List<Bucket>> listBuckets()
   {
       List<Bucket> result = _client.listBuckets();
       return Futures.immediateFuture(result);
   }
 
-  /**
-   * Checks if the specified {@code object} exists in the S3 {@code bucket}.
-   * </p>
-   * Returns a null future if the file does not exist.
-   * </p>
-   * Throws an exception if the metadata of the file could not be fetched for
-   * different reasons.
-   *
-   * @param bucket  Bucket to check
-   * @param object  Path in bucket to check
-   */
+  @Override
   public ListenableFuture<ObjectMetadata> exists(String bucket, String object)
   {
     ExistsCommand cmd = new ExistsCommand(_s3Executor, _executor);
@@ -446,12 +369,7 @@ public class S3Client
     return cmd.run(bucket, object);
   }
 
-  /**
-   * Checks if the specified {@code s3url} exists in the S3.
-   *
-   * @param s3url Object URI (e.g. s3://bucket/key)
-   * @see S3Client#exists(String, String)
-   */
+  @Override
   public ListenableFuture<ObjectMetadata> exists(URI s3url)
   {
     String bucket = Utils.getBucket(s3url);
@@ -459,55 +377,35 @@ public class S3Client
     return exists(bucket, object);
   }
 
-  /**
-   * Downloads the specified {@code object}, under {@code bucket}, from S3 to
-   * a local {@code file}.
-   * </p>
-   * If the {@code object} was encrypted by s3lib at the client-side, this
-   * method will try to decrypt it automatically. It knows which key to use by
-   * checking {@code object}'s metadata.
-   * </p>
-   * The specified bucket must already exist and the caller must have read
-   * permission to the {@code bucket}.
-   * </p>
-   * By default, if {@code object}'s size is bigger than the {@code
-   * chunkSize} chosen during the upload, then multiple range GETs will be
-   * issued, effectively dowloading different parts of the file concurrently.
-   * </p>
-   * The level of parallelism depends on the {@code s3Executor}. Ideally,
-   * different parts are downloaded by different threads.
-   * </p>
-   * Since a file can be uploaded, updated and/or copied by any tool is not
-   * always safe and efficient to validate its checksum, since there is no
-   * easy way to detect each tool's chosen chunk size (which affects object's
-   * ETag).
-   *
-   * Currently, this client tries to do checksum validation when it has good
-   * indication that a file was uploaded by s3lib and/or the file can been fully
-   * downloaded using a single range GET.
-   * </p>
-   * If during this call an exception wasn't thrown, the entire object has
-   * supposedly been stored successfully.
-   *
-   * @param file    File to store the object
-   * @param bucket  Bucket to download from
-   * @param object  Path in bucket to download
-   */
-  public ListenableFuture<S3File> download(File file, String bucket, String object)
+  @Override
+  public ListenableFuture<S3File> download(DownloadOptions options)
   throws IOException
   {
-    DownloadCommand cmd = new DownloadCommand(_s3Executor, _executor, file, _keyProvider);
+    File file = options.getFile();
+    OverallProgressListenerFactory progressListenerFactory = options
+        .getOverallProgressListenerFactory().orNull();
+
+    DownloadCommand cmd = new DownloadCommand(_s3Executor, _executor, file,
+        _keyProvider, progressListenerFactory);
     configure(cmd);
-    return cmd.run(bucket, object);
+    return cmd.run(options.getBucket(), options.getObjectKey());
   }
 
-  /**
-   * Downloads the specified {@code s3url} from S3 to a local {@code file}.
-   *
-   * @param file    File to download
-   * @param s3url   Object URI (e.g. s3://bucket/key)
-   * @see S3Client#download(File, String, String)
-   */
+  @Override
+  public ListenableFuture<S3File> download(File file, String bucket, String
+      object)
+      throws IOException
+  {
+    DownloadOptions options = new DownloadOptionsBuilder()
+        .setFile(file)
+        .setBucket(bucket)
+        .setObjectKey(object)
+        .createDownloadOptions();
+
+    return download(options);
+  }
+
+  @Override
   public ListenableFuture<S3File> download(File file, URI s3url)
           throws IOException
   {
@@ -516,43 +414,45 @@ public class S3Client
     return download(file, bucket, object);
   }
 
-  /**
-   * Downloads the conceptual S3 directory, under {@code s3url}, to the local
-   * file system, under {@code directory}.
-   * </p>
-   * If {@code recursive} is true, then all objects under {@code s3url} will
-   * be downloaded. Otherwise, only the first-level objects will be
-   * downloaded.
-   * </p>
-   * If {@code overwrite} is true, then newly downloaded
-   * files is possible to overwrite existing local files.
-   * </p>
-   * Each individual file is downloaded with {@link S3Client#download(File,
-   * String, String)}.
-   *
-   * @param directory Directory to download to
-   * @param s3url     Object URI that represents a directory (e.g.
-   *                  s3://bucket/key/)
-   */
-  public ListenableFuture<List<S3File>> downloadDirectory(
-    File directory, URI s3url, boolean recursive, boolean overwrite)
+  @Override
+  public ListenableFuture<List<S3File>> downloadDirectory(DownloadOptions
+                                                                options)
   throws IOException, ExecutionException, InterruptedException
   {
-    DownloadDirectoryCommand cmd = new DownloadDirectoryCommand(_s3Executor, _executor, this);
+    DownloadDirectoryCommand cmd = new DownloadDirectoryCommand(_s3Executor,
+        _executor, this);
     configure(cmd);
 
-    String bucket = Utils.getBucket(s3url);
-    String object = Utils.getObjectKey(s3url);
-    return cmd.run(directory, bucket, object, recursive, overwrite);
+    File directory = options.getFile();
+    String bucket = options.getBucket();
+    String object = options.getObjectKey();
+    boolean recursive = options.isRecursive();
+    boolean overwrite = options.doesOverwrite();
+    OverallProgressListenerFactory progressListenerFactory = options
+        .getOverallProgressListenerFactory().orNull();
+
+    return cmd.run(directory, bucket, object, recursive, overwrite,
+        progressListenerFactory);
   }
 
-  /**
-   * List object in S3
-   *
-   * TODO: LB-1187
-   */
+  @Override
+  public ListenableFuture<List<S3File>> downloadDirectory(
+      File directory, URI s3url, boolean recursive, boolean overwrite)
+  throws IOException, ExecutionException, InterruptedException
+  {
+    DownloadOptions options = new DownloadOptionsBuilder()
+        .setFile(directory)
+        .setUri(s3url)
+        .setRecursive(recursive)
+        .setOverwrite(overwrite)
+        .createDownloadOptions();
+
+    return this.downloadDirectory(options);
+  }
+
+  @Override
   public ListenableFuture<List<S3ObjectSummary>> listObjects(
-    String bucket, String prefix, boolean recursive)
+      String bucket, String prefix, boolean recursive)
   {
     ListObjectsCommand cmd =
             new ListObjectsCommand(_s3Executor, _executor);
@@ -560,13 +460,9 @@ public class S3Client
     return cmd.run(bucket, prefix, recursive);
   }
 
-  /**
-   * List objects and (first-level) directories in S3
-   *
-   * TODO: LB-1187
-   */
+  @Override
   public ListenableFuture<List<S3File>> listObjectsAndDirs(
-    String bucket, String prefix, boolean recursive)
+      String bucket, String prefix, boolean recursive)
   {
     ListObjectsAndDirsCommand cmd =
             new ListObjectsAndDirsCommand(_s3Executor, _executor);
@@ -589,10 +485,7 @@ public class S3Client
     return v;
   }
 
-  /**
-   * Makes sure all pending tasks have been completed and shuts down all
-   * internal machinery properly.
-   */
+  @Override
   public void shutdown()
   {
     try

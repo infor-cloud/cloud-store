@@ -3,7 +3,6 @@ package com.logicblox.s3lib;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
@@ -24,6 +23,7 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
 
+import com.google.common.base.Optional;
 import org.apache.commons.codec.digest.DigestUtils;
 
 import com.google.common.base.Function;
@@ -41,12 +41,14 @@ public class DownloadCommand extends Command
   private ListeningScheduledExecutorService _executor;
   private KeyProvider _encKeyProvider;
   private ConcurrentMap<Integer, byte[]> etags = new ConcurrentSkipListMap<Integer, byte[]>();
+  private Optional<OverallProgressListenerFactory> progressListenerFactory;
 
   public DownloadCommand(
     ListeningExecutorService downloadExecutor,
     ListeningScheduledExecutorService internalExecutor,
     File file,
-    KeyProvider encKeyProvider)
+    KeyProvider encKeyProvider,
+    OverallProgressListenerFactory progressListenerFactory)
   throws IOException
   {
     _downloadExecutor = downloadExecutor;
@@ -55,6 +57,8 @@ public class DownloadCommand extends Command
 
     this.file = file;
     createNewFile();
+    this.progressListenerFactory = Optional.fromNullable
+        (progressListenerFactory);
   }
 
   private void createNewFile() throws IOException
@@ -104,7 +108,8 @@ public class DownloadCommand extends Command
           if (t instanceof UsageException) {
             return Futures.immediateFailedFuture(t);
           }
-          return Futures.immediateFailedFuture(new Exception("Error downloading s3://"+bucket+"/"+key+".", t));
+          return Futures.immediateFailedFuture(new Exception("Error " +
+              "downloading " + getUri(bucket, key)+ ".", t));
         }
       });
   }
@@ -132,7 +137,8 @@ public class DownloadCommand extends Command
 
   private ListenableFuture<AmazonDownload> startDownloadActual(final String bucket, final String key)
   {
-    AmazonDownloadFactory factory = new AmazonDownloadFactory(getAmazonS3Client(), _downloadExecutor);
+    AmazonDownloadFactory factory = new AmazonDownloadFactory
+        (getAmazonS3Client(), _downloadExecutor);
     return factory.startDownload(bucket, key);
   }
 
@@ -155,7 +161,7 @@ public class DownloadCommand extends Command
   {
     Map<String,String> meta = download.getMeta();
 
-    String errPrefix = "s3://"+download.getBucket()+"/"+download.getKey()+": ";
+    String errPrefix = getUri(download.getBucket(), download.getKey()) + ": ";
     if (meta.containsKey("s3tool-version"))
     {
       String objectVersion = meta.get("s3tool-version");
@@ -221,16 +227,29 @@ public class DownloadCommand extends Command
       }
     }
 
+    OverallProgressListener opl = null;
+    if (progressListenerFactory.isPresent()) {
+      opl = progressListenerFactory.get().create(
+          new ProgressOptionsBuilder()
+              .setObjectUri(getUri(download.getBucket(), download.getKey()))
+              .setOperation("download")
+              .setFileSizeInBytes(fileLength)
+              .createProgressOptions());
+    }
+
     List<ListenableFuture<Integer>> parts = new ArrayList<ListenableFuture<Integer>>();
     for (long position = 0; position < fileLength; position += chunkSize)
     {
-      parts.add(startPartDownload(download, position));
+      parts.add(startPartDownload(download, position, opl));
     }
 
     return Futures.transform(Futures.allAsList(parts), Functions.constant(download));
   }
 
-  private ListenableFuture<Integer> startPartDownload(final AmazonDownload download, final long position)
+  private ListenableFuture<Integer> startPartDownload(final AmazonDownload
+                                                          download,
+                                                      final long position,
+                                                      final OverallProgressListener opl)
   {
     final int partNumber = (int) (position / chunkSize);
 
@@ -240,7 +259,7 @@ public class DownloadCommand extends Command
       {
         public ListenableFuture<Integer> call()
         {
-          return startPartDownloadActual(download, position);
+          return startPartDownloadActual(download, position, opl);
         }
 
         public String toString()
@@ -250,7 +269,9 @@ public class DownloadCommand extends Command
       });
   }
 
-  private ListenableFuture<Integer> startPartDownloadActual(final AmazonDownload download, final long position)
+  private ListenableFuture<Integer> startPartDownloadActual(final AmazonDownload download,
+                                                            final long position,
+                                                            OverallProgressListener opl)
   {
     final int partNumber = (int) (position / chunkSize);
     long start;
@@ -282,7 +303,8 @@ public class DownloadCommand extends Command
       partSize = Math.min(fileLength - position, chunkSize);
     }
 
-    ListenableFuture<InputStream> getPartFuture = download.getPart(start, start + partSize - 1);
+    ListenableFuture<InputStream> getPartFuture = download.getPart(start,
+        start + partSize - 1, Optional.fromNullable(opl));
 
     AsyncFunction<InputStream, Integer> readDownloadFunction = new AsyncFunction<InputStream, Integer>()
     {
@@ -420,8 +442,9 @@ public class DownloadCommand extends Command
               Map<String,String> meta = download.getMeta();
               if (!meta.containsKey("s3tool-version")) {
                 String fn = "/" + download.getBucket() + "/" + download.getKey();
-                System.err.println("Warning: Skipped download checksum validation for " + fn + 
-                    ". It was uploaded using the multipart protocol with tool other than s3tool.");
+                System.err.println("Warning: Skipped download checksum " +
+                    "validation for " + fn + ". It was uploaded using the " +
+                    "multipart protocol with tool other than cloud-store.");
                 return download;
               }
 

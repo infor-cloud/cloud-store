@@ -230,9 +230,11 @@ public class DownloadCommand extends Command
     OverallProgressListener opl = null;
     if (progressListenerFactory.isPresent()) {
       opl = progressListenerFactory.get().create(
-          download.getBucket() + "/" + download.getKey(),
-          "download",
-          fileLength);
+          new ProgressOptionsBuilder()
+              .setObjectUri(getUri(download.getBucket(), download.getKey()))
+              .setOperation("download")
+              .setFileSizeInBytes(fileLength)
+              .createProgressOptions());
     }
 
     List<ListenableFuture<Integer>> parts = new ArrayList<ListenableFuture<Integer>>();

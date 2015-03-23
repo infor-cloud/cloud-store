@@ -1,26 +1,27 @@
 package com.logicblox.s3lib;
 
 import java.text.MessageFormat;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 class ConsoleProgressListener implements OverallProgressListener {
-    protected ConcurrentMap<String, PartProgressEvent> partsProgressEvents =
-        new ConcurrentHashMap<String, PartProgressEvent>();
+    /**
+     * This map contains the progress of each part.
+     * <p/>
+     * Currently, it is not a ConcurrentMap since it is used by {@code
+     * progress}, which is {@code synchronized}, and {@code
+     * getTotalTransferredBytes}, which is called only by {@code progress}.
+     */
+    protected Map<String, PartProgressEvent> partsProgressEvents =
+        new HashMap<String, PartProgressEvent>();
     protected final long intervalInBytes;
-    protected final String reportName;
-    protected final String operation;
-    protected final long totalSizeInBytes;
+    protected final ProgressOptions options;
     protected AtomicLong lastReportBytes = new AtomicLong();
 
-    ConsoleProgressListener(String reportName, String operation, long
-        intervalInBytes, long totalSizeInBytes) {
-        this.reportName = reportName;
-        this.operation = operation;
+    ConsoleProgressListener(ProgressOptions options, long intervalInBytes) {
+        this.options = options;
         this.intervalInBytes = intervalInBytes;
-        this.totalSizeInBytes = totalSizeInBytes;
     }
 
     synchronized public void progress(PartProgressEvent partProgressEvent) {
@@ -28,43 +29,43 @@ class ConsoleProgressListener implements OverallProgressListener {
             partProgressEvent);
 
         long totalTransferredBytes = getTotalTransferredBytes();
-        long unreportedBytes = getUreportedBytes(totalTransferredBytes);
+        long unreportedBytes = getUnreportedBytes(totalTransferredBytes);
         if (isReportTime(unreportedBytes) ||
-            (isComplete(totalTransferredBytes) && !allBytesReported())) {
+            (isTransferComplete(totalTransferredBytes) && !allBytesReported())) {
             System.out.println(MessageFormat.format(
                 "{0}: ({1}%) {2}ed {3}/{4} bytes...",
-                reportName,
-                100 * totalTransferredBytes / totalSizeInBytes,
-                operation,
+                options.getObjectUri(),
+                100 * totalTransferredBytes / options.getFileSizeInBytes(),
+                options.getOperation(),
                 totalTransferredBytes,
-                totalSizeInBytes));
+                options.getFileSizeInBytes()));
             lastReportBytes.set(totalTransferredBytes);
         }
     }
 
     private long getTotalTransferredBytes() {
-        AtomicLong bytes = new AtomicLong();
+        long bytes = 0L;
         for (Map.Entry<String, PartProgressEvent> e :
             partsProgressEvents.entrySet()) {
-            bytes.addAndGet(e.getValue().getTransferredBytes());
+            bytes += e.getValue().getTransferredBytes();
         }
 
-        return bytes.get();
+        return bytes;
     }
 
-    private long getUreportedBytes(long totalTransferredBytes) {
+    private long getUnreportedBytes(long totalTransferredBytes) {
         return totalTransferredBytes - lastReportBytes.get();
+    }
+
+    private boolean allBytesReported() {
+        return lastReportBytes.get() == options.getFileSizeInBytes();
     }
 
     private boolean isReportTime(long unreportedBytes) {
         return unreportedBytes >= intervalInBytes;
     }
 
-    private boolean allBytesReported() {
-        return lastReportBytes.get() == totalSizeInBytes;
-    }
-
-    private boolean isComplete(long totalTransferredBytes) {
-        return totalTransferredBytes == totalSizeInBytes;
+    private boolean isTransferComplete(long totalTransferredBytes) {
+        return totalTransferredBytes == options.getFileSizeInBytes();
     }
 }

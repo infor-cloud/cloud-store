@@ -1,22 +1,28 @@
 package com.logicblox.s3lib;
 
+import com.google.common.base.Optional;
+
 public class ConsoleProgressListenerFactory
     implements OverallProgressListenerFactory {
-    public OverallProgressListener create(String name,
-                                   String operation,
-                                   long intervalInBytes,
-                                   long totalSizeInBytes) {
-        return new ConsoleProgressListener(name, operation,
-            intervalInBytes, totalSizeInBytes);
+
+    private Optional<Long> intervalInBytes = Optional.absent();
+
+    private long getDefaultIntervalInBytes(long totalSizeInBytes) {
+        long mb = 1024 * 1024;
+        return (totalSizeInBytes >= 50 * mb) ? 10 * mb : mb;
     }
 
-    public OverallProgressListener create(String name,
-                                   String operation,
-                                   long totalSizeInBytes) {
-        long mb = 1024 * 1024;
-        long intervalInBytes = mb;
-        if (totalSizeInBytes >= 50 * mb)
-            intervalInBytes = 10 * mb;
-        return create(name, operation, intervalInBytes, totalSizeInBytes);
+    public ConsoleProgressListenerFactory setIntervalInBytes(long intervalInBytes) {
+        this.intervalInBytes.of(intervalInBytes);
+        return this;
+    }
+
+    public OverallProgressListener create(ProgressOptions progressOptions) {
+        if (!intervalInBytes.isPresent())
+            intervalInBytes = Optional.of(
+                getDefaultIntervalInBytes(
+                    progressOptions.getFileSizeInBytes()));
+        return new ConsoleProgressListener(progressOptions,
+            intervalInBytes.get());
     }
 }

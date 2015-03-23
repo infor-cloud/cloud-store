@@ -24,7 +24,6 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
 
-import com.amazonaws.event.ProgressListener;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
@@ -181,9 +180,11 @@ public class UploadCommand extends Command
     OverallProgressListener opl = null;
     if (progressListenerFactory.isPresent()) {
       opl = progressListenerFactory.get().create(
-          file.getName(),
-          "upload",
-          fileLength);
+          new ProgressOptionsBuilder()
+              .setObjectUri(getUri(upload.getBucket(), upload.getKey()))
+              .setOperation("upload")
+              .setFileSizeInBytes(fileLength)
+              .createProgressOptions());
     }
 
     List<ListenableFuture<Void>> parts = new ArrayList<ListenableFuture<Void>>();

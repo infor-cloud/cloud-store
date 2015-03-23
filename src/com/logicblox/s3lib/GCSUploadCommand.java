@@ -1,6 +1,5 @@
 package com.logicblox.s3lib;
 
-import com.google.api.client.googleapis.media.MediaHttpUploaderProgressListener;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
@@ -170,9 +169,11 @@ public class GCSUploadCommand extends Command {
         OverallProgressListener opl = null;
         if (progressListenerFactory.isPresent()) {
             opl = progressListenerFactory.get().create(
-                file.getName(),
-                "upload",
-                fileLength);
+                new ProgressOptionsBuilder()
+                    .setObjectUri(getUri(upload.getBucket(), upload.getKey()))
+                    .setOperation("upload")
+                    .setFileSizeInBytes(fileLength)
+                    .createProgressOptions());
         }
 
         ListenableFuture<Void> part = startPartUploadThread(upload, opl);

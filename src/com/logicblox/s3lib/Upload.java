@@ -13,4 +13,8 @@ interface Upload
   ListenableFuture<String> completeUpload();
 
   ListenableFuture<Void> abort();
+
+  String getBucket();
+
+  String getKey();
 }

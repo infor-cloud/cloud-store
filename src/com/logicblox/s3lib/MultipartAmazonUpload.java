@@ -64,6 +64,16 @@ class MultipartAmazonUpload implements Upload
     return executor.submit(new AbortCallable());
   }
 
+  public String getBucket()
+  {
+    return bucketName;
+  }
+
+  public String getKey()
+  {
+    return key;
+  }
+
   private class AbortCallable implements Callable<Void>
   {
     public Void call() throws Exception

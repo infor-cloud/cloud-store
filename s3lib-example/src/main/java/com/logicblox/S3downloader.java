@@ -6,7 +6,6 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
@@ -22,12 +21,14 @@ import com.logicblox.s3lib.UsageException;
 import com.logicblox.s3lib.Utils;
 
 import java.util.Map;
+import java.util.concurrent.Executors;
 
 public class S3downloader {
 
     private static ListeningExecutorService getHttpExecutor() {
         int maxConcurrentConnections = 10;
-        return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(maxConcurrentConnections));
+        return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool
+            (maxConcurrentConnections));
     }
 
     private static ListeningScheduledExecutorService getInternalExecutor() {

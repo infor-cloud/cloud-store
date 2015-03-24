@@ -41,6 +41,7 @@ let
           "--with-commons-io=${deps.commonsio}"
           "--with-commons-codec=${deps.commonscodec}"
           "--with-aws-java-sdk=${deps.aws_java_sdk}"
+          "--with-gcs-java-sdk=${deps.gcs_java_sdk}"
         ];
         buildInputs = [ python jdk];
       };
@@ -48,7 +49,7 @@ let
      binary_tarball =
       builder_config.release_helper {
         inherit name build;
-        unixify = "bin/s3tool bin/s3lib-keygen";
+        unixify = "bin/cloud-store bin/s3tool bin/s3lib-keygen";
         };
     };
 

@@ -1,24 +1,8 @@
 #!/usr/bin/env python
 
 import sys
-import os
 import subprocess
+from os.path import join, dirname
 
-bindir = os.path.dirname(os.path.realpath( __file__ ))
-prefix = os.path.dirname(bindir)
-
-def run(args):
-    subenv = os.environ.copy()
-    subenv['S3LIB_HOME'] = prefix
-
-    java_args = ['java', '-jar', prefix + '/lib/java/s3lib-0.2.jar']
-    java_args.extend(args)
-
-    os.execvpe('java', java_args, subenv)
-
-def main():
-    command_line = sys.argv[1:]
-    run(command_line)
-
-if __name__ == '__main__':
-    main()
+cmd = ' '.join([join(dirname(__file__), "cloud-store")] + sys.argv[1:])
+subprocess.call(cmd, shell=True)

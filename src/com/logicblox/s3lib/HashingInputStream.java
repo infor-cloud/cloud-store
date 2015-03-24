@@ -6,65 +6,65 @@ import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-public class HashingInputStream extends FilterInputStream
+class HashingInputStream extends FilterInputStream
 {
-  private MessageDigest md;
-  private byte[] digest;
+    private MessageDigest md;
+    private byte[] digest;
 
-  public HashingInputStream(InputStream in)
-  {
-    super(in);
-    try
+    public HashingInputStream(InputStream in)
     {
-      md = MessageDigest.getInstance("MD5");
-    }
-    catch (NoSuchAlgorithmException e)
-    {
-      // No MD5, give up
-      throw new RuntimeException(e);
-    }
-  }
-
-  public byte[] getDigest()
-  {
-    if (digest == null)
-    {
-      digest = md.digest();
+        super(in);
+        try
+        {
+            md = MessageDigest.getInstance("MD5");
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            // No MD5, give up
+            throw new RuntimeException(e);
+        }
     }
 
-    return digest;
-  }
-
-  @Override
-  public int read() throws IOException
-  {
-    int res = in.read();
-    if (res != -1)
+    public byte[] getDigest()
     {
-      md.update((byte) res);
-    }
-    return res;
-  }
+        if (digest == null)
+        {
+            digest = md.digest();
+        }
 
-  @Override
-  public int read(byte[] b) throws IOException
-  {
-    int count = in.read(b);
-    if (count != -1)
-    {
-      md.update(b, 0, count);
+        return digest;
     }
-    return count;
-  }
 
-  @Override
-  public int read(byte[] b, int off, int len) throws IOException
-  {
-    int count = in.read(b, off, len);
-    if (count != -1)
+    @Override
+    public int read() throws IOException
     {
-      md.update(b, off, count);
+        int res = in.read();
+        if (res != -1)
+        {
+            md.update((byte) res);
+        }
+        return res;
     }
-    return count;
-  }
+
+    @Override
+    public int read(byte[] b) throws IOException
+    {
+        int count = in.read(b);
+        if (count != -1)
+        {
+            md.update(b, 0, count);
+        }
+        return count;
+    }
+
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException
+    {
+        int count = in.read(b, off, len);
+        if (count != -1)
+        {
+            md.update(b, off, count);
+        }
+        return count;
+    }
 }

@@ -1,14 +1,16 @@
 package com.logicblox.s3lib;
 
 import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.concurrent.Callable;
 import java.io.InputStream;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import javax.xml.bind.DatatypeConverter;
 
+import com.amazonaws.event.ProgressListener;
+import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
@@ -30,7 +32,8 @@ class MultipartAmazonUpload implements Upload
   private String uploadId;
   private ListeningExecutorService executor;
 
-  public MultipartAmazonUpload(AmazonS3 client, String bucketName, String key, String uploadId, ListeningExecutorService executor)
+  public MultipartAmazonUpload(AmazonS3 client, String bucketName, String key, String uploadId,
+                               ListeningExecutorService executor)
   {
     this.bucketName = bucketName;
     this.key = key;
@@ -41,7 +44,14 @@ class MultipartAmazonUpload implements Upload
 
   public ListenableFuture<Void> uploadPart(int partNumber, InputStream stream, long partSize)
   {
-    return executor.submit(new UploadCallable(partNumber, stream, partSize));
+    return uploadPart(partNumber, stream, partSize,
+        Optional.<OverallProgressListener>absent());
+  }
+
+  public ListenableFuture<Void> uploadPart(int partNumber, InputStream
+      stream, long partSize, Optional<OverallProgressListener> progressListener)
+  {
+    return executor.submit(new UploadCallable(partNumber, stream, partSize, progressListener));
   }
 
   public ListenableFuture<String> completeUpload()
@@ -52,6 +62,16 @@ class MultipartAmazonUpload implements Upload
   public ListenableFuture<Void> abort()
   {
     return executor.submit(new AbortCallable());
+  }
+
+  public String getBucket()
+  {
+    return bucketName;
+  }
+
+  public String getKey()
+  {
+    return key;
   }
 
   private class AbortCallable implements Callable<Void>
@@ -99,12 +119,15 @@ class MultipartAmazonUpload implements Upload
     private int partNumber;
     private HashingInputStream stream;
     private long partSize;
+    private Optional<OverallProgressListener> progressListener;
 
-    public UploadCallable(int partNumber, InputStream stream, long partSize)
+    public UploadCallable(int partNumber, InputStream stream, long partSize,
+                          Optional<OverallProgressListener> progressListener)
     {
       this.partNumber = partNumber;
       this.partSize = partSize;
       this.stream = new HashingInputStream(stream);
+      this.progressListener = progressListener;
     }
 
     public Void call() throws Exception
@@ -116,6 +139,15 @@ class MultipartAmazonUpload implements Upload
       req.setPartSize(partSize);
       req.setUploadId(uploadId);
       req.setKey(key);
+
+      if (progressListener.isPresent()) {
+        PartProgressEvent ppe = new PartProgressEvent(Integer.toString
+            (partNumber));
+        ProgressListener s3pl = new S3ProgressListener(progressListener.get(),
+            ppe);
+        req.setGeneralProgressListener(s3pl);
+      }
+
       UploadPartResult res = client.uploadPart(req);
       byte[] etag = DatatypeConverter.parseHexBinary(res.getETag());
       if (Arrays.equals(etag, stream.getDigest()))

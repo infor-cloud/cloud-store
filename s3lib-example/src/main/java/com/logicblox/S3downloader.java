@@ -34,20 +34,23 @@ public class S3downloader {
         }
 
         result.get();
-        client.shutdown();
     }
 
     /*
-     * This is a bare bones implementation of downloading a file from S3. No error
-     * checking for things like
+     * This is a bare bones implementation of downloading a file from S3. No
+     * error checking for things like
      *   AWS_ACCESS_KEY_ID defined?
      *   AWS_SECRET_KEY defined?
      *   s3lib-keys directory defined?
      */
 
     public static void main(String[] args) throws Exception {
+        // Define the client configuration
         ClientConfiguration clientCfg = new ClientConfiguration();
         clientCfg.setProtocol(Protocol.HTTPS);
+        // Add proxy connection if needed:
+        //    clientCfg.setProxyHost("localhost");
+        //    clientCfg.setProxyPort(8118);
         AmazonS3Client s3Client = new AmazonS3Client(clientCfg);
 
         // Encryption key directory.
@@ -59,17 +62,14 @@ public class S3downloader {
         CloudStoreClient client = new S3Client(s3Client,
             Utils.getKeyProvider(key_dir));
 
-        // File url to download
-        URI url = Utils.getURI("s3://kiabi-s3-poc/test/test.dat.gz");
-
-        // Output file
-        File output = new File("test-downloaded.gz");
-        System.out.println(String.format("Downloading '%s' to '%s'.",
-            url, output));
-
         // Set download options
+        URI url = Utils.getURI("s3://kiabi-s3-poc/test/test.dat.gz");
+        File file = new File("test-downloaded.gz");
+        System.out.println(String.format("Downloading '%s' to '%s'.",
+            url, file));
+
         DownloadOptions options = new DownloadOptionsBuilder()
-            .setFile(output)
+            .setFile(file)
             .setUri(url)
             .setRecursive(false)
             .setOverwrite(true)

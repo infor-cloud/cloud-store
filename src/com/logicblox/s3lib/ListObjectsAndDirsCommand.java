@@ -25,7 +25,9 @@ public class ListObjectsAndDirsCommand extends Command
     _executor = internalExecutor;
   }
 
-  public ListenableFuture<List<S3File>> run(final String bucket, final String prefix, final boolean recursive)
+  public ListenableFuture<List<S3File>> run(final String bucket,
+                                            final String prefix,
+                                            final boolean recursive)
   {
     ListenableFuture<List<S3File>> future =
       executeWithRetry(
@@ -46,15 +48,19 @@ public class ListObjectsAndDirsCommand extends Command
     return future;
   }
 
-  private ListenableFuture<List<S3File>> runActual(final String bucket, final String prefix, final boolean recursive)
+  private ListenableFuture<List<S3File>> runActual(final String bucket,
+                                                   final String prefix,
+                                                   final boolean recursive)
   {
     return _httpExecutor.submit(
       new Callable<List<S3File>>()
       {
         public List<S3File> call()
         {
-          ListObjectsRequest req = new ListObjectsRequest().withBucketName(bucket).withPrefix(prefix);
-          if (! recursive) req.setDelimiter("/");
+          ListObjectsRequest req = new ListObjectsRequest()
+              .withBucketName(bucket)
+              .withPrefix(prefix);
+          if (!recursive) req.setDelimiter("/");
 
           List<S3File> all = new ArrayList<S3File>();
           ObjectListing current = getAmazonS3Client().listObjects(req);
@@ -75,7 +81,8 @@ public class ListObjectsAndDirsCommand extends Command
       });
   }
 
-  private List<S3File> appendS3ObjectSummaryList(List<S3File> all, List<S3ObjectSummary> appendList) {
+  private List<S3File> appendS3ObjectSummaryList(List<S3File> all,
+                                                 List<S3ObjectSummary> appendList) {
     for (S3ObjectSummary o : appendList) {
       all.add(S3ObjectSummaryToS3File(o));
     }
@@ -83,7 +90,9 @@ public class ListObjectsAndDirsCommand extends Command
     return all;
   }
 
-  private List<S3File> appendS3DirStringList(List<S3File> all, List<String> appendList, String bucket) {
+  private List<S3File> appendS3DirStringList(List<S3File> all,
+                                             List<String> appendList,
+                                             String bucket) {
     for (String o : appendList) {
       all.add(S3DirStringToS3File(o, bucket));
     }

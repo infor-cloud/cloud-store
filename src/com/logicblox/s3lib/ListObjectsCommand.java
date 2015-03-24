@@ -1,7 +1,5 @@
 package com.logicblox.s3lib;
 
-
-import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
@@ -25,7 +23,9 @@ public class ListObjectsCommand extends Command
     _executor = internalExecutor;
   }
 
-  public ListenableFuture<List<S3ObjectSummary>> run(final String bucket, final String prefix, final boolean recursive)
+  public ListenableFuture<List<S3ObjectSummary>> run(final String bucket,
+                                                     final String prefix,
+                                                     final boolean recursive)
   {
     ListenableFuture<List<S3ObjectSummary>> future =
       executeWithRetry(
@@ -46,15 +46,19 @@ public class ListObjectsCommand extends Command
     return future;
   }
 
-  private ListenableFuture<List<S3ObjectSummary>> runActual(final String bucket, final String prefix, final boolean recursive)
+  private ListenableFuture<List<S3ObjectSummary>> runActual(final String bucket,
+                                                            final String prefix,
+                                                            final boolean recursive)
   {
     return _httpExecutor.submit(
       new Callable<List<S3ObjectSummary>>()
       {
         public List<S3ObjectSummary> call()
         {
-          ListObjectsRequest req = new ListObjectsRequest().withBucketName(bucket).withPrefix(prefix);
-          if (! recursive) req.setDelimiter("/");
+          ListObjectsRequest req = new ListObjectsRequest()
+              .withBucketName(bucket)
+              .withPrefix(prefix);
+          if (!recursive) req.setDelimiter("/");
 
           ObjectListing current = getAmazonS3Client().listObjects(req);
           List<S3ObjectSummary> keyList = current.getObjectSummaries();

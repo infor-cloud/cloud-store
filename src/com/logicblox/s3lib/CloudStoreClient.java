@@ -9,6 +9,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -38,6 +39,15 @@ public interface CloudStoreClient {
      * @param endpoint API endpoint
      */
     void setEndpoint(String endpoint);
+
+    /**
+     * Creates a full URI out of {@code bucket} and {@code object} key. S3 URI
+     * example: s3://bucket/object GCS URI example: gs://bucket/object
+     *
+     * @param bucket Bucket name
+     * @param object Object key
+     */
+    URI getUri(String bucket, String object) throws URISyntaxException;
 
     /**
      * Uploads a file according to {@code options}. For more details

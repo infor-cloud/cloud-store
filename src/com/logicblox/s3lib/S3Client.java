@@ -3,6 +3,7 @@ package com.logicblox.s3lib;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -208,6 +209,12 @@ public class S3Client implements CloudStoreClient {
   public void setEndpoint(String endpoint)
   {
     _client.setEndpoint(endpoint);
+  }
+
+  @Override
+  public URI getUri(String bucket, String object) throws URISyntaxException
+  {
+    return new URI("s3://" + bucket + "/" + object);
   }
 
   void configure(Command cmd)

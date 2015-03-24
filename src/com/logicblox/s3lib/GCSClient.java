@@ -14,6 +14,7 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -65,6 +66,11 @@ public class GCSClient implements CloudStoreClient {
     @Override
     public void setEndpoint(String endpoint) {
         s3Client.setEndpoint(endpoint);
+    }
+
+    @Override
+    public URI getUri(String bucket, String object) throws URISyntaxException {
+        return new URI("gs://" + bucket + "/" + object);
     }
 
     @Override

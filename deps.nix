@@ -52,12 +52,12 @@ in {
       sha256 = "ad19d2601c3abf0b946b5c3a4113e226a8c1e3305e395b90013b78dd94a723ce";
     };
 
-  aws_java_sdk =
+  aws-java-sdk =
     pkgs.stdenv.mkDerivation rec {
-      name = "aws-java-sdk-1.7.1";
+      name = "aws-java-sdk-1.9.8";
       src = fetchurl {
-        url = http://sdk-for-java.amazonwebservices.com/aws-java-sdk-1.7.1.zip;
-        sha256 = "afc1a93635b5e77fb2f1fac4025a3941300843dce7fc5af4f2a99ff9bf4af05b";
+        url = http://sdk-for-java.amazonwebservices.com/aws-java-sdk-1.9.8.zip;
+        sha256 = "04nfx917cmyxv2n5g62js9cgh37jg635zhn9v4kr9xiq292bv3yv";
       };
       buildInputs = [unzip];
       buildCommand = ''

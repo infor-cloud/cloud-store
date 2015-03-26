@@ -52,7 +52,7 @@ in {
       sha256 = "ad19d2601c3abf0b946b5c3a4113e226a8c1e3305e395b90013b78dd94a723ce";
     };
 
-  aws-java-sdk =
+  aws_java_sdk =
     pkgs.stdenv.mkDerivation rec {
       name = "aws-java-sdk-1.9.8";
       src = fetchurl {

@@ -1,9 +1,11 @@
 package com.logicblox;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
@@ -20,29 +22,39 @@ import com.logicblox.s3lib.Utils;
 
 public class S3uploader {
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws URISyntaxException {
         CloudStoreClient client = getCloudStoreClient();
         UploadOptions options = getUploadOptions();
 
         // Upload the file/directory
-        if (options.getObjectKey().endsWith("/")) {
-            throw new UsageException("Destination key " + options.getObjectKey()
-                + " should be fully qualified. No trailing '/' is permitted.");
-        }
+        System.out.println(String.format("Uploading '%s' to '%s'.",
+            options.getFile(), options.getObjectKey()));
 
-        if (options.getFile().isFile()) {
-            ListenableFuture<S3File> result = client.upload(options);
-            S3File f = result.get();
-        } else if (options.getFile().isDirectory()) {
-            ListenableFuture<List<S3File>> result  =
-                client.uploadDirectory(options);
-            List<S3File> fs = result.get();
-        } else {
-            throw new UsageException("File '" + options.getFile() + "' is not" +
-                " a file or a directory.");
-        }
+        try {
+            if (options.getObjectKey().endsWith("/"))
+                throw new UsageException("Destination key " + options.getObjectKey()
+                    + " should be fully qualified. No trailing '/' is permitted.");
 
-        client.shutdown();
+            if (options.getFile().isFile()) {
+                ListenableFuture<S3File> result = client.upload(options);
+                S3File f = result.get();
+            } else if (options.getFile().isDirectory()) {
+                ListenableFuture<List<S3File>> result  =
+                    client.uploadDirectory(options);
+                List<S3File> fs = result.get();
+            } else {
+                throw new UsageException("File '" + options.getFile() + "' is not" +
+                    " a file or a directory.");
+            }
+        } catch (UsageException e) {
+            System.err.println(e.getMessage());
+        } catch (ExecutionException e) {
+            System.err.println(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            client.shutdown();
+        }
     }
 
     private static CloudStoreClient getCloudStoreClient() {

@@ -1,9 +1,11 @@
 package com.logicblox;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
@@ -28,27 +30,32 @@ public class S3downloader {
      *   s3lib-keys directory defined?
      */
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws URISyntaxException {
         CloudStoreClient client = getCloudStoreClient();
         DownloadOptions options = getDownloadOptions();
 
         // Download the file/directory
         System.out.println(String.format("Downloading '%s' to '%s'.",
             options.getObjectKey(), options.getFile()));
-        if (options.getObjectKey().endsWith("/")) {
-            ListenableFuture<List<S3File>> result =
-                client.downloadDirectory(options);
-            List<S3File> fs = result.get();
-        } else {
-            URI uri = client.getUri(options.getBucket(), options.getObjectKey());
-            if(client.exists(uri).get() == null)
-                throw new UsageException("Object not found at " + uri);
-            ListenableFuture<S3File> result =
-                client.download(options);
-            S3File f = result.get();
-        }
 
-        client.shutdown();
+        try {
+            if (options.getObjectKey().endsWith("/")) {
+                ListenableFuture<List<S3File>> result =
+                    client.downloadDirectory(options);
+                List<S3File> fs = result.get();
+            } else {
+                URI uri = client.getUri(options.getBucket(),
+                    options.getObjectKey());
+                ListenableFuture<S3File> result = client.download(options);
+                S3File f = result.get();
+            }
+        } catch (ExecutionException e) {
+            System.err.println(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            client.shutdown();
+        }
     }
 
     private static CloudStoreClient getCloudStoreClient() {

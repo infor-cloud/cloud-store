@@ -23,7 +23,6 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
 
-import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.google.common.base.Optional;
 import org.apache.commons.codec.digest.DigestUtils;
 
@@ -106,13 +105,6 @@ public class DownloadCommand extends Command
       {
         public ListenableFuture<S3File> create(Throwable t)
         {
-          if (t instanceof AmazonS3Exception) {
-            AmazonS3Exception e = (AmazonS3Exception) t;
-            if (e.getStatusCode() == 404) {
-              System.err.println(getUri(bucket, key) + " doesn't exist.");
-              return Futures.immediateFuture(null);
-            }
-          }
           if (t instanceof UsageException) {
             return Futures.immediateFailedFuture(t);
           }

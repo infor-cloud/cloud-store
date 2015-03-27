@@ -14,6 +14,7 @@ import com.logicblox.s3lib.DownloadOptions;
 import com.logicblox.s3lib.DownloadOptionsBuilder;
 import com.logicblox.s3lib.S3Client;
 import com.logicblox.s3lib.S3File;
+import com.logicblox.s3lib.UsageException;
 import com.logicblox.s3lib.Utils;
 
 
@@ -39,6 +40,9 @@ public class S3downloader {
                 client.downloadDirectory(options);
             List<S3File> fs = result.get();
         } else {
+            URI uri = client.getUri(options.getBucket(), options.getObjectKey());
+            if(client.exists(uri).get() == null)
+                throw new UsageException("Object not found at " + uri);
             ListenableFuture<S3File> result =
                 client.download(options);
             S3File f = result.get();

@@ -49,7 +49,7 @@ let
      binary_tarball =
       builder_config.release_helper {
         inherit name build;
-        unixify = "bin/cloud-store bin/s3tool bin/s3lib-keygen";
+        unixify = "bin/cloud-store bin/s3tool";
         };
     };
 

@@ -182,6 +182,11 @@ public class DownloadCommand extends Command
         {
           throw new UsageException(errPrefix + "private key '" + keyName + "' is not available to decrypt");
         }
+        catch (NullPointerException e)
+        {
+          throw new UsageException(errPrefix + "No encryption key provider is" +
+              " specified");
+        }
 
         Cipher cipher;
         byte[] encKeyBytes;
@@ -243,7 +248,8 @@ public class DownloadCommand extends Command
       parts.add(startPartDownload(download, position, opl));
     }
 
-    return Futures.transform(Futures.allAsList(parts), Functions.constant(download));
+    return Futures.transform(Futures.allAsList(parts), Functions.constant
+        (download));
   }
 
   private ListenableFuture<Integer> startPartDownload(final AmazonDownload

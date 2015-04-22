@@ -176,6 +176,9 @@ public class DownloadCommand extends Command
         Key privKey;
         try
         {
+          if (_encKeyProvider == null)
+            throw new UsageException(errPrefix + "No encryption key provider " +
+                "is specified");
           privKey = _encKeyProvider.getPrivateKey(keyName);
         }
         catch (NoSuchKeyException e)

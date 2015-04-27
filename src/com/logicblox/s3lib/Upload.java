@@ -17,4 +17,6 @@ interface Upload
   String getBucket();
 
   String getKey();
+
+  String getId();
 }

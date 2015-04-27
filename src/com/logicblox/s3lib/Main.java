@@ -82,6 +82,10 @@ class Main
     _commander.addCommand("upload", new UploadCommandOptions());
     _commander.addCommand("download", new DownloadCommandOptions());
     _commander.addCommand("ls", new ListCommandOptions());
+    _commander.addCommand("list-pending-uploads", new
+        ListPendingUploadsCommandOptions());
+    _commander.addCommand("abort-pending-upload", new
+        AbortPendingUploadCommandOptions());
     _commander.addCommand("exists", new ExistsCommandOptions());
     _commander.addCommand("list-buckets", new ListBucketsCommandOptions());
     _commander.addCommand("keygen", new KeyGenCommandOptions());
@@ -446,6 +450,61 @@ class Main
     }
   }
 
+  @Parameters(commandDescription = "List pending uploads")
+  class ListPendingUploadsCommandOptions extends S3ObjectCommandOptions
+  {
+    @Override
+    public void invoke() throws Exception
+    {
+      CloudStoreClient client = createCloudStoreClient();
+
+      try
+      {
+        List<Upload> result = client.listPendingUploads(getBucket(),
+            getObjectKey()).get();
+
+        for (Upload obj : result)
+        {
+          // print the upload id for each pending upload
+          System.out.println(client.getUri(obj.getBucket(), obj.getKey()) +
+              ", upload id: " + obj.getId());
+        }
+      }
+      catch(ExecutionException exc)
+      {
+        rethrow(exc.getCause());
+      }
+
+      client.shutdown();
+    }
+  }
+
+  @Parameters(commandDescription = "Abort pending upload using its Id")
+  class AbortPendingUploadCommandOptions extends S3ObjectCommandOptions
+  {
+    @Parameter(names = "--id", description = "Id of the pending upload to " +
+        "abort",
+        required = true)
+    String id;
+
+    @Override
+    public void invoke() throws Exception
+    {
+      CloudStoreClient client = createCloudStoreClient();
+
+      try
+      {
+        client.abortPendingUpload(getBucket(), getObjectKey(), id).get();
+      }
+      catch(ExecutionException exc)
+      {
+        rethrow(exc.getCause());
+      }
+
+      client.shutdown();
+    }
+  }
+
   @Parameters(commandDescription = "Generates a public/private keypair in PEM format")
   class KeyGenCommandOptions extends CommandOptions
   {
@@ -663,7 +722,7 @@ class Main
     System.err.println("   Commands: ");
     for(String cmd : _commander.getCommands().keySet())
     {
-      System.out.println("     " + padRight(15, ' ', cmd) + _commander.getCommandDescription(cmd));
+      System.out.println("     " + padRight(22, ' ', cmd) + _commander.getCommandDescription(cmd));
     }
   }
 

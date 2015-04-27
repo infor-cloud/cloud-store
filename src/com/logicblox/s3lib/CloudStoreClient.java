@@ -389,6 +389,30 @@ public interface CloudStoreClient {
         String bucket, String prefix, boolean recursive);
 
     /**
+     * Returns a list of the pending uploads to keys that start with {@code
+     * prefix}, inside {@code bucket}.
+     *
+     * @param bucket The name of the bucket
+     * @param prefix Prefix to limit the returned uploads to those for keys that
+     *               match this prefix
+     */
+    ListenableFuture<List<Upload>> listPendingUploads(String bucket, String
+        prefix);
+
+    /**
+     * Aborts the pending upload to {@code bucket/key} with the given {@code
+     * uploadId}.
+     *
+     * @param bucket   The name of the bucket
+     * @param key      The object key that the pending upload targets to
+     * @param uploadId The id of the pending upload. Such ids can be found via
+     *                 {@link CloudStoreClient#listPendingUploads}.
+     * @see CloudStoreClient#listPendingUploads(String, String)
+     */
+    ListenableFuture<Void> abortPendingUpload(String bucket, String key,
+                                              String uploadId);
+
+    /**
      * Makes sure all pending tasks have been completed and shuts down all
      * internal machinery properly.
      */

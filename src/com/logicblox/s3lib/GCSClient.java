@@ -240,6 +240,21 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
+    public ListenableFuture<List<Upload>> listPendingUploads(String bucket,
+                                                             String prefix) {
+        throw new UnsupportedOperationException("listPendingUploads is not " +
+            "supported.");
+    }
+
+    @Override
+    public ListenableFuture<Void> abortPendingUpload(String bucket,
+                                                     String prefix,
+                                                     String uploadId) {
+        throw new UnsupportedOperationException("abortPendingUpload is not " +
+            "supported.");
+    }
+
+    @Override
     public void shutdown() {
         s3Client.shutdown();
     }

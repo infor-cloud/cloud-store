@@ -74,6 +74,11 @@ class MultipartAmazonUpload implements Upload
     return key;
   }
 
+  public String getId()
+  {
+    return uploadId;
+  }
+
   private class AbortCallable implements Callable<Void>
   {
     public Void call() throws Exception

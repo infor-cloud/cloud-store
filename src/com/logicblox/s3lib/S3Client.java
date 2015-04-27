@@ -477,6 +477,26 @@ public class S3Client implements CloudStoreClient {
     return cmd.run(bucket, prefix, recursive);
   }
 
+  @Override
+  public ListenableFuture<List<Upload>> listPendingUploads(
+      String bucket, String prefix)
+  {
+      ListPendingUploadsCommand cmd =
+          new ListPendingUploadsCommand(_s3Executor, _executor);
+      configure(cmd);
+      return cmd.run(bucket, prefix);
+  }
+
+  @Override
+  public ListenableFuture<Void> abortPendingUpload(
+      String bucket, String prefix, String uploadId)
+  {
+      AbortPendingUploadCommand cmd =
+          new AbortPendingUploadCommand(_s3Executor, _executor);
+      configure(cmd);
+      return cmd.run(bucket, prefix, uploadId);
+  }
+
   /**
    * Returns s3lib package version in this format:
    * "Version.RevNum-RevHash_BuildDatetime"

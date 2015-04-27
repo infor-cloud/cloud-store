@@ -66,6 +66,11 @@ class GCSUpload implements Upload {
         return key;
     }
 
+    public String getId()
+    {
+        return null;
+    }
+
     private class AbortCallable implements Callable<Void> {
         public Void call() throws Exception {
             return null;

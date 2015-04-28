@@ -29,7 +29,7 @@ public class Command
   protected long fileLength;
   protected String scheme;
 
-  private Function<Integer, Integer> _retryDelayFunction = Utils.createLinearDelayFunction(1);
+  private Function<Integer, Integer> _retryDelayFunction = Utils.createExponentialDelayFunction(300, 20 * 1000);
 
   private AmazonS3Client _client = null;
 
@@ -99,7 +99,7 @@ public class Command
 
   protected <V> ListenableFuture<V> executeWithRetry(ListeningScheduledExecutorService executor, Callable<ListenableFuture<V>> callable)
   {
-    return Utils.executeWithRetry(executor, callable, _retryCondition, _retryDelayFunction, TimeUnit.SECONDS, _retryCount);
+    return Utils.executeWithRetry(executor, callable, _retryCondition, _retryDelayFunction, TimeUnit.MILLISECONDS, _retryCount);
   }
 
   private Predicate<Throwable> _retryCondition = new Predicate<Throwable>()

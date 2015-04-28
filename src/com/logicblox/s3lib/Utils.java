@@ -282,7 +282,7 @@ public class Utils
     return clientCfg;
   }
 
-  public static Function<Integer, Integer> createExponentialDelayFunction(final int initialDelay)
+  public static Function<Integer, Integer> createExponentialDelayFunction(final int initialDelay, final int maxDelay)
   {
     return new Function<Integer, Integer>()
     {
@@ -290,7 +290,8 @@ public class Utils
       {
         if(retryCount > 0)
         {
-          return initialDelay * (int) Math.pow(2, retryCount - 1);
+          int delay = initialDelay * (int) Math.pow(2, retryCount - 1);
+          return Math.min(delay, maxDelay);
         }
         else
         {

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -495,6 +496,16 @@ public class S3Client implements CloudStoreClient {
           new AbortPendingUploadCommand(_s3Executor, _executor);
       configure(cmd);
       return cmd.run(bucket, prefix, uploadId);
+  }
+
+  @Override
+  public ListenableFuture<Void> abortOldPendingUploads(
+      String bucket, Date date)
+  {
+      AbortOldPendingUploadsCommand cmd =
+          new AbortOldPendingUploadsCommand(_s3Executor, _executor);
+      configure(cmd);
+      return cmd.run(bucket, date);
   }
 
   /**

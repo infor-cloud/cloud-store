@@ -110,6 +110,7 @@ public class ListPendingUploadsCommand extends Command
         bucket,
         multipartUpload.getKey(),
         multipartUpload.getUploadId(),
+        multipartUpload.getInitiated(),
         _httpExecutor);
 
     return u;

@@ -11,6 +11,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import org.apache.commons.codec.binary.Base64;
 
 import java.io.InputStream;
+import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
@@ -21,6 +22,7 @@ class GCSUpload implements Upload {
     private String key;
     private String acl;
     private Map<String, String> meta;
+    private Date initiated;
     private ListeningExecutorService executor;
 
     public GCSUpload(Storage client,
@@ -28,12 +30,14 @@ class GCSUpload implements Upload {
                      String key,
                      String acl,
                      Map<String, String> meta,
+                     Date initiated,
                      ListeningExecutorService executor) {
         this.client = client;
         this.bucketName = bucketName;
         this.key = key;
         this.acl = acl;
         this.meta = meta;
+        this.initiated = initiated;
         this.executor = executor;
     }
 
@@ -69,6 +73,11 @@ class GCSUpload implements Upload {
     public String getId()
     {
         return null;
+    }
+
+    public Date getInitiationDate()
+    {
+        return initiated;
     }
 
     private class AbortCallable implements Callable<Void> {

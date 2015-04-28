@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -408,9 +409,23 @@ public interface CloudStoreClient {
      * @param uploadId The id of the pending upload. Such ids can be found via
      *                 {@link CloudStoreClient#listPendingUploads}.
      * @see CloudStoreClient#listPendingUploads(String, String)
+     * @see CloudStoreClient#abortOldPendingUploads(String, Date)
      */
     ListenableFuture<Void> abortPendingUpload(String bucket, String key,
                                               String uploadId);
+
+    /**
+     * Aborts {@code bucket}'s pending uploads that were initiated before {@code
+     * date}.
+     *
+     * @param bucket The name of the bucket
+     * @param date   The date indicating which multipart uploads should be
+     *               aborted. All pending uploads initiated before this date
+     *               will be aborted.
+     * @see CloudStoreClient#listPendingUploads(String, String)
+     * @see CloudStoreClient#abortPendingUpload(String, String, String)
+     */
+    ListenableFuture<Void> abortOldPendingUploads(String bucket, Date date);
 
     /**
      * Makes sure all pending tasks have been completed and shuts down all

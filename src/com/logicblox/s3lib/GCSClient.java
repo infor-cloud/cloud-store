@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -252,6 +253,13 @@ public class GCSClient implements CloudStoreClient {
                                                      String uploadId) {
         throw new UnsupportedOperationException("abortPendingUpload is not " +
             "supported.");
+    }
+
+    @Override
+    public ListenableFuture<Void> abortOldPendingUploads(
+        String bucket, Date date) {
+        throw new UnsupportedOperationException("abortOldPendingUploads is " +
+            "not supported.");
     }
 
     @Override

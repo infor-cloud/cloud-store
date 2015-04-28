@@ -10,6 +10,7 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutionException;
@@ -86,6 +87,8 @@ class Main
         ListPendingUploadsCommandOptions());
     _commander.addCommand("abort-pending-upload", new
         AbortPendingUploadCommandOptions());
+    _commander.addCommand("abort-old-pending-uploads", new
+        AbortOldPendingUploadsCommandOptions());
     _commander.addCommand("exists", new ExistsCommandOptions());
     _commander.addCommand("list-buckets", new ListBucketsCommandOptions());
     _commander.addCommand("keygen", new KeyGenCommandOptions());
@@ -463,19 +466,23 @@ class Main
         List<Upload> result = client.listPendingUploads(getBucket(),
             getObjectKey()).get();
 
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
         for (Upload obj : result)
         {
           // print the upload id for each pending upload
           System.out.println(client.getUri(obj.getBucket(), obj.getKey()) +
-              ", upload id: " + obj.getId());
+              ", upload id: " + obj.getId() +
+              ", initiation date: " + df.format(obj.getInitiationDate()));
         }
       }
       catch(ExecutionException exc)
       {
         rethrow(exc.getCause());
       }
-
-      client.shutdown();
+     finally
+      {
+        client.shutdown();
+      }
     }
   }
 
@@ -500,8 +507,49 @@ class Main
       {
         rethrow(exc.getCause());
       }
+      finally
+      {
+        client.shutdown();
+      }
+    }
+  }
 
-      client.shutdown();
+  @Parameters(commandDescription = "Abort pending uploads older than a " +
+      "specific date")
+  class AbortOldPendingUploadsCommandOptions extends S3CommandOptions
+  {
+    @Parameter(names = "--bucket", description = "The name of the bucket that" +
+        " the old pending uploads belong to",
+        required = true)
+    String bucket;
+
+    @Parameter(names = "--date", description = "Pending uploads older than " +
+        "this date are going to be aborted. Date has to be in ISO 8601 " +
+        "format \"yyyy-MM-dd'T'HH:mm:ssZ\". Example: " +
+        "2015-02-20T19:31:51+0200",
+        required = true)
+    String dateStr;
+
+    @Override
+    public void invoke() throws Exception
+    {
+      CloudStoreClient client = createCloudStoreClient();
+
+      try
+      {
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+        Date date = df.parse(dateStr);
+
+        client.abortOldPendingUploads(bucket, date).get();
+      }
+      catch(ExecutionException exc)
+      {
+        rethrow(exc.getCause());
+      }
+      finally
+      {
+        client.shutdown();
+      }
     }
   }
 
@@ -722,7 +770,7 @@ class Main
     System.err.println("   Commands: ");
     for(String cmd : _commander.getCommands().keySet())
     {
-      System.out.println("     " + padRight(22, ' ', cmd) + _commander.getCommandDescription(cmd));
+      System.out.println("     " + padRight(26, ' ', cmd) + _commander.getCommandDescription(cmd));
     }
   }
 

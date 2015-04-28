@@ -1,5 +1,6 @@
 package com.logicblox.s3lib;
 
+import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
@@ -58,7 +59,7 @@ class MultipartAmazonUploadFactory implements UploadFactory
       req.setCannedACL(getAcl(cannedAcl));
       InitiateMultipartUploadResult res = client.initiateMultipartUpload(req);
       return new MultipartAmazonUpload(client, bucketName, key,
-          res.getUploadId(), executor);
+          res.getUploadId(), new Date(), executor);
     }
 
     private CannedAccessControlList getAcl(String value)

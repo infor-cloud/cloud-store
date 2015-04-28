@@ -29,6 +29,7 @@ public class AbortPendingUploadCommand extends Command
    * @param uploadId The id of the pending upload. Such ids can be found via
    *                 {@link ListPendingUploadsCommand}.
    * @see ListPendingUploadsCommand
+   * @see AbortOldPendingUploadsCommand
    */
   public ListenableFuture<Void> run(final String bucket,
                                     final String key,
@@ -46,6 +47,7 @@ public class AbortPendingUploadCommand extends Command
                 bucket,
                 key,
                 uploadId,
+                null,
                 _httpExecutor);
             return u.abort();
           }

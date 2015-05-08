@@ -170,10 +170,6 @@ class Main
       {
         client.setEndpoint(endpoint);
       }
-      if(gcsMode)
-      {
-        client.setEndpoint(Utils.getGCSEndpoint(_commander.getParsedCommand()));
-      }
 
       return client;
     }
@@ -185,7 +181,7 @@ class Main
    */
   abstract class S3ObjectCommandOptions extends S3CommandOptions
   {
-    @Parameter(description = "S3URL", required = true)
+    @Parameter(description = "storage-service-url", required = true)
     List<String> urls;
 
     protected URI getURI() throws URISyntaxException

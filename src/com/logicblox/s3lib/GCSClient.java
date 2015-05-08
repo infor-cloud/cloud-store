@@ -30,6 +30,10 @@ import java.util.concurrent.ExecutionException;
  * .com/storage/</a>
  */
 public class GCSClient implements CloudStoreClient {
+    private static final String GCS_JSON_API_ENDPOINT = "https://www.googleapis.com";
+    private static final String GCS_XML_API_ENDPOINT = "https://storage.googleapis.com";
+
+
     private final Storage gcsClient;
     private final S3ClientDelegatee s3Client;
 
@@ -165,45 +169,53 @@ public class GCSClient implements CloudStoreClient {
 
     @Override
     public ListenableFuture<S3File> delete(String bucket, String object) {
+        setEndpoint(GCS_XML_API_ENDPOINT);
         return s3Client.delete(bucket, object);
     }
 
     @Override
     public ListenableFuture<S3File> delete(URI s3url) {
+        setEndpoint(GCS_XML_API_ENDPOINT);
         return s3Client.delete(s3url);
     }
 
     @Override
     public ListenableFuture<List<Bucket>> listBuckets() {
+        setEndpoint(GCS_XML_API_ENDPOINT);
         return s3Client.listBuckets();
     }
 
     @Override
     public ListenableFuture<ObjectMetadata> exists(String bucket, String
         object) {
+        setEndpoint(GCS_XML_API_ENDPOINT);
         return s3Client.exists(bucket, object);
     }
 
     @Override
     public ListenableFuture<ObjectMetadata> exists(URI s3url) {
+        setEndpoint(GCS_XML_API_ENDPOINT);
         return s3Client.exists(s3url);
     }
 
     @Override
     public ListenableFuture<S3File> download(DownloadOptions options) throws
         IOException {
+        setEndpoint(GCS_XML_API_ENDPOINT);
         return s3Client.download(options);
     }
 
     @Override
     public ListenableFuture<S3File> download(File file, String bucket, String
         object) throws IOException {
+        setEndpoint(GCS_XML_API_ENDPOINT);
         return s3Client.download(file, bucket, object);
     }
 
     @Override
     public ListenableFuture<S3File> download(File file, URI s3url) throws
         IOException {
+        setEndpoint(GCS_XML_API_ENDPOINT);
         return s3Client.download(file, s3url);
     }
 
@@ -212,6 +224,7 @@ public class GCSClient implements CloudStoreClient {
                                                                     options)
         throws
         IOException, ExecutionException, InterruptedException {
+        setEndpoint(GCS_XML_API_ENDPOINT);
         return s3Client.downloadDirectory(options);
     }
 
@@ -219,6 +232,7 @@ public class GCSClient implements CloudStoreClient {
     public ListenableFuture<List<S3File>> downloadDirectory(File directory, URI
         s3url, boolean recursive, boolean overwrite) throws IOException,
         ExecutionException, InterruptedException {
+        setEndpoint(GCS_XML_API_ENDPOINT);
         return s3Client.downloadDirectory(directory, s3url, recursive,
             overwrite);
     }
@@ -228,6 +242,7 @@ public class GCSClient implements CloudStoreClient {
                                                                String prefix,
                                                                boolean
                                                                    recursive) {
+        setEndpoint(GCS_XML_API_ENDPOINT);
         return s3Client.listObjects(bucket, prefix, recursive);
     }
 
@@ -236,6 +251,7 @@ public class GCSClient implements CloudStoreClient {
                                                              String prefix,
                                                              boolean
                                                                  recursive) {
+        setEndpoint(GCS_XML_API_ENDPOINT);
         return s3Client.listObjectsAndDirs(bucket, prefix, recursive);
     }
 
@@ -280,6 +296,7 @@ public class GCSClient implements CloudStoreClient {
                 new GCSUploadCommand(_s3Executor, _executor, file,
                     _chunkSize, encKey, _keyProvider, acl, progressListenerFactory);
             s3Client.configure(cmd);
+            setEndpoint(GCS_JSON_API_ENDPOINT);
             return cmd.run(options.getBucket(), options.getObjectKey());
         }
 
@@ -301,6 +318,7 @@ public class GCSClient implements CloudStoreClient {
             UploadDirectoryCommand cmd = new UploadDirectoryCommand(_s3Executor,
                 _executor, this);
             s3Client.configure(cmd);
+            setEndpoint(GCS_JSON_API_ENDPOINT);
             return cmd.run(directory, bucket, object, encKey, acl,
                 progressListenerFactory);
         }

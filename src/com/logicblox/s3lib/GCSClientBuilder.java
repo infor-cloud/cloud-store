@@ -15,7 +15,10 @@ import com.google.api.services.storage.StorageScopes;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,6 +36,7 @@ public class GCSClientBuilder {
     private HttpTransport httpTransport;
     private GoogleCredential credential;
     private HttpRequestInitializer requestInitializer;
+    private File credentialFile;
 
     public GCSClientBuilder setInternalGCSClient(Storage gcsClient) {
         this.gcsClient = gcsClient;
@@ -82,6 +86,11 @@ public class GCSClientBuilder {
         return this;
     }
 
+    public GCSClientBuilder setCredentialFile(File credentialFile) {
+        this.credentialFile = credentialFile;
+        return this;
+    }
+
     private Storage getDefaultInternalGCSClient() {
         Storage gcsClient0 = new Storage.Builder(httpTransport, jsonFactory,
             requestInitializer)
@@ -116,19 +125,45 @@ public class GCSClientBuilder {
             credential0 = GoogleCredential.getApplicationDefault();
         } catch (IOException e) {
             System.err.println(
-                "Error during GCS client secrets JSON file loading. Make " +
-                    "sure it exists, you are loading it with the right " +
-                    "path, and a client ID and client secret are defined " +
-                    "in it: " + e
-                    .getMessage());
+                "Error during loading GCS client secrets from JSON file " +
+                    System.getenv("GOOGLE_APPLICATION_CREDENTIALS") +
+                    " (GOOGLE_APPLICATION_CREDENTIALS). Make sure it exists, " +
+                    "you are loading it with the right path, and a client ID " +
+                    "and client secret are defined in it: " + e.getMessage());
             throw e;
         }
 
         assert credential0 != null;
+        credential0 = setScopes(credential0);
 
+        return credential0;
+    }
+
+    private static GoogleCredential getCredentialFromFile(File credentialFile)
+        throws
+        IOException {
+        GoogleCredential credential0 = null;
+        try {
+            InputStream credentialStream = new FileInputStream(credentialFile);
+            credential0 = GoogleCredential.fromStream(credentialStream);
+        } catch (IOException e) {
+            System.err.println(
+                "Error during loading GCS client secrets from JSON file " +
+                    credentialFile + ". Make sure it exists, " +
+                    "you are loading it with the right path, and a client ID " +
+                    "and client secret are defined in it: " + e.getMessage());
+            throw e;
+        }
+
+        assert credential0 != null;
+        credential0 = setScopes(credential0);
+
+        return credential0;
+    }
+
+    private static GoogleCredential setScopes(GoogleCredential credential0) {
         Collection scopes =
-            Collections.singletonList(StorageScopes
-                .DEVSTORAGE_FULL_CONTROL);
+            Collections.singletonList(StorageScopes.DEVSTORAGE_FULL_CONTROL);
         if (credential0.createScopedRequired()) {
             credential0 = credential0.createScoped(scopes);
         }
@@ -161,7 +196,10 @@ public class GCSClientBuilder {
             setHttpTransport(getDefaultHttpTransport());
         }
         if (credential == null) {
-            setCredential(getDefaultCredential());
+            if (credentialFile != null)
+                setCredential(getCredentialFromFile(credentialFile));
+            else
+                setCredential(getDefaultCredential());
         }
         if (requestInitializer == null) {
             setHttpRequestInitializer(getDefaultHttpRequestInitializer());

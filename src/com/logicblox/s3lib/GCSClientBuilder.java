@@ -1,6 +1,5 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpBackOffIOExceptionHandler;
@@ -25,7 +24,7 @@ import java.util.Collections;
 
 public class GCSClientBuilder {
     private Storage gcsClient;
-    private AmazonS3Client s3Client;
+    private AmazonS3ClientForGCS s3Client;
     private ListeningExecutorService apiExecutor;
     private ListeningScheduledExecutorService internalExecutor;
     private long chunkSize = Utils.getDefaultChunkSize();
@@ -43,7 +42,7 @@ public class GCSClientBuilder {
         return this;
     }
 
-    public GCSClientBuilder setInternalS3Client(AmazonS3Client s3Client) {
+    public GCSClientBuilder setInternalS3Client(AmazonS3ClientForGCS s3Client) {
         this.s3Client = s3Client;
         return this;
     }
@@ -208,7 +207,7 @@ public class GCSClientBuilder {
             setInternalGCSClient(getDefaultInternalGCSClient());
         }
         if (s3Client == null) {
-            setInternalS3Client(new AmazonS3Client());
+            setInternalS3Client(new AmazonS3ClientForGCS());
         }
         if (apiExecutor == null) {
             setApiExecutor(Utils.getHttpExecutor(10));

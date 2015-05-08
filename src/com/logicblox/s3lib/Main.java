@@ -142,7 +142,7 @@ class Main
       if (gcsMode) {
         AWSCredentialsProvider gcsXMLProvider = Utils
             .getGCSXMLEnvironmentVariableCredentialsProvider();
-        AmazonS3Client s3Client = new AmazonS3Client(gcsXMLProvider);
+        AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(gcsXMLProvider);
 
         client = new GCSClientBuilder()
             .setInternalS3Client(s3Client)

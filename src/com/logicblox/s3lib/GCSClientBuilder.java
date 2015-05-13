@@ -1,5 +1,6 @@
 package com.logicblox.s3lib;
 
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpBackOffIOExceptionHandler;
@@ -14,17 +15,22 @@ import com.google.api.services.storage.StorageScopes;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.util.Collection;
 import java.util.Collections;
 
+/**
+ * {@code GCSClientBuilder} provides methods for building {@code GCSClient}
+ * objects. None of these methods is mandatory to be called. In this case,
+ * default values will be picked.
+ * <p/>
+ * As is common for builders, this class is not thread-safe.
+ */
 public class GCSClientBuilder {
     private Storage gcsClient;
-    private AmazonS3ClientForGCS s3Client;
+    private AmazonS3Client s3Client;
     private ListeningExecutorService apiExecutor;
     private ListeningScheduledExecutorService internalExecutor;
     private long chunkSize = Utils.getDefaultChunkSize();
@@ -33,16 +39,33 @@ public class GCSClientBuilder {
     private final String APPLICATION_NAME = "LogicBlox-cloud-store/1.0";
     private final JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
     private HttpTransport httpTransport;
-    private GoogleCredential credential;
     private HttpRequestInitializer requestInitializer;
-    private File credentialFile;
+    private GoogleCredential credential;
+    private InputStream credentialStream;
+
+    static final String CREDENTIAL_ENV_VAR = "GOOGLE_APPLICATION_CREDENTIALS";
 
     public GCSClientBuilder setInternalGCSClient(Storage gcsClient) {
         this.gcsClient = gcsClient;
         return this;
     }
 
-    public GCSClientBuilder setInternalS3Client(AmazonS3ClientForGCS s3Client) {
+    /**
+     * At least since AWS Java SDK 1.9.8, GET requests to non-standard endpoints
+     * (which, of course, include GCS storage.googleapis.com) are forced to use
+     * Signature Version 4 signing process which is not supported by the GCS XML
+     * API (only Version 2 is supported). This means all operations that use GET
+     * requests, e.g. download, are going to fail with the default
+     * AmazonS3Client. As a solution, we provide the AmazonS3ClientForGCS
+     * subclass which provides the correct signer object.
+     * <p/>
+     * If you don't set any internal S3 client at all, then it will be set to an
+     * AmazonS3ClientForGCS object by default.
+     *
+     * @param s3Client Internal S3 client used for talking to GCS interoperable
+     *                 XML API
+     */
+    public GCSClientBuilder setInternalS3Client(AmazonS3Client s3Client) {
         this.s3Client = s3Client;
         return this;
     }
@@ -85,8 +108,8 @@ public class GCSClientBuilder {
         return this;
     }
 
-    public GCSClientBuilder setCredentialFile(File credentialFile) {
-        this.credentialFile = credentialFile;
+    public GCSClientBuilder setCredentialStream(InputStream credentialFile) {
+        this.credentialStream = credentialFile;
         return this;
     }
 
@@ -123,13 +146,10 @@ public class GCSClientBuilder {
         try {
             credential0 = GoogleCredential.getApplicationDefault();
         } catch (IOException e) {
-            System.err.println(
-                "Error during loading GCS client secrets from JSON file " +
-                    System.getenv("GOOGLE_APPLICATION_CREDENTIALS") +
-                    " (GOOGLE_APPLICATION_CREDENTIALS). Make sure it exists, " +
-                    "you are loading it with the right path, and a client ID " +
-                    "and client secret are defined in it: " + e.getMessage());
-            throw e;
+            throw new IOException(String.format("Error reading credential " +
+                    "file from environment variable %s, value '%s': %s",
+                CREDENTIAL_ENV_VAR, System.getenv(CREDENTIAL_ENV_VAR),
+                e.getMessage()));
         }
 
         assert credential0 != null;
@@ -138,20 +158,16 @@ public class GCSClientBuilder {
         return credential0;
     }
 
-    private static GoogleCredential getCredentialFromFile(File credentialFile)
+    private static GoogleCredential getCredentialFromStream(InputStream
+                                                                credentialStream)
         throws
         IOException {
         GoogleCredential credential0 = null;
         try {
-            InputStream credentialStream = new FileInputStream(credentialFile);
             credential0 = GoogleCredential.fromStream(credentialStream);
         } catch (IOException e) {
-            System.err.println(
-                "Error during loading GCS client secrets from JSON file " +
-                    credentialFile + ". Make sure it exists, " +
-                    "you are loading it with the right path, and a client ID " +
-                    "and client secret are defined in it: " + e.getMessage());
-            throw e;
+            throw new IOException(String.format("Error reading credential " +
+                "stream: %s", e.getMessage()));
         }
 
         assert credential0 != null;
@@ -195,8 +211,8 @@ public class GCSClientBuilder {
             setHttpTransport(getDefaultHttpTransport());
         }
         if (credential == null) {
-            if (credentialFile != null)
-                setCredential(getCredentialFromFile(credentialFile));
+            if (credentialStream != null)
+                setCredential(getCredentialFromStream(credentialStream));
             else
                 setCredential(getDefaultCredential());
         }

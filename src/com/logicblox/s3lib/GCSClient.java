@@ -224,6 +224,12 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
+    public ListenableFuture<S3File> copy(CopyOptions options) throws IOException {
+        throw new UnsupportedOperationException("Copy operation is not " +
+            "supported yet.");
+    }
+
+    @Override
     public ListenableFuture<List<S3ObjectSummary>> listObjects(String bucket,
                                                                String prefix,
                                                                boolean

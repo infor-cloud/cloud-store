@@ -458,6 +458,21 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
+  public ListenableFuture<S3File> copy(CopyOptions options)
+  throws IOException
+  {
+    String cannedAcl = options.getCannedAcl().or("bucket-owner-full-control");
+    OverallProgressListenerFactory progressListenerFactory = options
+        .getOverallProgressListenerFactory().orNull();
+
+    CopyCommand cmd = new CopyCommand(_s3Executor, _executor, cannedAcl,
+        progressListenerFactory);
+    configure(cmd);
+    return cmd.run(options.getSourceBucketName(), options.getSourceKey(),
+        options.getDestinationBucketName(), options.getDestinationKey());
+  }
+
+  @Override
   public ListenableFuture<List<S3ObjectSummary>> listObjects(
       String bucket, String prefix, boolean recursive)
   {

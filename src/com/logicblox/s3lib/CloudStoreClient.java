@@ -351,6 +351,20 @@ public interface CloudStoreClient {
         throws IOException, ExecutionException, InterruptedException;
 
     /**
+     * Copies an object according to {@code options}. For more details
+     * check {@link com.logicblox.s3lib.CopyOptions}.
+     * <p/>
+     * The source bucket must already exist and the caller must have read
+     * permission to it. Respectively, the destination bucket must already
+     * exist and the caller must have write permission to it.
+     *
+     * @param options Copy options
+     * @see CopyOptions
+     */
+    ListenableFuture<S3File> copy(CopyOptions options)
+    throws IOException;
+
+    /**
      * Returns a list of summary information about the objects whose keys start
      * with {@code prefix} and belong in the specified {@code bucket}.
      * <p/>

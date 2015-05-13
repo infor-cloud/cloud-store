@@ -17,10 +17,10 @@ import java.util.concurrent.ExecutionException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
 
+import com.amazonaws.services.s3.model.Bucket;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -81,6 +81,7 @@ class Main
     _commander.setProgramName("cloud-store");
     _commander.addCommand("upload", new UploadCommandOptions());
     _commander.addCommand("download", new DownloadCommandOptions());
+    _commander.addCommand("copy", new CopyCommandOptions());
     _commander.addCommand("ls", new ListCommandOptions());
     _commander.addCommand("exists", new ExistsCommandOptions());
     _commander.addCommand("list-buckets", new ListBucketsCommandOptions());
@@ -212,6 +213,63 @@ class Main
     }
   }
 
+  /**
+   * Abstraction for commands that deal with two object/prefix URLs
+   */
+  abstract class TwoObjectsCommandOptions extends S3CommandOptions
+  {
+    // Upgrade JCommander to support following lines
+    // @Parameter(description = "source-url", required = true)
+    // String sourceURL;
+    //
+    // @Parameter(description = "destination-url", required = true)
+    // String destinationURL;
+
+    @Parameter(description = "source-url destination-url", required = true)
+    List<String> urls;
+
+    protected URI getSourceURI() throws URISyntaxException
+    {
+      if(urls.size() != 2)
+        throw new UsageException("Two object URLs are required");
+
+      return Utils.getURI(urls.get(0));
+    }
+
+    protected String getSourceBucket() throws URISyntaxException
+    {
+      if(urls.size() != 2)
+        throw new UsageException("Two object URLs are required");
+
+      return Utils.getBucket(getSourceURI());
+    }
+
+    protected String getSourceObjectKey() throws URISyntaxException
+    {
+      return Utils.getObjectKey(getSourceURI());
+    }
+
+    protected URI getDestinationURI() throws URISyntaxException
+    {
+      return Utils.getURI(urls.get(1));
+    }
+
+    protected String getDestinationBucket() throws URISyntaxException
+    {
+      return Utils.getBucket(getDestinationURI());
+    }
+
+    protected String getDestinationObjectKey() throws URISyntaxException
+    {
+      return Utils.getObjectKey(getDestinationURI());
+    }
+
+    protected boolean backendIsGCS() throws URISyntaxException
+    {
+      return Utils.backendIsGCS(endpoint, getSourceURI());
+    }
+  }
+
   @Parameters(commandDescription = "List S3 buckets")
   class ListBucketsCommandOptions extends S3CommandOptions
   {
@@ -289,6 +347,107 @@ class Main
 
       if (!exists)
         System.exit(1);
+    }
+
+  }
+
+  @Parameters(commandDescription = "Copy object")
+  class CopyCommandOptions extends TwoObjectsCommandOptions
+  {
+    @Parameter(names = "--progress", description = "Enable progress indicator")
+    boolean progress = false;
+
+    @Parameter(names = "--canned-acl", description = "The canned ACL to use." +
+        "For Amazon S3, choose one of: "+
+        "private, public-read, public-read-write, authenticated-read, bucket-owner-read, "+
+        "bucket-owner-full-control (default: bucket-owner-full-control)\n")
+    String cannedAcl = "bucket-owner-full-control";
+
+    // @Parameter(names = {"-r", "--recursive"}, description = "Copy
+    // recursively")
+    //boolean recursive = false;
+
+    // TODO(geokollias): Refactor canned ACL validation & selection
+    List<String> gcsPredefACLs = Arrays.asList("projectPrivate", "private", "publicRead",
+        "publicReadWrite", "authenticatedRead", "bucketOwnerRead", "bucketOwnerFullControl");
+
+    private String getDefaultACL()
+    {
+      try
+      {
+        return Utils.getDefaultACL(backendIsGCS());
+      }
+      catch (URISyntaxException e)
+      {
+        return "bucket-owner-full-control";
+      }
+    }
+
+    private boolean isValidS3Acl(String value)
+    {
+      for (CannedAccessControlList acl : CannedAccessControlList.values())
+      {
+        if (acl.toString().equals(value))
+          return true;
+      }
+      return false;
+    }
+
+    private boolean isValidGCSAcl(String value)
+    {
+      return gcsPredefACLs.contains(value);
+    }
+
+    public void invoke() throws Exception
+    {
+      if (cannedAcl == "bucket-owner-full-control")
+        cannedAcl = getDefaultACL();
+
+      if((!backendIsGCS() && !isValidS3Acl(cannedAcl)) ||
+          (backendIsGCS() && !isValidGCSAcl(cannedAcl)))
+      {
+        throw new UsageException("Unknown canned ACL '" + cannedAcl + "'");
+      }
+
+      CloudStoreClient client = createCloudStoreClient();
+
+      CopyOptionsBuilder cob = new CopyOptionsBuilder();
+      cob.setSourceBucketName(getSourceBucket())
+          .setSourceKey(getSourceObjectKey())
+          .setDestinationBucketName(getDestinationBucket())
+          .setDestinationKey(getDestinationObjectKey())
+          .setCannedAcl(cannedAcl)
+          .setRecursive(false);
+      if (progress) {
+        OverallProgressListenerFactory cplf = new
+            ConsoleProgressListenerFactory();
+        cob.setOverallProgressListenerFactory(cplf);
+      }
+      CopyOptions options = cob.createCopyOptions();
+
+      try
+      {
+        // TODO(geokollias): Add support for prefix/directory copy
+        if(getSourceObjectKey().endsWith("/"))
+        {
+          throw new UsageException("Copy of prefixes is not supported yet: " +
+              getSourceURI());
+        }
+        if(client.exists(getSourceBucket(), getSourceObjectKey()).get() == null)
+        {
+          throw new UsageException("Object not found at " + getSourceURI());
+        }
+
+        client.copy(options).get();
+      }
+      catch(ExecutionException exc)
+      {
+        rethrow(exc.getCause());
+      }
+      finally
+      {
+        client.shutdown();
+      }
     }
   }
 

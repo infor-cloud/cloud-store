@@ -15,6 +15,8 @@ import com.google.api.services.storage.StorageScopes;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
@@ -41,7 +43,6 @@ public class GCSClientBuilder {
     private HttpTransport httpTransport;
     private HttpRequestInitializer requestInitializer;
     private GoogleCredential credential;
-    private InputStream credentialStream;
 
     static final String CREDENTIAL_ENV_VAR = "GOOGLE_APPLICATION_CREDENTIALS";
 
@@ -102,14 +103,30 @@ public class GCSClientBuilder {
         return this;
     }
 
+    public GCSClientBuilder setCredentialFromFile(File credentialFile)
+        throws IOException {
+        InputStream credentialStream = null;
+        try {
+            credentialStream = new FileInputStream(credentialFile);
+            return setCredentialFromStream(credentialStream);
+        } catch (IOException e) {
+            throw e;
+        } finally {
+            if (credentialFile != null) {
+                credentialStream.close();
+            }
+        }
+    }
+
+    public GCSClientBuilder setCredentialFromStream(InputStream
+                                                        credentialStream)
+        throws IOException {
+        return setCredential(getCredentialFromStream(credentialStream));
+    }
+
     public GCSClientBuilder setHttpRequestInitializer(HttpRequestInitializer
                                                           requestInitializer) {
         this.requestInitializer = requestInitializer;
-        return this;
-    }
-
-    public GCSClientBuilder setCredentialStream(InputStream credentialFile) {
-        this.credentialStream = credentialFile;
         return this;
     }
 
@@ -160,8 +177,7 @@ public class GCSClientBuilder {
 
     private static GoogleCredential getCredentialFromStream(InputStream
                                                                 credentialStream)
-        throws
-        IOException {
+        throws IOException {
         GoogleCredential credential0 = null;
         try {
             credential0 = GoogleCredential.fromStream(credentialStream);
@@ -211,10 +227,7 @@ public class GCSClientBuilder {
             setHttpTransport(getDefaultHttpTransport());
         }
         if (credential == null) {
-            if (credentialStream != null)
-                setCredential(getCredentialFromStream(credentialStream));
-            else
-                setCredential(getDefaultCredential());
+            setCredential(getDefaultCredential());
         }
         if (requestInitializer == null) {
             setHttpRequestInitializer(getDefaultHttpRequestInitializer());

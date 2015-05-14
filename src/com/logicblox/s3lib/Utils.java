@@ -141,21 +141,6 @@ public class Utils
       return "bucket-owner-full-control";
   }
 
-  public static String getGCSEndpoint(String command) throws URISyntaxException
-  {
-    if (command == "upload")
-    {
-      // We use GCS-native JSON API for uploads
-      // We use HTTPS since we authenticate with OAuth
-      return "https://www.googleapis.com";
-    }
-    else
-    {
-      // Currently, we use S3-compatible XML API for non-upload operations
-      return "https://storage.googleapis.com";
-    }
-  }
-
   public static final String GCS_XML_ACCESS_KEY_ENV_VAR = "GCS_XML_ACCESS_KEY";
 
   public static final String GCS_XML_SECRET_KEY_ENV_VAR = "GCS_XML_SECRET_KEY";

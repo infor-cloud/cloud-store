@@ -7,7 +7,6 @@ import java.net.URISyntaxException;
 import java.security.GeneralSecurityException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -19,7 +18,6 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
 
 import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.beust.jcommander.JCommander;
@@ -127,9 +125,9 @@ class Main
     @Parameter(names = {"--chunk-size"}, description = "The size of each chunk read from the file")
     long chunkSize = Utils.getDefaultChunkSize();
 
-    protected boolean backendIsGCS() throws URISyntaxException
+    protected Utils.StorageService detectStorageService() throws URISyntaxException
     {
-      return Utils.backendIsGCS(endpoint, null);
+      return Utils.detectStorageService(endpoint, null);
     }
 
     protected CloudStoreClient createCloudStoreClient()
@@ -137,10 +135,10 @@ class Main
       ListeningExecutorService uploadExecutor = Utils.getHttpExecutor
           (maxConcurrentConnections);
 
-      boolean gcsMode = backendIsGCS();
+      Utils.StorageService service = detectStorageService();
 
       CloudStoreClient client;
-      if (gcsMode) {
+      if (service == Utils.StorageService.GCS) {
         AWSCredentialsProvider gcsXMLProvider = Utils
             .getGCSXMLEnvironmentVariableCredentialsProvider();
         AmazonS3Client s3Client = new AmazonS3Client(gcsXMLProvider);
@@ -170,10 +168,6 @@ class Main
       if(endpoint != null)
       {
         client.setEndpoint(endpoint);
-      }
-      if(gcsMode)
-      {
-        client.setEndpoint(Utils.getGCSEndpoint(_commander.getParsedCommand()));
       }
 
       return client;
@@ -207,9 +201,9 @@ class Main
       return Utils.getObjectKey(getURI());
     }
 
-    protected boolean backendIsGCS() throws URISyntaxException
+    protected Utils.StorageService detectStorageService() throws URISyntaxException
     {
-      return Utils.backendIsGCS(endpoint, getURI());
+      return Utils.detectStorageService(endpoint, getURI());
     }
   }
 
@@ -264,9 +258,9 @@ class Main
       return Utils.getObjectKey(getDestinationURI());
     }
 
-    protected boolean backendIsGCS() throws URISyntaxException
+    protected Utils.StorageService detectStorageService() throws URISyntaxException
     {
-      return Utils.backendIsGCS(endpoint, getSourceURI());
+      return Utils.detectStorageService(endpoint, getSourceURI());
     }
   }
 
@@ -325,15 +319,13 @@ class Main
       String key = getObjectKey();
       ListenableFuture<ObjectMetadata> result = client.exists(bucket, key);
 
-      boolean gcsMode = backendIsGCS();
-      String scheme = gcsMode ? "gs://" : "s3://";
-
       boolean exists = false;
       ObjectMetadata metadata = result.get();
       if(metadata == null)
       {
         if(_verbose)
-          System.err.println("Object " + scheme + bucket + "/" + key + " does not exist.");
+          System.err.println("Object " + client.getUri(bucket, key) + " does " +
+              "not exist.");
       }
       else
       {
@@ -357,54 +349,22 @@ class Main
     @Parameter(names = "--progress", description = "Enable progress indicator")
     boolean progress = false;
 
-    @Parameter(names = "--canned-acl", description = "The canned ACL to use." +
-        "For Amazon S3, choose one of: "+
-        "private, public-read, public-read-write, authenticated-read, bucket-owner-read, "+
-        "bucket-owner-full-control (default: bucket-owner-full-control)\n")
-    String cannedAcl = "bucket-owner-full-control";
+    @Parameter(names = "--canned-acl", description = "The canned ACL to use. "
+        + S3Client.cannedACLsDescConst)
+    String cannedAcl;
 
     // @Parameter(names = {"-r", "--recursive"}, description = "Copy
     // recursively")
     //boolean recursive = false;
 
-    // TODO(geokollias): Refactor canned ACL validation & selection
-    List<String> gcsPredefACLs = Arrays.asList("projectPrivate", "private", "publicRead",
-        "publicReadWrite", "authenticatedRead", "bucketOwnerRead", "bucketOwnerFullControl");
-
-    private String getDefaultACL()
-    {
-      try
-      {
-        return Utils.getDefaultACL(backendIsGCS());
-      }
-      catch (URISyntaxException e)
-      {
-        return "bucket-owner-full-control";
-      }
-    }
-
-    private boolean isValidS3Acl(String value)
-    {
-      for (CannedAccessControlList acl : CannedAccessControlList.values())
-      {
-        if (acl.toString().equals(value))
-          return true;
-      }
-      return false;
-    }
-
-    private boolean isValidGCSAcl(String value)
-    {
-      return gcsPredefACLs.contains(value);
-    }
-
     public void invoke() throws Exception
     {
-      if (cannedAcl == "bucket-owner-full-control")
-        cannedAcl = getDefaultACL();
+      if (cannedAcl == null)
+      {
+        cannedAcl = Utils.getDefaultCannedACLFor(detectStorageService());
+      }
 
-      if((!backendIsGCS() && !isValidS3Acl(cannedAcl)) ||
-          (backendIsGCS() && !isValidGCSAcl(cannedAcl)))
+      if(!Utils.isValidCannedACLFor(detectStorageService(), cannedAcl))
       {
         throw new UsageException("Unknown canned ACL '" + cannedAcl + "'");
       }
@@ -463,54 +423,20 @@ class Main
     @Parameter(names = "--progress", description = "Enable progress indicator")
     boolean progress = false;
 
-    @Parameter(names = "--canned-acl", description = "The canned ACL to use." +
-            "For Amazon S3, choose one of: "+
-            "private, public-read, public-read-write, authenticated-read, bucket-owner-read, "+
-            "bucket-owner-full-control (default: bucket-owner-full-control)\n" +
-            "For Google Cloud Storage, choose one of: " +
-            "projectPrivate, private, publicRead, publicReadWrite, authenticatedRead, "+
-            "bucketOwnerRead, bucketOwnerFullControl (default: projectPrivate")
-    String cannedAcl = "bucket-owner-full-control";
-
-    List<String> gcsPredefACLs = Arrays.asList("projectPrivate", "private", "publicRead",
-            "publicReadWrite", "authenticatedRead", "bucketOwnerRead", "bucketOwnerFullControl");
-
-    private String getDefaultACL()
-    {
-      try
-      {
-        return Utils.getDefaultACL(backendIsGCS());
-      }
-      catch (URISyntaxException e)
-      {
-        return "bucket-owner-full-control";
-      }
-    }
-
-    private boolean isValidS3Acl(String value)
-    {
-      for (CannedAccessControlList acl : CannedAccessControlList.values())
-      {
-        if (acl.toString().equals(value))
-          return true;
-      }
-      return false;
-    }
-
-    private boolean isValidGCSAcl(String value)
-    {
-      return gcsPredefACLs.contains(value);
-    }
+    @Parameter(names = "--canned-acl", description = "The canned ACL to use. "
+        + S3Client.cannedACLsDescConst + " " + GCSClient.cannedACLsDescConst)
+    String cannedAcl;
 
     public void invoke() throws Exception
     {
-      if (cannedAcl == "bucket-owner-full-control")
-        cannedAcl = getDefaultACL();
-
-      if((!backendIsGCS() && !isValidS3Acl(cannedAcl)) ||
-          (backendIsGCS() && !isValidGCSAcl(cannedAcl)))
+      if (cannedAcl == null)
       {
-        throw new UsageException("Unknown canned ACL '"+cannedAcl+"'");
+        cannedAcl = Utils.getDefaultCannedACLFor(detectStorageService());
+      }
+
+      if(!Utils.isValidCannedACLFor(detectStorageService(), cannedAcl))
+      {
+        throw new UsageException("Unknown canned ACL '" + cannedAcl + "'");
       }
 
       if (getObjectKey().endsWith("/")) {
@@ -560,8 +486,6 @@ class Main
     public void invoke() throws Exception
     {
       CloudStoreClient client = createCloudStoreClient();
-      boolean gcsMode = backendIsGCS();
-      String scheme = gcsMode ? "gs://" : "s3://";
 
       try
       {
@@ -577,7 +501,7 @@ class Main
           for (S3File obj : result)
           {
             // print the full s3 url for each object and (first-level) directory
-            System.out.println(scheme + obj.getBucketName() + "/" + obj.getKey());
+            System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
           }
         }
         else
@@ -592,7 +516,7 @@ class Main
           for (S3ObjectSummary obj : result)
           {
             // print the full s3 url for each object
-            System.out.println(scheme + obj.getBucketName() + "/" + obj.getKey());
+            System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
           }
         }
       }

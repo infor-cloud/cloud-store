@@ -40,6 +40,11 @@ public class Command
     this.chunkSize = chunkSize;
   }
 
+  public void setFileLength(long fileLength)
+  {
+    this.fileLength = fileLength;
+  }
+
   public void setRetryCount(int retryCount)
   {
     _retryCount = retryCount;

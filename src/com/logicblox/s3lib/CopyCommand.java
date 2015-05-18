@@ -136,11 +136,11 @@ public class CopyCommand extends Command
               ", should be " + Version.CURRENT);
 
       setChunkSize(Long.valueOf(meta.get("s3tool-chunk-size")));
-      fileLength = Long.valueOf(meta.get("s3tool-file-length"));
+      setFileLength(Long.valueOf(meta.get("s3tool-file-length")));
     }
     else
     {
-      fileLength = copy.getObjectSize();
+      setFileLength(copy.getObjectSize());
       if (chunkSize == 0)
       {
         setChunkSize(Math.min(fileLength, Utils.getDefaultChunkSize()));
@@ -209,7 +209,7 @@ public class CopyCommand extends Command
         throw new RuntimeException(e);
       }
 
-        long postCryptSize = Math.min(fileLength - position, chunkSize);
+      long postCryptSize = Math.min(fileLength - position, chunkSize);
       start = partNumber * blockSize * (chunkSize/blockSize + 2);
       partSize = blockSize * (postCryptSize/blockSize + 2);
     }

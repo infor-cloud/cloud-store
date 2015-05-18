@@ -8,7 +8,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import java.net.URL;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
@@ -106,44 +105,81 @@ public class Utils
     return Pattern.compile(pattern).matcher(uri);
   }
 
-  public static boolean backendIsGCS(String endpoint, URI uri)
+  /**
+   * Enum values for all supported storage services.
+   * <p/>
+   * {@code UNKNOWN} value represents storage services that run on an unknown
+   * endpoint but provide an API compatible with one of the supported services
+   * (e.g. S3 or GCS-compatible API). It's mostly useful for testing purposes.
+   */
+  public enum StorageService
+  {
+    S3, GCS
+  }
+
+  public static StorageService detectStorageService(String endpoint, URI uri)
+      throws URISyntaxException
   {
     // We consider endpoint (if exists) stronger evidence than URI
     if (endpoint != null)
     {
       URI endpointuri;
-      try
-      {
-        if (!endpoint.startsWith("https://"))
-          endpointuri = new URI("https://" + endpoint);
-        else
-          endpointuri = new URI(endpoint);
-      }
-      catch (URISyntaxException e)
-      {
-        return false;
-      }
+      if (!endpoint.startsWith("https://") && !endpoint.startsWith("http://"))
+        endpointuri = new URI("https://" + endpoint);
+      else
+        endpointuri = new URI(endpoint);
 
-      return endpointuri.getHost().endsWith("googleapis.com");
+      if (endpointuri.getHost().endsWith("amazonaws.com"))
+        return StorageService.S3;
+      else if (endpointuri.getHost().endsWith("googleapis.com"))
+        return StorageService.GCS;
     }
 
     if (uri != null)
-      return "gs".equals(uri.getScheme());
+    {
+      switch (uri.getScheme())
+      {
+        case "s3":
+          return StorageService.S3;
+        case "gs":
+          return StorageService.GCS;
+      }
+    }
 
-    return false;
+    throw new UsageException("Cannot detect storage service: endpoint " +
+        endpoint +  ", URI " + uri);
   }
 
-  public static String getDefaultACL(boolean gcsMode)
+  public static String getDefaultCannedACLFor(StorageService service)
   {
-    if (gcsMode)
-      return "projectPrivate";
-    else
-      return "bucket-owner-full-control";
+    switch (service)
+    {
+      case S3:
+        return S3Client.defaultCannedACL;
+      case GCS:
+        return GCSClient.defaultCannedACL;
+      default:
+        throw new UsageException("Unknown storage service " + service);
+    }
+  }
+
+  public static boolean isValidCannedACLFor(StorageService service, String
+      cannedACL)
+  {
+    switch (service)
+    {
+      case S3:
+        return S3Client.isValidCannedACL(cannedACL);
+      case GCS:
+        return GCSClient.isValidCannedACL(cannedACL);
+      default:
+        throw new UsageException("Unknown storage service " + service);
+    }
   }
 
   public static String getGCSEndpoint(String command) throws URISyntaxException
   {
-    if (command == "upload")
+    if (command.equals("upload"))
     {
       // We use GCS-native JSON API for uploads
       // We use HTTPS since we authenticate with OAuth

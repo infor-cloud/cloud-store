@@ -49,21 +49,21 @@ public class UploadDirectoryCommand extends Command
         return isSymlink(file);
       }
 
-      private boolean isSymlink(File file)
+      public boolean isSymlink(File file)
       {
         try
         {
-          boolean res = ! FileUtils.isSymlink(file);
+          boolean res = ! java.nio.file.Files.isSymbolicLink(file.toPath());
           return res;
         }
-        catch (FileNotFoundException e)
+        catch (Exception e)
         {
           return false;
         }
-        catch (IOException e)
+        /*catch (IOException e)
         {
           return false;
-        }
+        }*/
       }
 
       @Override

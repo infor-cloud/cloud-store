@@ -16,15 +16,11 @@ import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.services.kms.model.AliasListEntry;
-import com.amazonaws.services.kms.model.CreateKeyResult;
-import com.amazonaws.services.kms.model.KeyListEntry;
-import com.amazonaws.services.kms.model.ListAliasesResult;
-import com.amazonaws.services.kms.model.ListKeysResult;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
+
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -38,6 +34,7 @@ import org.apache.log4j.PatternLayout;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+
 import com.amazonaws.AmazonServiceException;
 
 class Main
@@ -67,15 +64,15 @@ class Main
     ConsoleAppender console = new ConsoleAppender();
     String PATTERN = "%d [%p|%c|%C{1}] %m%n";
     console.setLayout(new PatternLayout(PATTERN));
-    /*console.setThreshold(Level.INFO);*******************/
+    console.setThreshold(Level.INFO);
     console.activateOptions();
 
     Logger s3libLogger = Logger.getLogger("com.logicblox.s3lib");
-    /*s3libLogger.addAppender(console);*************/
+    s3libLogger.addAppender(console);
     Logger awsLogger = Logger.getLogger("com.amazonaws");
-    /*awsLogger.addAppender(console);***********/
+    awsLogger.addAppender(console);
     Logger apacheLogger = Logger.getLogger("org.apache.http");
-    /*apacheLogger.addAppender(console);************/
+    apacheLogger.addAppender(console);
   }
 
   public Main()
@@ -88,8 +85,6 @@ class Main
     _commander.addCommand("exists", new ExistsCommandOptions());
     _commander.addCommand("list-buckets", new ListBucketsCommandOptions());
     _commander.addCommand("keygen", new KeyGenCommandOptions());
-    _commander.addCommand("kms-keygen", new KmsKeyGenCommandOptions());
-    _commander.addCommand("list-kms-keys", new KmsCommandOptions());
     _commander.addCommand("version", new VersionCommand());
     _commander.addCommand("help", new HelpCommand());
   }
@@ -478,130 +473,6 @@ class Main
     }
   }
 
- /***/
-  @Parameters(commandDescription = "List the existing AWS KMS keys")
-  class KmsCommandOptions extends CommandOptions
-  {
-    @Parameter(names = "--all", description = "All Kms Keys attributes" )
-    boolean allProperties = false;
-	
-    @Parameter(names = "--alias", description = "Add the aliases to the output" )
-    boolean alias = false; 
-    
-    @Parameter(names = "--arn", description = "Add the keys Arn to the output" )
-    boolean arn = false; 
-    
-    @Parameter(names = "--description", description = "Add the keys description to the output" )
-    boolean description = false; 
-    
-    @Override
-    public void invoke() throws Exception
-    {
-    	ListKeysResult allKeys = KmsUtils.getAllKeys();
-    	List<KeyListEntry> keys = allKeys.getKeys();
-    	if (!(allProperties || alias || arn || description))
-    	{
-    		int i;
-			for (i=0; i < keys.size(); i++)
-			{
-				KeyListEntry keyEntry = keys.get(i);
-				String keyId = keyEntry.getKeyId();
-				System.out.println("KeyId : " + keyId);
-			}
-    	}
-    	else
-		{
-    		if (allProperties)
-        	{
-    	    	int i;
-    			for (i=0; i < keys.size(); i++)
-    			{
-    				KeyListEntry keyEntry = keys.get(i);
-    				String keyId = keyEntry.getKeyId();
-    				String keyArn = keyEntry.getKeyArn();
-    				String aliasName = KmsUtils.retAliasName(keyId);
-    				String description = KmsUtils.getKeyDescription(keyId);
-    				System.out.println("KeyId : " + keyId + "; KeyArn : " + keyArn + "; AliasName : " + aliasName + "; Description : " + description);
-    			}
-        	}
-        	if (alias)
-    		{
-    			ListAliasesResult allAliases = KmsUtils.getAllAliases();
-    			List<AliasListEntry> aliases = allAliases.getAliases();
-    			int i;
-    			for (i=0; i < aliases.size(); i++)
-    				{
-    				AliasListEntry aliasEntry = aliases.get(i);
-    				String targetKeyId = aliasEntry.getTargetKeyId();
-    				if (targetKeyId != null)
-    				  {
-    					System.out.println("KeyId : " + targetKeyId + "; AliasName : " + aliasEntry.getAliasName());
-    				  }
-    				}
-    		}
-    		if (arn)
-    		{
-    			int i;
-    			for (i=0; i < keys.size(); i++)
-    			{
-    				KeyListEntry keyEntry = keys.get(i);
-    				System.out.println("KeyId : " + keyEntry.getKeyId() + "; KeyArn : " + keyEntry.getKeyArn());
-    			}
-    		}
-    		if (description)
-    		{
-    			int i;
-    			for (i=0; i < keys.size(); i++)
-    			{
-    				KeyListEntry keyEntry = keys.get(i);
-    				String keyId = keyEntry.getKeyId();
-    				String description = KmsUtils.getKeyDescription(keyId);
-    				System.out.println("KeyId : " + keyId + "; Description : " + description);
-    			}
-    		}
-		}			
-    }
-  }
-  
-  @Parameters(commandDescription = "Generate AWS KMS keys")
-  class KmsKeyGenCommandOptions extends CommandOptions
-  {
-	  @Parameter(names = {"-d","--description"}, description = "Add a key description")
-	  String description;
-		
-	  @Parameter(names = {"-k","--keyusage"}, description = "Specify the key usage, default = ENCRYPT_DECRYPT")
-	  String keyusage; 
-	    
-	  @Parameter(names = {"-p","--policy"}, description = "Specify the key policy")
-	  String policy; 
-	    
-	  @Override
-	  public void invoke() throws Exception
-	  {
-		  if (description == null && keyusage == null && policy == null)
-		  {
-			  CreateKeyResult kmsKey = KmsUtils.createKey();
-			  System.out.println(kmsKey.toString()); 
-		  }
-		  if (description != null && !description.isEmpty() && keyusage == null && policy == null)
-		  {
-			  CreateKeyResult kmsKey = KmsUtils.createKey(description);
-			  System.out.println(kmsKey.toString()); 
-		  }
-		  if (description != null && !description.isEmpty() && keyusage != null && !keyusage.isEmpty() && policy == null)
-		  {
-			  CreateKeyResult kmsKey = KmsUtils.createKey(description, keyusage);
-			  System.out.println(kmsKey.toString()); 
-		  }
-		  if (description != null && !description.isEmpty() && keyusage != null && !keyusage.isEmpty() && policy != null && !policy.isEmpty())
-		  {
-			  CreateKeyResult kmsKey = KmsUtils.createKey(description, keyusage, policy);
-			  System.out.println(kmsKey.toString()); 
-		  }
-	  }
-  }
-  
- /***/
   @Parameters(commandDescription = "Download a file, or a set of files from S3")
   class DownloadCommandOptions extends S3ObjectCommandOptions
   {

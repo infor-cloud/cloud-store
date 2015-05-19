@@ -493,11 +493,6 @@ class Main
         {
           List<S3File> result = client.listObjectsAndDirs(getBucket(), getObjectKey(), recursive).get();
 
-          if((result.size() == 0) && (!getObjectKey().endsWith("/")))
-          {
-            // Re-try in case we ls a folder
-            result = client.listObjectsAndDirs(getBucket(), getObjectKey()+"/", recursive).get();
-          }
           for (S3File obj : result)
           {
             // print the full s3 url for each object and (first-level) directory
@@ -508,11 +503,6 @@ class Main
         {
           List<S3ObjectSummary> result = client.listObjects(getBucket(), getObjectKey(), recursive).get();
 
-          if ((result.size() == 0) && (!getObjectKey().endsWith("/")))
-          {
-            // Re-try in case we ls a folder
-            result = client.listObjects(getBucket(), getObjectKey() + "/", recursive).get();
-          }
           for (S3ObjectSummary obj : result)
           {
             // print the full s3 url for each object

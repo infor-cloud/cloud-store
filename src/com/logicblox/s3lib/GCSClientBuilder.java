@@ -211,6 +211,14 @@ public class GCSClientBuilder {
             HttpRequestInitializer() {
                 @Override
                 public void initialize(HttpRequest request) throws IOException {
+                    // Lazy credentials initialization to avoid throwing an
+                    // exception if CREDENTIAL_ENV_VAR doesn't point to a
+                    // valid credentials file at construction time. It's
+                    // useful for GCS clients that are constructed but never
+                    // used (e.g. in lb-web).
+                    if (credential == null) {
+                        setCredential(getDefaultCredential());
+                    }
                     credential.initialize(request);
                     request.setIOExceptionHandler(new
                         HttpBackOffIOExceptionHandler(new
@@ -225,9 +233,6 @@ public class GCSClientBuilder {
         GeneralSecurityException {
         if (httpTransport == null) {
             setHttpTransport(getDefaultHttpTransport());
-        }
-        if (credential == null) {
-            setCredential(getDefaultCredential());
         }
         if (requestInitializer == null) {
             setHttpRequestInitializer(getDefaultHttpRequestInitializer());

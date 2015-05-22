@@ -256,6 +256,13 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
+    public ListenableFuture<List<S3File>> copyToDir(CopyOptions options)
+        throws InterruptedException, ExecutionException, IOException {
+        throw new UnsupportedOperationException("Copy operation is not " +
+            "supported for Google Cloud Storage yet.");
+    }
+
+    @Override
     public ListenableFuture<List<S3ObjectSummary>> listObjects(String bucket,
                                                                String prefix,
                                                                boolean

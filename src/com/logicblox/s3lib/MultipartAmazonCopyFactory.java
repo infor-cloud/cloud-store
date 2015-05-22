@@ -60,6 +60,11 @@ class MultipartAmazonCopyFactory
       ObjectMetadata metadata = client.getObjectMetadata(sourceBucketName,
           sourceKey);
 
+      // TODO(geokollias): If object uploaded by another tool, add
+      // s3lib-specific metadata to help future s3lib operations. fileLength
+      // and chunkSize should be the same as the ones that *will*
+      // be set in Copy.startParts. Maybe re-work that part.
+
       InitiateMultipartUploadRequest req = new InitiateMultipartUploadRequest
           (destinationBucketName, destinationKey, metadata);
       req.setCannedACL(getCannedAcl(cannedAcl));

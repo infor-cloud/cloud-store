@@ -28,15 +28,20 @@ class ConsoleProgressListener implements OverallProgressListener {
         partsProgressEvents.put(partProgressEvent.getPartId(),
             partProgressEvent);
 
+        String opEd = options.getOperation();
+        opEd = opEd.endsWith("y") ?
+            opEd.substring(0, opEd.length()-1) + "ied" :
+            opEd + "ed" ;
+
         long totalTransferredBytes = getTotalTransferredBytes();
         long unreportedBytes = getUnreportedBytes(totalTransferredBytes);
         if (isReportTime(unreportedBytes) ||
             (isTransferComplete(totalTransferredBytes) && !allBytesReported())) {
             System.out.println(MessageFormat.format(
-                "{0}: ({1}%) {2}ed {3}/{4} bytes...",
+                "{0}: ({1}%) {2} {3}/{4} bytes...",
                 options.getObjectUri(),
                 100 * totalTransferredBytes / options.getFileSizeInBytes(),
-                options.getOperation(),
+                opEd,
                 totalTransferredBytes,
                 options.getFileSizeInBytes()));
             lastReportBytes.set(totalTransferredBytes);

@@ -50,12 +50,14 @@ public class CopyOptionsBuilder {
         return this;
     }
 
-    public CopyOptionsBuilder setOverallProgressListenerFactory
-        (OverallProgressListenerFactory overallProgressListenerFactory) {
-        this.overallProgressListenerFactory = Optional.fromNullable
-            (overallProgressListenerFactory);
-        return this;
-    }
+    // Disabled progress listener since AWS S3 copy progress indicator doesn't
+    // notify about the copied bytes.
+    //    public CopyOptionsBuilder setOverallProgressListenerFactory
+    //        (OverallProgressListenerFactory overallProgressListenerFactory) {
+    //        this.overallProgressListenerFactory = Optional.fromNullable
+    //            (overallProgressListenerFactory);
+    //        return this;
+    //    }
 
     public CopyOptions createCopyOptions() {
         return new CopyOptions(sourceBucketName, sourceKey,

@@ -359,10 +359,29 @@ public interface CloudStoreClient {
      * exist and the caller must have write permission to it.
      *
      * @param options Copy options
+     * @see CloudStoreClient#copyToDir(CopyOptions)
      * @see CopyOptions
      */
     ListenableFuture<S3File> copy(CopyOptions options)
     throws IOException;
+
+    /**
+     * Copies all keys that would be returned by the list operation on the
+     * source prefix URI, according to {@code options}. The destination URI has
+     * to be a directory (i.e. end with '\'). For more details check {@link
+     * com.logicblox.s3lib.CopyOptions}.
+     * <p/>
+     * The source bucket must already exist and the caller must have read
+     * permission to it. Respectively, the destination bucket must already exist
+     * and the caller must have write permission to it.
+     *
+     * @param options Copy options
+     * @see CloudStoreClient#copy(CopyOptions)
+     * @see CopyOptions
+     */
+    ListenableFuture<List<S3File>> copyToDir(CopyOptions options) throws
+        InterruptedException, ExecutionException, IOException,
+        URISyntaxException;
 
     /**
      * Returns a list of summary information about the objects whose keys start

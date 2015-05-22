@@ -505,6 +505,16 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
+  public ListenableFuture<List<S3File>> copyToDir(CopyOptions options) throws
+      InterruptedException, ExecutionException, IOException,
+      URISyntaxException {
+    CopyToDirCommand cmd = new CopyToDirCommand(_s3Executor, _executor, this);
+    configure(cmd);
+
+    return cmd.run(options);
+  }
+
+  @Override
   public ListenableFuture<List<S3ObjectSummary>> listObjects(
       String bucket, String prefix, boolean recursive)
   {

@@ -343,19 +343,19 @@ class Main
 
   }
 
-  @Parameters(commandDescription = "Copy object")
+  @Parameters(commandDescription = "Copy prefix/object. If destination URI is" +
+      " a directory (ends with \"/\"), then source URI acts as a prefix and " +
+      "this operation will copy all keys that would be returned by the list " +
+      "operation on the same prefix. Otherwise, we go for a direct key-to-key" +
+      " copy.")
   class CopyCommandOptions extends TwoObjectsCommandOptions
   {
-    @Parameter(names = "--progress", description = "Enable progress indicator")
-    boolean progress = false;
-
     @Parameter(names = "--canned-acl", description = "The canned ACL to use. "
         + S3Client.cannedACLsDescConst)
     String cannedAcl;
 
-    // @Parameter(names = {"-r", "--recursive"}, description = "Copy
-    // recursively")
-    //boolean recursive = false;
+    @Parameter(names = {"-r", "--recursive"}, description = "Copy recursively")
+    boolean recursive = false;
 
     public void invoke() throws Exception
     {
@@ -371,34 +371,34 @@ class Main
 
       CloudStoreClient client = createCloudStoreClient();
 
-      CopyOptionsBuilder cob = new CopyOptionsBuilder();
-      cob.setSourceBucketName(getSourceBucket())
+      CopyOptions options = new CopyOptionsBuilder()
+          .setSourceBucketName(getSourceBucket())
           .setSourceKey(getSourceObjectKey())
           .setDestinationBucketName(getDestinationBucket())
           .setDestinationKey(getDestinationObjectKey())
           .setCannedAcl(cannedAcl)
-          .setRecursive(false);
-      if (progress) {
-        OverallProgressListenerFactory cplf = new
-            ConsoleProgressListenerFactory();
-        cob.setOverallProgressListenerFactory(cplf);
-      }
-      CopyOptions options = cob.createCopyOptions();
+          .setRecursive(recursive)
+          .createCopyOptions();
 
       try
       {
-        // TODO(geokollias): Add support for prefix/directory copy
-        if(getSourceObjectKey().endsWith("/"))
+        if(getDestinationObjectKey().endsWith("/"))
         {
-          throw new UsageException("Copy of prefixes is not supported yet: " +
-              getSourceURI());
+          // If destination URI is a directory (ends with "/"), then source URI
+          // acts as a prefix and this operation will copy all keys that would
+          // be returned by the list operation on the same prefix.
+          client.copyToDir(options).get();
         }
-        if(client.exists(getSourceBucket(), getSourceObjectKey()).get() == null)
+        else
         {
-          throw new UsageException("Object not found at " + getSourceURI());
+          // We go for a direct key-to-key copy, so source object has
+          // to be there.
+          if (client.exists(getSourceBucket(), getSourceObjectKey()).get() == null)
+          {
+            throw new UsageException("Object not found at " + getSourceURI());
+          }
+          client.copy(options).get();
         }
-
-        client.copy(options).get();
       }
       catch(ExecutionException exc)
       {

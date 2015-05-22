@@ -368,7 +368,7 @@ public interface CloudStoreClient {
     /**
      * Copies all keys that would be returned by the list operation on the
      * source prefix URI, according to {@code options}. The destination URI has
-     * to be a directory (i.e. end with '\'). For more details check {@link
+     * to be a directory (i.e. end with '/'). For more details check {@link
      * com.logicblox.s3lib.CopyOptions}.
      * <p/>
      * The source bucket must already exist and the caller must have read

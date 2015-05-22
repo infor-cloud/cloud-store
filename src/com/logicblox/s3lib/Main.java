@@ -344,7 +344,7 @@ class Main
   }
 
   @Parameters(commandDescription = "Copy prefix/object. If destination URI is" +
-      " a directory (ends with \"/\"), then source URI acts as a prefix and " +
+      " a directory (ends with '/'), then source URI acts as a prefix and " +
       "this operation will copy all keys that would be returned by the list " +
       "operation on the same prefix. Otherwise, we go for a direct key-to-key" +
       " copy.")

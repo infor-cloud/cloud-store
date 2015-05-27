@@ -106,6 +106,22 @@ public class Utils
     return Pattern.compile(pattern).matcher(uri);
   }
 
+  public static boolean isStorageServiceURL(String url)
+  {
+    try
+    {
+      return getURI(url) != null;
+    }
+    catch (URISyntaxException e)
+    {
+      return false;
+    }
+    catch (UsageException e)
+    {
+      return false;
+    }
+  }
+
   public static boolean backendIsGCS(String endpoint, URI uri)
   {
     // We consider endpoint (if exists) stronger evidence than URI

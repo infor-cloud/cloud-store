@@ -105,6 +105,22 @@ public class Utils
     return Pattern.compile(pattern).matcher(uri);
   }
 
+  public static boolean isStorageServiceURL(String url)
+  {
+    try
+    {
+      return getURI(url) != null;
+    }
+    catch (URISyntaxException e)
+    {
+      return false;
+    }
+    catch (UsageException e)
+    {
+      return false;
+    }
+  }
+
   /**
    * Enum values for all supported storage services.
    * <p/>
@@ -177,19 +193,12 @@ public class Utils
     }
   }
 
-  public static String getGCSEndpoint(String command) throws URISyntaxException
+  public static String getDefaultACL(boolean gcsMode)
   {
-    if (command.equals("upload"))
-    {
-      // We use GCS-native JSON API for uploads
-      // We use HTTPS since we authenticate with OAuth
-      return "https://www.googleapis.com";
-    }
+    if (gcsMode)
+      return "projectPrivate";
     else
-    {
-      // Currently, we use S3-compatible XML API for non-upload operations
-      return "https://storage.googleapis.com";
-    }
+      return "bucket-owner-full-control";
   }
 
   public static final String GCS_XML_ACCESS_KEY_ENV_VAR = "GCS_XML_ACCESS_KEY";

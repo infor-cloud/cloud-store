@@ -31,6 +31,10 @@ import java.util.concurrent.ExecutionException;
  * .com/storage/</a>
  */
 public class GCSClient implements CloudStoreClient {
+    private static final String GCS_JSON_API_ENDPOINT = "https://www.googleapis.com";
+    private static final String GCS_XML_API_ENDPOINT = "https://storage.googleapis.com";
+
+
     private final Storage gcsClient;
     private final S3ClientDelegatee s3Client;
 
@@ -52,6 +56,7 @@ public class GCSClient implements CloudStoreClient {
         s3Client = new S3ClientDelegatee(internalS3Client, apiExecutor,
             internalExecutor, chunkSize, keyProvider);
         gcsClient = internalGCSClient;
+        setEndpoint(GCS_XML_API_ENDPOINT);
     }
 
     /**

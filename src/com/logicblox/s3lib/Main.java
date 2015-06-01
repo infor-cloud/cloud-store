@@ -141,7 +141,7 @@ class Main
       if (service == Utils.StorageService.GCS) {
         AWSCredentialsProvider gcsXMLProvider = Utils
             .getGCSXMLEnvironmentVariableCredentialsProvider();
-        AmazonS3Client s3Client = new AmazonS3Client(gcsXMLProvider);
+        AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(gcsXMLProvider);
 
         client = new GCSClientBuilder()
             .setInternalS3Client(s3Client)
@@ -180,7 +180,7 @@ class Main
    */
   abstract class S3ObjectCommandOptions extends S3CommandOptions
   {
-    @Parameter(description = "S3URL", required = true)
+    @Parameter(description = "storage-service-url", required = true)
     List<String> urls;
 
     protected URI getURI() throws URISyntaxException

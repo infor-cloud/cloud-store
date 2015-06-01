@@ -192,15 +192,7 @@ public class Utils
         throw new UsageException("Unknown storage service " + service);
     }
   }
-
-  public static String getDefaultACL(boolean gcsMode)
-  {
-    if (gcsMode)
-      return "projectPrivate";
-    else
-      return "bucket-owner-full-control";
-  }
-
+  
   public static final String GCS_XML_ACCESS_KEY_ENV_VAR = "GCS_XML_ACCESS_KEY";
 
   public static final String GCS_XML_SECRET_KEY_ENV_VAR = "GCS_XML_SECRET_KEY";

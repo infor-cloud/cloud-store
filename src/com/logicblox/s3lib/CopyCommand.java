@@ -98,10 +98,11 @@ public class CopyCommand extends Command
                                                  final String destinationBucketName,
                                                  final String destinationKey)
   {
+    long chunkSize0 = chunkSize == 0 ? Utils.getDefaultChunkSize() : chunkSize;
     MultipartAmazonCopyFactory factory = new MultipartAmazonCopyFactory
         (getAmazonS3Client(), _copyExecutor);
     return factory.startCopy(sourceBucketName, sourceKey,
-        destinationBucketName, destinationKey, acl);
+        destinationBucketName, destinationKey, acl, chunkSize0);
   }
 
   /**
@@ -126,26 +127,19 @@ public class CopyCommand extends Command
     String errPrefix = "Copy of " + getUri(copy.getSourceBucket(),
         copy.getSourceKey()) + " to " + getUri(copy.getDestinationBucket(),
         copy.getDestinationKey()) + ": ";
-    if (meta.containsKey("s3tool-version"))
-    {
-      String objectVersion = meta.get("s3tool-version");
 
-      if (!String.valueOf(Version.CURRENT).equals(objectVersion))
-        throw new UsageException(
-          errPrefix + "unsupported version: " +  objectVersion +
-              ", should be " + Version.CURRENT);
+    // s3lib-specific metadata should already be set by factory.startCopy
+    String objectVersion = meta.get("s3tool-version");
 
-      setChunkSize(Long.valueOf(meta.get("s3tool-chunk-size")));
-      setFileLength(Long.valueOf(meta.get("s3tool-file-length")));
-    }
-    else
-    {
-      setFileLength(copy.getObjectSize());
-      if (chunkSize == 0)
-      {
-        setChunkSize(Math.min(fileLength, Utils.getDefaultChunkSize()));
-      }
-    }
+    if (!String.valueOf(Version.CURRENT).equals(objectVersion))
+      throw new UsageException(
+        errPrefix + "unsupported version: " +  objectVersion +
+            ", should be " + Version.CURRENT);
+
+    long fileLength0 = Long.valueOf(meta.get("s3tool-file-length"));
+    setFileLength(fileLength0);
+    long chunkSize0 = Long.valueOf(meta.get("s3tool-chunk-size"));
+    setChunkSize(Math.min(fileLength0, chunkSize0));
 
     OverallProgressListener opl = null;
     if (progressListenerFactory.isPresent()) {
@@ -154,13 +148,13 @@ public class CopyCommand extends Command
               .setObjectUri(getUri(copy.getDestinationBucket(),
                   copy.getDestinationKey()))
               .setOperation("copy")
-              .setFileSizeInBytes(fileLength)
+              .setFileSizeInBytes(this.fileLength)
               .createProgressOptions());
     }
 
     List<ListenableFuture<Void>> parts = new
         ArrayList<ListenableFuture<Void>>();
-    for (long position = 0; position < fileLength; position += chunkSize)
+    for (long position = 0; position < this.fileLength; position += chunkSize)
     {
       parts.add(startPartCopy(copy, position, opl));
     }

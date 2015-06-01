@@ -31,10 +31,11 @@ class MultipartAmazonCopyFactory
                                           String sourceKey,
                                           String destinationBucketName,
                                           String destinationKey,
-                                          String cannedAcl)
+                                          String cannedAcl,
+                                          long chunkSize)
   {
     return executor.submit(new StartCallable(sourceBucketName, sourceKey,
-        destinationBucketName, destinationKey, cannedAcl));
+        destinationBucketName, destinationKey, cannedAcl, chunkSize));
   }
 
   private class StartCallable implements Callable<Copy>
@@ -44,15 +45,18 @@ class MultipartAmazonCopyFactory
     private String destinationBucketName;
     private String destinationKey;
     private String cannedAcl;
+    private long chunkSize;
 
     public StartCallable(String sourceBucketName, String sourceKey, String
-        destinationBucketName, String destinationKey, String cannedAcl)
+        destinationBucketName, String destinationKey, String cannedAcl, long
+        chunkSize)
     {
       this.sourceBucketName = sourceBucketName;
       this.sourceKey = sourceKey;
       this.destinationBucketName = destinationBucketName;
       this.destinationKey = destinationKey;
       this.cannedAcl = cannedAcl;
+      this.chunkSize = chunkSize;
     }
 
     public Copy call() throws Exception
@@ -60,10 +64,13 @@ class MultipartAmazonCopyFactory
       ObjectMetadata metadata = client.getObjectMetadata(sourceBucketName,
           sourceKey);
 
-      // TODO(geokollias): If object uploaded by another tool, add
-      // s3lib-specific metadata to help future s3lib operations. fileLength
-      // and chunkSize should be the same as the ones that *will*
-      // be set in Copy.startParts. Maybe re-work that part.
+      if (metadata.getUserMetaDataOf("s3tool-version") == null)
+      {
+        metadata.addUserMetadata("s3tool-version", String.valueOf(Version.CURRENT));
+        metadata.addUserMetadata("s3tool-chunk-size", Long.toString(chunkSize));
+        metadata.addUserMetadata("s3tool-file-length",
+            Long.toString(metadata.getContentLength()));
+      }
 
       InitiateMultipartUploadRequest req = new InitiateMultipartUploadRequest
           (destinationBucketName, destinationKey, metadata);

@@ -65,7 +65,7 @@ public class GCSUploadCommand extends Command {
 
         this.file = file;
         setChunkSize(chunkSize);
-        this.fileLength = file.length();
+        setFileLength(file.length());
         this.encKeyName = encKeyName;
 
         if (this.encKeyName != null) {

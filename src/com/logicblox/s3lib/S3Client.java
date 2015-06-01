@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -191,6 +192,37 @@ public class S3Client implements CloudStoreClient {
     _chunkSize = chunkSize;
     _keyProvider = keyProvider;
     _client = s3Client;
+  }
+
+  /**
+   * Canned ACLs handling
+   */
+
+  public static final String defaultCannedACL = "bucket-owner-full-control";
+
+  public static final List<String> allCannedACLs = initCannedACLs();
+
+  /**
+   * {@code cannedACLsDescConst} has to be a compile-time String constant
+   * expression. That's why e.g. we cannot re-use {@code allCannedACLs} to
+   * construct it.
+   */
+  static final String cannedACLsDescConst = "For Amazon S3, choose one of: " +
+      "private, public-read, public-read-write, authenticated-read, " +
+      "bucket-owner-read, bucket-owner-full-control (default: " +
+      "bucket-owner-full-control).";
+
+  public static boolean isValidCannedACL(String aclStr)
+  {
+    return allCannedACLs.contains(aclStr);
+  }
+
+  private static List<String> initCannedACLs()
+  {
+    List<String> l = new ArrayList<>();
+    for (CannedAccessControlList acl : CannedAccessControlList.values())
+      l.add(acl.toString());
+    return l;
   }
 
   @Override
@@ -455,6 +487,31 @@ public class S3Client implements CloudStoreClient {
         .createDownloadOptions();
 
     return this.downloadDirectory(options);
+  }
+
+  @Override
+  public ListenableFuture<S3File> copy(CopyOptions options)
+  throws IOException
+  {
+    String cannedAcl = options.getCannedAcl().or("bucket-owner-full-control");
+    OverallProgressListenerFactory progressListenerFactory = options
+        .getOverallProgressListenerFactory().orNull();
+
+    CopyCommand cmd = new CopyCommand(_s3Executor, _executor, cannedAcl,
+        progressListenerFactory);
+    configure(cmd);
+    return cmd.run(options.getSourceBucketName(), options.getSourceKey(),
+        options.getDestinationBucketName(), options.getDestinationKey());
+  }
+
+  @Override
+  public ListenableFuture<List<S3File>> copyToDir(CopyOptions options) throws
+      InterruptedException, ExecutionException, IOException,
+      URISyntaxException {
+    CopyToDirCommand cmd = new CopyToDirCommand(_s3Executor, _executor, this);
+    configure(cmd);
+
+    return cmd.run(options);
   }
 
   @Override

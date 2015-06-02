@@ -1,137 +1,79 @@
 package com.logicblox.s3lib;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.Protocol;
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.PropertiesCredentials;
-import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.AWSKMSClient;
 import com.amazonaws.services.kms.model.*;
-import com.amazonaws.util.json.JSONObject;
 
-public class KmsUtils
-{
-	public static ListKeysResult getAllKeys()
-	  {
-		AWSKMS kmsClient  = new AWSKMSClient();
-		ListKeysResult allKeys = kmsClient.listKeys();
-	    return allKeys ;
-	  }
-	
-	public static ListAliasesResult getAllAliases()
-	  {
-		AWSKMS kmsClient  = new AWSKMSClient();
-		ListAliasesResult allAliases = kmsClient.listAliases();
+public class KmsUtils {
+
+	private static AWSKMSClient kmsclient = KmsClient.getKmsClient();
+
+	public static ListKeysResult getAllKeys() {
+		ListKeysResult allKeys = kmsclient.listKeys();
+		return allKeys;
+	}
+
+	public static ListAliasesResult getAllAliases() {
+		ListAliasesResult allAliases = kmsclient.listAliases();
 		return allAliases;
-      }
-	
-	public static String retAliasName(String aliasId)
-	  {
+	}
+
+	public static String getAliasNameFromKeyId(String keyId) {
 		String aliasName = "";
-		ListAliasesResult allAliases = KmsUtils.getAllAliases();
-		List<AliasListEntry> aliases = allAliases.getAliases();
-		int i;
-		for (i=0; i < aliases.size(); i++)
-			{
-				AliasListEntry aliasEntry = aliases.get(i);
-				try
-				{
-				  String targetKeyId = aliasEntry.getTargetKeyId();
-				  if (targetKeyId.equals(aliasId))
-				   {
-					 String alias = aliasEntry.getAliasName();
-					 if (alias.isEmpty())
-					   {
-						 aliasName = "None";
-					   }
-					 else
-					  {
-						 aliasName = alias;
-					  }
-				   }
-				  else
-				   {
-					  aliasName = "'None'";
-				   }
+		List<AliasListEntry> aliases = KmsUtils.getAllAliases().getAliases();
+		for (AliasListEntry aliasEntry : aliases) {
+			try {
+				String targetKeyId = aliasEntry.getTargetKeyId();
+				if (targetKeyId.equals(keyId)) {
+					String alias = aliasEntry.getAliasName();
+					if (alias.isEmpty()) {
+						aliasName = "'None'";
+					} else {
+						aliasName = alias;
+					}
+				} else {
+					aliasName = "'None'";
 				}
-				catch (Exception e) {}
-				
+			} catch (Exception e) {
 			}
+		}
 		return aliasName;
-	  }
-	
-	public static String getKeyDescription(String keyId)
-	{
-		AWSKMS kmsClient  = new AWSKMSClient();
+	}
+
+	public static String getKeyDescription(String keyId) {
 		DescribeKeyRequest request = new DescribeKeyRequest();
 		request.setKeyId(keyId);
-		DescribeKeyResult response = kmsClient.describeKey(request);
+		DescribeKeyResult response = kmsclient.describeKey(request);
 		KeyMetadata data = response.getKeyMetadata();
-		String description = data.getDescription();
-		return description;
+		return data.getDescription();
 	}
 
-	
-	
-	
-	public static CreateKeyResult createKey(String description , String keyUsage, String policy)
-	{
-		AWSKMS kmsClient  = new AWSKMSClient();
+	public static CreateKeyResult createKey(String description,
+			String keyUsage, String policy) {
+
 		CreateKeyRequest request = new CreateKeyRequest();
-		request.setDescription(description);
-		request.setKeyUsage(keyUsage);
-		request.setPolicy(policy);
-		CreateKeyResult kmsKey = kmsClient.createKey(request);
-		return kmsKey;
+		if (description != null) {
+			request.setDescription(description.toString());
+		}
+		if (keyUsage != null) {
+			request.setKeyUsage(keyUsage.toString());
+		}
+		if (policy != null) {
+			request.setPolicy(policy.toString());
+		}
+		return kmsclient.createKey(request);
 	}
-	
-	public static CreateKeyResult createKey(String description , String keyUsage)
-	{
-		AWSKMS kmsClient  = new AWSKMSClient();
-		CreateKeyRequest request = new CreateKeyRequest();
-		request.setDescription(description);
-		request.setKeyUsage(keyUsage);
-		CreateKeyResult kmsKey = kmsClient.createKey(request);
-		return kmsKey;
+
+	public CreateKeyResult createKey(String description, String keyUsage) {
+		return createKey(description, keyUsage, null);
 	}
-	
-	public static CreateKeyResult createKey(String description)
-	{
-		AWSKMS kmsClient  = new AWSKMSClient();
-		CreateKeyRequest request = new CreateKeyRequest();
-		request.setDescription(description);
-		request.setKeyUsage("ENCRYPT_DECRYPT");
-		CreateKeyResult kmsKey = kmsClient.createKey(request);
-		return kmsKey;
+
+	public static CreateKeyResult createKey(String description) {
+		return createKey(description, null, null);
 	}
-	
-	public static CreateKeyResult createKey()
-	{
-		AWSKMS kmsClient  = new AWSKMSClient();
-		CreateKeyRequest request = new CreateKeyRequest();
-		request.setKeyUsage("ENCRYPT_DECRYPT");
-		CreateKeyResult kmsKey = kmsClient.createKey(request);
-		return kmsKey;
+
+	public static CreateKeyResult createKey() {
+		return createKey(null, null, null);
 	}
-	
-	
-	
-	
-	
-	
 }
-
-
-
-
-
-
-

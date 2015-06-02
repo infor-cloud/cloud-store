@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutionException;
 
@@ -40,781 +41,686 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.amazonaws.AmazonServiceException;
 
-class Main
-{
-  JCommander _commander = new JCommander();
-
-  public static void main(String[] args)
-  {
-    initLogging();
-
-    try
-    {
-      Main main = new Main();
-      main.execute(args);
-    }
-    catch(Exception exc)
-    {
-      exc.printStackTrace();
-      System.exit(1);
-    }
-  }
-
-  private static void initLogging() {
-    Logger root = Logger.getRootLogger();
-    root.setLevel(Level.INFO);
-
-    ConsoleAppender console = new ConsoleAppender();
-    String PATTERN = "%d [%p|%c|%C{1}] %m%n";
-    console.setLayout(new PatternLayout(PATTERN));
-    /*console.setThreshold(Level.INFO);*******************/
-    console.activateOptions();
-
-    Logger s3libLogger = Logger.getLogger("com.logicblox.s3lib");
-    /*s3libLogger.addAppender(console);*************/
-    Logger awsLogger = Logger.getLogger("com.amazonaws");
-    /*awsLogger.addAppender(console);***********/
-    Logger apacheLogger = Logger.getLogger("org.apache.http");
-    /*apacheLogger.addAppender(console);************/
-  }
-
-  public Main()
-  {
-    _commander = new JCommander(new MainCommand());
-    _commander.setProgramName("cloud-store");
-    _commander.addCommand("upload", new UploadCommandOptions());
-    _commander.addCommand("download", new DownloadCommandOptions());
-    _commander.addCommand("ls", new ListCommandOptions());
-    _commander.addCommand("exists", new ExistsCommandOptions());
-    _commander.addCommand("list-buckets", new ListBucketsCommandOptions());
-    _commander.addCommand("keygen", new KeyGenCommandOptions());
-    _commander.addCommand("kms-keygen", new KmsKeyGenCommandOptions());
-    _commander.addCommand("list-kms-keys", new KmsCommandOptions());
-    _commander.addCommand("version", new VersionCommand());
-    _commander.addCommand("help", new HelpCommand());
-  }
-
-  class MainCommand
-  {
-    @Parameter(names = { "-h", "--help" }, description = "Print usage information", help = true)
-    boolean help = false;
-  }
-
-  abstract class CommandOptions
-  {
-    @Parameter(names = { "-h", "--help" }, description = "Print usage information", help = true)
-    boolean help = false;
-
-    public abstract void invoke() throws Exception;
-  }
-
-  /**
-   * Abstraction for all S3 commands
-   */
-  abstract class S3CommandOptions extends CommandOptions
-  {
-    @Parameter(names = {"--max-concurrent-connections"}, description = "The maximum number of concurrent HTTP connections to S3")
-    int maxConcurrentConnections = 10;
-
-    @Parameter(names = "--endpoint", description = "Endpoint")
-    String endpoint = null;
-
-    @Parameter(names = "--keydir", description = "Directory where encryption keys are found")
-    String encKeyDirectory = Utils.getDefaultKeyDirectory();
-
-    @Parameter(names = "--stubborn", description = "Retry client exceptions (e.g. file not found and authentication errors)")
-    boolean _stubborn = false;
-
-    @Parameter(names = "--retry", description = "Number of retries on failures")
-    int _retryCount = 10;
-
-    @Parameter(names = {"--chunk-size"}, description = "The size of each chunk read from the file")
-    long chunkSize = Utils.getDefaultChunkSize();
-
-    protected boolean backendIsGCS() throws URISyntaxException
-    {
-      return Utils.backendIsGCS(endpoint, null);
-    }
-
-    protected CloudStoreClient createCloudStoreClient()
-        throws URISyntaxException, IOException, GeneralSecurityException {
-      ListeningExecutorService uploadExecutor = Utils.getHttpExecutor
-          (maxConcurrentConnections);
-
-      boolean gcsMode = backendIsGCS();
-
-      CloudStoreClient client;
-      if (gcsMode) {
-        AWSCredentialsProvider gcsXMLProvider = Utils
-            .getGCSXMLEnvironmentVariableCredentialsProvider();
-        AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(gcsXMLProvider);
-
-        client = new GCSClientBuilder()
-            .setInternalS3Client(s3Client)
-            .setApiExecutor(uploadExecutor)
-            .setChunkSize(chunkSize)
-            .setKeyProvider(Utils.getKeyProvider(encKeyDirectory))
-            .createGCSClient();
-      }
-      else {
-        ClientConfiguration clientCfg = new ClientConfiguration();
-        clientCfg = Utils.setProxy(clientCfg);
-        AmazonS3Client s3Client = new AmazonS3Client(clientCfg);
-
-        client = new S3ClientBuilder()
-            .setInternalS3Client(s3Client)
-            .setApiExecutor(uploadExecutor)
-            .setChunkSize(chunkSize)
-            .setKeyProvider(Utils.getKeyProvider(encKeyDirectory))
-            .createS3Client();
-      }
-
-      client.setRetryClientException(_stubborn);
-      client.setRetryCount(_retryCount);
-      if(endpoint != null)
-      {
-        client.setEndpoint(endpoint);
-      }
-
-      return client;
-    }
-  }
-
-
-  /**
-   * Abstraction for commands that deal with S3 objects
-   */
-  abstract class S3ObjectCommandOptions extends S3CommandOptions
-  {
-    @Parameter(description = "storage-service-url", required = true)
-    List<String> urls;
-
-    protected URI getURI() throws URISyntaxException
-    {
-      if(urls.size() != 1)
-        throw new UsageException("A single S3 object URL is required");
-
-      return Utils.getURI(urls.get(0));
-    }
-
-    protected String getBucket() throws URISyntaxException
-    {
-      return Utils.getBucket(getURI());
-    }
-
-    protected String getObjectKey() throws URISyntaxException
-    {
-      return Utils.getObjectKey(getURI());
-    }
-
-    protected boolean backendIsGCS() throws URISyntaxException
-    {
-      return Utils.backendIsGCS(endpoint, getURI());
-    }
-  }
-
-  @Parameters(commandDescription = "List S3 buckets")
-  class ListBucketsCommandOptions extends S3CommandOptions
-  {
-    public void invoke() throws Exception
-    {
-      CloudStoreClient client = createCloudStoreClient();
-      ListenableFuture<List<Bucket>> result = client.listBuckets();
-
-      List<Bucket> buckets = result.get();
-      Collections.sort(buckets, new Comparator<Bucket>(){
-          public int compare(Bucket b1, Bucket b2) {
-            return b1.getName().toLowerCase().compareTo(b2.getName().toLowerCase());
-          }});
-
-      String[][] table = new String[buckets.size()][3];
-      int[] max = new int[3];
-
-      TimeZone tz = TimeZone.getTimeZone("UTC");
-      DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-      df.setTimeZone(tz);
-
-      for(int i = 0; i < buckets.size(); i++)
-      {
-        Bucket b = buckets.get(i);
-        table[i][0] = b.getName();
-        table[i][1] = df.format(b.getCreationDate());
-        String ownerName = b.getOwner().getDisplayName();
-        table[i][2] = (ownerName != null) ? ownerName : b.getOwner().getId();
-
-        for(int j = 0; j < 3; j++)
-          max[j] = Math.max(table[i][j].length(), max[j]);
-      }
-
-      for (final String[] row : table)
-      {
-        System.out.format("%-" + (max[2] + 3) + "s%-" + (max[1] + 3) + "s%-" + (max[0] + 3) + "s\n", row[2], row[1], row[0]);
-      }
-
-      client.shutdown();
-    }
-  }
-
-  @Parameters(commandDescription = "Check if a file exists in S3")
-  class ExistsCommandOptions extends S3ObjectCommandOptions
-  {
-    @Parameter(names = "--verbose", description = "Print information about success/failure and metadata if object exists")
-    boolean _verbose = false;
-
-    public void invoke() throws Exception
-    {
-      CloudStoreClient client = createCloudStoreClient();
-      String bucket = getBucket();
-      String key = getObjectKey();
-      ListenableFuture<ObjectMetadata> result = client.exists(bucket, key);
-
-      boolean gcsMode = backendIsGCS();
-      String scheme = gcsMode ? "gs://" : "s3://";
-
-      boolean exists = false;
-      ObjectMetadata metadata = result.get();
-      if(metadata == null)
-      {
-        if(_verbose)
-          System.err.println("Object " + scheme + bucket + "/" + key + " does not exist.");
-      }
-      else
-      {
-        exists = true;
-
-        if(_verbose)
-          Utils.print(metadata);
-      }
-
-      client.shutdown();
-
-      if (!exists)
-        System.exit(1);
-    }
-  }
-
-  @Parameters(commandDescription = "Upload a file or directory to S3")
-  class UploadCommandOptions extends S3ObjectCommandOptions
-  {
-    @Parameter(names = "-i", description = "File or directory to upload", required = true)
-    String file;
-
-    @Parameter(names = "--key", description = "The name of the encryption key to use")
-    String encKeyName = null;
-
-    @Parameter(names = "--progress", description = "Enable progress indicator")
-    boolean progress = false;
-
-    @Parameter(names = "--canned-acl", description = "The canned ACL to use." +
-            "For Amazon S3, choose one of: "+
-            "private, public-read, public-read-write, authenticated-read, bucket-owner-read, "+
-            "bucket-owner-full-control (default: bucket-owner-full-control)\n" +
-            "For Google Cloud Storage, choose one of: " +
-            "projectPrivate, private, publicRead, publicReadWrite, authenticatedRead, "+
-            "bucketOwnerRead, bucketOwnerFullControl (default: projectPrivate")
-    String cannedAcl = "bucket-owner-full-control";
-
-    List<String> gcsPredefACLs = Arrays.asList("projectPrivate", "private", "publicRead",
-            "publicReadWrite", "authenticatedRead", "bucketOwnerRead", "bucketOwnerFullControl");
-
-    private String getDefaultACL()
-    {
-      try
-      {
-        return Utils.getDefaultACL(backendIsGCS());
-      }
-      catch (URISyntaxException e)
-      {
-        return "bucket-owner-full-control";
-      }
-    }
-
-    private boolean isValidS3Acl(String value)
-    {
-      for (CannedAccessControlList acl : CannedAccessControlList.values())
-      {
-        if (acl.toString().equals(value))
-          return true;
-      }
-      return false;
-    }
-
-    private boolean isValidGCSAcl(String value)
-    {
-      return gcsPredefACLs.contains(value);
-    }
-
-    public void invoke() throws Exception
-    {
-      if (cannedAcl == "bucket-owner-full-control")
-        cannedAcl = getDefaultACL();
-
-      if((!backendIsGCS() && !isValidS3Acl(cannedAcl)) ||
-          (backendIsGCS() && !isValidGCSAcl(cannedAcl)))
-      {
-        throw new UsageException("Unknown canned ACL '"+cannedAcl+"'");
-      }
-
-      if (getObjectKey().endsWith("/")) {
-        throw new UsageException("Destination key " + getBucket() + "/" +
-            getObjectKey() +
-            " should be fully qualified. No trailing '/' is permitted.");
-      }
-
-      CloudStoreClient client = createCloudStoreClient();
-      File f = new File(file);
-
-      UploadOptionsBuilder uob = new UploadOptionsBuilder();
-      uob.setFile(f)
-          .setBucket(getBucket())
-          .setObjectKey(getObjectKey())
-          .setEncKey(encKeyName)
-          .setAcl(cannedAcl);
-      if (progress) {
-        OverallProgressListenerFactory cplf = new
-            ConsoleProgressListenerFactory();
-        uob.setOverallProgressListenerFactory(cplf);
-      }
-      UploadOptions options = uob.createUploadOptions();
-
-      if(f.isFile()) {
-        client.upload(options).get();
-      } else if(f.isDirectory()) {
-        client.uploadDirectory(options).get();
-      } else {
-        throw new UsageException("File '" + file + "' is not a file or a " +
-            "directory.");
-      }
-      client.shutdown();
-    }
-  }
-
-  @Parameters(commandDescription = "List objects in S3")
-  class ListCommandOptions extends S3ObjectCommandOptions
-  {
-    @Parameter(names = {"-r", "--recursive"}, description = "List all objects that match the provided S3 URL prefix.")
-    boolean recursive = false;
-
-    @Parameter(names = {"--include-dirs"}, description = "List all objects and (first-level) directories that match the provided S3 URL prefix.")
-    boolean include_dirs = false;
-
-    @Override
-    public void invoke() throws Exception
-    {
-      CloudStoreClient client = createCloudStoreClient();
-      boolean gcsMode = backendIsGCS();
-      String scheme = gcsMode ? "gs://" : "s3://";
-
-      try
-      {
-        if (include_dirs)
-        {
-          List<S3File> result = client.listObjectsAndDirs(getBucket(), getObjectKey(), recursive).get();
-
-          if((result.size() == 0) && (!getObjectKey().endsWith("/")))
-          {
-            // Re-try in case we ls a folder
-            result = client.listObjectsAndDirs(getBucket(), getObjectKey()+"/", recursive).get();
-          }
-          for (S3File obj : result)
-          {
-            // print the full s3 url for each object and (first-level) directory
-            System.out.println(scheme + obj.getBucketName() + "/" + obj.getKey());
-          }
-        }
-        else
-        {
-          List<S3ObjectSummary> result = client.listObjects(getBucket(), getObjectKey(), recursive).get();
-
-          if ((result.size() == 0) && (!getObjectKey().endsWith("/")))
-          {
-            // Re-try in case we ls a folder
-            result = client.listObjects(getBucket(), getObjectKey() + "/", recursive).get();
-          }
-          for (S3ObjectSummary obj : result)
-          {
-            // print the full s3 url for each object
-            System.out.println(scheme + obj.getBucketName() + "/" + obj.getKey());
-          }
-        }
-      }
-      catch(ExecutionException exc)
-      {
-        rethrow(exc.getCause());
-      }
-
-      client.shutdown();
-    }
-  }
-
-  @Parameters(commandDescription = "Generates a public/private keypair in PEM format")
-  class KeyGenCommandOptions extends CommandOptions
-  {
-    @Parameter(names = {"-n", "--name"}, description = "Name of the PEM file", required = true)
-    String name = null;
-
-    @Parameter(names = "--keydir", description = "Directory where PEM file will be stored")
-    String encKeyDirectory = Utils.getDefaultKeyDirectory();
-
-    @Override
-    public void invoke() throws Exception
-    {
-      try
-      {
-        String pemfp = name + ".pem";
-        File pemf = new File(encKeyDirectory, pemfp);
-        if(pemf.exists()) {
-          System.err.println("File " + pemf.getPath() + " already exists.");
-          System.exit(1);
-        }
-
-        KeyGenCommand kgc = new KeyGenCommand("RSA", 2048);
-        kgc.savePemKeypair(pemf);
-      }
-      catch(Exception exc)
-      {
-        rethrow(exc.getCause());
-      }
-    }
-  }
-
- /***/
-  @Parameters(commandDescription = "List the existing AWS KMS keys")
-  class KmsCommandOptions extends CommandOptions
-  {
-    @Parameter(names = "--all", description = "All Kms Keys attributes" )
-    boolean allProperties = false;
-	
-    @Parameter(names = "--alias", description = "Add the aliases to the output" )
-    boolean alias = false; 
-    
-    @Parameter(names = "--arn", description = "Add the keys Arn to the output" )
-    boolean arn = false; 
-    
-    @Parameter(names = "--description", description = "Add the keys description to the output" )
-    boolean description = false; 
-    
-    @Override
-    public void invoke() throws Exception
-    {
-    	ListKeysResult allKeys = KmsUtils.getAllKeys();
-    	List<KeyListEntry> keys = allKeys.getKeys();
-    	if (!(allProperties || alias || arn || description))
-    	{
-    		int i;
-			for (i=0; i < keys.size(); i++)
-			{
-				KeyListEntry keyEntry = keys.get(i);
-				String keyId = keyEntry.getKeyId();
-				System.out.println("KeyId : " + keyId);
+class Main {
+	JCommander _commander = new JCommander();
+
+	public static void main(String[] args) {
+		initLogging();
+
+		try {
+			Main main = new Main();
+			main.execute(args);
+		} catch (Exception exc) {
+			exc.printStackTrace();
+			System.exit(1);
+		}
+	}
+
+	private static void initLogging() {
+		Logger root = Logger.getRootLogger();
+		root.setLevel(Level.INFO);
+
+		ConsoleAppender console = new ConsoleAppender();
+		String PATTERN = "%d [%p|%c|%C{1}] %m%n";
+		console.setLayout(new PatternLayout(PATTERN));
+		/* console.setThreshold(Level.INFO);****************** */
+		console.activateOptions();
+
+		Logger s3libLogger = Logger.getLogger("com.logicblox.s3lib");
+		/* s3libLogger.addAppender(console);************ */
+		Logger awsLogger = Logger.getLogger("com.amazonaws");
+		/* awsLogger.addAppender(console);********** */
+		Logger apacheLogger = Logger.getLogger("org.apache.http");
+		/* apacheLogger.addAppender(console);*********** */
+	}
+
+	public Main() {
+		_commander = new JCommander(new MainCommand());
+		_commander.setProgramName("cloud-store");
+		_commander.addCommand("upload", new UploadCommandOptions());
+		_commander.addCommand("download", new DownloadCommandOptions());
+		_commander.addCommand("ls", new ListCommandOptions());
+		_commander.addCommand("exists", new ExistsCommandOptions());
+		_commander.addCommand("list-buckets", new ListBucketsCommandOptions());
+		_commander.addCommand("keygen", new KeyGenCommandOptions());
+		_commander.addCommand("kms-keygen", new KmsKeyGenCommandOptions());
+		_commander.addCommand("list-kms-keys", new KmsCommandOptions());
+		_commander.addCommand("version", new VersionCommand());
+		_commander.addCommand("help", new HelpCommand());
+	}
+
+	class MainCommand {
+		@Parameter(names = { "-h", "--help" }, description = "Print usage information", help = true)
+		boolean help = false;
+	}
+
+	abstract class CommandOptions {
+		@Parameter(names = { "-h", "--help" }, description = "Print usage information", help = true)
+		boolean help = false;
+
+		public abstract void invoke() throws Exception;
+	}
+
+	/**
+	 * Abstraction for all S3 commands
+	 */
+	abstract class S3CommandOptions extends CommandOptions {
+		@Parameter(names = { "--max-concurrent-connections" }, description = "The maximum number of concurrent HTTP connections to S3")
+		int maxConcurrentConnections = 10;
+
+		@Parameter(names = "--endpoint", description = "Endpoint")
+		String endpoint = null;
+
+		@Parameter(names = "--keydir", description = "Directory where encryption keys are found")
+		String encKeyDirectory = Utils.getDefaultKeyDirectory();
+
+		@Parameter(names = "--stubborn", description = "Retry client exceptions (e.g. file not found and authentication errors)")
+		boolean _stubborn = false;
+
+		@Parameter(names = "--retry", description = "Number of retries on failures")
+		int _retryCount = 10;
+
+		@Parameter(names = { "--chunk-size" }, description = "The size of each chunk read from the file")
+		long chunkSize = Utils.getDefaultChunkSize();
+
+		protected boolean backendIsGCS() throws URISyntaxException {
+			return Utils.backendIsGCS(endpoint, null);
+		}
+
+		protected CloudStoreClient createCloudStoreClient()
+				throws URISyntaxException, IOException,
+				GeneralSecurityException {
+			ListeningExecutorService uploadExecutor = Utils
+					.getHttpExecutor(maxConcurrentConnections);
+
+			boolean gcsMode = backendIsGCS();
+
+			CloudStoreClient client;
+			if (gcsMode) {
+				AWSCredentialsProvider gcsXMLProvider = Utils
+						.getGCSXMLEnvironmentVariableCredentialsProvider();
+				AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(
+						gcsXMLProvider);
+
+				client = new GCSClientBuilder().setInternalS3Client(s3Client)
+						.setApiExecutor(uploadExecutor).setChunkSize(chunkSize)
+						.setKeyProvider(Utils.getKeyProvider(encKeyDirectory))
+						.createGCSClient();
+			} else {
+				ClientConfiguration clientCfg = new ClientConfiguration();
+				clientCfg = Utils.setProxy(clientCfg);
+				AmazonS3Client s3Client = new AmazonS3Client(clientCfg);
+
+				client = new S3ClientBuilder().setInternalS3Client(s3Client)
+						.setApiExecutor(uploadExecutor).setChunkSize(chunkSize)
+						.setKeyProvider(Utils.getKeyProvider(encKeyDirectory))
+						.createS3Client();
 			}
-    	}
-    	else
-		{
-    		if (allProperties)
-        	{
-    	    	int i;
-    			for (i=0; i < keys.size(); i++)
-    			{
-    				KeyListEntry keyEntry = keys.get(i);
-    				String keyId = keyEntry.getKeyId();
-    				String keyArn = keyEntry.getKeyArn();
-    				String aliasName = KmsUtils.retAliasName(keyId);
-    				String description = KmsUtils.getKeyDescription(keyId);
-    				System.out.println("KeyId : " + keyId + "; KeyArn : " + keyArn + "; AliasName : " + aliasName + "; Description : " + description);
-    			}
-        	}
-        	if (alias)
-    		{
-    			ListAliasesResult allAliases = KmsUtils.getAllAliases();
-    			List<AliasListEntry> aliases = allAliases.getAliases();
-    			int i;
-    			for (i=0; i < aliases.size(); i++)
-    				{
-    				AliasListEntry aliasEntry = aliases.get(i);
-    				String targetKeyId = aliasEntry.getTargetKeyId();
-    				if (targetKeyId != null)
-    				  {
-    					System.out.println("KeyId : " + targetKeyId + "; AliasName : " + aliasEntry.getAliasName());
-    				  }
-    				}
-    		}
-    		if (arn)
-    		{
-    			int i;
-    			for (i=0; i < keys.size(); i++)
-    			{
-    				KeyListEntry keyEntry = keys.get(i);
-    				System.out.println("KeyId : " + keyEntry.getKeyId() + "; KeyArn : " + keyEntry.getKeyArn());
-    			}
-    		}
-    		if (description)
-    		{
-    			int i;
-    			for (i=0; i < keys.size(); i++)
-    			{
-    				KeyListEntry keyEntry = keys.get(i);
-    				String keyId = keyEntry.getKeyId();
-    				String description = KmsUtils.getKeyDescription(keyId);
-    				System.out.println("KeyId : " + keyId + "; Description : " + description);
-    			}
-    		}
-		}			
-    }
-  }
-  
-  @Parameters(commandDescription = "Generate AWS KMS keys")
-  class KmsKeyGenCommandOptions extends CommandOptions
-  {
-	  @Parameter(names = {"-d","--description"}, description = "Add a key description")
-	  String description;
-		
-	  @Parameter(names = {"-k","--keyusage"}, description = "Specify the key usage, default = ENCRYPT_DECRYPT")
-	  String keyusage; 
-	    
-	  @Parameter(names = {"-p","--policy"}, description = "Specify the key policy")
-	  String policy; 
-	    
-	  @Override
-	  public void invoke() throws Exception
-	  {
-		  if (description == null && keyusage == null && policy == null)
-		  {
-			  CreateKeyResult kmsKey = KmsUtils.createKey();
-			  System.out.println(kmsKey.toString()); 
-		  }
-		  if (description != null && !description.isEmpty() && keyusage == null && policy == null)
-		  {
-			  CreateKeyResult kmsKey = KmsUtils.createKey(description);
-			  System.out.println(kmsKey.toString()); 
-		  }
-		  if (description != null && !description.isEmpty() && keyusage != null && !keyusage.isEmpty() && policy == null)
-		  {
-			  CreateKeyResult kmsKey = KmsUtils.createKey(description, keyusage);
-			  System.out.println(kmsKey.toString()); 
-		  }
-		  if (description != null && !description.isEmpty() && keyusage != null && !keyusage.isEmpty() && policy != null && !policy.isEmpty())
-		  {
-			  CreateKeyResult kmsKey = KmsUtils.createKey(description, keyusage, policy);
-			  System.out.println(kmsKey.toString()); 
-		  }
-	  }
-  }
-  
- /***/
-  @Parameters(commandDescription = "Download a file, or a set of files from S3")
-  class DownloadCommandOptions extends S3ObjectCommandOptions
-  {
-    @Parameter(names = "-o", description = "Write output to file, or directory", required = true)
-    String file;
 
-    @Parameter(names = "--overwrite", description = "Overwrite existing file(s) if existing")
-    boolean overwrite = false;
+			client.setRetryClientException(_stubborn);
+			client.setRetryCount(_retryCount);
+			if (endpoint != null) {
+				client.setEndpoint(endpoint);
+			}
 
-    @Parameter(names = {"-r", "--recursive"}, description = "Download recursively")
-    boolean recursive = false;
+			return client;
+		}
+	}
 
-    @Parameter(names = "--progress", description = "Enable progress indication")
-    boolean progress = false;
+	/**
+	 * Abstraction for commands that deal with S3 objects
+	 */
+	abstract class S3ObjectCommandOptions extends S3CommandOptions {
+		@Parameter(description = "storage-service-url", required = true)
+		List<String> urls;
 
-    @Override
-    public void invoke() throws Exception
-    {
-      CloudStoreClient client = createCloudStoreClient();
+		protected URI getURI() throws URISyntaxException {
+			if (urls.size() != 1)
+				throw new UsageException("A single S3 object URL is required");
 
-      File output = new File(file);
-      ListenableFuture<?> result;
+			return Utils.getURI(urls.get(0));
+		}
 
-      DownloadOptionsBuilder dob = new DownloadOptionsBuilder()
-          .setFile(output)
-          .setBucket(getBucket())
-          .setObjectKey(getObjectKey())
-          .setRecursive(recursive)
-          .setOverwrite(overwrite);
+		protected String getBucket() throws URISyntaxException {
+			return Utils.getBucket(getURI());
+		}
 
-      if (progress) {
-          OverallProgressListenerFactory cplf = new
-              ConsoleProgressListenerFactory();
-          dob.setOverallProgressListenerFactory(cplf);
-      }
+		protected String getObjectKey() throws URISyntaxException {
+			return Utils.getObjectKey(getURI());
+		}
 
-      DownloadOptions options = dob.createDownloadOptions();
+		protected boolean backendIsGCS() throws URISyntaxException {
+			return Utils.backendIsGCS(endpoint, getURI());
+		}
+	}
 
-      if(getObjectKey().endsWith("/")) {
-        result = client.downloadDirectory(options);
-      } else {
-        // Test if S3 url exists.
-        if(client.exists(getBucket(), getObjectKey()).get() == null) {
-          throw new UsageException("Object not found at "+getURI());
-        }
-        result = client.download(options);
-      }
+	@Parameters(commandDescription = "List S3 buckets")
+	class ListBucketsCommandOptions extends S3CommandOptions {
+		public void invoke() throws Exception {
+			CloudStoreClient client = createCloudStoreClient();
+			ListenableFuture<List<Bucket>> result = client.listBuckets();
 
-      try
-      {
-        result.get();
-      }
-      catch(ExecutionException exc)
-      {
-        rethrow(exc.getCause());
-      }
+			List<Bucket> buckets = result.get();
+			Collections.sort(buckets, new Comparator<Bucket>() {
+				public int compare(Bucket b1, Bucket b2) {
+					return b1.getName().toLowerCase()
+							.compareTo(b2.getName().toLowerCase());
+				}
+			});
 
-      client.shutdown();
-    }
-  }
+			String[][] table = new String[buckets.size()][3];
+			int[] max = new int[3];
 
-  /**
-   * Version
-   */
-  @Parameters(commandDescription = "Print version")
-  class VersionCommand extends CommandOptions
-  {
-    public void invoke()
-    {
-      System.out.println(S3Client.version());
-    }
-  }
-  
-  /**
-   * Help
-   */
-  @Parameters(commandDescription = "Print usage")
-  class HelpCommand extends CommandOptions
-  {
-    @Parameter(description = "Commands")
-    List<String> _commands;
+			TimeZone tz = TimeZone.getTimeZone("UTC");
+			DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+			df.setTimeZone(tz);
 
-    public void invoke()
-    {
-      if(_commands == null)
-        printUsage();
-      else
-      {
-        for(String cmd : _commands)
-        {
-          printCommandUsage(cmd);
-        }
-      }
-    }
-  }
+			for (int i = 0; i < buckets.size(); i++) {
+				Bucket b = buckets.get(i);
+				table[i][0] = b.getName();
+				table[i][1] = df.format(b.getCreationDate());
+				String ownerName = b.getOwner().getDisplayName();
+				table[i][2] = (ownerName != null) ? ownerName : b.getOwner()
+						.getId();
 
-  public void execute(String[] args)
-  {
-    try
-    {
-      _commander.parse(args);
-      String command = _commander.getParsedCommand();
-      if(command != null)
-      {
-        CommandOptions cmd = (CommandOptions) _commander.getCommands().get(command).getObjects().get(0);
-        if(cmd.help)
-        {
-          printCommandUsage(command);
-          System.exit(1);
-        }
+				for (int j = 0; j < 3; j++)
+					max[j] = Math.max(table[i][j].length(), max[j]);
+			}
 
-        cmd.invoke();
-      }
-      else
-      {
-        printUsage();
-      }
-    }
-    catch(ParameterException exc)
-    {
-      System.err.println("error: " + exc.getMessage());
-      System.err.println("");
-      printUsage();
-      System.exit(1);
-    }
-    catch(UsageException exc)
-    {
-      System.err.println("error: " + exc.getMessage());
-      System.exit(1);
-    }
-    catch(AmazonServiceException exc)
-    {
-      if(exc.getStatusCode() == 404)
-      {
-        System.err.println("error: S3 object not found");
-      }
-      else if(exc.getStatusCode() == 403)
-      {
-        System.err.println("error: Access to S3 object denied with current credentials");
-      }
-      else
-      {
-        System.err.println("error: " + exc.getMessage());
-        exc.printStackTrace();
-      }
+			for (final String[] row : table) {
+				System.out.format("%-" + (max[2] + 3) + "s%-" + (max[1] + 3)
+						+ "s%-" + (max[0] + 3) + "s\n", row[2], row[1], row[0]);
+			}
 
-      System.exit(1);
-    }
-    catch(UnsupportedOperationException exc)
-    {
-      System.err.println("error: " + exc.getMessage());
-      System.exit(1);
-    }
-    catch(Exception exc)
-    {
-      System.err.println("error: " + exc.getMessage());
-      System.err.println("");
-      exc.printStackTrace();
-      System.exit(1);
-    }
-  }
+			client.shutdown();
+		}
+	}
 
-  private void printOptions()
-  {
-    // Hack to avoid printing the commands, which are not formatted
-    // correctly.
-    JCommander tmp = new JCommander(new MainCommand());
-    tmp.setProgramName("cloud-store");
+	@Parameters(commandDescription = "Check if a file exists in S3")
+	class ExistsCommandOptions extends S3ObjectCommandOptions {
+		@Parameter(names = "--verbose", description = "Print information about success/failure and metadata if object exists")
+		boolean _verbose = false;
 
-    // Hack to avoid printing the usage line, which is not correct in
-    // this incomplete commander object.
-    StringBuilder builder = new StringBuilder();
-    tmp.usage(builder);
-    String usage = builder.toString();
-    String options = usage.substring(usage.indexOf('\n'));
-    System.err.println(options);
-  }
+		public void invoke() throws Exception {
+			CloudStoreClient client = createCloudStoreClient();
+			String bucket = getBucket();
+			String key = getObjectKey();
+			ListenableFuture<ObjectMetadata> result = client
+					.exists(bucket, key);
 
-  private void printUsage()
-  {
-    System.err.println("Usage: cloud-store [options] command [command options]");
-    printOptions();
+			boolean gcsMode = backendIsGCS();
+			String scheme = gcsMode ? "gs://" : "s3://";
 
-    System.err.println("   Commands: ");
-    for(String cmd : _commander.getCommands().keySet())
-    {
-      System.out.println("     " + padRight(15, ' ', cmd) + _commander.getCommandDescription(cmd));
-    }
-  }
+			boolean exists = false;
+			ObjectMetadata metadata = result.get();
+			if (metadata == null) {
+				if (_verbose)
+					System.err.println("Object " + scheme + bucket + "/" + key
+							+ " does not exist.");
+			} else {
+				exists = true;
 
-  private static String padRight(int width, char c, String s)
-  {
-    StringBuffer buf = new StringBuffer(width);
-    buf.append(s);
-    for(int i = 0; i < width - s.length(); i++)
-      buf.append(c);
-    return buf.toString();
-  }
+				if (_verbose)
+					Utils.print(metadata);
+			}
 
-  private void printCommandUsage(String command)
-  {
-    StringBuilder builder = new StringBuilder();
-    _commander.usage(command, builder);
-    System.err.println(builder.toString());
-  }
+			client.shutdown();
 
-  private static void rethrow(Throwable thrown) throws Exception
-  {
-    if(thrown instanceof Exception)
-      throw (Exception) thrown;
-    if(thrown instanceof Error)
-      throw (Error) thrown;
-    else
-      throw new RuntimeException(thrown);
-  }
+			if (!exists)
+				System.exit(1);
+		}
+	}
+
+	@Parameters(commandDescription = "Upload a file or directory to S3")
+	class UploadCommandOptions extends S3ObjectCommandOptions {
+		@Parameter(names = "-i", description = "File or directory to upload", required = true)
+		String file;
+
+		@Parameter(names = "--key", description = "The name of the encryption key to use")
+		String encKeyName = null;
+
+		@Parameter(names = "--progress", description = "Enable progress indicator")
+		boolean progress = false;
+
+		@Parameter(names = "--canned-acl", description = "The canned ACL to use."
+				+ "For Amazon S3, choose one of: "
+				+ "private, public-read, public-read-write, authenticated-read, bucket-owner-read, "
+				+ "bucket-owner-full-control (default: bucket-owner-full-control)\n"
+				+ "For Google Cloud Storage, choose one of: "
+				+ "projectPrivate, private, publicRead, publicReadWrite, authenticatedRead, "
+				+ "bucketOwnerRead, bucketOwnerFullControl (default: projectPrivate")
+		String cannedAcl = "bucket-owner-full-control";
+
+		List<String> gcsPredefACLs = Arrays.asList("projectPrivate", "private",
+				"publicRead", "publicReadWrite", "authenticatedRead",
+				"bucketOwnerRead", "bucketOwnerFullControl");
+
+		private String getDefaultACL() {
+			try {
+				return Utils.getDefaultACL(backendIsGCS());
+			} catch (URISyntaxException e) {
+				return "bucket-owner-full-control";
+			}
+		}
+
+		private boolean isValidS3Acl(String value) {
+			for (CannedAccessControlList acl : CannedAccessControlList.values()) {
+				if (acl.toString().equals(value))
+					return true;
+			}
+			return false;
+		}
+
+		private boolean isValidGCSAcl(String value) {
+			return gcsPredefACLs.contains(value);
+		}
+
+		public void invoke() throws Exception {
+			if (cannedAcl == "bucket-owner-full-control")
+				cannedAcl = getDefaultACL();
+
+			if ((!backendIsGCS() && !isValidS3Acl(cannedAcl))
+					|| (backendIsGCS() && !isValidGCSAcl(cannedAcl))) {
+				throw new UsageException("Unknown canned ACL '" + cannedAcl
+						+ "'");
+			}
+
+			if (getObjectKey().endsWith("/")) {
+				throw new UsageException(
+						"Destination key "
+								+ getBucket()
+								+ "/"
+								+ getObjectKey()
+								+ " should be fully qualified. No trailing '/' is permitted.");
+			}
+
+			CloudStoreClient client = createCloudStoreClient();
+			File f = new File(file);
+
+			UploadOptionsBuilder uob = new UploadOptionsBuilder();
+			uob.setFile(f).setBucket(getBucket()).setObjectKey(getObjectKey())
+					.setEncKey(encKeyName).setAcl(cannedAcl);
+			if (progress) {
+				OverallProgressListenerFactory cplf = new ConsoleProgressListenerFactory();
+				uob.setOverallProgressListenerFactory(cplf);
+			}
+			UploadOptions options = uob.createUploadOptions();
+
+			if (f.isFile()) {
+				client.upload(options).get();
+			} else if (f.isDirectory()) {
+				client.uploadDirectory(options).get();
+			} else {
+				throw new UsageException("File '" + file
+						+ "' is not a file or a " + "directory.");
+			}
+			client.shutdown();
+		}
+	}
+
+	@Parameters(commandDescription = "List objects in S3")
+	class ListCommandOptions extends S3ObjectCommandOptions {
+		@Parameter(names = { "-r", "--recursive" }, description = "List all objects that match the provided S3 URL prefix.")
+		boolean recursive = false;
+
+		@Parameter(names = { "--include-dirs" }, description = "List all objects and (first-level) directories that match the provided S3 URL prefix.")
+		boolean include_dirs = false;
+
+		@Override
+		public void invoke() throws Exception {
+			CloudStoreClient client = createCloudStoreClient();
+			boolean gcsMode = backendIsGCS();
+			String scheme = gcsMode ? "gs://" : "s3://";
+
+			try {
+				if (include_dirs) {
+					List<S3File> result = client.listObjectsAndDirs(
+							getBucket(), getObjectKey(), recursive).get();
+
+					if ((result.size() == 0) && (!getObjectKey().endsWith("/"))) {
+						// Re-try in case we ls a folder
+						result = client.listObjectsAndDirs(getBucket(),
+								getObjectKey() + "/", recursive).get();
+					}
+					for (S3File obj : result) {
+						// print the full s3 url for each object and
+						// (first-level) directory
+						System.out.println(scheme + obj.getBucketName() + "/"
+								+ obj.getKey());
+					}
+				} else {
+					List<S3ObjectSummary> result = client.listObjects(
+							getBucket(), getObjectKey(), recursive).get();
+
+					if ((result.size() == 0) && (!getObjectKey().endsWith("/"))) {
+						// Re-try in case we ls a folder
+						result = client.listObjects(getBucket(),
+								getObjectKey() + "/", recursive).get();
+					}
+					for (S3ObjectSummary obj : result) {
+						// print the full s3 url for each object
+						System.out.println(scheme + obj.getBucketName() + "/"
+								+ obj.getKey());
+					}
+				}
+			} catch (ExecutionException exc) {
+				rethrow(exc.getCause());
+			}
+
+			client.shutdown();
+		}
+	}
+
+	@Parameters(commandDescription = "Generates a public/private keypair in PEM format")
+	class KeyGenCommandOptions extends CommandOptions {
+		@Parameter(names = { "-n", "--name" }, description = "Name of the PEM file", required = true)
+		String name = null;
+
+		@Parameter(names = "--keydir", description = "Directory where PEM file will be stored")
+		String encKeyDirectory = Utils.getDefaultKeyDirectory();
+
+		@Override
+		public void invoke() throws Exception {
+			try {
+				String pemfp = name + ".pem";
+				File pemf = new File(encKeyDirectory, pemfp);
+				if (pemf.exists()) {
+					System.err.println("File " + pemf.getPath()
+							+ " already exists.");
+					System.exit(1);
+				}
+
+				KeyGenCommand kgc = new KeyGenCommand("RSA", 2048);
+				kgc.savePemKeypair(pemf);
+			} catch (Exception exc) {
+				rethrow(exc.getCause());
+			}
+		}
+	}
+
+	/***/
+	@Parameters(commandDescription = "List the existing AWS KMS keys")
+	class KmsCommandOptions extends CommandOptions {
+		@Parameter(names = "--all", description = "All Kms Keys attributes")
+		boolean allProperties = false;
+
+		@Parameter(names = "--alias", description = "Add the aliases to the output")
+		boolean alias = false;
+
+		@Parameter(names = "--arn", description = "Add the keys Arn to the output")
+		boolean arn = false;
+
+		@Parameter(names = "--description", description = "Add the keys description to the output")
+		boolean description = false;
+
+		@Override
+		public void invoke() throws Exception {
+			List<KeyListEntry> keys = KmsUtils.getAllKeys().getKeys();
+			if (!(allProperties || alias || arn || description)) {
+				for (KeyListEntry key : keys) {
+					String keyId = key.getKeyId();
+					System.out.println("KeyId : " + keyId);
+				}
+			} else {
+				if (allProperties) {
+					for (KeyListEntry key : keys) {
+						String keyId = key.getKeyId();
+						String keyArn = key.getKeyArn();
+						String aliasName = KmsUtils
+								.getAliasNameFromKeyId(keyId);
+						String description = KmsUtils.getKeyDescription(keyId);
+						System.out.println("KeyId : " + keyId + "; KeyArn : "
+								+ keyArn + "; AliasName : " + aliasName
+								+ "; Description : " + description);
+					}
+				}
+				if (alias) {
+					List<AliasListEntry> aliases = KmsUtils.getAllAliases()
+							.getAliases();
+					for (AliasListEntry alias : aliases) {
+						String targetKeyId = alias.getTargetKeyId();
+						if (targetKeyId != null) {
+							System.out.println("KeyId : " + targetKeyId
+									+ "; AliasName : " + alias.getAliasName());
+						}
+					}
+				}
+				if (arn) {
+					for (KeyListEntry key : keys) {
+						System.out.println("KeyId : " + key.getKeyId()
+								+ "; KeyArn : " + key.getKeyArn());
+					}
+				}
+				if (description) {
+					for (KeyListEntry key : keys) {
+						String keyId = key.getKeyId();
+						String description = KmsUtils.getKeyDescription(keyId);
+						System.out.println("KeyId : " + keyId
+								+ "; Description : " + description);
+					}
+				}
+			}
+		}
+	}
+
+	@Parameters(commandDescription = "Generate AWS KMS keys")
+	class KmsKeyGenCommandOptions extends CommandOptions {
+		@Parameter(names = { "-d", "--description" }, description = "Add a key description")
+		String description;
+
+		@Parameter(names = { "-k", "--keyusage" }, description = "Specify the key usage, default = ENCRYPT_DECRYPT")
+		String keyusage;
+
+		@Parameter(names = { "-p", "--policy" }, description = "Specify the key policy")
+		String policy;
+
+		@Override
+		public void invoke() throws Exception {
+
+			if (description == null && keyusage == null && policy == null) {
+				System.out.println(KmsUtils.createKey(null, null, null)
+						.toString());
+			}
+			if (description != null && !description.isEmpty()
+					&& keyusage == null && policy == null) {
+				System.out.println(KmsUtils.createKey(description, null, null)
+						.toString());
+			}
+			if (description != null && !description.isEmpty()
+					&& keyusage != null && !keyusage.isEmpty()
+					&& policy == null) {
+				System.out.println(KmsUtils.createKey(description, keyusage,
+						null).toString());
+			}
+			if (description != null && !description.isEmpty()
+					&& keyusage != null && !keyusage.isEmpty()
+					&& policy != null && !policy.isEmpty()) {
+				System.out.println(KmsUtils.createKey(description, keyusage,
+						policy).toString());
+			}
+
+			System.out.println(KmsUtils
+					.createKey(description, keyusage, policy).toString());
+		}
+	}
+
+	/***/
+	@Parameters(commandDescription = "Download a file, or a set of files from S3")
+	class DownloadCommandOptions extends S3ObjectCommandOptions {
+		@Parameter(names = "-o", description = "Write output to file, or directory", required = true)
+		String file;
+
+		@Parameter(names = "--overwrite", description = "Overwrite existing file(s) if existing")
+		boolean overwrite = false;
+
+		@Parameter(names = { "-r", "--recursive" }, description = "Download recursively")
+		boolean recursive = false;
+
+		@Parameter(names = "--progress", description = "Enable progress indication")
+		boolean progress = false;
+
+		@Override
+		public void invoke() throws Exception {
+			CloudStoreClient client = createCloudStoreClient();
+
+			File output = new File(file);
+			ListenableFuture<?> result;
+
+			DownloadOptionsBuilder dob = new DownloadOptionsBuilder()
+					.setFile(output).setBucket(getBucket())
+					.setObjectKey(getObjectKey()).setRecursive(recursive)
+					.setOverwrite(overwrite);
+
+			if (progress) {
+				OverallProgressListenerFactory cplf = new ConsoleProgressListenerFactory();
+				dob.setOverallProgressListenerFactory(cplf);
+			}
+
+			DownloadOptions options = dob.createDownloadOptions();
+
+			if (getObjectKey().endsWith("/")) {
+				result = client.downloadDirectory(options);
+			} else {
+				// Test if S3 url exists.
+				if (client.exists(getBucket(), getObjectKey()).get() == null) {
+					throw new UsageException("Object not found at " + getURI());
+				}
+				result = client.download(options);
+			}
+
+			try {
+				result.get();
+			} catch (ExecutionException exc) {
+				rethrow(exc.getCause());
+			}
+
+			client.shutdown();
+		}
+	}
+
+	/**
+	 * Version
+	 */
+	@Parameters(commandDescription = "Print version")
+	class VersionCommand extends CommandOptions {
+		public void invoke() {
+			System.out.println(S3Client.version());
+		}
+	}
+
+	/**
+	 * Help
+	 */
+	@Parameters(commandDescription = "Print usage")
+	class HelpCommand extends CommandOptions {
+		@Parameter(description = "Commands")
+		List<String> _commands;
+
+		public void invoke() {
+			if (_commands == null)
+				printUsage();
+			else {
+				for (String cmd : _commands) {
+					printCommandUsage(cmd);
+				}
+			}
+		}
+	}
+
+	public void execute(String[] args) {
+		try {
+			_commander.parse(args);
+			String command = _commander.getParsedCommand();
+			if (command != null) {
+				CommandOptions cmd = (CommandOptions) _commander.getCommands()
+						.get(command).getObjects().get(0);
+				if (cmd.help) {
+					printCommandUsage(command);
+					System.exit(1);
+				}
+
+				cmd.invoke();
+			} else {
+				printUsage();
+			}
+		} catch (ParameterException exc) {
+			System.err.println("error: " + exc.getMessage());
+			System.err.println("");
+			printUsage();
+			System.exit(1);
+		} catch (UsageException exc) {
+			System.err.println("error: " + exc.getMessage());
+			System.exit(1);
+		} catch (AmazonServiceException exc) {
+			if (exc.getStatusCode() == 404) {
+				System.err.println("error: S3 object not found");
+			} else if (exc.getStatusCode() == 403) {
+				System.err
+						.println("error: Access to S3 object denied with current credentials");
+			} else {
+				System.err.println("error: " + exc.getMessage());
+				exc.printStackTrace();
+			}
+
+			System.exit(1);
+		} catch (UnsupportedOperationException exc) {
+			System.err.println("error: " + exc.getMessage());
+			System.exit(1);
+		} catch (Exception exc) {
+			System.err.println("error: " + exc.getMessage());
+			System.err.println("");
+			exc.printStackTrace();
+			System.exit(1);
+		}
+	}
+
+	private void printOptions() {
+		// Hack to avoid printing the commands, which are not formatted
+		// correctly.
+		JCommander tmp = new JCommander(new MainCommand());
+		tmp.setProgramName("cloud-store");
+
+		// Hack to avoid printing the usage line, which is not correct in
+		// this incomplete commander object.
+		StringBuilder builder = new StringBuilder();
+		tmp.usage(builder);
+		String usage = builder.toString();
+		String options = usage.substring(usage.indexOf('\n'));
+		System.err.println(options);
+	}
+
+	private void printUsage() {
+		System.err
+				.println("Usage: cloud-store [options] command [command options]");
+		printOptions();
+
+		System.err.println("   Commands: ");
+		for (String cmd : _commander.getCommands().keySet()) {
+			System.out.println("     " + padRight(15, ' ', cmd)
+					+ _commander.getCommandDescription(cmd));
+		}
+	}
+
+	private static String padRight(int width, char c, String s) {
+		StringBuffer buf = new StringBuffer(width);
+		buf.append(s);
+		for (int i = 0; i < width - s.length(); i++)
+			buf.append(c);
+		return buf.toString();
+	}
+
+	private void printCommandUsage(String command) {
+		StringBuilder builder = new StringBuilder();
+		_commander.usage(command, builder);
+		System.err.println(builder.toString());
+	}
+
+	private static void rethrow(Throwable thrown) throws Exception {
+		if (thrown instanceof Exception)
+			throw (Exception) thrown;
+		if (thrown instanceof Error)
+			throw (Error) thrown;
+		else
+			throw new RuntimeException(thrown);
+	}
 }

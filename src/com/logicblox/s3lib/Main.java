@@ -382,7 +382,8 @@ class Main
 
       try
       {
-        if(getDestinationObjectKey().endsWith("/"))
+        if(getDestinationObjectKey().endsWith("/") ||
+            getDestinationObjectKey().equals(""))
         {
           // If destination URI is a directory (ends with "/"), then source URI
           // acts as a prefix and this operation will copy all keys that would

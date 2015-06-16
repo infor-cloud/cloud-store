@@ -382,12 +382,20 @@ class Main
 
       try
       {
+        // Check if destination bucket exists
+        if (client.exists(getDestinationBucket(), "").get() == null)
+        {
+          throw new UsageException("Bucket not found at " +
+              client.getUri(getDestinationBucket(), ""));
+        }
+
         if(getDestinationObjectKey().endsWith("/") ||
             getDestinationObjectKey().equals(""))
         {
-          // If destination URI is a directory (ends with "/"), then source URI
-          // acts as a prefix and this operation will copy all keys that would
-          // be returned by the list operation on the same prefix.
+          // If destination URI is a directory (ends with "/") or a bucket
+          // (object URI is empty), then source URI acts as a prefix and this
+          // operation will copy all keys that would be returned by the list
+          // operation on the same prefix.
           client.copyToDir(options).get();
         }
         else

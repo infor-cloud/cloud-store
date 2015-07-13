@@ -15,58 +15,67 @@ import java.io.File;
  * provide a public key with that name. This key will be used to encrypt the
  * {@code file} at the client side.
  * <p/>
- * If progress listener factory has been set, then progress notifications
- * will be recorded.
+ * If the {@code kmsEnckey} is present, the {@code KmsUtils.getKmsKey} method
+ * will be asked to provide the KMS key with that id or alias. This key will be
+ * used to encrypt the {@code file} at the server side.
  * <p/>
- * {@code UploadOptions} objects are meant to be built by {@code
- * UploadOptionsBuilder}. This class provides only public getter methods.
+ * If progress listener factory has been set, then progress notifications will
+ * be recorded.
+ * <p/>
+ * {@code UploadOptions} objects are meant to be built by
+ * {@code UploadOptionsBuilder}. This class provides only public getter methods.
  */
 public class UploadOptions {
-    private File file;
-    private String bucket;
-    private String objectKey;
-    private Optional<String> encKey;
-    private Optional<String> acl;
-    private Optional<OverallProgressListenerFactory>
-        overallProgressListenerFactory;
+	private File file;
+	private String bucket;
+	private String objectKey;
+	private Optional<String> encKey;
+	private Optional<String> kmsEncKey;
+	private Optional<String> acl;
+	private Optional<OverallProgressListenerFactory> overallProgressListenerFactory;
 
-    UploadOptions(File file,
-                  String bucket,
-                  String objectKey,
-                  Optional<String> encKey,
-                  Optional<String> acl,
-                  Optional<OverallProgressListenerFactory>
-                      overallProgressListenerFactory) {
-        this.file = file;
-        this.bucket = bucket;
-        this.objectKey = objectKey;
-        this.encKey = encKey;
-        this.acl = acl;
-        this.overallProgressListenerFactory = overallProgressListenerFactory;
-    }
+	UploadOptions(
+			File file,
+			String bucket,
+			String objectKey,
+			Optional<String> encKey,
+			Optional<String> kmsEncKey,
+			Optional<String> acl,
+			Optional<OverallProgressListenerFactory> overallProgressListenerFactory) {
+		this.file = file;
+		this.bucket = bucket;
+		this.objectKey = objectKey;
+		this.encKey = encKey;
+		this.kmsEncKey = kmsEncKey;
+		this.acl = acl;
+		this.overallProgressListenerFactory = overallProgressListenerFactory;
+	}
 
-    public File getFile() {
-        return file;
-    }
+	public File getFile() {
+		return file;
+	}
 
-    public String getBucket() {
-        return bucket;
-    }
+	public String getBucket() {
+		return bucket;
+	}
 
-    public String getObjectKey() {
-        return objectKey;
-    }
+	public String getObjectKey() {
+		return objectKey;
+	}
 
-    public Optional<String> getEncKey() {
-        return encKey;
-    }
+	public Optional<String> getEncKey() {
+		return encKey;
+	}
 
-    public Optional<String> getAcl() {
-        return acl;
-    }
+	public Optional<String> getKmsEncKey() {
+		return kmsEncKey;
+	}
 
-    public Optional<OverallProgressListenerFactory>
-    getOverallProgressListenerFactory() {
-        return overallProgressListenerFactory;
-    }
+	public Optional<String> getAcl() {
+		return acl;
+	}
+
+	public Optional<OverallProgressListenerFactory> getOverallProgressListenerFactory() {
+		return overallProgressListenerFactory;
+	}
 }

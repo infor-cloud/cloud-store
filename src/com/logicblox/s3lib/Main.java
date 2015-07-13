@@ -11,17 +11,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.kms.model.AliasListEntry;
-import com.amazonaws.services.kms.model.CreateKeyResult;
 import com.amazonaws.services.kms.model.KeyListEntry;
-import com.amazonaws.services.kms.model.ListAliasesResult;
-import com.amazonaws.services.kms.model.ListKeysResult;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -279,6 +275,9 @@ class Main {
 		@Parameter(names = "--key", description = "The name of the encryption key to use")
 		String encKeyName = null;
 
+		@Parameter(names = "--kms-key", description = "The name of the kms encryption key to use")
+		String kmsEncKeyName = null;
+
 		@Parameter(names = "--progress", description = "Enable progress indicator")
 		boolean progress = false;
 
@@ -339,7 +338,8 @@ class Main {
 
 			UploadOptionsBuilder uob = new UploadOptionsBuilder();
 			uob.setFile(f).setBucket(getBucket()).setObjectKey(getObjectKey())
-					.setEncKey(encKeyName).setAcl(cannedAcl);
+					.setEncKey(encKeyName).setAcl(cannedAcl)
+					.setKmsEncKey(kmsEncKeyName);
 			if (progress) {
 				OverallProgressListenerFactory cplf = new ConsoleProgressListenerFactory();
 				uob.setOverallProgressListenerFactory(cplf);
@@ -347,9 +347,19 @@ class Main {
 			UploadOptions options = uob.createUploadOptions();
 
 			if (f.isFile()) {
-				client.upload(options).get();
+				if (kmsEncKeyName != null) {
+					UploadKmsSSEFile.uploadFile(f, kmsEncKeyName, cannedAcl,
+							getBucket(), getObjectKey());
+				} else
+					client.upload(options).get();
+
 			} else if (f.isDirectory()) {
-				client.uploadDirectory(options).get();
+				if (kmsEncKeyName != null) {
+					UploadKmsSSEDirectory.uploadDirectory(f.getAbsolutePath(),
+							kmsEncKeyName, cannedAcl, getBucket(),
+							getObjectKey() + "/" + f.getName());
+				} else
+					client.uploadDirectory(options).get();
 			} else {
 				throw new UsageException("File '" + file
 						+ "' is not a file or a " + "directory.");
@@ -539,8 +549,8 @@ class Main {
 						policy).toString());
 			}
 
-			System.out.println(KmsUtils
-					.createKey(description, keyusage, policy).toString());
+			// System.out.println(KmsUtils
+			// .createKey(description, keyusage, policy).toString());
 		}
 	}
 
@@ -558,6 +568,9 @@ class Main {
 
 		@Parameter(names = "--progress", description = "Enable progress indication")
 		boolean progress = false;
+
+		@Parameter(names = "--kms", description = "Use AWS KMS for Server Side decryption")
+		boolean kms = false;
 
 		@Override
 		public void invoke() throws Exception {
@@ -578,20 +591,31 @@ class Main {
 
 			DownloadOptions options = dob.createDownloadOptions();
 
+			// Test if it is a directory and download its content
 			if (getObjectKey().endsWith("/")) {
-				result = client.downloadDirectory(options);
+				if (kms) {
+					DownloadKmsSSEDirectory.downloadDirectory(getBucket(),
+							getObjectKey(), output);
+				} else {
+					result = client.downloadDirectory(options);
+				}
 			} else {
 				// Test if S3 url exists.
 				if (client.exists(getBucket(), getObjectKey()).get() == null) {
 					throw new UsageException("Object not found at " + getURI());
+				} else {
+					if (kms) {
+						DownloadKmsSSEFile.DownloadFile(getBucket(),
+								getObjectKey(), output);
+					} else {
+						result = client.download(options);
+						try {
+							result.get();
+						} catch (ExecutionException exc) {
+							rethrow(exc.getCause());
+						}
+					}
 				}
-				result = client.download(options);
-			}
-
-			try {
-				result.get();
-			} catch (ExecutionException exc) {
-				rethrow(exc.getCause());
 			}
 
 			client.shutdown();

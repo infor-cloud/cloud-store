@@ -6,17 +6,16 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.BufferedInputStream;
 import java.io.IOException;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.concurrent.Callable;
-
 import java.security.SecureRandom;
 import java.security.Key;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -35,310 +34,285 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
-public class UploadCommand extends Command
-{
-  private String encKeyName;
-  private String encryptedSymmetricKeyString;
-  private String acl;
-  private Optional<OverallProgressListenerFactory> progressListenerFactory;
+public class UploadCommand extends Command {
+	private String encKeyName;
+	private String encryptedSymmetricKeyString;
+	private String acl;
+	private Optional<OverallProgressListenerFactory> progressListenerFactory;
 
-  private ListeningExecutorService _uploadExecutor;
-  private ListeningScheduledExecutorService _executor;
+	private ListeningExecutorService _uploadExecutor;
+	private ListeningScheduledExecutorService _executor;
 
-  public UploadCommand(
-    ListeningExecutorService uploadExecutor,
-    ListeningScheduledExecutorService internalExecutor,
-    File file,
-    long chunkSize,
-    String encKeyName,
-    KeyProvider encKeyProvider,
-    String acl,
-    Optional<OverallProgressListenerFactory> progressListenerFactory)
-  throws IOException
-  {
-    if(uploadExecutor == null)
-      throw new IllegalArgumentException("non-null upload executor is required");
-    if(internalExecutor == null)
-      throw new IllegalArgumentException("non-null internal executor is required");
+	public UploadCommand(ListeningExecutorService uploadExecutor,
+			ListeningScheduledExecutorService internalExecutor, File file,
+			long chunkSize, String encKeyName, String kmsEncKey,
+			KeyProvider encKeyProvider, String acl,
+			Optional<OverallProgressListenerFactory> progressListenerFactory)
+			throws IOException {
+		if (uploadExecutor == null)
+			throw new IllegalArgumentException(
+					"non-null upload executor is required");
+		if (internalExecutor == null)
+			throw new IllegalArgumentException(
+					"non-null internal executor is required");
 
-    _uploadExecutor = uploadExecutor;
-    _executor = internalExecutor;
+		_uploadExecutor = uploadExecutor;
+		_executor = internalExecutor;
 
-    this.file = file;
-    setChunkSize(chunkSize);
-    this.fileLength = file.length();
-    this.encKeyName = encKeyName;
+		this.file = file;
+		setChunkSize(chunkSize);
+		this.fileLength = file.length();
+		this.encKeyName = encKeyName;
 
-    if (this.encKeyName != null) {
-      byte[] encKeyBytes = new byte[32];
-      new SecureRandom().nextBytes(encKeyBytes);
-      this.encKey = new SecretKeySpec(encKeyBytes, "AES");
-      try
-      {
-        Key pubKey = encKeyProvider.getPublicKey(this.encKeyName);
-        Cipher cipher = Cipher.getInstance("RSA");
-        cipher.init(Cipher.ENCRYPT_MODE, pubKey);
-        this.encryptedSymmetricKeyString = DatatypeConverter.printBase64Binary(cipher.doFinal(encKeyBytes));
-      } catch (NoSuchKeyException e) {
-        throw new UsageException("Missing encryption key: " + this.encKeyName);
-      } catch (NoSuchAlgorithmException e) {
-        throw new RuntimeException(e);
-      } catch (NoSuchPaddingException e) {
-        throw new RuntimeException(e);
-      } catch (InvalidKeyException e) {
-        throw new RuntimeException(e);
-      } catch (IllegalBlockSizeException e) {
-        throw new RuntimeException(e);
-      } catch (BadPaddingException e) {
-        throw new RuntimeException(e);
-      }
-    }
+		if (this.encKeyName != null) {
+			byte[] encKeyBytes = new byte[32];
+			new SecureRandom().nextBytes(encKeyBytes);
+			this.encKey = new SecretKeySpec(encKeyBytes, "AES");
+			try {
+				Key pubKey = encKeyProvider.getPublicKey(this.encKeyName);
+				Cipher cipher = Cipher.getInstance("RSA");
+				cipher.init(Cipher.ENCRYPT_MODE, pubKey);
+				this.encryptedSymmetricKeyString = DatatypeConverter
+						.printBase64Binary(cipher.doFinal(encKeyBytes));
+			} catch (NoSuchKeyException e) {
+				throw new UsageException("Missing encryption key: "
+						+ this.encKeyName);
+			} catch (NoSuchAlgorithmException e) {
+				throw new RuntimeException(e);
+			} catch (NoSuchPaddingException e) {
+				throw new RuntimeException(e);
+			} catch (InvalidKeyException e) {
+				throw new RuntimeException(e);
+			} catch (IllegalBlockSizeException e) {
+				throw new RuntimeException(e);
+			} catch (BadPaddingException e) {
+				throw new RuntimeException(e);
+			}
+		}
 
-    this.acl = acl;
-    this.progressListenerFactory = progressListenerFactory;
-  }
+		this.acl = acl;
+		this.progressListenerFactory = progressListenerFactory;
 
-  /**
-   * Run ties Step 1, Step 2, and Step 3 together. The return result is the ETag of the upload.
-   */
-  public ListenableFuture<S3File> run(final String bucket, final String key) throws FileNotFoundException
-  {
-    if (!file.exists())
-      throw new FileNotFoundException(file.getPath());
+	}
 
-    ListenableFuture<Upload> upload = startUpload(bucket, key);
-    upload = Futures.transform(upload, startPartsAsyncFunction());
-    ListenableFuture<String> result = Futures.transform(upload, completeAsyncFunction());
-    return Futures.transform(result,
-      new Function<String, S3File>()
-      {
-        public S3File apply(String etag)
-        {
-          S3File f = new S3File();
-          f.setLocalFile(file);
-          f.setETag(etag);
-          f.setBucketName(bucket);
-          f.setKey(key);
-          return f;
-        }
-      });
-  }
+	/**
+	 * Run ties Step 1, Step 2, and Step 3 together. The return result is the
+	 * ETag of the upload.
+	 */
+	public ListenableFuture<S3File> run(final String bucket, final String key)
+			throws FileNotFoundException {
+		if (!file.exists())
+			throw new FileNotFoundException(file.getPath());
 
-  /**
-   * Step 1: Returns a future upload that is internally retried.
-   */
-  private ListenableFuture<Upload> startUpload(final String bucket, final String key)
-  {
-    return executeWithRetry(_executor,
-      new Callable<ListenableFuture<Upload>>()
-      {
-        public ListenableFuture<Upload> call()
-        {
-          return startUploadActual(bucket, key);
-        }
+		ListenableFuture<Upload> upload = startUpload(bucket, key);
+		upload = Futures.transform(upload, startPartsAsyncFunction());
+		ListenableFuture<String> result = Futures.transform(upload,
+				completeAsyncFunction());
 
-        public String toString()
-        {
-          return "starting upload " + bucket + "/" + key;
-        }
-      });
-  }
+		return Futures.transform(result, new Function<String, S3File>() {
+			public S3File apply(String etag) {
+				S3File f = new S3File();
+				f.setLocalFile(file);
+				f.setETag(etag);
+				f.setBucketName(bucket);
+				f.setKey(key);
+				return f;
+			}
+		});
+	}
 
-  private ListenableFuture<Upload> startUploadActual(final String bucket, final String key)
-  {
-    UploadFactory factory = new MultipartAmazonUploadFactory
-        (getAmazonS3Client(), _uploadExecutor);
+	/**
+	 * Step 1: Returns a future upload that is internally retried.
+	 */
+	private ListenableFuture<Upload> startUpload(final String bucket,
+			final String key) {
+		return executeWithRetry(_executor,
+				new Callable<ListenableFuture<Upload>>() {
+					public ListenableFuture<Upload> call() {
+						return startUploadActual(bucket, key);
+					}
 
-    Map<String,String> meta = new HashMap<String,String>();
-    meta.put("s3tool-version", String.valueOf(Version.CURRENT));
-    if (this.encKeyName != null) {
-      meta.put("s3tool-key-name", encKeyName);
-      meta.put("s3tool-symmetric-key", encryptedSymmetricKeyString);
-    }
-    meta.put("s3tool-chunk-size", Long.toString(chunkSize));
-    meta.put("s3tool-file-length", Long.toString(fileLength));
+					public String toString() {
+						return "starting upload " + bucket + "/" + key;
+					}
+				});
+	}
 
-    return factory.startUpload(bucket, key, meta, acl);
-  }
+	private ListenableFuture<Upload> startUploadActual(final String bucket,
+			final String key) {
+		UploadFactory factory = new MultipartAmazonUploadFactory(
+				getAmazonS3Client(), _uploadExecutor);
 
-  /**
-   * Step 2: Upload parts
-   */
-  private AsyncFunction<Upload, Upload> startPartsAsyncFunction()
-  {
-    return new AsyncFunction<Upload, Upload>()
-    {
-      public ListenableFuture<Upload> apply(Upload upload)
-      {
-        return startParts(upload);
-      }
-    };
-  }
+		Map<String, String> meta = new HashMap<String, String>();
+		meta.put("s3tool-version", String.valueOf(Version.CURRENT));
+		if (this.encKeyName != null) {
+			meta.put("s3tool-key-name", encKeyName);
+			meta.put("s3tool-symmetric-key", encryptedSymmetricKeyString);
+		}
 
-  private ListenableFuture<Upload> startParts(final Upload upload)
-  {
-    OverallProgressListener opl = null;
-    if (progressListenerFactory.isPresent()) {
-      opl = progressListenerFactory.get().create(
-          new ProgressOptionsBuilder()
-              .setObjectUri(getUri(upload.getBucket(), upload.getKey()))
-              .setOperation("upload")
-              .setFileSizeInBytes(fileLength)
-              .createProgressOptions());
-    }
+		meta.put("s3tool-chunk-size", Long.toString(chunkSize));
+		meta.put("s3tool-file-length", Long.toString(fileLength));
 
-    List<ListenableFuture<Void>> parts = new ArrayList<ListenableFuture<Void>>();
+		return factory.startUpload(bucket, key, meta, acl);
+	}
 
-    for (long position = 0; position < fileLength; position += chunkSize)
-    {
-      parts.add(startPartUploadThread(upload, position, opl));
-    }
+	/**
+	 * Step 2: Upload parts
+	 */
+	private AsyncFunction<Upload, Upload> startPartsAsyncFunction() {
+		return new AsyncFunction<Upload, Upload>() {
+			public ListenableFuture<Upload> apply(Upload upload) {
+				return startParts(upload);
+			}
+		};
+	}
 
-    // we do not care about the voids, so we just return the upload
-    // object.
-    return Futures.transform(
-      Futures.allAsList(parts),
-      Functions.constant(upload));
-  }
+	private ListenableFuture<Upload> startParts(final Upload upload) {
+		OverallProgressListener opl = null;
+		if (progressListenerFactory.isPresent()) {
+			opl = progressListenerFactory
+					.get()
+					.create(new ProgressOptionsBuilder()
+							.setObjectUri(
+									getUri(upload.getBucket(), upload.getKey()))
+							.setOperation("upload")
+							.setFileSizeInBytes(fileLength)
+							.createProgressOptions());
+		}
 
-  private ListenableFuture<Void> startPartUploadThread(final Upload upload,
-                                                       final long position,
-                                                       final OverallProgressListener opl)
-  {
-    ListenableFuture<ListenableFuture<Void>> result =
-      _executor.submit(new Callable<ListenableFuture<Void>>()
-        {
-          public ListenableFuture<Void> call() throws Exception
-          {
-            return UploadCommand.this.startPartUpload(upload, position, opl);
-          }
-        });
+		List<ListenableFuture<Void>> parts = new ArrayList<ListenableFuture<Void>>();
 
-    return Futures.dereference(result);
-  }
+		for (long position = 0; position < fileLength; position += chunkSize) {
+			parts.add(startPartUploadThread(upload, position, opl));
+		}
 
-  /**
-   * Execute startPartUpload with retry
-   */
-  private ListenableFuture<Void> startPartUpload(final Upload upload,
-                                                 final long position,
-                                                 final OverallProgressListener opl)
-  {
-    final int partNumber = (int) (position / chunkSize);
+		// we do not care about the voids, so we just return the upload
+		// object.
+		return Futures.transform(Futures.allAsList(parts),
+				Functions.constant(upload));
+	}
 
-    return executeWithRetry(_executor,
-      new Callable<ListenableFuture<Void>>()
-      {
-        public ListenableFuture<Void> call() throws Exception
-        {
-          return startPartUploadActual(upload, position, opl);
-        }
+	private ListenableFuture<Void> startPartUploadThread(final Upload upload,
+			final long position, final OverallProgressListener opl) {
+		ListenableFuture<ListenableFuture<Void>> result = _executor
+				.submit(new Callable<ListenableFuture<Void>>() {
+					public ListenableFuture<Void> call() throws Exception {
+						return UploadCommand.this.startPartUpload(upload,
+								position, opl);
+					}
+				});
 
-        public String toString()
-        {
-          return "uploading part " + partNumber;
-        }
-      });
-  }
+		return Futures.dereference(result);
+	}
 
-  private ListenableFuture<Void> startPartUploadActual(final Upload upload,
-                                                       final long position,
-                                                       final OverallProgressListener opl)
-  throws Exception
-  {
-    final int partNumber = (int) (position / chunkSize);
-    final FileInputStream fs = new FileInputStream(file);
+	/**
+	 * Execute startPartUpload with retry
+	 */
+	private ListenableFuture<Void> startPartUpload(final Upload upload,
+			final long position, final OverallProgressListener opl) {
+		final int partNumber = (int) (position / chunkSize);
 
-    long skipped = fs.skip(position);
-    while (skipped < position)
-    {
-      skipped += fs.skip(position - skipped);
-    }
+		return executeWithRetry(_executor,
+				new Callable<ListenableFuture<Void>>() {
+					public ListenableFuture<Void> call() throws Exception {
+						return startPartUploadActual(upload, position, opl);
+					}
 
-    BufferedInputStream bs = new BufferedInputStream(fs);
-    InputStream in;
-    long partSize;
-    if (this.encKeyName != null)
-    {
-      Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-      in = new CipherWithInlineIVInputStream(bs, cipher, Cipher.ENCRYPT_MODE, encKey);
+					public String toString() {
+						return "uploading part " + partNumber;
+					}
+				});
+	}
 
-      long preCryptSize = Math.min(fileLength - position, chunkSize);
-      long blockSize = cipher.getBlockSize();
-      partSize = blockSize * (preCryptSize/blockSize + 2);
-    }
-    else
-    {
-      in = bs;
-      partSize = Math.min(fileLength - position, chunkSize);
-    }
+	private ListenableFuture<Void> startPartUploadActual(final Upload upload,
+			final long position, final OverallProgressListener opl)
+			throws Exception {
+		final int partNumber = (int) (position / chunkSize);
+		final FileInputStream fs = new FileInputStream(file);
 
-    ListenableFuture<Void> uploadPartFuture = upload.uploadPart(partNumber,
-        in, partSize, Optional.fromNullable(opl));
+		long skipped = fs.skip(position);
+		while (skipped < position) {
+			skipped += fs.skip(position - skipped);
+		}
 
-    FutureFallback<Void> closeFile = new FutureFallback<Void>()
-      {
-        public ListenableFuture<Void> create(Throwable thrown) throws Exception
-        {
-          try {
-            fs.close();
-          } catch (Exception e) {
-          }
+		BufferedInputStream bs = new BufferedInputStream(fs);
+		InputStream in;
+		long partSize;
+		if (this.encKeyName != null) {
+			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+			in = new CipherWithInlineIVInputStream(bs, cipher,
+					Cipher.ENCRYPT_MODE, encKey);
 
-            return Futures.immediateFailedFuture(thrown);
-        }
-      };
+			long preCryptSize = Math.min(fileLength - position, chunkSize);
+			long blockSize = cipher.getBlockSize();
+			partSize = blockSize * (preCryptSize / blockSize + 2);
+		}
 
-    Futures.addCallback(uploadPartFuture, new FutureCallback<Void>()
-      {
-        public void onFailure(Throwable t) {}
-        public void onSuccess(Void ignored) {
-          try {
-            fs.close();
-          } catch (Exception e) {
-          }
-        }
-      });
+		else {
+			in = bs;
+			partSize = Math.min(fileLength - position, chunkSize);
+		}
 
-    return Futures.withFallback(uploadPartFuture, closeFile);
-  }
+		ListenableFuture<Void> uploadPartFuture = upload.uploadPart(partNumber,
+				in, partSize, Optional.fromNullable(opl));
 
-  /**
-   * Step 3: Complete parts
-   */
-  private AsyncFunction<Upload, String> completeAsyncFunction()
-  {
-    return new AsyncFunction<Upload, String>()
-    {
-      public ListenableFuture<String> apply(Upload upload)
-      {
-        return complete(upload, 0);
-      }
-    };
-  }
+		FutureFallback<Void> closeFile = new FutureFallback<Void>() {
+			public ListenableFuture<Void> create(Throwable thrown)
+					throws Exception {
+				try {
+					fs.close();
+				} catch (Exception e) {
+				}
 
-  /**
-   * Execute completeActual with retry
-   */
-  private ListenableFuture<String> complete(final Upload upload, final int retryCount)
-  {
-    return executeWithRetry(_executor,
-      new Callable<ListenableFuture<String>>()
-      {
-        public ListenableFuture<String> call()
-        {
-          return completeActual(upload, retryCount);
-        }
+				return Futures.immediateFailedFuture(thrown);
+			}
+		};
 
-        public String toString()
-        {
-          return "completing upload";
-        }
-      });
-  }
+		Futures.addCallback(uploadPartFuture, new FutureCallback<Void>() {
+			public void onFailure(Throwable t) {
+			}
 
-  private ListenableFuture<String> completeActual(final Upload upload, final int retryCount)
-  {
-    return upload.completeUpload();
-  }
+			public void onSuccess(Void ignored) {
+				try {
+					fs.close();
+				} catch (Exception e) {
+				}
+			}
+		});
+
+		return Futures.withFallback(uploadPartFuture, closeFile);
+	}
+
+	/**
+	 * Step 3: Complete parts
+	 */
+	private AsyncFunction<Upload, String> completeAsyncFunction() {
+		return new AsyncFunction<Upload, String>() {
+			public ListenableFuture<String> apply(Upload upload) {
+				return complete(upload, 0);
+			}
+		};
+	}
+
+	/**
+	 * Execute completeActual with retry
+	 */
+	private ListenableFuture<String> complete(final Upload upload,
+			final int retryCount) {
+		return executeWithRetry(_executor,
+				new Callable<ListenableFuture<String>>() {
+					public ListenableFuture<String> call() {
+						return completeActual(upload, retryCount);
+					}
+
+					public String toString() {
+						return "completing upload";
+					}
+				});
+	}
+
+	private ListenableFuture<String> completeActual(final Upload upload,
+			final int retryCount) {
+		return upload.completeUpload();
+	}
 }

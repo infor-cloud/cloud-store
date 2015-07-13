@@ -109,14 +109,14 @@ public class GCSClient implements CloudStoreClient {
         throws IOException {
         String bucket = Utils.getBucket(s3url);
         String object = Utils.getObjectKey(s3url);
-        return upload(file, bucket, object, key);
+        return upload(file, bucket, object, key, null);
     }
-
+    
     @Override
     public ListenableFuture<S3File> upload(File file, String bucket, String
         object)
         throws IOException {
-        return upload(file, bucket, object, null);
+        return upload(file, bucket, object, null, null);
     }
 
     @Override
@@ -297,8 +297,9 @@ public class GCSClient implements CloudStoreClient {
             throws IOException, ExecutionException, InterruptedException {
             File directory = options.getFile();
             String bucket = options.getBucket();
-            String object = options.getObjectKey();
-            String encKey = options.getEncKey().orNull();
+			String object = options.getObjectKey();
+			String encKey = options.getEncKey().orNull();
+			String kmsEncKey = options.getKmsEncKey().orNull();
             String acl = options.getAcl().or("projectPrivate");
             OverallProgressListenerFactory progressListenerFactory = options
                 .getOverallProgressListenerFactory().orNull();
@@ -306,7 +307,7 @@ public class GCSClient implements CloudStoreClient {
             UploadDirectoryCommand cmd = new UploadDirectoryCommand(_s3Executor,
                 _executor, this);
             s3Client.configure(cmd);
-            return cmd.run(directory, bucket, object, encKey, acl,
+            return cmd.run(directory, bucket, object, encKey, kmsEncKey, acl,
                 progressListenerFactory);
         }
     }

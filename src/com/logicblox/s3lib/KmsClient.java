@@ -4,6 +4,7 @@ import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.kms.AWSKMSClient;
 
 public class KmsClient {
@@ -21,7 +22,8 @@ public class KmsClient {
 	private static ClientConfiguration getConfig() {
 		// ClientConfiguration Cfg = setConfig();
 		// return Cfg;
-		return new ClientConfiguration();
+		ClientConfiguration Cfg = new ClientConfiguration();
+		return Cfg;
 	}
 
 	private static ClientConfiguration setConfig() {
@@ -29,6 +31,7 @@ public class KmsClient {
 		Cfg.setProtocol(getProtocol());
 		Cfg.setSocketTimeout(getSocketTimeout());
 		Cfg.setConnectionTimeout(getConnectionTimeout());
+		Cfg.setSignerOverride("AWSS3V4SignerType");
 		return Cfg;
 	}
 
@@ -50,6 +53,15 @@ public class KmsClient {
 
 	public static AWSKMSClient getKmsClient() {
 		AWSKMSClient kmsClient = new AWSKMSClient(getCreds(), getConfig());
+	/*	kmsClient.setRegion(RegionUtils.getRegion("us-east-1"));
+		kmsClient.setRegion(RegionUtils.getRegion("us-west-2"));
+		kmsClient.setRegion(RegionUtils.getRegion("us-west-1"));
+		kmsClient.setRegion(RegionUtils.getRegion("eu-west-1"));
+		kmsClient.setRegion(RegionUtils.getRegion("eu-central-1"));
+		kmsClient.setRegion(RegionUtils.getRegion("ap-southeast-1"));
+		kmsClient.setRegion(RegionUtils.getRegion("ap-southeast-2"));
+		kmsClient.setRegion(RegionUtils.getRegion("ap-northeast-1"));
+		kmsClient.setRegion(RegionUtils.getRegion("sa-east-1"));		   */
 		return kmsClient;
 	}
 }

@@ -1,15 +1,14 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.event.ProgressListener;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -37,7 +36,7 @@ public class UploadDirectoryCommand extends Command
                                             final String object,
                                             final String encKey,
                                             final String acl,
-                                            OverallProgressListenerFactory
+                                            String kmsEncKey, OverallProgressListenerFactory
                                                 progressListenerFactory)
   throws ExecutionException, InterruptedException, IOException
   {
@@ -49,7 +48,7 @@ public class UploadDirectoryCommand extends Command
         return isSymlink(file);
       }
 
-      public boolean isSymlink(File file)
+      private boolean isSymlink(File file)
       {
         try
         {

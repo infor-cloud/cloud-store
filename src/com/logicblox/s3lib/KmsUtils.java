@@ -1,9 +1,11 @@
 package com.logicblox.s3lib;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import com.amazonaws.services.kms.AWSKMSClient;
 import com.amazonaws.services.kms.model.*;
+import com.google.common.base.Optional;
 
 public class KmsUtils {
 
@@ -75,5 +77,67 @@ public class KmsUtils {
 
 	public static CreateKeyResult createKey() {
 		return createKey(null, null, null);
+	}
+
+	public static Optional<String> getKmsKey(Optional<String> kmsEncKey) {
+		List<KeyListEntry> allKeys = kmsclient.listKeys().getKeys();
+		for (KeyListEntry key : allKeys) {
+			if (key.getKeyId().equals(kmsEncKey)) {
+				return Optional.fromNullable(key.getKeyArn());
+			}
+			if (key.getKeyArn().equals(kmsEncKey)) {
+				return Optional.fromNullable(key.getKeyArn());
+			}
+			if (getAliasNameFromKeyId(key.getKeyId()).equals(kmsEncKey)) {
+				return Optional.fromNullable(getAliasNameFromKeyId(key
+						.getKeyArn()));
+			}
+		}
+		return null;
+	}
+
+	public static String getKmsKeyId(String kmsEncKey) {
+		List<KeyListEntry> allKeys = kmsclient.listKeys().getKeys();
+		for (KeyListEntry key : allKeys) {
+			if (key.getKeyId().equals(kmsEncKey)) {
+				return key.getKeyId();
+			}
+			if (key.getKeyArn().equals(kmsEncKey)) {
+				return key.getKeyId();
+			}
+			if (getAliasNameFromKeyId(key.getKeyId()).equals(kmsEncKey)) {
+				return getAliasNameFromKeyId(key.getKeyId());
+			}
+		}
+		return null;
+	}
+
+	public static String getKmsKey(String kmsEncKey) {
+		List<KeyListEntry> allKeys = kmsclient.listKeys().getKeys();
+		for (KeyListEntry key : allKeys) {
+			if (key.getKeyId().equals(kmsEncKey)) {
+				return key.getKeyArn();
+			}
+			if (key.getKeyArn().equals(kmsEncKey)) {
+				return key.getKeyArn();
+			}
+			if (getAliasNameFromKeyId(key.getKeyId()).equals(kmsEncKey)) {
+				return getAliasNameFromKeyId(key.getKeyArn());
+			}
+		}
+		return null;
+	}
+
+	public static EncryptResult encryptdata(EncryptRequest encryptRequest) {
+		return kmsclient.encrypt(encryptRequest);
+	}
+
+	public static ByteBuffer getKmsDataKey(String keyId) {
+		GenerateDataKeyRequest dataKeyRequest = new GenerateDataKeyRequest();
+		dataKeyRequest.setKeyId(keyId);
+		dataKeyRequest.setKeySpec("AES_256");
+		GenerateDataKeyResult dataKeyResult = kmsclient
+				.generateDataKey(dataKeyRequest);
+		return dataKeyResult.getPlaintext();
 	}
 }

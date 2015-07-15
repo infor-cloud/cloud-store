@@ -256,8 +256,8 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<Void> abortOldPendingUploads(
-        String bucket, Date date) {
+    public ListenableFuture<List<Void>> abortOldPendingUploads(
+        String bucket, String prefix, Date date) {
         throw new UnsupportedOperationException("abortOldPendingUploads is " +
             "not supported.");
     }

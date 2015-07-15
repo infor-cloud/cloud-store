@@ -409,14 +409,14 @@ public interface CloudStoreClient {
      * @param uploadId The id of the pending upload. Such ids can be found via
      *                 {@link CloudStoreClient#listPendingUploads}.
      * @see CloudStoreClient#listPendingUploads(String, String)
-     * @see CloudStoreClient#abortOldPendingUploads(String, Date)
+     * @see CloudStoreClient#abortOldPendingUploads(String, String, Date)
      */
     ListenableFuture<Void> abortPendingUpload(String bucket, String key,
                                               String uploadId);
 
     /**
-     * Aborts {@code bucket}'s pending uploads that were initiated before {@code
-     * date}.
+     * Aborts pending uploads under {@code bucket/prefix} that were initiated
+     * before {@code date}.
      *
      * @param bucket The name of the bucket
      * @param date   The date indicating which multipart uploads should be
@@ -425,7 +425,10 @@ public interface CloudStoreClient {
      * @see CloudStoreClient#listPendingUploads(String, String)
      * @see CloudStoreClient#abortPendingUpload(String, String, String)
      */
-    ListenableFuture<Void> abortOldPendingUploads(String bucket, Date date);
+    ListenableFuture<List<Void>> abortOldPendingUploads(String bucket,
+                                                        String prefix,
+                                                        Date date)
+        throws InterruptedException, ExecutionException, URISyntaxException;
 
     /**
      * Makes sure all pending tasks have been completed and shuts down all

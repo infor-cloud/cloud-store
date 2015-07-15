@@ -85,10 +85,8 @@ class Main
     _commander.addCommand("ls", new ListCommandOptions());
     _commander.addCommand("list-pending-uploads", new
         ListPendingUploadsCommandOptions());
-    _commander.addCommand("abort-pending-upload", new
-        AbortPendingUploadCommandOptions());
-    _commander.addCommand("abort-old-pending-uploads", new
-        AbortOldPendingUploadsCommandOptions());
+    _commander.addCommand("abort-pending-uploads", new
+        AbortPendingUploadsCommandOptions());
     _commander.addCommand("exists", new ExistsCommandOptions());
     _commander.addCommand("list-buckets", new ListBucketsCommandOptions());
     _commander.addCommand("keygen", new KeyGenCommandOptions());
@@ -236,9 +234,7 @@ class Main
       String[][] table = new String[buckets.size()][3];
       int[] max = new int[3];
 
-      TimeZone tz = TimeZone.getTimeZone("UTC");
-      DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-      df.setTimeZone(tz);
+      DateFormat df = Utils.getDefaultDateFormat();
 
       for(int i = 0; i < buckets.size(); i++)
       {
@@ -459,20 +455,39 @@ class Main
     @Override
     public void invoke() throws Exception
     {
-      CloudStoreClient client = createCloudStoreClient();
+      final CloudStoreClient client = createCloudStoreClient();
 
       try
       {
-        List<Upload> result = client.listPendingUploads(getBucket(),
+        List<Upload> pendingUploads = client.listPendingUploads(getBucket(),
             getObjectKey()).get();
 
-        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
-        for (Upload obj : result)
+        Collections.sort(pendingUploads, new Comparator<Upload>(){
+          public int compare(Upload u1, Upload u2) {
+            return (u1.getBucket() + '/' + u1.getKey()).toLowerCase()
+                .compareTo((u2.getBucket() + '/' + u2.getKey()).toLowerCase());
+          }});
+
+        String[][] table = new String[pendingUploads.size()][3];
+        int[] max = new int[3];
+
+        DateFormat df = Utils.getDefaultDateFormat();
+
+        for(int i = 0; i < pendingUploads.size(); i++)
         {
-          // print the upload id for each pending upload
-          System.out.println(client.getUri(obj.getBucket(), obj.getKey()) +
-              ", upload id: " + obj.getId() +
-              ", initiation date: " + df.format(obj.getInitiationDate()));
+          Upload u = pendingUploads.get(i);
+          table[i][0] = client.getUri(u.getBucket(), u.getKey()).toString();
+          table[i][1] = u.getId();
+          table[i][2] = df.format(u.getInitiationDate());
+
+          for(int j = 0; j < 3; j++)
+            max[j] = Math.max(table[i][j].length(), max[j]);
+        }
+
+        for (final String[] row : table)
+        {
+          System.out.format("%-" + (max[0] + 3) + "s%-" + (max[1] + 3) +
+              "s%-" + (max[2] + 3) + "s\n", row[0], row[1], row[2]);
         }
       }
       catch(ExecutionException exc)
@@ -486,50 +501,26 @@ class Main
     }
   }
 
-  @Parameters(commandDescription = "Abort pending upload using its Id")
-  class AbortPendingUploadCommandOptions extends S3ObjectCommandOptions
+  @Parameters(commandDescription = "Abort pending uploads, either by id or " +
+      "date/datetime. When date/datetime is specified the URL can be a prefix.")
+  class AbortPendingUploadsCommandOptions extends S3ObjectCommandOptions
   {
     @Parameter(names = "--id", description = "Id of the pending upload to " +
-        "abort",
-        required = true)
+        "abort")
     String id;
 
-    @Override
-    public void invoke() throws Exception
-    {
-      CloudStoreClient client = createCloudStoreClient();
-
-      try
-      {
-        client.abortPendingUpload(getBucket(), getObjectKey(), id).get();
-      }
-      catch(ExecutionException exc)
-      {
-        rethrow(exc.getCause());
-      }
-      finally
-      {
-        client.shutdown();
-      }
-    }
-  }
-
-  @Parameters(commandDescription = "Abort pending uploads older than a " +
-      "specific date")
-  class AbortOldPendingUploadsCommandOptions extends S3CommandOptions
-  {
-    @Parameter(names = "--bucket", description = "The name of the bucket that" +
-        " the old pending uploads belong to",
-        required = true)
-    String bucket;
-
-    @Parameter(names = "--date", description = "Pending uploads older than " +
-        "this date are going to be aborted. Date has to be in ISO 8601 " +
-        "format \"yyyy-MM-dd'T'HH:mm:ssZ\". Example: " +
-        "2015-02-20T19:31:51+0200",
-        required = true)
+    @Parameter(names = "--date", description = "Pending uploads older " +
+        "than this date are going to be aborted. Date has to be in ISO " +
+        "8601 format \"yyyy-MM-dd\", UTC. Example: " +
+        "\"2015-02-20\"")
     String dateStr;
 
+    @Parameter(names = "--datetime", description = "Pending uploads older " +
+        "than this datetime are going to be aborted. Datetime has to be in " +
+        "ISO 8601 format \"yyyy-MM-dd HH:mm\", UTC. Example: " +
+        "\"2015-02-20 19:31:51\"")
+    String dateTimeStr;
+
     @Override
     public void invoke() throws Exception
     {
@@ -537,10 +528,35 @@ class Main
 
       try
       {
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
-        Date date = df.parse(dateStr);
+        if (id != null && (dateTimeStr != null || dateStr != null)) {
+          throw new UsageException("You can abort pending uploads either by " +
+              "id or by date/datetime parameters");
+        }
+        if (dateTimeStr != null && dateStr != null) {
+          throw new UsageException("Only one of date and datetime " +
+              "parameters can be specified");
+        }
 
-        client.abortOldPendingUploads(bucket, date).get();
+        if (id != null) {
+          client.abortPendingUpload(getBucket(), getObjectKey(), id).get();
+        }
+        else if (dateStr != null) {
+          DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+          df.setTimeZone(TimeZone.getTimeZone("UTC"));
+          Date date = df.parse(dateStr);
+
+          client.abortOldPendingUploads(getBucket(), getObjectKey(), date).get();
+        }
+        else if (dateTimeStr != null) {
+          DateFormat df = Utils.getDefaultDateFormat();
+          Date date = df.parse(dateTimeStr);
+
+          client.abortOldPendingUploads(getBucket(), getObjectKey(), date).get();
+        }
+        else {
+          throw new UsageException("Either id or date/datetime parameters " +
+              "should be specified");
+        }
       }
       catch(ExecutionException exc)
       {

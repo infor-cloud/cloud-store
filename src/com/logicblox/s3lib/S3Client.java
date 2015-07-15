@@ -499,13 +499,13 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<Void> abortOldPendingUploads(
-      String bucket, Date date)
-  {
+  public ListenableFuture<List<Void>> abortOldPendingUploads(
+      String bucket, String prefix, Date date)
+      throws InterruptedException, ExecutionException, URISyntaxException {
       AbortOldPendingUploadsCommand cmd =
-          new AbortOldPendingUploadsCommand(_s3Executor, _executor);
+          new AbortOldPendingUploadsCommand(_s3Executor, _executor, this);
       configure(cmd);
-      return cmd.run(bucket, date);
+      return cmd.run(bucket, prefix, date);
   }
 
   /**

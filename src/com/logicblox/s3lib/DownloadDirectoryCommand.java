@@ -71,8 +71,10 @@ public class DownloadDirectoryCommand extends Command
               "File '" + file + "' already exists. Please delete or use --overwrite");
         }
 
-        DownloadOptions options = new DownloadOptionsBuilder().setFile
-            (outputFile).setBucket(bucket).setObjectKey(obj.getKey())
+        DownloadOptions options = new DownloadOptionsBuilder()
+            .setFile(outputFile)
+            .setBucket(bucket)
+            .setObjectKey(obj.getKey())
             .setOverallProgressListenerFactory(progressListenerFactory)
             .createDownloadOptions();
 

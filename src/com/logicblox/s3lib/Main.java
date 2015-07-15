@@ -7,7 +7,6 @@ import java.net.URISyntaxException;
 import java.security.GeneralSecurityException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -18,10 +17,9 @@ import java.util.concurrent.ExecutionException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
+
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
-
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -82,6 +80,7 @@ class Main
     _commander.setProgramName("cloud-store");
     _commander.addCommand("upload", new UploadCommandOptions());
     _commander.addCommand("download", new DownloadCommandOptions());
+    _commander.addCommand("copy", new CopyCommandOptions());
     _commander.addCommand("ls", new ListCommandOptions());
     _commander.addCommand("list-pending-uploads", new
         ListPendingUploadsCommandOptions());
@@ -131,9 +130,9 @@ class Main
     @Parameter(names = {"--chunk-size"}, description = "The size of each chunk read from the file")
     long chunkSize = Utils.getDefaultChunkSize();
 
-    protected boolean backendIsGCS() throws URISyntaxException
+    protected Utils.StorageService detectStorageService() throws URISyntaxException
     {
-      return Utils.backendIsGCS(endpoint, null);
+      return Utils.detectStorageService(endpoint, null);
     }
 
     protected CloudStoreClient createCloudStoreClient()
@@ -141,13 +140,13 @@ class Main
       ListeningExecutorService uploadExecutor = Utils.getHttpExecutor
           (maxConcurrentConnections);
 
-      boolean gcsMode = backendIsGCS();
+      Utils.StorageService service = detectStorageService();
 
       CloudStoreClient client;
-      if (gcsMode) {
+      if (service == Utils.StorageService.GCS) {
         AWSCredentialsProvider gcsXMLProvider = Utils
             .getGCSXMLEnvironmentVariableCredentialsProvider();
-        AmazonS3Client s3Client = new AmazonS3Client(gcsXMLProvider);
+        AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(gcsXMLProvider);
 
         client = new GCSClientBuilder()
             .setInternalS3Client(s3Client)
@@ -175,10 +174,6 @@ class Main
       {
         client.setEndpoint(endpoint);
       }
-      if(gcsMode)
-      {
-        client.setEndpoint(Utils.getGCSEndpoint(_commander.getParsedCommand()));
-      }
 
       return client;
     }
@@ -190,7 +185,7 @@ class Main
    */
   abstract class S3ObjectCommandOptions extends S3CommandOptions
   {
-    @Parameter(description = "S3URL", required = true)
+    @Parameter(description = "storage-service-url", required = true)
     List<String> urls;
 
     protected URI getURI() throws URISyntaxException
@@ -211,9 +206,66 @@ class Main
       return Utils.getObjectKey(getURI());
     }
 
-    protected boolean backendIsGCS() throws URISyntaxException
+    protected Utils.StorageService detectStorageService() throws URISyntaxException
     {
-      return Utils.backendIsGCS(endpoint, getURI());
+      return Utils.detectStorageService(endpoint, getURI());
+    }
+  }
+
+  /**
+   * Abstraction for commands that deal with two object/prefix URLs
+   */
+  abstract class TwoObjectsCommandOptions extends S3CommandOptions
+  {
+    // Upgrade JCommander to support following lines
+    // @Parameter(description = "source-url", required = true)
+    // String sourceURL;
+    //
+    // @Parameter(description = "destination-url", required = true)
+    // String destinationURL;
+
+    @Parameter(description = "source-url destination-url", required = true)
+    List<String> urls;
+
+    protected URI getSourceURI() throws URISyntaxException
+    {
+      if(urls.size() != 2)
+        throw new UsageException("Two object URLs are required");
+
+      return Utils.getURI(urls.get(0));
+    }
+
+    protected String getSourceBucket() throws URISyntaxException
+    {
+      if(urls.size() != 2)
+        throw new UsageException("Two object URLs are required");
+
+      return Utils.getBucket(getSourceURI());
+    }
+
+    protected String getSourceObjectKey() throws URISyntaxException
+    {
+      return Utils.getObjectKey(getSourceURI());
+    }
+
+    protected URI getDestinationURI() throws URISyntaxException
+    {
+      return Utils.getURI(urls.get(1));
+    }
+
+    protected String getDestinationBucket() throws URISyntaxException
+    {
+      return Utils.getBucket(getDestinationURI());
+    }
+
+    protected String getDestinationObjectKey() throws URISyntaxException
+    {
+      return Utils.getObjectKey(getDestinationURI());
+    }
+
+    protected Utils.StorageService detectStorageService() throws URISyntaxException
+    {
+      return Utils.detectStorageService(endpoint, getSourceURI());
     }
   }
 
@@ -270,15 +322,13 @@ class Main
       String key = getObjectKey();
       ListenableFuture<ObjectMetadata> result = client.exists(bucket, key);
 
-      boolean gcsMode = backendIsGCS();
-      String scheme = gcsMode ? "gs://" : "s3://";
-
       boolean exists = false;
       ObjectMetadata metadata = result.get();
       if(metadata == null)
       {
         if(_verbose)
-          System.err.println("Object " + scheme + bucket + "/" + key + " does not exist.");
+          System.err.println("Object " + client.getUri(bucket, key) + " does " +
+              "not exist.");
       }
       else
       {
@@ -292,6 +342,84 @@ class Main
 
       if (!exists)
         System.exit(1);
+    }
+
+  }
+
+  @Parameters(commandDescription = "Copy prefix/object. If destination URI is" +
+      " a directory (ends with '/'), then source URI acts as a prefix and " +
+      "this operation will copy all keys that would be returned by the list " +
+      "operation on the same prefix. Otherwise, we go for a direct key-to-key" +
+      " copy.")
+  class CopyCommandOptions extends TwoObjectsCommandOptions
+  {
+    @Parameter(names = "--canned-acl", description = "The canned ACL to use. "
+        + S3Client.cannedACLsDescConst)
+    String cannedAcl;
+
+    @Parameter(names = {"-r", "--recursive"}, description = "Copy recursively")
+    boolean recursive = false;
+
+    public void invoke() throws Exception
+    {
+      if (cannedAcl == null)
+      {
+        cannedAcl = Utils.getDefaultCannedACLFor(detectStorageService());
+      }
+
+      if(!Utils.isValidCannedACLFor(detectStorageService(), cannedAcl))
+      {
+        throw new UsageException("Unknown canned ACL '" + cannedAcl + "'");
+      }
+
+      CloudStoreClient client = createCloudStoreClient();
+
+      CopyOptions options = new CopyOptionsBuilder()
+          .setSourceBucketName(getSourceBucket())
+          .setSourceKey(getSourceObjectKey())
+          .setDestinationBucketName(getDestinationBucket())
+          .setDestinationKey(getDestinationObjectKey())
+          .setCannedAcl(cannedAcl)
+          .setRecursive(recursive)
+          .createCopyOptions();
+
+      try
+      {
+        // Check if destination bucket exists
+        if (client.exists(getDestinationBucket(), "").get() == null)
+        {
+          throw new UsageException("Bucket not found at " +
+              client.getUri(getDestinationBucket(), ""));
+        }
+
+        if(getDestinationObjectKey().endsWith("/") ||
+            getDestinationObjectKey().equals(""))
+        {
+          // If destination URI is a directory (ends with "/") or a bucket
+          // (object URI is empty), then source URI acts as a prefix and this
+          // operation will copy all keys that would be returned by the list
+          // operation on the same prefix.
+          client.copyToDir(options).get();
+        }
+        else
+        {
+          // We go for a direct key-to-key copy, so source object has
+          // to be there.
+          if (client.exists(getSourceBucket(), getSourceObjectKey()).get() == null)
+          {
+            throw new UsageException("Object not found at " + getSourceURI());
+          }
+          client.copy(options).get();
+        }
+      }
+      catch(ExecutionException exc)
+      {
+        rethrow(exc.getCause());
+      }
+      finally
+      {
+        client.shutdown();
+      }
     }
   }
 
@@ -307,54 +435,20 @@ class Main
     @Parameter(names = "--progress", description = "Enable progress indicator")
     boolean progress = false;
 
-    @Parameter(names = "--canned-acl", description = "The canned ACL to use." +
-            "For Amazon S3, choose one of: "+
-            "private, public-read, public-read-write, authenticated-read, bucket-owner-read, "+
-            "bucket-owner-full-control (default: bucket-owner-full-control)\n" +
-            "For Google Cloud Storage, choose one of: " +
-            "projectPrivate, private, publicRead, publicReadWrite, authenticatedRead, "+
-            "bucketOwnerRead, bucketOwnerFullControl (default: projectPrivate")
-    String cannedAcl = "bucket-owner-full-control";
-
-    List<String> gcsPredefACLs = Arrays.asList("projectPrivate", "private", "publicRead",
-            "publicReadWrite", "authenticatedRead", "bucketOwnerRead", "bucketOwnerFullControl");
-
-    private String getDefaultACL()
-    {
-      try
-      {
-        return Utils.getDefaultACL(backendIsGCS());
-      }
-      catch (URISyntaxException e)
-      {
-        return "bucket-owner-full-control";
-      }
-    }
-
-    private boolean isValidS3Acl(String value)
-    {
-      for (CannedAccessControlList acl : CannedAccessControlList.values())
-      {
-        if (acl.toString().equals(value))
-          return true;
-      }
-      return false;
-    }
-
-    private boolean isValidGCSAcl(String value)
-    {
-      return gcsPredefACLs.contains(value);
-    }
+    @Parameter(names = "--canned-acl", description = "The canned ACL to use. "
+        + S3Client.cannedACLsDescConst + " " + GCSClient.cannedACLsDescConst)
+    String cannedAcl;
 
     public void invoke() throws Exception
     {
-      if (cannedAcl == "bucket-owner-full-control")
-        cannedAcl = getDefaultACL();
-
-      if((!backendIsGCS() && !isValidS3Acl(cannedAcl)) ||
-          (backendIsGCS() && !isValidGCSAcl(cannedAcl)))
+      if (cannedAcl == null)
       {
-        throw new UsageException("Unknown canned ACL '"+cannedAcl+"'");
+        cannedAcl = Utils.getDefaultCannedACLFor(detectStorageService());
+      }
+
+      if(!Utils.isValidCannedACLFor(detectStorageService(), cannedAcl))
+      {
+        throw new UsageException("Unknown canned ACL '" + cannedAcl + "'");
       }
 
       if (getObjectKey().endsWith("/")) {
@@ -404,8 +498,6 @@ class Main
     public void invoke() throws Exception
     {
       CloudStoreClient client = createCloudStoreClient();
-      boolean gcsMode = backendIsGCS();
-      String scheme = gcsMode ? "gs://" : "s3://";
 
       try
       {
@@ -413,30 +505,20 @@ class Main
         {
           List<S3File> result = client.listObjectsAndDirs(getBucket(), getObjectKey(), recursive).get();
 
-          if((result.size() == 0) && (!getObjectKey().endsWith("/")))
-          {
-            // Re-try in case we ls a folder
-            result = client.listObjectsAndDirs(getBucket(), getObjectKey()+"/", recursive).get();
-          }
           for (S3File obj : result)
           {
             // print the full s3 url for each object and (first-level) directory
-            System.out.println(scheme + obj.getBucketName() + "/" + obj.getKey());
+            System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
           }
         }
         else
         {
           List<S3ObjectSummary> result = client.listObjects(getBucket(), getObjectKey(), recursive).get();
 
-          if ((result.size() == 0) && (!getObjectKey().endsWith("/")))
-          {
-            // Re-try in case we ls a folder
-            result = client.listObjects(getBucket(), getObjectKey() + "/", recursive).get();
-          }
           for (S3ObjectSummary obj : result)
           {
             // print the full s3 url for each object
-            System.out.println(scheme + obj.getBucketName() + "/" + obj.getKey());
+            System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
           }
         }
       }

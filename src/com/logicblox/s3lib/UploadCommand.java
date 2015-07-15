@@ -66,7 +66,7 @@ public class UploadCommand extends Command
 
     this.file = file;
     setChunkSize(chunkSize);
-    this.fileLength = file.length();
+    setFileLength(file.length());
     this.encKeyName = encKeyName;
 
     if (this.encKeyName != null) {
@@ -75,6 +75,8 @@ public class UploadCommand extends Command
       this.encKey = new SecretKeySpec(encKeyBytes, "AES");
       try
       {
+        if (encKeyProvider == null)
+          throw new UsageException("No encryption key provider is specified");
         Key pubKey = encKeyProvider.getPublicKey(this.encKeyName);
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.ENCRYPT_MODE, pubKey);

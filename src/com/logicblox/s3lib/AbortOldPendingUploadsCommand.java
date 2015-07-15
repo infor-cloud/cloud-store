@@ -47,7 +47,7 @@ public class AbortOldPendingUploadsCommand extends Command
     // TODO(geokollias): It's a blocking call (similar case with DownloadDirectoryCommand)
     List<Upload> pendingUploads = _csClient.listPendingUploads(bucket, prefix).get();
 
-    List<ListenableFuture<Void>> aborts = new ArrayList<ListenableFuture<Void>>();
+    List<ListenableFuture<Void>> aborts = new ArrayList<>();
     for (Upload obj : pendingUploads) {
       if (obj.getInitiationDate().before(date)) {
         ListenableFuture<Void> abort = _csClient.abortPendingUpload(

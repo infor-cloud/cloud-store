@@ -1,7 +1,7 @@
 Building from source
 ---------------
 
-All `s3lib` third-party dependencies can be downloaded from:
+All `cloud-store` third-party dependencies can be downloaded from:
 
     https://bob.logicblox.com/job/logicblox-40/universe/linux.lb_universe_deps/latest/download/1
 
@@ -21,7 +21,7 @@ configure this, use the `--prefix` option. For example:
 
     $ ./configure --prefix=$HOME/s3lib
 
-The binary distribution of `s3lib` is self-contained.
+The binary distribution of `cloud-store` is self-contained.
 
 
 Usage
@@ -29,7 +29,7 @@ Usage
 
 Generate a key pair:
 
-    $ s3lib --keygen testkeypair
+    $ cloud-store --keygen testkeypair
 
 By default, the key pair is installed under `~/.s3lib-keys`.
 
@@ -52,3 +52,5 @@ Authors
   * Luke Vanderhart
   * Thiago T. Bartolomei
   * Rob Vermaas
+  * George Kollias
+

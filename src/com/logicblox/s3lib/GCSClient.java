@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -31,6 +32,10 @@ import java.util.concurrent.ExecutionException;
  * .com/storage/</a>
  */
 public class GCSClient implements CloudStoreClient {
+    private static final String GCS_JSON_API_ENDPOINT = "https://www.googleapis.com";
+    private static final String GCS_XML_API_ENDPOINT = "https://storage.googleapis.com";
+
+
     private final Storage gcsClient;
     private final S3ClientDelegatee s3Client;
 
@@ -52,6 +57,32 @@ public class GCSClient implements CloudStoreClient {
         s3Client = new S3ClientDelegatee(internalS3Client, apiExecutor,
             internalExecutor, chunkSize, keyProvider);
         gcsClient = internalGCSClient;
+        setEndpoint(GCS_XML_API_ENDPOINT);
+    }
+
+    /**
+     * Canned ACLs handling
+     */
+
+    public static final String defaultCannedACL = "projectPrivate";
+
+    public static final List<String> allCannedACLs = Arrays.asList(
+        "projectPrivate", "private", "publicRead", "publicReadWrite",
+        "authenticatedRead", "bucketOwnerRead", "bucketOwnerFullControl");
+
+    /**
+     * {@code cannedACLsDescConst} has to be a compile-time String constant
+     * expression. That's why e.g. we cannot re-use {@code allCannedACLs} to
+     * construct it.
+     */
+    static final String cannedACLsDescConst = "For Google Cloud Storage, " +
+        "choose one of: projectPrivate, private, publicRead, publicReadWrite," +
+        " authenticatedRead,bucketOwnerRead, bucketOwnerFullControl (default:" +
+        " projectPrivate).";
+
+    public static boolean isValidCannedACL(String aclStr)
+    {
+        return allCannedACLs.contains(aclStr);
     }
 
     @Override
@@ -225,6 +256,19 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
+    public ListenableFuture<S3File> copy(CopyOptions options) throws IOException {
+        throw new UnsupportedOperationException("Copy operation is not " +
+            "supported for Google Cloud Storage yet.");
+    }
+
+    @Override
+    public ListenableFuture<List<S3File>> copyToDir(CopyOptions options)
+        throws InterruptedException, ExecutionException, IOException {
+        throw new UnsupportedOperationException("Copy operation is not " +
+            "supported for Google Cloud Storage yet.");
+    }
+
+    @Override
     public ListenableFuture<List<S3ObjectSummary>> listObjects(String bucket,
                                                                String prefix,
                                                                boolean
@@ -249,15 +293,16 @@ public class GCSClient implements CloudStoreClient {
 
     @Override
     public ListenableFuture<Void> abortPendingUpload(String bucket,
-                                                     String prefix,
+                                                     String key,
                                                      String uploadId) {
         throw new UnsupportedOperationException("abortPendingUpload is not " +
             "supported.");
     }
 
     @Override
-    public ListenableFuture<List<Void>> abortOldPendingUploads(
-        String bucket, String prefix, Date date) {
+    public ListenableFuture<List<Void>> abortOldPendingUploads(String bucket,
+                                                               String prefix,
+                                                               Date date) {
         throw new UnsupportedOperationException("abortOldPendingUploads is " +
             "not supported.");
     }

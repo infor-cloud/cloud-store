@@ -61,7 +61,8 @@ jar(
                                    ('Specification-Vendor', "LogicBlox, Inc."),
                                    ('Implementation-Title', "com.logicblox.s3lib"),
                                    ('Implementation-Version', impl_version),
-                                   ('Implementation-Vendor', "LogicBlox, Inc.")]})
+                                   ('Implementation-Vendor', "LogicBlox, Inc.")]},
+   java_version = "1.7")
 
 
 bin_program('cloud-store')

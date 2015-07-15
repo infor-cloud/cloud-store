@@ -116,56 +116,94 @@ public class Utils
     return Pattern.compile(pattern).matcher(uri);
   }
 
-  public static boolean backendIsGCS(String endpoint, URI uri)
+  public static boolean isStorageServiceURL(String url)
+  {
+    try
+    {
+      return getURI(url) != null;
+    }
+    catch (URISyntaxException e)
+    {
+      return false;
+    }
+    catch (UsageException e)
+    {
+      return false;
+    }
+  }
+
+  /**
+   * Enum values for all supported storage services.
+   * <p/>
+   * {@code UNKNOWN} value represents storage services that run on an unknown
+   * endpoint but provide an API compatible with one of the supported services
+   * (e.g. S3 or GCS-compatible API). It's mostly useful for testing purposes.
+   */
+  public enum StorageService
+  {
+    S3, GCS
+  }
+
+  public static StorageService detectStorageService(String endpoint, URI uri)
+      throws URISyntaxException
   {
     // We consider endpoint (if exists) stronger evidence than URI
     if (endpoint != null)
     {
       URI endpointuri;
-      try
-      {
-        if (!endpoint.startsWith("https://"))
-          endpointuri = new URI("https://" + endpoint);
-        else
-          endpointuri = new URI(endpoint);
-      }
-      catch (URISyntaxException e)
-      {
-        return false;
-      }
+      if (!endpoint.startsWith("https://") && !endpoint.startsWith("http://"))
+        endpointuri = new URI("https://" + endpoint);
+      else
+        endpointuri = new URI(endpoint);
 
-      return endpointuri.getHost().endsWith("googleapis.com");
+      if (endpointuri.getHost().endsWith("amazonaws.com"))
+        return StorageService.S3;
+      else if (endpointuri.getHost().endsWith("googleapis.com"))
+        return StorageService.GCS;
     }
 
     if (uri != null)
-      return "gs".equals(uri.getScheme());
-
-    return false;
-  }
-
-  public static String getDefaultACL(boolean gcsMode)
-  {
-    if (gcsMode)
-      return "projectPrivate";
-    else
-      return "bucket-owner-full-control";
-  }
-
-  public static String getGCSEndpoint(String command) throws URISyntaxException
-  {
-    if (command == "upload")
     {
-      // We use GCS-native JSON API for uploads
-      // We use HTTPS since we authenticate with OAuth
-      return "https://www.googleapis.com";
+      switch (uri.getScheme())
+      {
+        case "s3":
+          return StorageService.S3;
+        case "gs":
+          return StorageService.GCS;
+      }
     }
-    else
+
+    throw new UsageException("Cannot detect storage service: endpoint " +
+        endpoint +  ", URI " + uri);
+  }
+
+  public static String getDefaultCannedACLFor(StorageService service)
+  {
+    switch (service)
     {
-      // Currently, we use S3-compatible XML API for non-upload operations
-      return "https://storage.googleapis.com";
+      case S3:
+        return S3Client.defaultCannedACL;
+      case GCS:
+        return GCSClient.defaultCannedACL;
+      default:
+        throw new UsageException("Unknown storage service " + service);
     }
   }
 
+  public static boolean isValidCannedACLFor(StorageService service, String
+      cannedACL)
+  {
+    switch (service)
+    {
+      case S3:
+        return S3Client.isValidCannedACL(cannedACL);
+      case GCS:
+        return GCSClient.isValidCannedACL(cannedACL);
+      default:
+        throw new UsageException("Unknown storage service " + service);
+    }
+  }
+  
   public static final String GCS_XML_ACCESS_KEY_ENV_VAR = "GCS_XML_ACCESS_KEY";
 
   public static final String GCS_XML_SECRET_KEY_ENV_VAR = "GCS_XML_SECRET_KEY";
@@ -292,7 +330,7 @@ public class Utils
     return clientCfg;
   }
 
-  public static Function<Integer, Integer> createExponentialDelayFunction(final int initialDelay)
+  public static Function<Integer, Integer> createExponentialDelayFunction(final int initialDelay, final int maxDelay)
   {
     return new Function<Integer, Integer>()
     {
@@ -300,7 +338,8 @@ public class Utils
       {
         if(retryCount > 0)
         {
-          return initialDelay * (int) Math.pow(2, retryCount - 1);
+          int delay = initialDelay * (int) Math.pow(2, retryCount - 1);
+          return Math.min(delay, maxDelay);
         }
         else
         {

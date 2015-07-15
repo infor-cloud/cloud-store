@@ -219,11 +219,11 @@ public class DownloadCommand extends Command
       }
 
       setChunkSize(Long.valueOf(meta.get("s3tool-chunk-size")));
-      fileLength = Long.valueOf(meta.get("s3tool-file-length"));
+      setFileLength(Long.valueOf(meta.get("s3tool-file-length")));
     }
     else
     {
-      fileLength = download.getLength();
+      setFileLength(download.getLength());
       if (chunkSize == 0)
       {
         setChunkSize(Math.min(fileLength, Utils.getDefaultChunkSize()));

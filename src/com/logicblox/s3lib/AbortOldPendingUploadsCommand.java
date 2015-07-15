@@ -1,76 +1,61 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.services.s3.transfer.TransferManager;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
+import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Date;
-import java.util.concurrent.Callable;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 
 public class AbortOldPendingUploadsCommand extends Command
 {
   private ListeningExecutorService _httpExecutor;
   private ListeningScheduledExecutorService _executor;
+  private CloudStoreClient _csClient;
 
   public AbortOldPendingUploadsCommand(
       ListeningExecutorService httpExecutor,
-      ListeningScheduledExecutorService internalExecutor)
+      ListeningScheduledExecutorService internalExecutor,
+      CloudStoreClient csClient)
   {
     _httpExecutor = httpExecutor;
     _executor = internalExecutor;
+    _csClient = csClient;
   }
 
   /**
-   * Aborts {@code bucket}'s pending uploads that were initiated before {@code
-   * date}.
+   * Aborts pending uploads under {@code bucket/prefix} that were initiated
+   * before {@code date}.
    *
    * @param bucket The name of the bucket
+   * @param prefix The prefix of the keys we want to check
    * @param date   The date indicating which multipart uploads should be
    *               aborted. All pending uploads initiated before this date
    *               will be aborted.
    * @see ListPendingUploadsCommand
    * @see AbortPendingUploadCommand
    */
-  public ListenableFuture<Void> run(final String bucket,
-                                    final Date date)
-  {
-    ListenableFuture<Void> future =
-      executeWithRetry(
-        _executor,
-        new Callable<ListenableFuture<Void>>()
-        {
-          public ListenableFuture<Void> call()
-          {
-            return _httpExecutor.submit(new AbortCallable(bucket, date));
-          }
+  public ListenableFuture<List<Void>> run(final String bucket,
+                                          final String prefix,
+                                          final Date date)
+      throws ExecutionException, InterruptedException, URISyntaxException {
+    // TODO(geokollias): It's a blocking call (similar case with DownloadDirectoryCommand)
+    List<Upload> pendingUploads = _csClient.listPendingUploads(bucket, prefix).get();
 
-          public String toString()
-          {
-            return "abort old pending uploads of " + bucket;
-          }
-        });
-
-    return future;
-  }
-
-  private class AbortCallable implements Callable<Void>
-  {
-    private String bucket;
-    private Date date;
-
-    public AbortCallable(String bucket, Date date)
-    {
-      this.bucket = bucket;
-      this.date = date;
+    List<ListenableFuture<Void>> aborts = new ArrayList<ListenableFuture<Void>>();
+    for (Upload obj : pendingUploads) {
+      if (obj.getInitiationDate().before(date)) {
+        ListenableFuture<Void> abort = _csClient.abortPendingUpload(
+            obj.getBucket(), obj.getKey(), obj.getId());
+        aborts.add(abort);
+      }
     }
 
-    public Void call() throws Exception {
-      TransferManager tm = new TransferManager(getAmazonS3Client());
-      tm.abortMultipartUploads(bucket, date);
-
-      return null;
-    }
+    return Futures.allAsList(aborts);
   }
 }

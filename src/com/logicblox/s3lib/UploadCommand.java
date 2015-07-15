@@ -135,8 +135,7 @@ public class UploadCommand extends Command
             {
               public ListenableFuture<S3File> apply(Void v)
               {
-                String msg = "Error uploading " + getUri(bucket, key) + ".";
-                return Futures.immediateFailedFuture(new Exception(msg, t));
+                return Futures.immediateFailedFuture(t);
               }
             });
 

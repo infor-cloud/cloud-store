@@ -3,6 +3,7 @@ package com.logicblox.s3lib;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.concurrent.Callable;
 import java.io.InputStream;
 import java.util.concurrent.ConcurrentMap;
@@ -30,15 +31,17 @@ class MultipartAmazonUpload implements Upload
   private String bucketName;
   private String key;
   private String uploadId;
+  private Date initiated;
   private ListeningExecutorService executor;
 
   public MultipartAmazonUpload(AmazonS3 client, String bucketName, String key, String uploadId,
-                               ListeningExecutorService executor)
+                               Date initiated, ListeningExecutorService executor)
   {
     this.bucketName = bucketName;
     this.key = key;
     this.client = client;
     this.uploadId = uploadId;
+    this.initiated = initiated;
     this.executor = executor;
   }
 
@@ -72,6 +75,16 @@ class MultipartAmazonUpload implements Upload
   public String getKey()
   {
     return key;
+  }
+
+  public String getId()
+  {
+    return uploadId;
+  }
+
+  public Date getInitiationDate()
+  {
+    return initiated;
   }
 
   private class AbortCallable implements Callable<Void>

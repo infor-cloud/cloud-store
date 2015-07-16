@@ -9,6 +9,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutionException;
@@ -81,6 +82,10 @@ class Main
     _commander.addCommand("download", new DownloadCommandOptions());
     _commander.addCommand("copy", new CopyCommandOptions());
     _commander.addCommand("ls", new ListCommandOptions());
+    _commander.addCommand("list-pending-uploads", new
+        ListPendingUploadsCommandOptions());
+    _commander.addCommand("abort-pending-uploads", new
+        AbortPendingUploadsCommandOptions());
     _commander.addCommand("exists", new ExistsCommandOptions());
     _commander.addCommand("list-buckets", new ListBucketsCommandOptions());
     _commander.addCommand("keygen", new KeyGenCommandOptions());
@@ -281,9 +286,7 @@ class Main
       String[][] table = new String[buckets.size()][3];
       int[] max = new int[3];
 
-      TimeZone tz = TimeZone.getTimeZone("UTC");
-      DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-      df.setTimeZone(tz);
+      DateFormat df = Utils.getDefaultDateFormat();
 
       for(int i = 0; i < buckets.size(); i++)
       {
@@ -528,6 +531,126 @@ class Main
     }
   }
 
+  @Parameters(commandDescription = "List pending uploads")
+  class ListPendingUploadsCommandOptions extends S3ObjectCommandOptions
+  {
+    @Override
+    public void invoke() throws Exception
+    {
+      final CloudStoreClient client = createCloudStoreClient();
+
+      try
+      {
+        List<Upload> pendingUploads = client.listPendingUploads(getBucket(),
+            getObjectKey()).get();
+
+        Collections.sort(pendingUploads, new Comparator<Upload>(){
+          public int compare(Upload u1, Upload u2) {
+            return (u1.getBucket() + '/' + u1.getKey()).toLowerCase()
+                .compareTo((u2.getBucket() + '/' + u2.getKey()).toLowerCase());
+          }});
+
+        String[][] table = new String[pendingUploads.size()][3];
+        int[] max = new int[3];
+
+        DateFormat df = Utils.getDefaultDateFormat();
+
+        for(int i = 0; i < pendingUploads.size(); i++)
+        {
+          Upload u = pendingUploads.get(i);
+          table[i][0] = client.getUri(u.getBucket(), u.getKey()).toString();
+          table[i][1] = u.getId();
+          table[i][2] = df.format(u.getInitiationDate());
+
+          for(int j = 0; j < 3; j++)
+            max[j] = Math.max(table[i][j].length(), max[j]);
+        }
+
+        for (final String[] row : table)
+        {
+          System.out.format("%-" + (max[0] + 3) + "s%-" + (max[1] + 3) +
+              "s%-" + (max[2] + 3) + "s\n", row[0], row[1], row[2]);
+        }
+      }
+      catch(ExecutionException exc)
+      {
+        rethrow(exc.getCause());
+      }
+     finally
+      {
+        client.shutdown();
+      }
+    }
+  }
+
+  @Parameters(commandDescription = "Abort pending uploads, either by id or " +
+      "date/datetime. When date/datetime is specified the URL can be a prefix.")
+  class AbortPendingUploadsCommandOptions extends S3ObjectCommandOptions
+  {
+    @Parameter(names = "--id", description = "Id of the pending upload to " +
+        "abort")
+    String id;
+
+    @Parameter(names = "--date", description = "Pending uploads older " +
+        "than this date are going to be aborted. Date has to be in ISO " +
+        "8601 format \"yyyy-MM-dd\", UTC. Example: " +
+        "\"2015-02-20\"")
+    String dateStr;
+
+    @Parameter(names = "--datetime", description = "Pending uploads older " +
+        "than this datetime are going to be aborted. Datetime has to be in " +
+        "ISO 8601 format \"yyyy-MM-dd HH:mm\", UTC. Example: " +
+        "\"2015-02-20 19:31:51\"")
+    String dateTimeStr;
+
+    @Override
+    public void invoke() throws Exception
+    {
+      CloudStoreClient client = createCloudStoreClient();
+
+      try
+      {
+        if (id != null && (dateTimeStr != null || dateStr != null)) {
+          throw new UsageException("You can abort pending uploads either by " +
+              "id or by date/datetime parameters");
+        }
+        if (dateTimeStr != null && dateStr != null) {
+          throw new UsageException("Only one of date and datetime " +
+              "parameters can be specified");
+        }
+
+        if (id != null) {
+          client.abortPendingUpload(getBucket(), getObjectKey(), id).get();
+        }
+        else if (dateStr != null) {
+          DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+          df.setTimeZone(TimeZone.getTimeZone("UTC"));
+          Date date = df.parse(dateStr);
+
+          client.abortOldPendingUploads(getBucket(), getObjectKey(), date).get();
+        }
+        else if (dateTimeStr != null) {
+          DateFormat df = Utils.getDefaultDateFormat();
+          Date date = df.parse(dateTimeStr);
+
+          client.abortOldPendingUploads(getBucket(), getObjectKey(), date).get();
+        }
+        else {
+          throw new UsageException("Either id or date/datetime parameters " +
+              "should be specified");
+        }
+      }
+      catch(ExecutionException exc)
+      {
+        rethrow(exc.getCause());
+      }
+      finally
+      {
+        client.shutdown();
+      }
+    }
+  }
+
   @Parameters(commandDescription = "Generates a public/private keypair in PEM format")
   class KeyGenCommandOptions extends CommandOptions
   {
@@ -745,7 +868,7 @@ class Main
     System.err.println("   Commands: ");
     for(String cmd : _commander.getCommands().keySet())
     {
-      System.out.println("     " + padRight(15, ' ', cmd) + _commander.getCommandDescription(cmd));
+      System.out.println("     " + padRight(26, ' ', cmd) + _commander.getCommandDescription(cmd));
     }
   }
 

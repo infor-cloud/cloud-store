@@ -8,7 +8,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import java.net.URL;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +36,14 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 public class Utils
 {
+  public static DateFormat getDefaultDateFormat()
+  {
+    DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+    df.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+    return df;
+  }
+
   public static String getDefaultKeyDirectory()
   {
     return System.getProperty("user.home") + File.separator + ".s3lib-keys";

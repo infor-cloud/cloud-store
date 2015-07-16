@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -532,6 +533,36 @@ public class S3Client implements CloudStoreClient {
             new ListObjectsAndDirsCommand(_s3Executor, _executor);
     configure(cmd);
     return cmd.run(bucket, prefix, recursive);
+  }
+
+  @Override
+  public ListenableFuture<List<Upload>> listPendingUploads(
+      String bucket, String prefix)
+  {
+      ListPendingUploadsCommand cmd =
+          new ListPendingUploadsCommand(_s3Executor, _executor);
+      configure(cmd);
+      return cmd.run(bucket, prefix);
+  }
+
+  @Override
+  public ListenableFuture<Void> abortPendingUpload(
+      String bucket, String key, String uploadId)
+  {
+      AbortPendingUploadCommand cmd =
+          new AbortPendingUploadCommand(_s3Executor, _executor);
+      configure(cmd);
+      return cmd.run(bucket, key, uploadId);
+  }
+
+  @Override
+  public ListenableFuture<List<Void>> abortOldPendingUploads(
+      String bucket, String prefix, Date date)
+      throws InterruptedException, ExecutionException, URISyntaxException {
+      AbortOldPendingUploadsCommand cmd =
+          new AbortOldPendingUploadsCommand(_s3Executor, _executor, this);
+      configure(cmd);
+      return cmd.run(bucket, prefix, date);
   }
 
   /**

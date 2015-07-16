@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -281,6 +282,29 @@ public class GCSClient implements CloudStoreClient {
                                                              boolean
                                                                  recursive) {
         return s3Client.listObjectsAndDirs(bucket, prefix, recursive);
+    }
+
+    @Override
+    public ListenableFuture<List<Upload>> listPendingUploads(String bucket,
+                                                             String prefix) {
+        throw new UnsupportedOperationException("listPendingUploads is not " +
+            "supported.");
+    }
+
+    @Override
+    public ListenableFuture<Void> abortPendingUpload(String bucket,
+                                                     String key,
+                                                     String uploadId) {
+        throw new UnsupportedOperationException("abortPendingUpload is not " +
+            "supported.");
+    }
+
+    @Override
+    public ListenableFuture<List<Void>> abortOldPendingUploads(String bucket,
+                                                               String prefix,
+                                                               Date date) {
+        throw new UnsupportedOperationException("abortOldPendingUploads is " +
+            "not supported.");
     }
 
     @Override

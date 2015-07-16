@@ -5,6 +5,7 @@ import com.google.api.services.storage.Storage;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
+import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
@@ -40,7 +41,7 @@ class GCSUploadFactory implements UploadFactory {
         }
 
         public Upload call() throws Exception {
-            return new GCSUpload(client, bucketName, key, cannedAcl, this.meta, executor);
+            return new GCSUpload(client, bucketName, key, cannedAcl, this.meta, new Date(), executor);
         }
     }
 }

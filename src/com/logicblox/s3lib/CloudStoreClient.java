@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -420,6 +421,47 @@ public interface CloudStoreClient {
      */
     ListenableFuture<List<S3File>> listObjectsAndDirs(
         String bucket, String prefix, boolean recursive);
+
+    /**
+     * Returns a list of the pending uploads to keys that start with {@code
+     * prefix}, inside {@code bucket}.
+     *
+     * @param bucket The name of the bucket
+     * @param prefix Prefix to limit the returned uploads to those for keys that
+     *               match this prefix
+     */
+    ListenableFuture<List<Upload>> listPendingUploads(String bucket, String
+        prefix);
+
+    /**
+     * Aborts the pending upload to {@code bucket/key} with the given {@code
+     * uploadId}.
+     *
+     * @param bucket   The name of the bucket
+     * @param key      The object key that the pending upload targets to
+     * @param uploadId The id of the pending upload. Such ids can be found via
+     *                 {@link CloudStoreClient#listPendingUploads}.
+     * @see CloudStoreClient#listPendingUploads(String, String)
+     * @see CloudStoreClient#abortOldPendingUploads(String, String, Date)
+     */
+    ListenableFuture<Void> abortPendingUpload(String bucket, String key,
+                                              String uploadId);
+
+    /**
+     * Aborts pending uploads under {@code bucket/prefix} that were initiated
+     * before {@code date}.
+     *
+     * @param bucket The name of the bucket
+     * @param date   The date indicating which multipart uploads should be
+     *               aborted. All pending uploads initiated before this date
+     *               will be aborted.
+     * @see CloudStoreClient#listPendingUploads(String, String)
+     * @see CloudStoreClient#abortPendingUpload(String, String, String)
+     */
+    ListenableFuture<List<Void>> abortOldPendingUploads(String bucket,
+                                                        String prefix,
+                                                        Date date)
+        throws InterruptedException, ExecutionException, URISyntaxException;
 
     /**
      * Makes sure all pending tasks have been completed and shuts down all

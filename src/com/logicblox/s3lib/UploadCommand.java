@@ -108,10 +108,10 @@ public class UploadCommand extends Command
     if (!file.exists())
       throw new FileNotFoundException(file.getPath());
 
-    ListenableFuture<Upload> upload = startUpload(bucket, key);
-    upload = Futures.transform(upload, startPartsAsyncFunction());
-    ListenableFuture<String> result = Futures.transform(upload, completeAsyncFunction());
-    return Futures.transform(result,
+    final ListenableFuture<Upload> started = startUpload(bucket, key);
+    ListenableFuture<Upload> uploaded = Futures.transform(started, startPartsAsyncFunction());
+    ListenableFuture<String> completed = Futures.transform(uploaded, completeAsyncFunction());
+    ListenableFuture<S3File> res = Futures.transform(completed,
       new Function<String, S3File>()
       {
         public S3File apply(String etag)
@@ -124,6 +124,27 @@ public class UploadCommand extends Command
           return f;
         }
       });
+
+    return Futures.withFallback(
+      res,
+      new FutureFallback<S3File>()
+      {
+        public ListenableFuture<S3File> create(final Throwable t)
+        {
+          ListenableFuture<Void> aborted = Futures.transform(started, abortAsyncFunction());
+          ListenableFuture<S3File> res0 = Futures.transform(aborted,
+            new AsyncFunction<Void, S3File>()
+            {
+              public ListenableFuture<S3File> apply(Void v)
+              {
+                return Futures.immediateFailedFuture(t);
+              }
+            });
+
+          return res0;
+        }
+      },
+      _executor);
   }
 
   /**
@@ -342,5 +363,43 @@ public class UploadCommand extends Command
   private ListenableFuture<String> completeActual(final Upload upload, final int retryCount)
   {
     return upload.completeUpload();
+  }
+
+  /**
+   * Abort upload if something goes wrong
+   */
+  private AsyncFunction<Upload, Void> abortAsyncFunction()
+  {
+    return new AsyncFunction<Upload, Void>()
+    {
+      public ListenableFuture<Void> apply(Upload upload)
+      {
+        return abort(upload, 0);
+      }
+    };
+  }
+
+  /**
+   * Execute abortActual with retry
+   */
+  private ListenableFuture<Void> abort(final Upload upload, final int
+      retryCount)
+  {
+    return executeWithRetry(_executor,
+        new Callable<ListenableFuture<Void>>() {
+          public ListenableFuture<Void> call() {
+            return abortActual(upload, retryCount);
+          }
+
+          public String toString() {
+            return "aborting upload";
+          }
+        });
+  }
+
+  private ListenableFuture<Void> abortActual(final Upload upload,
+                                             final int retryCount)
+  {
+    return upload.abort();
   }
 }

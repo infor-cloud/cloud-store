@@ -108,11 +108,12 @@ class Main
   }
 
   /**
-   * Abstraction for all S3 commands
+   * Abstraction for all storage service commands
    */
   abstract class S3CommandOptions extends CommandOptions
   {
-    @Parameter(names = {"--max-concurrent-connections"}, description = "The maximum number of concurrent HTTP connections to S3")
+    @Parameter(names = {"--max-concurrent-connections"}, description = "The " +
+        "maximum number of concurrent HTTP connections to the storage service")
     int maxConcurrentConnections = 10;
 
     @Parameter(names = "--endpoint", description = "Endpoint")
@@ -181,7 +182,7 @@ class Main
 
 
   /**
-   * Abstraction for commands that deal with S3 objects
+   * Abstraction for commands that deal with storage service objects
    */
   abstract class S3ObjectCommandOptions extends S3CommandOptions
   {
@@ -191,7 +192,8 @@ class Main
     protected URI getURI() throws URISyntaxException
     {
       if(urls.size() != 1)
-        throw new UsageException("A single S3 object URL is required");
+        throw new UsageException("A single storage service object URL is " +
+            "required");
 
       return Utils.getURI(urls.get(0));
     }
@@ -269,7 +271,7 @@ class Main
     }
   }
 
-  @Parameters(commandDescription = "List S3 buckets")
+  @Parameters(commandDescription = "List storage service buckets")
   class ListBucketsCommandOptions extends S3CommandOptions
   {
     public void invoke() throws Exception
@@ -309,7 +311,7 @@ class Main
     }
   }
 
-  @Parameters(commandDescription = "Check if a file exists in S3")
+  @Parameters(commandDescription = "Check if a file exists in the storage service")
   class ExistsCommandOptions extends S3ObjectCommandOptions
   {
     @Parameter(names = "--verbose", description = "Print information about success/failure and metadata if object exists")
@@ -423,7 +425,7 @@ class Main
     }
   }
 
-  @Parameters(commandDescription = "Upload a file or directory to S3")
+  @Parameters(commandDescription = "Upload a file or directory to the storage service")
   class UploadCommandOptions extends S3ObjectCommandOptions
   {
     @Parameter(names = "-i", description = "File or directory to upload", required = true)
@@ -485,13 +487,13 @@ class Main
     }
   }
 
-  @Parameters(commandDescription = "List objects in S3")
+  @Parameters(commandDescription = "List objects in storage service")
   class ListCommandOptions extends S3ObjectCommandOptions
   {
-    @Parameter(names = {"-r", "--recursive"}, description = "List all objects that match the provided S3 URL prefix.")
+    @Parameter(names = {"-r", "--recursive"}, description = "List all objects that match the provided storage service URL prefix.")
     boolean recursive = false;
 
-    @Parameter(names = {"--include-dirs"}, description = "List all objects and (first-level) directories that match the provided S3 URL prefix.")
+    @Parameter(names = {"--include-dirs"}, description = "List all objects and (first-level) directories that match the provided storage service URL prefix.")
     boolean include_dirs = false;
 
     @Override
@@ -507,7 +509,7 @@ class Main
 
           for (S3File obj : result)
           {
-            // print the full s3 url for each object and (first-level) directory
+            // print the full storage service url for each object and (first-level) directory
             System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
           }
         }
@@ -517,7 +519,7 @@ class Main
 
           for (S3ObjectSummary obj : result)
           {
-            // print the full s3 url for each object
+            // print the full storage service url for each object
             System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
           }
         }
@@ -682,7 +684,7 @@ class Main
     }
   }
 
-  @Parameters(commandDescription = "Download a file, or a set of files from S3")
+  @Parameters(commandDescription = "Download a file, or a set of files from the storage service")
   class DownloadCommandOptions extends S3ObjectCommandOptions
   {
     @Parameter(names = "-o", description = "Write output to file, or directory", required = true)
@@ -723,7 +725,7 @@ class Main
       if(getObjectKey().endsWith("/")) {
         result = client.downloadDirectory(options);
       } else {
-        // Test if S3 url exists.
+        // Test if storage service url exists.
         if(client.exists(getBucket(), getObjectKey()).get() == null) {
           throw new UsageException("Object not found at "+getURI());
         }
@@ -816,11 +818,12 @@ class Main
     {
       if(exc.getStatusCode() == 404)
       {
-        System.err.println("error: S3 object not found");
+        System.err.println("error: Storage service object not found");
       }
       else if(exc.getStatusCode() == 403)
       {
-        System.err.println("error: Access to S3 object denied with current credentials");
+        System.err.println("error: Access to storage service object denied " +
+            "with current credentials");
       }
       else
       {

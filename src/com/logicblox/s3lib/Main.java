@@ -539,7 +539,7 @@ class Main
     @Override
     public void invoke() throws Exception
     {
-      final CloudStoreClient client = createCloudStoreClient();
+      CloudStoreClient client = createCloudStoreClient();
 
       try
       {

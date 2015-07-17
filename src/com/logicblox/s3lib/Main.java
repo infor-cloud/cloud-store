@@ -868,8 +868,40 @@ class Main
     System.err.println("   Commands: ");
     for(String cmd : _commander.getCommands().keySet())
     {
-      System.out.println("     " + padRight(26, ' ', cmd) + _commander.getCommandDescription(cmd));
+      String indentStr = "     ";
+      int padding = 23;
+      int column = 79;
+
+      String wrapDesc = wrapDescription(indentStr.length() + padding,
+          _commander.getCommandDescription(cmd), column);
+      System.out.println(indentStr + padRight(padding, ' ', cmd) + wrapDesc);
     }
+  }
+
+  private String wrapDescription(int indent, String description, int
+      columnSize) {
+    StringBuilder out = new StringBuilder();
+    String[] words = description.split(" ");
+    int current = indent;
+    int i = 0;
+    while (i < words.length) {
+      String word = words[i];
+      if (word.length() > columnSize || current + word.length() < columnSize) {
+        out.append(" ").append(word);
+        current += word.length() + 1;
+      } else {
+        out.append("\n").append(spaces(indent + 1)).append(word);
+        current = indent + 1 + word.length();
+      }
+      i++;
+    }
+    return out.toString();
+  }
+
+  private String spaces(int indent) {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < indent; i++) sb.append(" ");
+    return sb.toString();
   }
 
   private static String padRight(int width, char c, String s)

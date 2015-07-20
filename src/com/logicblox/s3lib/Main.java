@@ -490,11 +490,14 @@ class Main
   @Parameters(commandDescription = "List objects in storage service")
   class ListCommandOptions extends S3ObjectCommandOptions
   {
-    @Parameter(names = {"-r", "--recursive"}, description = "List all objects that match the provided storage service URL prefix.")
+    @Parameter(names = {"-r", "--recursive"}, description = "List all objects" +
+        " that match the provided storage service URL prefix.")
     boolean recursive = false;
 
-    @Parameter(names = {"--include-dirs"}, description = "List all objects and (first-level) directories that match the provided storage service URL prefix.")
-    boolean include_dirs = false;
+    @Parameter(names = {"--exclude-dirs"}, description = "List only objects " +
+        "(excluding first-level directories) that match the provided storage " +
+        "service URL prefix")
+    boolean exclude_dirs = false;
 
     @Override
     public void invoke() throws Exception
@@ -503,25 +506,21 @@ class Main
 
       try
       {
-        if (include_dirs)
+        if (exclude_dirs)
         {
-          List<S3File> result = client.listObjectsAndDirs(getBucket(), getObjectKey(), recursive).get();
+          List<S3ObjectSummary> result = client.listObjects(getBucket(),
+              getObjectKey(), recursive).get();
 
-          for (S3File obj : result)
-          {
-            // print the full storage service url for each object and (first-level) directory
+          for (S3ObjectSummary obj : result)
             System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
-          }
         }
         else
         {
-          List<S3ObjectSummary> result = client.listObjects(getBucket(), getObjectKey(), recursive).get();
+          List<S3File> result = client.listObjectsAndDirs(getBucket(),
+              getObjectKey(), recursive).get();
 
-          for (S3ObjectSummary obj : result)
-          {
-            // print the full storage service url for each object
+          for (S3File obj : result)
             System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
-          }
         }
       }
       catch(ExecutionException exc)

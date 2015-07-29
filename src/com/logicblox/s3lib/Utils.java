@@ -412,21 +412,15 @@ public class Utils
         {
           if(retryCondition.apply(t) && retryCount < maxRetryCount)
           {
-            StringWriter sw = new StringWriter();
-            t.printStackTrace(new PrintWriter(sw));
-            String tStr = sw.toString();
-
-            String msg =
-                "error in task: " + callable.toString() + ": " + t.getMessage() + '\n' +
-                tStr +
-                "retrying task: " + callable.toString() + '\n';
+            String msg = "Error in task: " + callable.toString() + ": " +
+                t.getMessage() + ". Going to retry.\n";
 
             System.err.println(msg);
-            return retry(executor, callable, retryCondition, delayFun, timeUnit, retryCount + 1, maxRetryCount);
+            return retry(executor, callable, retryCondition, delayFun, timeUnit,
+                retryCount + 1, maxRetryCount);
           }
           else
           {
-            System.err.println("aborting (after " + retryCount + " retries): " + callable.toString());
             return Futures.immediateFailedFuture(t);
           }
         }

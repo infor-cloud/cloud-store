@@ -412,8 +412,8 @@ public class Utils
         {
           if(retryCondition.apply(t) && retryCount < maxRetryCount)
           {
-            String msg = "Error in task: " + callable.toString() + ": " +
-                t.getMessage() + ". Going to retry.";
+            String msg = "Info: Retriable exception: " + callable.toString() +
+                ": " + t.getMessage();
 
             System.err.println(msg);
             return retry(executor, callable, retryCondition, delayFun, timeUnit,

@@ -433,6 +433,7 @@ public class DownloadCommand extends Command
           {
             String remoteEtag = download.getETag();
             String localDigest = "";
+            String fn = "'s3://" + download.getBucket() + "/" + download.getKey() + "'";
             if ((remoteEtag.length() > 32) &&
                 (remoteEtag.charAt(32) == '-')) {
               // Object has been uploaded using S3's multipart upload protocol,
@@ -444,10 +445,9 @@ public class DownloadCommand extends Command
               // files uploaded with tool other than s3tool.
               Map<String,String> meta = download.getMeta();
               if (!meta.containsKey("s3tool-version")) {
-                String fn = "/" + download.getBucket() + "/" + download.getKey();
-                System.err.println("Warning: Skipped download checksum " +
-                    "validation for " + fn + ". It was uploaded using the " +
-                    "multipart protocol with tool other than cloud-store.");
+                System.err.println("Warning: Skipped checksum " +
+                    "validation for " + fn + ". It was uploaded using " +
+                    "other tool's multipart protocol.");
                 return download;
               }
 
@@ -455,8 +455,7 @@ public class DownloadCommand extends Command
               int actualPartsNum = Integer.parseInt(remoteEtag.substring(33));
 
               if (expectedPartsNum != actualPartsNum) {
-                String fn = "/" + download.getBucket() + "/" + download.getKey();
-                System.err.println("Warning: Skipped download checksum validation for " + fn +
+                System.err.println("Warning: Skipped checksum validation for " + fn +
                     ". Actual number of parts: "  + actualPartsNum +
                     ", Expected number of parts: " + expectedPartsNum + 
                     ". Probably the ETag was changed by using another tool.");
@@ -481,8 +480,7 @@ public class DownloadCommand extends Command
               }
               else {
                 // Multi-part download (>1 range GETs).
-                String fn = "/" + download.getBucket() + "/" + download.getKey();
-                System.err.println("Warning: Skipped download checksum validation for " + fn + 
+                System.err.println("Warning: Skipped checksum validation for " + fn +
                     ". No efficient way to compute MD5 on multipart downloads of files with singlepart ETag.");
                 return download;
               }
@@ -491,7 +489,7 @@ public class DownloadCommand extends Command
               return download;
             }
             else {
-              throw new BadHashException("Failed download checksum validation for " +
+              throw new BadHashException("Failed checksum validation for " +
                   download.getBucket() + "/" + download.getKey() + ". " +
                   "Calculated MD5: " + localDigest +
                   ", Expected MD5: " + remoteEtag);

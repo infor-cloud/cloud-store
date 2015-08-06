@@ -115,7 +115,7 @@ class MultipartAmazonCopy implements Copy
         return res.getETag();
       }
       else {
-        throw new BadHashException("Failed copy checksum validation for " +
+        throw new BadHashException("Failed checksum validation for " +
             destinationBucketName + "/" + destinationKey + ". " +
             "Calculated MD5: " + multipartDigest +
             ", Expected MD5: " + res.getETag());

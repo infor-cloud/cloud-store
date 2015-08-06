@@ -63,7 +63,7 @@ class Main
     ConsoleAppender console = new ConsoleAppender();
     String PATTERN = "%d [%p|%c|%C{1}] %m%n";
     console.setLayout(new PatternLayout(PATTERN));
-    console.setThreshold(Level.INFO);
+    console.setThreshold(Level.ERROR);
     console.activateOptions();
 
     Logger s3libLogger = Logger.getLogger("com.logicblox.s3lib");

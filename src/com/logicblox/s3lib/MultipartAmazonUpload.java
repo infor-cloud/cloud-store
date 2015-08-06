@@ -119,7 +119,7 @@ class MultipartAmazonUpload implements Upload
         return res.getETag();
       }
       else {
-        throw new BadHashException("Failed upload checksum validation for " +
+        throw new BadHashException("Failed checksum validation for " +
             bucketName + "/" + key + ". " +
             "Calculated MD5: " + multipartDigest +
             ", Expected MD5: " + res.getETag());
@@ -172,7 +172,7 @@ class MultipartAmazonUpload implements Upload
       else
       {
         String calculatedMD5 = DatatypeConverter.printHexBinary(stream.getDigest()).toLowerCase();
-        throw new BadHashException("Failed upload checksum validation for part " +
+        throw new BadHashException("Failed checksum validation for part " +
             (partNumber + 1) + " of " +
             bucketName + "/" + key + ". " +
             "Calculated MD5: " + calculatedMD5 +

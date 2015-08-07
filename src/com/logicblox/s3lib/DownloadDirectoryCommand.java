@@ -68,7 +68,7 @@ public class DownloadDirectoryCommand extends Command
           }
           else
             throw new UsageException(
-              "File '" + file + "' already exists. Please delete or use --overwrite");
+              "File '" + outputFile + "' already exists. Please delete or use --overwrite");
         }
 
         DownloadOptions options = new DownloadOptionsBuilder()

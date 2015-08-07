@@ -453,13 +453,13 @@ class Main
         throw new UsageException("Unknown canned ACL '" + cannedAcl + "'");
       }
 
+      CloudStoreClient client = createCloudStoreClient();
       if (getObjectKey().endsWith("/")) {
-        throw new UsageException("Destination key " + getBucket() + "/" +
-            getObjectKey() +
+        throw new UsageException("Destination key " +
+            client.getUri(getBucket(), getObjectKey()) +
             " should be fully qualified. No trailing '/' is permitted.");
       }
 
-      CloudStoreClient client = createCloudStoreClient();
       File f = new File(file);
 
       UploadOptionsBuilder uob = new UploadOptionsBuilder();

@@ -686,8 +686,8 @@ class Main
   @Parameters(commandDescription = "Download a file, or a set of files from the storage service")
   class DownloadCommandOptions extends S3ObjectCommandOptions
   {
-    @Parameter(names = "-o", description = "Write output to file, or directory", required = true)
-    String file;
+    @Parameter(names = "-o", description = "Write output to file, or directory")
+    String file = System.getProperty("user.dir");
 
     @Parameter(names = "--overwrite", description = "Overwrite existing file(s) if existing")
     boolean overwrite = false;
@@ -719,16 +719,18 @@ class Main
           dob.setOverallProgressListenerFactory(cplf);
       }
 
-      DownloadOptions options = dob.createDownloadOptions();
-
       if(getObjectKey().endsWith("/")) {
-        result = client.downloadDirectory(options);
+        result = client.downloadDirectory(dob.createDownloadOptions());
       } else {
         // Test if storage service url exists.
         if(client.exists(getBucket(), getObjectKey()).get() == null) {
           throw new UsageException("Object not found at "+getURI());
         }
-        result = client.download(options);
+        if (output.isDirectory())
+          output = new File(output,
+              getObjectKey().substring(getObjectKey().lastIndexOf("/")+1));
+        dob.setFile(output);
+        result = client.download(dob.createDownloadOptions());
       }
 
       try

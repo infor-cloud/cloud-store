@@ -454,13 +454,13 @@ class Main
       }
 
       CloudStoreClient client = createCloudStoreClient();
-      if (getObjectKey().endsWith("/")) {
+      File f = new File(file);
+
+      if (f.isDirectory() && !getObjectKey().endsWith("/")) {
         throw new UsageException("Destination key " +
             client.getUri(getBucket(), getObjectKey()) +
-            " should be fully qualified. No trailing '/' is permitted.");
+            " should end with '/', since a directory is uploaded.");
       }
-
-      File f = new File(file);
 
       UploadOptionsBuilder uob = new UploadOptionsBuilder();
       uob.setFile(f)
@@ -473,12 +473,13 @@ class Main
             ConsoleProgressListenerFactory();
         uob.setOverallProgressListenerFactory(cplf);
       }
-      UploadOptions options = uob.createUploadOptions();
 
       if(f.isFile()) {
-        client.upload(options).get();
+        if (getObjectKey().endsWith("/"))
+          uob.setObjectKey(getObjectKey() + f.getName());
+        client.upload(uob.createUploadOptions()).get();
       } else if(f.isDirectory()) {
-        client.uploadDirectory(options).get();
+        client.uploadDirectory(uob.createUploadOptions()).get();
       } else {
         throw new UsageException("File '" + file + "' is not a file or a " +
             "directory.");

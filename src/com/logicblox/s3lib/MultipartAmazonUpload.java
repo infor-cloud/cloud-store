@@ -45,16 +45,14 @@ class MultipartAmazonUpload implements Upload
     this.executor = executor;
   }
 
-  public ListenableFuture<Void> uploadPart(int partNumber, InputStream stream, long partSize)
+  public ListenableFuture<Void> uploadPart(int partNumber,
+                                           long partSize,
+                                           Callable<InputStream> stream,
+                                           Optional<OverallProgressListener>
+                                               progressListener)
   {
-    return uploadPart(partNumber, stream, partSize,
-        Optional.<OverallProgressListener>absent());
-  }
-
-  public ListenableFuture<Void> uploadPart(int partNumber, InputStream
-      stream, long partSize, Optional<OverallProgressListener> progressListener)
-  {
-    return executor.submit(new UploadCallable(partNumber, stream, partSize, progressListener));
+    return executor.submit(new UploadCallable(partNumber, partSize, stream,
+        progressListener));
   }
 
   public ListenableFuture<String> completeUpload()
@@ -130,21 +128,29 @@ class MultipartAmazonUpload implements Upload
   private class UploadCallable implements Callable<Void>
   {
     private int partNumber;
-    private HashingInputStream stream;
     private long partSize;
+    private Callable<InputStream> streamCallable;
     private Optional<OverallProgressListener> progressListener;
 
-    public UploadCallable(int partNumber, InputStream stream, long partSize,
+    public UploadCallable(int partNumber,
+                          long partSize,
+                          Callable<InputStream> streamCallable,
                           Optional<OverallProgressListener> progressListener)
     {
       this.partNumber = partNumber;
       this.partSize = partSize;
-      this.stream = new HashingInputStream(stream);
+      this.streamCallable = streamCallable;
       this.progressListener = progressListener;
     }
 
     public Void call() throws Exception
     {
+      try (HashingInputStream stream = new HashingInputStream(streamCallable.call())) {
+        return upload(stream);
+      }
+    }
+
+    private Void upload(HashingInputStream stream) throws BadHashException {
       UploadPartRequest req = new UploadPartRequest();
       req.setBucketName(bucketName);
       req.setInputStream(stream);

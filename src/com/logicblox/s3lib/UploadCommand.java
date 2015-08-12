@@ -270,21 +270,12 @@ public class UploadCommand extends Command
   throws Exception
   {
     final int partNumber = (int) (position / chunkSize);
-    final FileInputStream fs = new FileInputStream(file);
+    final Cipher cipher;
 
-    long skipped = fs.skip(position);
-    while (skipped < position)
-    {
-      skipped += fs.skip(position - skipped);
-    }
-
-    BufferedInputStream bs = new BufferedInputStream(fs);
-    InputStream in;
     long partSize;
     if (this.encKeyName != null)
     {
-      Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-      in = new CipherWithInlineIVInputStream(bs, cipher, Cipher.ENCRYPT_MODE, encKey);
+      cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 
       long preCryptSize = Math.min(fileLength - position, chunkSize);
       long blockSize = cipher.getBlockSize();
@@ -292,38 +283,36 @@ public class UploadCommand extends Command
     }
     else
     {
-      in = bs;
+      cipher = null;
       partSize = Math.min(fileLength - position, chunkSize);
     }
 
-    ListenableFuture<Void> uploadPartFuture = upload.uploadPart(partNumber,
-        in, partSize, Optional.fromNullable(opl));
-
-    FutureFallback<Void> closeFile = new FutureFallback<Void>()
-      {
-        public ListenableFuture<Void> create(Throwable thrown) throws Exception
+    Callable<InputStream> inputStreamCallable = new Callable<InputStream>() {
+      public InputStream call() throws Exception {
+        FileInputStream fs = new FileInputStream(file);
+        long skipped = fs.skip(position);
+        while (skipped < position)
         {
-          try {
-            fs.close();
-          } catch (Exception e) {
-          }
-
-            return Futures.immediateFailedFuture(thrown);
+          skipped += fs.skip(position - skipped);
         }
-      };
 
-    Futures.addCallback(uploadPartFuture, new FutureCallback<Void>()
-      {
-        public void onFailure(Throwable t) {}
-        public void onSuccess(Void ignored) {
-          try {
-            fs.close();
-          } catch (Exception e) {
-          }
+        BufferedInputStream bs = new BufferedInputStream(fs);
+        InputStream in;
+        if (cipher != null)
+        {
+          in = new CipherWithInlineIVInputStream(bs, cipher, Cipher.ENCRYPT_MODE, encKey);
         }
-      });
+        else
+        {
+          in = bs;
+        }
 
-    return Futures.withFallback(uploadPartFuture, closeFile);
+        return in;
+      }
+    };
+
+    return upload.uploadPart(partNumber, partSize, inputStreamCallable,
+        Optional.fromNullable(opl));
   }
 
   /**

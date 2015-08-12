@@ -273,7 +273,7 @@ public class UploadCommand extends Command
     final Cipher cipher;
 
     long partSize;
-    if (this.encKeyName != null)
+    if (encKeyName != null)
     {
       cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 

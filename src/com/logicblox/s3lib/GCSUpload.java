@@ -115,30 +115,30 @@ class GCSUpload implements Upload {
 
         private Void upload(HashingInputStream stream) throws IOException, BadHashException {
             InputStreamContent mediaContent = new InputStreamContent(
-                    "application/octet-stream", stream);
+                "application/octet-stream", stream);
 
             // Not strictly necessary, but allows optimization in the cloud.
             mediaContent.setLength(this.partSize);
 
             StorageObject objectMetadata = new StorageObject()
-                    .setName(key)
-                    .setMetadata(ImmutableMap.copyOf(meta))
-                    .setContentDisposition("attachment");
+                .setName(key)
+                .setMetadata(ImmutableMap.copyOf(meta))
+                .setContentDisposition("attachment");
 //                    .setAcl(ImmutableList.of(
 //                            new ObjectAccessControl().setEntity("domain-example.com").setRole("READER"),
 //                            new ObjectAccessControl().setEntity("user-administrator@example.com").setRole("OWNER")
 //                    ));
 
             Storage.Objects.Insert insertObject =
-                    client.objects().insert(bucketName, objectMetadata, mediaContent)
-                            .setPredefinedAcl(acl);
+                client.objects()
+                    .insert(bucketName, objectMetadata, mediaContent)
+                    .setPredefinedAcl(acl);
 
             insertObject.getMediaHttpUploader().setDisableGZipContent(true);
 //              .setDisableGZipContent(true).setDirectUploadEnabled(true);
 
             if (progressListener.isPresent()) {
-                PartProgressEvent ppe = new PartProgressEvent(Integer.toString
-                    (partNumber));
+                PartProgressEvent ppe = new PartProgressEvent(Integer.toString(partNumber));
                 MediaHttpUploaderProgressListener gcspl =
                     new GCSProgressListener(progressListener.get(), ppe);
                 insertObject.getMediaHttpUploader()
@@ -155,10 +155,10 @@ class GCSUpload implements Upload {
                 md5 = serverMD5;
                 return null;
             } else {
-              throw new BadHashException("Failed upload validation for " +
-                  "'gs://" + bucketName + "/" + key + "'. " +
-                  "Calculated MD5: " + clientMD5 +
-                  ", Expected MD5: " + serverMD5);
+                throw new BadHashException("Failed upload validation for " +
+                    "'gs://" + bucketName + "/" + key + "'. " +
+                    "Calculated MD5: " + clientMD5 +
+                    ", Expected MD5: " + serverMD5);
             }
         }
     }

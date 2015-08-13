@@ -211,8 +211,9 @@ public class UploadCommand extends Command
     }
 
     List<ListenableFuture<Void>> parts = new ArrayList<ListenableFuture<Void>>();
-
-    for (long position = 0; position < fileLength; position += chunkSize)
+    for (long position = 0;
+         position < fileLength || (position == 0 && fileLength == 0);
+         position += chunkSize)
     {
       parts.add(startPartUploadThread(upload, position, opl));
     }

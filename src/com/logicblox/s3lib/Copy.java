@@ -7,7 +7,7 @@ import java.util.Map;
 
 interface Copy
 {
-  ListenableFuture<Void> copyPart(int partNumber, long startByte, long
+  ListenableFuture<Void> copyPart(int partNumber, Long startByte, Long
       endByte, Optional<OverallProgressListener> opl);
 
   ListenableFuture<String> completeCopy();

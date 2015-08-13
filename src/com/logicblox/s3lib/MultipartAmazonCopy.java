@@ -51,7 +51,7 @@ class MultipartAmazonCopy implements Copy
     this.executor = executor;
   }
 
-  public ListenableFuture<Void> copyPart(int partNumber, long startByte, long
+  public ListenableFuture<Void> copyPart(int partNumber, Long startByte, Long
       endByte, Optional<OverallProgressListener> progressListener)
   {
     return executor.submit(new CopyCallable(partNumber, startByte, endByte,
@@ -126,11 +126,11 @@ class MultipartAmazonCopy implements Copy
   private class CopyCallable implements Callable<Void>
   {
     private int partNumber;
-    private long startByte;
-    private long endByte;
+    private Long startByte;
+    private Long endByte;
     private Optional<OverallProgressListener> progressListener;
 
-    public CopyCallable(int partNumber, long startByte, long endByte,
+    public CopyCallable(int partNumber, Long startByte, Long endByte,
                         Optional<OverallProgressListener> progressListener)
     {
       this.partNumber = partNumber;

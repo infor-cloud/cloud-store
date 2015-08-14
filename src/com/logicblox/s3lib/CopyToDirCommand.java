@@ -49,7 +49,6 @@ public class CopyToDirCommand extends Command
    for (S3ObjectSummary obj : lst)
      if (!obj.getKey().endsWith("/"))
      {
-       // TODO(geokollias): Handle empty files appropriately.
        String destKeyLastPart = obj.getKey().substring(baseDirPath.length());
        String destKey = options.getDestinationKey() + destKeyLastPart;
        CopyOptions options0 = new CopyOptionsBuilder()

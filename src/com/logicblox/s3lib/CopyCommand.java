@@ -136,10 +136,8 @@ public class CopyCommand extends Command
         errPrefix + "unsupported version: " +  objectVersion +
             ", should be " + Version.CURRENT);
 
-    long fileLength0 = Long.valueOf(meta.get("s3tool-file-length"));
-    setFileLength(fileLength0);
-    long chunkSize0 = Long.valueOf(meta.get("s3tool-chunk-size"));
-    setChunkSize(Math.min(fileLength0, chunkSize0));
+    setFileLength(Long.valueOf(meta.get("s3tool-file-length")));
+    setChunkSize(Long.valueOf(meta.get("s3tool-chunk-size")));
 
     OverallProgressListener opl = null;
     if (progressListenerFactory.isPresent()) {
@@ -148,13 +146,15 @@ public class CopyCommand extends Command
               .setObjectUri(getUri(copy.getDestinationBucket(),
                   copy.getDestinationKey()))
               .setOperation("copy")
-              .setFileSizeInBytes(this.fileLength)
+              .setFileSizeInBytes(fileLength)
               .createProgressOptions());
     }
 
-    List<ListenableFuture<Void>> parts = new
-        ArrayList<ListenableFuture<Void>>();
-    for (long position = 0; position < this.fileLength; position += chunkSize)
+    List<ListenableFuture<Void>> parts = new ArrayList<>();
+
+    for (long position = 0;
+         position < fileLength || (position == 0 && fileLength == 0);
+         position += chunkSize)
     {
       parts.add(startPartCopy(copy, position, opl));
     }
@@ -172,7 +172,7 @@ public class CopyCommand extends Command
         _executor,
         new Callable<ListenableFuture<Void>>() {
           public ListenableFuture<Void> call() {
-            return startPartCopyActual(copy, position, opl);
+            return startPartCopyActual(copy, position, partNumber, opl);
           }
 
           public String toString() {
@@ -183,10 +183,11 @@ public class CopyCommand extends Command
 
   private ListenableFuture<Void> startPartCopyActual(final Copy copy,
                                                      final long position,
+                                                     final int partNumber,
                                                      OverallProgressListener opl)
   {
-    final int partNumber = (int) (position / chunkSize);
-    long start;
+    Long start;
+    Long end;
     long partSize;
 
     if (copy.getMeta().containsKey("s3tool-key-name"))
@@ -195,10 +196,8 @@ public class CopyCommand extends Command
       try
       {
         blockSize = Cipher.getInstance("AES/CBC/PKCS5Padding").getBlockSize();
-      } catch (NoSuchAlgorithmException e)
-      {
-        throw new RuntimeException(e);
-      } catch (NoSuchPaddingException e)
+      }
+      catch (NoSuchAlgorithmException | NoSuchPaddingException e)
       {
         throw new RuntimeException(e);
       }
@@ -212,9 +211,16 @@ public class CopyCommand extends Command
       start = position;
       partSize = Math.min(fileLength - position, chunkSize);
     }
+    end = start + partSize - 1;
+
+    if (fileLength == 0)
+    {
+      start = null;
+      end = null;
+    }
 
     ListenableFuture<Void> copyPartFuture = copy.copyPart(partNumber, start,
-        start + partSize - 1, Optional.fromNullable(opl));
+        end, Optional.fromNullable(opl));
 
     return copyPartFuture;
   }

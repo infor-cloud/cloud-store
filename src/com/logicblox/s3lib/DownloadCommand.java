@@ -226,7 +226,7 @@ public class DownloadCommand extends Command
       setFileLength(download.getLength());
       if (chunkSize == 0)
       {
-        setChunkSize(Math.min(fileLength, Utils.getDefaultChunkSize()));
+        setChunkSize(Utils.getDefaultChunkSize());
       }
     }
 
@@ -241,7 +241,9 @@ public class DownloadCommand extends Command
     }
 
     List<ListenableFuture<Integer>> parts = new ArrayList<ListenableFuture<Integer>>();
-    for (long position = 0; position < fileLength; position += chunkSize)
+    for (long position = 0;
+         position < fileLength || (position == 0 && fileLength == 0);
+         position += chunkSize)
     {
       parts.add(startPartDownload(download, position, opl));
     }
@@ -451,7 +453,8 @@ public class DownloadCommand extends Command
                 return download;
               }
 
-              int expectedPartsNum = (int) Math.ceil(fileLength / (double) chunkSize);
+              int expectedPartsNum = fileLength == 0 ? 1 :
+                  (int) Math.ceil(fileLength / (double) chunkSize);
               int actualPartsNum = Integer.parseInt(remoteEtag.substring(33));
 
               if (expectedPartsNum != actualPartsNum) {

@@ -453,14 +453,14 @@ class Main
         throw new UsageException("Unknown canned ACL '" + cannedAcl + "'");
       }
 
-      if (getObjectKey().endsWith("/")) {
-        throw new UsageException("Destination key " + getBucket() + "/" +
-            getObjectKey() +
-            " should be fully qualified. No trailing '/' is permitted.");
-      }
-
       CloudStoreClient client = createCloudStoreClient();
       File f = new File(file);
+
+      if (f.isDirectory() && !getObjectKey().endsWith("/")) {
+        throw new UsageException("Destination key " +
+            client.getUri(getBucket(), getObjectKey()) +
+            " should end with '/', since a directory is uploaded.");
+      }
 
       UploadOptionsBuilder uob = new UploadOptionsBuilder();
       uob.setFile(f)
@@ -473,12 +473,13 @@ class Main
             ConsoleProgressListenerFactory();
         uob.setOverallProgressListenerFactory(cplf);
       }
-      UploadOptions options = uob.createUploadOptions();
 
       if(f.isFile()) {
-        client.upload(options).get();
+        if (getObjectKey().endsWith("/"))
+          uob.setObjectKey(getObjectKey() + f.getName());
+        client.upload(uob.createUploadOptions()).get();
       } else if(f.isDirectory()) {
-        client.uploadDirectory(options).get();
+        client.uploadDirectory(uob.createUploadOptions()).get();
       } else {
         throw new UsageException("File '" + file + "' is not a file or a " +
             "directory.");
@@ -686,8 +687,8 @@ class Main
   @Parameters(commandDescription = "Download a file, or a set of files from the storage service")
   class DownloadCommandOptions extends S3ObjectCommandOptions
   {
-    @Parameter(names = "-o", description = "Write output to file, or directory", required = true)
-    String file;
+    @Parameter(names = "-o", description = "Write output to file, or directory")
+    String file = System.getProperty("user.dir");
 
     @Parameter(names = "--overwrite", description = "Overwrite existing file(s) if existing")
     boolean overwrite = false;
@@ -719,16 +720,18 @@ class Main
           dob.setOverallProgressListenerFactory(cplf);
       }
 
-      DownloadOptions options = dob.createDownloadOptions();
-
       if(getObjectKey().endsWith("/")) {
-        result = client.downloadDirectory(options);
+        result = client.downloadDirectory(dob.createDownloadOptions());
       } else {
         // Test if storage service url exists.
         if(client.exists(getBucket(), getObjectKey()).get() == null) {
           throw new UsageException("Object not found at "+getURI());
         }
-        result = client.download(options);
+        if (output.isDirectory())
+          output = new File(output,
+              getObjectKey().substring(getObjectKey().lastIndexOf("/")+1));
+        dob.setFile(output);
+        result = client.download(dob.createDownloadOptions());
       }
 
       try

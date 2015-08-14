@@ -1,6 +1,5 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.event.ProgressListener;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -11,6 +10,7 @@ import org.apache.commons.io.filefilter.IOFileFilter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -79,7 +79,7 @@ public class UploadDirectoryCommand extends Command
     for (File file : found)
     {
       String relPath = file.getPath().substring(dir.getPath().length()+1);
-      String key = object + "/" + relPath;
+      String key = Paths.get(object, relPath).toString();
 
       UploadOptions options = new UploadOptionsBuilder()
           .setFile(file)

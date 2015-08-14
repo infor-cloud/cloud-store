@@ -37,13 +37,7 @@ public class CopyToDirCommand extends Command
        options.getSourceKey(),
        options.isRecursive()).get();
 
-   String baseDirPath = "";
-   if (options.getSourceKey().length() > 0)
-   {
-     int endIndex = options.getSourceKey().lastIndexOf("/");
-     if (endIndex != -1)
-       baseDirPath = options.getSourceKey().substring(0, endIndex+1);
-   }
+   String baseDirPath = Utils.getBaseDir(options.getSourceKey());
 
    List<ListenableFuture<S3File>> files = new ArrayList<>();
    for (S3ObjectSummary obj : lst)

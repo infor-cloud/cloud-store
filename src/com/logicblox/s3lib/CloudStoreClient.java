@@ -329,6 +329,9 @@ public interface CloudStoreClient {
      * <p/>
      * Each individual file is downloaded with {@link
      * CloudStoreClient#download(File, String, String)}.
+     * <p/>
+     * TODO: Due to added functionality, it should be renamed to
+     * downloadToDirectory. <b>Backwards incompatible change.</b>
      *
      * @param options Download options
      */

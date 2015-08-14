@@ -13,6 +13,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+/* TODO: Due to added functionality it should be renamed to
+ * DownloadToDirectoryCommand.
+ */
 public class DownloadDirectoryCommand extends Command
 {
   private ListeningExecutorService _httpExecutor;
@@ -45,11 +48,12 @@ public class DownloadDirectoryCommand extends Command
         if(!file.mkdirs())
           throw new UsageException("Could not create directory '" + file + "'");
 
+    String baseDirPath = Utils.getBaseDir(key);
     List<ListenableFuture<S3File>> files = new ArrayList<ListenableFuture<S3File>>();
 
     for (S3ObjectSummary obj : lst)
     {
-      String relFile = obj.getKey().substring(key.length());
+      String relFile = obj.getKey().substring(baseDirPath.length());
       File outputFile = new File(file.getAbsoluteFile(), relFile);
       File outputPath = new File(outputFile.getParent());
 

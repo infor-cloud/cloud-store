@@ -720,10 +720,14 @@ class Main
           dob.setOverallProgressListenerFactory(cplf);
       }
 
-      if(getObjectKey().endsWith("/")) {
+      if(recursive) {
         result = client.downloadDirectory(dob.createDownloadOptions());
-      } else {
-        // Test if storage service url exists.
+      }
+      else if(getObjectKey().endsWith("/")) {
+        throw new UsageException("Directory download should be combined with " +
+            "the '--recursive' option");
+      }
+      else {
         if(client.exists(getBucket(), getObjectKey()).get() == null) {
           throw new UsageException("Object not found at "+getURI());
         }

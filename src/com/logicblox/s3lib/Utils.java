@@ -54,6 +54,18 @@ public class Utils
     return 5 * 1024 * 1024;
   }
 
+  public static String getBaseDir(String s)
+  {
+    String baseDirPath = "";
+    if (s.length() > 0) {
+      int endIndex = s.lastIndexOf("/");
+      if (endIndex != -1)
+        baseDirPath = s.substring(0, endIndex + 1);
+    }
+
+    return baseDirPath;
+  }
+
   public static URI getURI(String s) throws URISyntaxException
   {
     URI uri = new URI(s);

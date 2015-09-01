@@ -220,50 +220,39 @@ public class GCSUploadCommand extends Command {
                                                          final OverallProgressListener opl)
             throws Exception {
         final int partNumber = 0;
-        final FileInputStream fs = new FileInputStream(file);
+        final Cipher cipher;
 
-        BufferedInputStream bs = new BufferedInputStream(fs);
-        InputStream in;
         long partSize;
-        if (this.encKeyName != null) {
-            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-            in = new CipherWithInlineIVInputStream(bs, cipher, Cipher.ENCRYPT_MODE, encKey);
+        if (encKeyName != null) {
+            cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 
             long preCryptSize = fileLength;
             long blockSize = cipher.getBlockSize();
             partSize = blockSize * (preCryptSize / blockSize + 2);
         } else {
-            in = bs;
+            cipher = null;
             partSize = fileLength;
         }
 
-        ListenableFuture<Void> uploadPartFuture = upload.uploadPart(partNumber,
-            in, partSize, Optional.fromNullable(opl));
+        Callable<InputStream> inputStreamCallable = new Callable<InputStream>() {
+            public InputStream call() throws Exception {
+                FileInputStream fs = new FileInputStream(file);
 
-        FutureFallback<Void> closeFile = new FutureFallback<Void>() {
-            public ListenableFuture<Void> create(Throwable thrown) throws Exception {
-                try {
-                    fs.close();
-                } catch (Exception e) {
+                BufferedInputStream bs = new BufferedInputStream(fs);
+                InputStream in;
+                if (cipher != null) {
+                    in = new CipherWithInlineIVInputStream(bs, cipher,
+                        Cipher.ENCRYPT_MODE, encKey);
+                } else {
+                    in = bs;
                 }
 
-                return Futures.immediateFailedFuture(thrown);
+                return in;
             }
         };
 
-        Futures.addCallback(uploadPartFuture, new FutureCallback<Void>() {
-            public void onFailure(Throwable t) {
-            }
-
-            public void onSuccess(Void ignored) {
-                try {
-                    fs.close();
-                } catch (Exception e) {
-                }
-            }
-        });
-
-        return Futures.withFallback(uploadPartFuture, closeFile);
+        return upload.uploadPart(partNumber, partSize, inputStreamCallable,
+            Optional.fromNullable(opl));
     }
 
     /**

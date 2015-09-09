@@ -235,7 +235,6 @@ def jar(name,
              ' -windowtitle "' + javadoc['title'] + '"' +
              ' -doctitle "' + javadoc['title'] + '"' +
              ' -public ' +
-             ' -Xdoclint:none' +
              ' -linkoffline "http://docs.oracle.com/javase/7/docs/api/" "./package-list/java"' +
              ' -linkoffline "http://docs.guava-libraries.googlecode.com/git/javadoc/" "./package-list/guava"' +
              ' -linkoffline "http://docs.amazonwebservices.com/AWSJavaSDK/latest/javadoc/" "./package-list/aws"' +

@@ -820,14 +820,13 @@ class Main
     {
       if(exc.getStatusCode() == 404)
       {
-        System.err.println("error: Storage service object not found");
-        System.err.println(exc.getMessage());
+        System.err.println("error: Storage service object not found: " +
+            exc.getMessage());
       }
       else if(exc.getStatusCode() == 403)
       {
         System.err.println("error: Access to storage service object denied " +
-            "with current credentials");
-        System.err.println(exc.getMessage());
+            "with current credentials: " + exc.getMessage());
       }
       else
       {

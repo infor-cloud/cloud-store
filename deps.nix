@@ -54,10 +54,10 @@ in {
 
   aws_java_sdk =
     pkgs.stdenv.mkDerivation rec {
-      name = "aws-java-sdk-1.9.8";
+      name = "aws-java-sdk-1.10.20";
       src = fetchurl {
-        url = http://sdk-for-java.amazonwebservices.com/aws-java-sdk-1.9.8.zip;
-        sha256 = "04nfx917cmyxv2n5g62js9cgh37jg635zhn9v4kr9xiq292bv3yv";
+        url = http://sdk-for-java.amazonwebservices.com/aws-java-sdk-1.10.20.zip;
+        sha256 = "0b3cfc060bbf1166ead59a4892a7ee459cb1ed564d7c60baf337320d857a4d2a";
       };
       buildInputs = [unzip];
       buildCommand = ''

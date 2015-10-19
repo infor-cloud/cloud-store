@@ -41,7 +41,8 @@ public class ListObjectsAndDirsCommand extends Command
 
           public String toString()
           {
-            return "list all object of " + getUri(bucket, prefix);
+            return "listing objects and directories for " + getUri(bucket,
+                prefix);
           }
         });
 

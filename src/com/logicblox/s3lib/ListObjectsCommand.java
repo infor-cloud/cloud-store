@@ -39,7 +39,7 @@ public class ListObjectsCommand extends Command
 
           public String toString()
           {
-            return "list all object of " + getUri(bucket, prefix);
+            return "listing objects for " + getUri(bucket, prefix);
           }
         });
 

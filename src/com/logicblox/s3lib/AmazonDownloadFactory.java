@@ -22,15 +22,15 @@ class AmazonDownloadFactory
 
   public ListenableFuture<AmazonDownload> startDownload(String bucketName, String key)
   {
-    return executor.submit(new GetObjectMetadataCallable(bucketName, key));
+    return executor.submit(new StartCallable(bucketName, key));
   }
 
-  private class GetObjectMetadataCallable implements Callable<AmazonDownload>
+  private class StartCallable implements Callable<AmazonDownload>
   {
     private String bucketName;
     private String key;
 
-    public GetObjectMetadataCallable(String bucketName, String key)
+    public StartCallable(String bucketName, String key)
     {
       this.bucketName = bucketName;
       this.key = key;

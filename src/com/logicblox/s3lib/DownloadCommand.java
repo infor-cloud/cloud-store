@@ -137,9 +137,90 @@ public class DownloadCommand extends Command
 
   private ListenableFuture<AmazonDownload> startDownloadActual(final String bucket, final String key)
   {
-    AmazonDownloadFactory factory = new AmazonDownloadFactory
-        (getAmazonS3Client(), _downloadExecutor);
-    return factory.startDownload(bucket, key);
+    AmazonDownloadFactory factory = new AmazonDownloadFactory(getAmazonS3Client(), _downloadExecutor);
+
+    AsyncFunction<AmazonDownload, AmazonDownload> initDownload = new AsyncFunction<AmazonDownload, AmazonDownload>()
+    {
+      public ListenableFuture<AmazonDownload> apply(AmazonDownload download)
+      {
+        Map<String, String> meta = download.getMeta();
+
+        String errPrefix = getUri(download.getBucket(), download.getKey()) + ": ";
+        if (meta.containsKey("s3tool-version"))
+        {
+          String objectVersion = meta.get("s3tool-version");
+
+          if (!String.valueOf(Version.CURRENT).equals(objectVersion))
+            throw new UsageException(
+                errPrefix + "file uploaded with unsupported version: " +
+                    objectVersion + ", should be " + Version.CURRENT);
+
+          if (meta.containsKey("s3tool-key-name"))
+          {
+            String keyName = meta.get("s3tool-key-name");
+            Key privKey;
+            try
+            {
+              if (_encKeyProvider == null)
+                throw new UsageException(errPrefix + "No encryption key " +
+                    "provider is specified");
+              privKey = _encKeyProvider.getPrivateKey(keyName);
+            }
+            catch (NoSuchKeyException e)
+            {
+              throw new UsageException(errPrefix + "private key '" + keyName
+                  + "' is not available to decrypt");
+            }
+
+            Cipher cipher;
+            byte[] encKeyBytes;
+            try
+            {
+              cipher = Cipher.getInstance("RSA");
+              cipher.init(Cipher.DECRYPT_MODE, privKey);
+              encKeyBytes = cipher.doFinal(DatatypeConverter.parseBase64Binary(meta.get("s3tool-symmetric-key")));
+            }
+            catch (NoSuchAlgorithmException e)
+            {
+              throw new RuntimeException(e);
+            }
+            catch (NoSuchPaddingException e)
+            {
+              throw new RuntimeException(e);
+            }
+            catch (InvalidKeyException e)
+            {
+              throw new RuntimeException(e);
+            }
+            catch (IllegalBlockSizeException e)
+            {
+              throw new RuntimeException(e);
+            }
+            catch (BadPaddingException e)
+            {
+              throw new RuntimeException(e);
+            }
+
+            encKey = new SecretKeySpec(encKeyBytes, "AES");
+          }
+
+          setChunkSize(Long.valueOf(meta.get("s3tool-chunk-size")));
+          setFileLength(Long.valueOf(meta.get("s3tool-file-length")));
+        }
+        else
+        {
+          setFileLength(download.getLength());
+          if (chunkSize == 0)
+          {
+            setChunkSize(Utils.getDefaultChunkSize());
+          }
+        }
+
+        return Futures.immediateFuture(download);
+      }
+    };
+
+    return Futures.transform(factory.startDownload(bucket, key), initDownload);
   }
 
   /**
@@ -159,77 +240,6 @@ public class DownloadCommand extends Command
   private ListenableFuture<AmazonDownload> startParts(AmazonDownload download)
   throws IOException, UsageException
   {
-    Map<String,String> meta = download.getMeta();
-
-    String errPrefix = getUri(download.getBucket(), download.getKey()) + ": ";
-    if (meta.containsKey("s3tool-version"))
-    {
-      String objectVersion = meta.get("s3tool-version");
-
-      if (!String.valueOf(Version.CURRENT).equals(objectVersion))
-        throw new UsageException(
-          errPrefix+"file uploaded with unsupported version: " + objectVersion + ", should be " + Version.CURRENT);
-
-      if (meta.containsKey("s3tool-key-name"))
-      {
-        String keyName = meta.get("s3tool-key-name");
-        Key privKey;
-        try
-        {
-          if (_encKeyProvider == null)
-            throw new UsageException(errPrefix + "No encryption key provider " +
-                "is specified");
-          privKey = _encKeyProvider.getPrivateKey(keyName);
-        }
-        catch (NoSuchKeyException e)
-        {
-          throw new UsageException(errPrefix + "private key '" + keyName + "' is not available to decrypt");
-        }
-
-        Cipher cipher;
-        byte[] encKeyBytes;
-        try
-        {
-          cipher = Cipher.getInstance("RSA");
-          cipher.init(Cipher.DECRYPT_MODE, privKey);
-          encKeyBytes = cipher.doFinal(DatatypeConverter.parseBase64Binary(meta.get("s3tool-symmetric-key")));
-        }
-        catch (NoSuchAlgorithmException e)
-        {
-          throw new RuntimeException(e);
-        }
-        catch (NoSuchPaddingException e)
-        {
-          throw new RuntimeException(e);
-        }
-        catch (InvalidKeyException e)
-        {
-          throw new RuntimeException(e);
-        }
-        catch (IllegalBlockSizeException e)
-        {
-          throw new RuntimeException(e);
-        }
-        catch (BadPaddingException e)
-        {
-          throw new RuntimeException(e);
-        }
-
-        encKey = new SecretKeySpec(encKeyBytes, "AES");
-      }
-
-      setChunkSize(Long.valueOf(meta.get("s3tool-chunk-size")));
-      setFileLength(Long.valueOf(meta.get("s3tool-file-length")));
-    }
-    else
-    {
-      setFileLength(download.getLength());
-      if (chunkSize == 0)
-      {
-        setChunkSize(Utils.getDefaultChunkSize());
-      }
-    }
-
     OverallProgressListener opl = null;
     if (progressListenerFactory.isPresent()) {
       opl = progressListenerFactory.get().create(

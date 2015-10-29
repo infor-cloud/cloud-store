@@ -107,11 +107,6 @@ public class Command
     return Utils.executeWithRetry(executor, callable, _retryCondition, _retryDelayFunction, TimeUnit.MILLISECONDS, _retryCount);
   }
 
-  protected <V> ListenableFuture<V> executeWithRetry(ListeningScheduledExecutorService executor, Callable<ListenableFuture<V>> callable, int retryCount)
-  {
-    return Utils.executeWithRetry(executor, callable, _retryCondition, _retryDelayFunction, TimeUnit.MILLISECONDS, retryCount);
-  }
-
   private Predicate<Throwable> _retryCondition = new Predicate<Throwable>()
   {
     public boolean apply(Throwable thrown)

@@ -132,8 +132,7 @@ public class DownloadCommand extends Command
         {
           return "starting download " + bucket + "/" + key;
         }
-      },
-      3);
+      });
   }
 
   private ListenableFuture<AmazonDownload> startDownloadActual(final String bucket, final String key)

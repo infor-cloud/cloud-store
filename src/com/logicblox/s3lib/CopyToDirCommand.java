@@ -31,18 +31,18 @@ public class CopyToDirCommand extends Command
 
   public ListenableFuture<List<S3File>> run(final CopyOptions options)
       throws ExecutionException, InterruptedException, IOException, URISyntaxException {
-   if (!options.getDestinationKey().endsWith("/") && !options.getDestinationKey().equals(""))
-     throw new UsageException("Destination directory key should end with a '/'");
+    if (!options.getDestinationKey().endsWith("/") && !options.getDestinationKey().equals(""))
+      throw new UsageException("Destination directory key should end with a '/'");
 
-   String baseDirPath = "";
-   if (options.getSourceKey().length() > 0)
-   {
-     int endIndex = options.getSourceKey().lastIndexOf("/");
-     if (endIndex != -1)
-       baseDirPath = options.getSourceKey().substring(0, endIndex+1);
-   }
+    String baseDirPath = "";
+    if (options.getSourceKey().length() > 0)
+    {
+      int endIndex = options.getSourceKey().lastIndexOf("/");
+      if (endIndex != -1)
+        baseDirPath = options.getSourceKey().substring(0, endIndex+1);
+    }
 
-   List<ListenableFuture<S3File>> files = new ArrayList<>();
+    List<ListenableFuture<S3File>> files = new ArrayList<>();
 
     ListObjectsRequest req = new ListObjectsRequest()
       .withBucketName(options.getSourceBucketName())

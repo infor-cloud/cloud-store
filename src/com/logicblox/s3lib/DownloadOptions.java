@@ -8,16 +8,16 @@ import java.io.File;
  * {@code DownloadOptions} contains all the details needed by the download
  * operation. The specified {@code object}, under {@code bucket}, is downloaded
  * to a local {@code file}.
- * <p/>
+ * <p>
  * If {@code recursive} is set, then all objects under {@code object} key will
  * be downloaded. Otherwise, only the first-level objects will be downloaded.
- * <p/>
+ * <p>
  * If {@code overwrite} is set, then newly downloaded files is possible to
  * overwrite existing local files.
- * <p/>
+ * <p>
  * If progress listener factory has been set, then progress notifications
  * will be recorded.
- * <p/>
+ * <p>
  * {@code DownloadOptions} objects are meant to be built by {@code
  * DownloadOptionsBuilder}. This class provides only public getter methods.
  */

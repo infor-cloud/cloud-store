@@ -8,7 +8,7 @@ import java.net.URI;
 /**
  * {@code DownloadOptionsBuilder} is a builder for {@code DownloadOptions}
  * objects.
- * <p/>
+ * <p>
  * Setting fields {@code file}, {@code bucket} and {@code objectKey} is
  * mandatory. All the others are optional.
  */

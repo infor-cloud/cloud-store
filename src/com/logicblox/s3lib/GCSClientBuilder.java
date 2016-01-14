@@ -27,7 +27,7 @@ import java.util.Collections;
  * {@code GCSClientBuilder} provides methods for building {@code GCSClient}
  * objects. None of these methods is mandatory to be called. In this case,
  * default values will be picked.
- * <p/>
+ * <p>
  * As is common for builders, this class is not thread-safe.
  */
 public class GCSClientBuilder {
@@ -59,7 +59,7 @@ public class GCSClientBuilder {
      * requests, e.g. download, are going to fail with the default
      * AmazonS3Client. As a solution, we provide the AmazonS3ClientForGCS
      * subclass which provides the correct signer object.
-     * <p/>
+     * <p>
      * If you don't set any internal S3 client at all, then it will be set to an
      * AmazonS3ClientForGCS object by default.
      *

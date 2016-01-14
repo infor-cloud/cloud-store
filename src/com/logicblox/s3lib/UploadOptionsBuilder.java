@@ -8,7 +8,7 @@ import java.net.URI;
 
 /**
  * {@code UploadOptionsBuilder} is a builder for {@code UploadOptions} objects.
- * <p/>
+ * <p>
  * Setting fields {@code file}, {@code bucket} and {@code objectKey} is
  * mandatory. All the others are optional.
  */

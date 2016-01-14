@@ -4,7 +4,7 @@ import com.google.common.base.Optional;
 
 /**
  * {@code CopyOptionsBuilder} is a builder for {@code CopyOptions} objects.
- * <p/>
+ * <p>
  * Setting {@code sourceBucketName}, {@code sourceKey}, {@code
  * destinationBucketName} and {@code destinationKey} is mandatory. All the
  * others are optional.

@@ -134,7 +134,7 @@ public class Utils
 
   /**
    * Enum values for all supported storage services.
-   * <p/>
+   * <p>
    * {@code UNKNOWN} value represents storage services that run on an unknown
    * endpoint but provide an API compatible with one of the supported services
    * (e.g. S3 or GCS-compatible API). It's mostly useful for testing purposes.

@@ -23,10 +23,10 @@ import java.util.concurrent.ExecutionException;
 
 /**
  * Provides the client for accessing the Google Cloud Storage web service.
- * <p/>
+ * <p>
  * Captures the full configuration independent of concrete operations like
  * uploads or downloads.
- * <p/>
+ * <p>
  * For more information about Google Cloud Storage, please see <a
  * href="https://cloud.google.com/storage/">https://cloud.google
  * .com/storage/</a>

@@ -4,15 +4,16 @@ import com.google.common.base.Optional;
 
 /**
  * {@code CopyOptions} contains all the details needed by the copy operation.
- * The specified {@code sourceKey}, under {@sourceBucketName bucket}, is copied
+ * The specified {@code sourceKey}, under {@code sourceBucketName} bucket, is
+ * copied
  * to {@code destinationKey}, under {@code destinationBucketName}.
- * <p/>
+ * <p>
  * If {@code cannedAcl} is specified then it's applied to the destination
  * object.
- * <p/>
+ * <p>
  * If progress listener factory has been set, then progress notifications will
  * be recorded.
- * <p/>
+ * <p>
  * {@code CopyOptions} objects are meant to be built by {@code
  * CopyOptionsBuilder}. This class provides only public getter methods.
  */

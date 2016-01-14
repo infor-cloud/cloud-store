@@ -17,7 +17,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Provides the a general client API for accessing cloud stores like Amazon S3
  * or Google Cloud Storage.
- * <p/>
+ * <p>
  * Captures the full configuration independent of concrete operations like
  * uploads or downloads.
  */
@@ -33,7 +33,7 @@ public interface CloudStoreClient {
 
     /**
      * Sets the API endpoint this client should issue the requests to.
-     * <p/>
+     * <p>
      * This method is mostly useful if we would like to test different services
      * with compatible APIs or for unit-testing purposes (e.g. mocks).
      *
@@ -53,23 +53,23 @@ public interface CloudStoreClient {
     /**
      * Uploads a file according to {@code options}. For more details
      * check {@link com.logicblox.s3lib.UploadOptions}.
-     * <p/>
+     * <p>
      * The specified bucket must already exist and the caller must have write
      * permission to the bucket to upload an object.
-     * <p/>
+     * <p>
      * By default, the upload is multi-part with each part being {@code
      * chunkSize} bytes.
-     * <p/>
+     * <p>
      * The level of parallelism depends on the {@code s3Executor}. Ideally,
      * different parts are uploaded by different threads.
-     * <p/>
+     * <p>
      * The client automatically does checksum validation both for each part and
      * for the final object, making sure there is no file corruption during the
      * transfer.
-     * <p/>
+     * <p>
      * Low-level upload operations (e.g. file type recognition) are taken care
      * of by the underlying low-level service-specific clients.
-     * <p/>
+     * <p>
      * If during this call an exception wasn't thrown, the entire object has
      * supposedly been stored successfully.
      *
@@ -100,7 +100,7 @@ public interface CloudStoreClient {
 
     /**
      * Uploads the specified {@code file} under the specified {@code uri}.
-     * <p/>
+     * <p>
      * By default, the canned ACL "bucket-owner-full-control" is applied to the
      * uploaded object.
      *
@@ -117,7 +117,7 @@ public interface CloudStoreClient {
      * the {@code key} is not null, the {@code keyProvider} will be asked to
      * provide a public key with that name. This key will be used to encrypt the
      * {@code file} at the client side.
-     * <p/>
+     * <p>
      * By default, the canned ACL "bucket-owner-full-control" is applied to the
      * uploaded object.
      *
@@ -133,7 +133,7 @@ public interface CloudStoreClient {
     /**
      * Uploads the specified {@code file} under the specified {@code bucket} and
      * {@code object} name.
-     * <p/>
+     * <p>
      * By default, the canned ACL "bucket-owner-full-control" is applied to the
      * uploaded object.
      *
@@ -151,7 +151,7 @@ public interface CloudStoreClient {
      * {@code object} name. If the {@code key} is not null, the {@code
      * keyProvider} will be asked to provide a public key with that name. This
      * key will be used to encrypt the {@code file} at the client side.
-     * <p/>
+     * <p>
      * By default, the canned ACL "bucket-owner-full-control" is applied to the
      * uploaded object.
      *
@@ -169,10 +169,10 @@ public interface CloudStoreClient {
     /**
      * Uploads a directory according to {@code options}. For more details
      * check {@link com.logicblox.s3lib.UploadOptions}.
-     * <p/>
+     * <p>
      * Each individual file is uploaded with {@link CloudStoreClient#upload
      * (UploadOptions)}.
-     * <p/>
+     * <p>
      * Symbolic links are not supported.
      *
      * @param options Upload options
@@ -183,7 +183,7 @@ public interface CloudStoreClient {
 
     /**
      * Uploads every file under {@code directory} recursively.
-     * <p/>
+     * <p>
      * By default, the canned ACL "bucket-owner-full-control" is applied to each
      * uploaded object.
      *
@@ -214,7 +214,7 @@ public interface CloudStoreClient {
 
     /**
      * Deletes the specified {@code object} under {@code bucket}.
-     * <p/>
+     * <p>
      * No error is returned if the file doesn't exist. If you care, use the
      * {@link CloudStoreClient#exists} methods to check.
      *
@@ -236,9 +236,9 @@ public interface CloudStoreClient {
 
     /**
      * Checks if the specified {@code object} exists in the {@code bucket}.
-     * <p/>
+     * <p>
      * Returns a null future if the file does not exist.
-     * <p/>
+     * <p>
      * Throws an exception if the metadata of the file could not be fetched for
      * different reasons.
      *
@@ -258,30 +258,30 @@ public interface CloudStoreClient {
     /**
      * Downloads a file according to {@code options}. For more details
      * check {@link com.logicblox.s3lib.DownloadOptions}.
-     * <p/>
+     * <p>
      * If the {@code object} was encrypted by s3lib at the client-side, this
      * method will try to decrypt it automatically. It knows which key to use by
      * checking {@code object}'s metadata.
-     * <p/>
+     * <p>
      * The specified bucket must already exist and the caller must have read
      * permission to the {@code bucket}.
-     * <p/>
+     * <p>
      * By default, if {@code object}'s size is bigger than the {@code chunkSize}
      * chosen during the upload, then multiple range GETs will be issued,
      * effectively downloading different parts of the file concurrently.
-     * <p/>
+     * <p>
      * The level of parallelism depends on the {@code s3Executor}. Ideally,
      * different parts are downloaded by different threads.
-     * <p/>
+     * <p>
      * Since a file can be uploaded, updated and/or copied by any tool is not
      * always safe and efficient to validate its checksum, since there is no
      * easy way to detect each tool's chosen chunk size (which affects object's
      * ETag).
-     * <p/>
+     * <p>
      * Currently, this client tries to do checksum validation when
      * it has good indication that a file was uploaded by s3lib and/or the file
      * can been fully downloaded using a single range GET.
-     * <p/>
+     * <p>
      * If during this call an exception wasn't thrown, the entire object has
      * supposedly been stored successfully.
      *
@@ -319,14 +319,14 @@ public interface CloudStoreClient {
     /**
      * Downloads a conceptual directory according to {@code options}. For more
      * details check {@link com.logicblox.s3lib.DownloadOptions}.
-     * <p/>
+     * <p>
      * If {@code recursive} is true, then all objects under {@code uri} will
      * be downloaded. Otherwise, only the first-level objects will be
      * downloaded.
-     * <p/>
+     * <p>
      * If {@code overwrite} is true, then newly downloaded files is possible to
      * overwrite existing local files.
-     * <p/>
+     * <p>
      * Each individual file is downloaded with {@link
      * CloudStoreClient#download(File, String, String)}.
      *
@@ -354,7 +354,7 @@ public interface CloudStoreClient {
     /**
      * Copies an object according to {@code options}. For more details
      * check {@link com.logicblox.s3lib.CopyOptions}.
-     * <p/>
+     * <p>
      * The source bucket must already exist and the caller must have read
      * permission to it. Respectively, the destination bucket must already
      * exist and the caller must have write permission to it.
@@ -371,7 +371,7 @@ public interface CloudStoreClient {
      * source prefix URI, according to {@code options}. The destination URI has
      * to be a directory (i.e. end with '/'). For more details check {@link
      * com.logicblox.s3lib.CopyOptions}.
-     * <p/>
+     * <p>
      * The source bucket must already exist and the caller must have read
      * permission to it. Respectively, the destination bucket must already exist
      * and the caller must have write permission to it.
@@ -387,12 +387,12 @@ public interface CloudStoreClient {
     /**
      * Returns a list of summary information about the objects whose keys start
      * with {@code prefix} and belong in the specified {@code bucket}.
-     * <p/>
+     * <p>
      * If {@code recursive} is enabled, then all objects of all subdirectories
      * are going to be included in the results too.
-     * <p/>
+     * <p>
      * List results are returned in lexicographic order.
-     * <p/>
+     * <p>
      * Directories are <i>not</i> included in the results. If you are interested
      * in directories information too, then check {@link
      * S3Client#listObjectsAndDirs}.
@@ -409,7 +409,7 @@ public interface CloudStoreClient {
      * Returns a list of summary information about the objects and conceptual
      * first-level directories whose keys start with {@code prefix} and belong
      * in the specified {@code bucket}.
-     * <p/>
+     * <p>
      * If {@code recursive} is enabled, then all objects and all subdirectories
      * are going to be included in the results too.
      *

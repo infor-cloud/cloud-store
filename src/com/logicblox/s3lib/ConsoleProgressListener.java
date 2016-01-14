@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicLong;
 class ConsoleProgressListener implements OverallProgressListener {
     /**
      * This map contains the progress of each part.
-     * <p/>
+     * <p>
      * Currently, it is not a ConcurrentMap since it is used by {@code
      * progress}, which is {@code synchronized}, and {@code
      * getTotalTransferredBytes}, which is called only by {@code progress}.

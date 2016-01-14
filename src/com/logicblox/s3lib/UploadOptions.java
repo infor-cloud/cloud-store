@@ -8,16 +8,16 @@ import java.io.File;
  * {@code UploadOptions} contains all the details needed by the upload
  * operation. The specified {@code file} will be uploaded under the specified
  * {@code bucket} and {@code objectKey}.
- * <p/>
+ * <p>
  * The specified {@code acl} is applied to the uploaded file.
- * <p/>
+ * <p>
  * If the {@code enckey} is present, the {@code keyProvider} will be asked to
  * provide a public key with that name. This key will be used to encrypt the
  * {@code file} at the client side.
- * <p/>
+ * <p>
  * If progress listener factory has been set, then progress notifications
  * will be recorded.
- * <p/>
+ * <p>
  * {@code UploadOptions} objects are meant to be built by {@code
  * UploadOptionsBuilder}. This class provides only public getter methods.
  */

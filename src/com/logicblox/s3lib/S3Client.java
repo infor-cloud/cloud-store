@@ -26,12 +26,12 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 /**
  * Provides the client for accessing the Amazon S3 or S3-compatible web
  * service.
- * <p/>
+ * <p>
  * Captures the full configuration independent of concrete operations like
  * uploads or downloads.
- * <p/>
- * For more information about Amazon S3, please see <a href="http://aws
- * .amazon.com/s3">http://aws.amazon.com/s3</a>
+ * <p>
+ * For more information about Amazon S3, please see
+ * <a href="http://aws.amazon.com/s3">http://aws.amazon.com/s3</a>
  */
 public class S3Client implements CloudStoreClient {
   /**
@@ -74,7 +74,7 @@ public class S3Client implements CloudStoreClient {
   /**
    * Constructs a new high-level S3 client to invoke operations on S3 or
    * compatible service.
-   * <p/>
+   * <p>
    * Objects created by this constructor will:
    * <ul>
    *   <li>use a thread pool of 10 threads to execute S3 HTTP API calls
@@ -568,7 +568,7 @@ public class S3Client implements CloudStoreClient {
   /**
    * Returns s3lib package version in this format:
    * "Version.RevNum-RevHash_BuildDatetime"
-   * </p>
+   * <p>
    * Example:
    *   "1.0.272-2dab7d1c9c69_201502181542"
    */

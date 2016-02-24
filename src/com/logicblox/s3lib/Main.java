@@ -7,6 +7,7 @@ import java.net.URISyntaxException;
 import java.security.GeneralSecurityException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -21,6 +22,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.beust.jcommander.IValueValidator;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
@@ -131,6 +133,15 @@ class Main
     @Parameter(names = {"--chunk-size"}, description = "The size of each chunk read from the file")
     long chunkSize = Utils.getDefaultChunkSize();
 
+    @Parameter(names = {"--credential-providers-s3"}, description = "The " +
+        "order of the credential providers that should be checked for S3. The" +
+        " default order is: \"env-vars\", " + "\"system-properties\", " +
+        "\"credentials-profile\", \"ec2-metadata-service\". Choices should be" +
+        " comma-separated without any spaces, e.g. \"env-vars," +
+        "ec2-metadata-service\"." ,
+        validateValueWith = CredentialProvidersValidator.class)
+    List<String> credentialProvidersS3;
+
     protected Utils.StorageService detectStorageService() throws URISyntaxException
     {
       return Utils.detectStorageService(endpoint, null);
@@ -145,8 +156,8 @@ class Main
 
       CloudStoreClient client;
       if (service == Utils.StorageService.GCS) {
-        AWSCredentialsProvider gcsXMLProvider = Utils
-            .getGCSXMLEnvironmentVariableCredentialsProvider();
+        AWSCredentialsProvider gcsXMLProvider =
+            Utils.getGCSXMLEnvironmentVariableCredentialsProvider();
         AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(gcsXMLProvider);
 
         client = new GCSClientBuilder()
@@ -159,7 +170,9 @@ class Main
       else {
         ClientConfiguration clientCfg = new ClientConfiguration();
         clientCfg = Utils.setProxy(clientCfg);
-        AmazonS3Client s3Client = new AmazonS3Client(clientCfg);
+        AWSCredentialsProvider credsProvider =
+            Utils.getCredentialsProviderS3(credentialProvidersS3);
+        AmazonS3Client s3Client = new AmazonS3Client(credsProvider, clientCfg);
 
         client = new S3ClientBuilder()
             .setInternalS3Client(s3Client)
@@ -180,6 +193,17 @@ class Main
     }
   }
 
+  public static class CredentialProvidersValidator implements IValueValidator<List<String>>
+  {
+    @Override
+    public void validate(String name, List<String> credentialsProvidersS3) throws ParameterException
+    {
+      for (String cp : credentialsProvidersS3)
+        if (!Utils.defaultCredentialProvidersS3.contains(cp))
+          throw new ParameterException("Credential providers should be a " +
+              "subset of " + Arrays.toString(Utils.defaultCredentialProvidersS3.toArray()));
+    }
+  }
 
   /**
    * Abstraction for commands that deal with storage service objects

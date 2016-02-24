@@ -1,8 +1,6 @@
 package com.logicblox.s3lib;
 
 import java.io.File;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -10,6 +8,9 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.Callable;
@@ -22,7 +23,13 @@ import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.AWSCredentialsProviderChain;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
+import com.amazonaws.auth.InstanceProfileCredentialsProvider;
+import com.amazonaws.auth.SystemPropertiesCredentialsProvider;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import com.google.common.base.Function;
@@ -39,6 +46,7 @@ public class Utils
   public static DateFormat getDefaultDateFormat()
   {
     DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+//    DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss,SSSSSS");
     df.setTimeZone(TimeZone.getTimeZone("UTC"));
 
     return df;
@@ -203,7 +211,46 @@ public class Utils
         throw new UsageException("Unknown storage service " + service);
     }
   }
-  
+
+  public static final List<String> defaultCredentialProvidersS3 = Arrays.asList(
+      "env-vars", "system-properties", "credentials-profile", "ec2-metadata-service");
+
+  public static AWSCredentialsProvider getCredentialsProviderS3(List<String> credentialsProvidersS3)
+  {
+    if (credentialsProvidersS3 == null || credentialsProvidersS3.size() == 0)
+      return new DefaultAWSCredentialsProviderChain();
+
+    List<AWSCredentialsProvider> choices = new ArrayList<>();
+    for (String cp : credentialsProvidersS3)
+    {
+      switch (cp)
+      {
+        case "env-vars":
+          choices.add(new EnvironmentVariableCredentialsProvider());
+          break;
+        case "system-properties":
+          choices.add(new SystemPropertiesCredentialsProvider());
+          break;
+        case "credentials-profile":
+          choices.add(new ProfileCredentialsProvider());
+          break;
+        case "ec2-metadata-service":
+          choices.add(new InstanceProfileCredentialsProvider());
+          break;
+        default:
+          break;
+      }
+    }
+
+    if (choices.size() == 0)
+      return new DefaultAWSCredentialsProviderChain();
+
+    AWSCredentialsProvider[] choicesArr = new AWSCredentialsProvider[choices.size()];
+    choicesArr = choices.toArray(choicesArr);
+
+    return new AWSCredentialsProviderChain(choicesArr);
+  }
+
   public static final String GCS_XML_ACCESS_KEY_ENV_VAR = "GCS_XML_ACCESS_KEY";
 
   public static final String GCS_XML_SECRET_KEY_ENV_VAR = "GCS_XML_SECRET_KEY";

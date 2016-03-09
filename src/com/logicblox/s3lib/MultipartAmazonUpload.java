@@ -12,6 +12,7 @@ import javax.xml.bind.DatatypeConverter;
 
 import com.amazonaws.event.ProgressListener;
 import com.google.common.base.Optional;
+import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
@@ -158,6 +159,19 @@ class MultipartAmazonUpload implements Upload
       req.setPartSize(partSize);
       req.setUploadId(uploadId);
       req.setKey(key);
+
+      // LB-2298: According to
+      // https://github.com/aws/aws-sdk-java/issues/427#issuecomment-100518891
+      // and
+      // https://github.com/aws/aws-sdk-java/issues/427#issuecomment-100583279,
+      // since we don't use a File or FileInputStream directly (stream here is
+      // either CipherWithInlineIVInputStream -if we encrypt- or
+      // BufferedInputStream) we should set the "read limit" (which is the
+      // maximum buffer size that could be consumed) as suggested in the
+      // error message mentioned in LB-2298. That limit should be the
+      // expected max size of our input stream in bytes, plus 1, hence
+      // partSize+1.
+      req.getRequestClientOptions().setReadLimit(Ints.checkedCast(partSize+1));
 
       if (progressListener.isPresent()) {
         PartProgressEvent ppe = new PartProgressEvent(Integer.toString

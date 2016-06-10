@@ -78,9 +78,9 @@ public class DownloadCommand extends Command
       throw new IOException("File '" + file + "' already exists");
   }
 
-  public ListenableFuture<S3File> run(final String bucket, final String key)
+  public ListenableFuture<S3File> run(final String bucket, final String key,final String version)
   {
-    ListenableFuture<AmazonDownload> download = startDownload(bucket, key);
+    ListenableFuture<AmazonDownload> download = startDownload(bucket, key,version);
     download = Futures.transform(download, startPartsAsyncFunction());
     download = Futures.transform(download, validate());
     ListenableFuture<S3File> res = Futures.transform(
@@ -117,7 +117,7 @@ public class DownloadCommand extends Command
   /**
    * Step 1: Start download and fetch metadata.
    */
-  private ListenableFuture<AmazonDownload> startDownload(final String bucket, final String key)
+  private ListenableFuture<AmazonDownload> startDownload(final String bucket, final String key,final String version )
   {
     return executeWithRetry(
       _executor,
@@ -125,17 +125,17 @@ public class DownloadCommand extends Command
       {
         public ListenableFuture<AmazonDownload> call()
         {
-          return startDownloadActual(bucket, key);
+          return startDownloadActual(bucket, key,version);
         }
 
         public String toString()
         {
-          return "starting download " + bucket + "/" + key;
+          return "starting download " + bucket + "/" + key +" version id =" +version;
         }
       });
   }
 
-  private ListenableFuture<AmazonDownload> startDownloadActual(final String bucket, final String key)
+  private ListenableFuture<AmazonDownload> startDownloadActual(final String bucket, final String key, final String version)
   {
     AmazonDownloadFactory factory = new AmazonDownloadFactory(getAmazonS3Client(), _downloadExecutor);
 
@@ -150,10 +150,12 @@ public class DownloadCommand extends Command
         {
           String objectVersion = meta.get("s3tool-version");
 
-          if (!String.valueOf(Version.CURRENT).equals(objectVersion))
+          // Now versioning is enabled 
+       /*   if (!String.valueOf(Version.CURRENT).equals(objectVersion))
             throw new UsageException(
                 errPrefix + "file uploaded with unsupported version: " +
                     objectVersion + ", should be " + Version.CURRENT);
+                    */
 
           if (meta.containsKey("s3tool-key-name"))
           {
@@ -220,7 +222,7 @@ public class DownloadCommand extends Command
       }
     };
 
-    return Futures.transform(factory.startDownload(bucket, key), initDownload);
+    return Futures.transform(factory.startDownload(bucket, key,version), initDownload);
   }
 
   /**

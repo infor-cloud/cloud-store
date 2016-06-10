@@ -1,6 +1,7 @@
 package com.logicblox.s3lib;
 
 import com.amazonaws.event.ProgressListener;
+
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -19,17 +20,20 @@ class AmazonDownload
   private ObjectMetadata meta;
   private String key;
   private String bucketName;
+  private String version;
 
   public AmazonDownload(
     AmazonS3 client,
     String key,
     String bucketName,
+    String version,
     ObjectMetadata meta,
     ListeningExecutorService executor)
   {
     this.client = client;
     this.key = key;
     this.bucketName = bucketName;
+    this.version = version;
     this.executor = executor;
     this.meta = meta;
   }
@@ -66,6 +70,10 @@ class AmazonDownload
     return key;
   }
 
+  public String getVersion()
+  {
+    return version;
+  }
   public String getBucket()
   {
     return bucketName;
@@ -87,7 +95,13 @@ class AmazonDownload
 
     public InputStream call() throws Exception
     {
-      GetObjectRequest req = new GetObjectRequest(bucketName, key);
+    	GetObjectRequest req = null;
+      if(version == null){
+        req = new GetObjectRequest(bucketName, key);
+      }
+      else{
+    	req = new GetObjectRequest(bucketName, key,version);
+      }
       req.setRange(start, end);
       if (progressListener.isPresent()) {
         PartProgressEvent ppe = new PartProgressEvent(

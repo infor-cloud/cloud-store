@@ -720,7 +720,7 @@ class Main
     @Parameter(names = {"-r", "--recursive"}, description = "Download recursively")
     boolean recursive = false;
     
-    @Parameter(names = {"-v", "--version"}, description = "Download a specific version of a file")
+    @Parameter(names = {"--version-id"}, description = "Download a specific version of a file")
     String version = null;
 
     @Parameter(names = "--progress", description = "Enable progress indication")

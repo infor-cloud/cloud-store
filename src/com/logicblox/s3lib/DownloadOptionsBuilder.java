@@ -18,7 +18,6 @@ public class DownloadOptionsBuilder {
     private String objectKey;
     private String version;
     private boolean recursive = false;
-   
     private boolean overwrite = false;
     private Optional<OverallProgressListenerFactory> overallProgressListenerFactory =
         Optional.absent();
@@ -67,7 +66,7 @@ public class DownloadOptionsBuilder {
     }
 
     public DownloadOptions createDownloadOptions() {
-        return new DownloadOptions(file, bucket, objectKey, version,recursive,
+        return new DownloadOptions(file, bucket, objectKey, version, recursive,
              overwrite, overallProgressListenerFactory);
     }
 }

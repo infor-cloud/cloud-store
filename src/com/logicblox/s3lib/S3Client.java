@@ -428,7 +428,7 @@ public class S3Client implements CloudStoreClient {
     DownloadCommand cmd = new DownloadCommand(_s3Executor, _executor, file,
         _keyProvider, progressListenerFactory);
     configure(cmd);
-    return cmd.run(options.getBucket(), options.getObjectKey(),options.getVersion());
+    return cmd.run(options.getBucket(), options.getObjectKey(), options.getVersion());
   }
 
   @Override

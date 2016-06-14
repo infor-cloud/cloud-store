@@ -74,6 +74,7 @@ class AmazonDownload
   {
     return version;
   }
+  
   public String getBucket()
   {
     return bucketName;
@@ -95,12 +96,13 @@ class AmazonDownload
 
     public InputStream call() throws Exception
     {
-    	GetObjectRequest req = null;
-      if(version == null){
-        req = new GetObjectRequest(bucketName, key);
+      GetObjectRequest req = null;
+      if (version == null) {
+    	req = new GetObjectRequest(bucketName, key);
       }
-      else{
-    	req = new GetObjectRequest(bucketName, key,version);
+      
+      else {
+    	 req = new GetObjectRequest(bucketName, key, version);
       }
       req.setRange(start, end);
       if (progressListener.isPresent()) {

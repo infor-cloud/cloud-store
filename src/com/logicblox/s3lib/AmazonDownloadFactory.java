@@ -24,7 +24,7 @@ class AmazonDownloadFactory
 
   public ListenableFuture<AmazonDownload> startDownload(String bucketName, String key, String version)
   {
-    return executor.submit(new StartCallable(bucketName, key,version));
+    return executor.submit(new StartCallable(bucketName, key, version));
   }
 
   private class StartCallable implements Callable<AmazonDownload>
@@ -33,7 +33,7 @@ class AmazonDownloadFactory
     private String key;
     private String version;
 
-    public StartCallable(String bucketName, String key,String version)
+    public StartCallable(String bucketName, String key, String version)
     {
       this.bucketName = bucketName;
       this.key = key;
@@ -42,11 +42,8 @@ class AmazonDownloadFactory
 
     public AmazonDownload call()
     {
- //   ObjectMetadata data = client.getObjectMetadata(bucketName, key);
-    	GetObjectMetadataRequest Metareq = new GetObjectMetadataRequest(bucketName, key, version);
-    	 ObjectMetadata data = client.getObjectMetadata(Metareq);
-    	
-    	
+      GetObjectMetadataRequest metareq = new GetObjectMetadataRequest(bucketName, key, version);
+      ObjectMetadata data = client.getObjectMetadata(metareq);
       return new AmazonDownload(client, key, bucketName,version, data, executor);
     }
   }

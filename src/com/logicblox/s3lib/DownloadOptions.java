@@ -63,6 +63,7 @@ public class DownloadOptions {
     public boolean isRecursive() {
         return recursive;
     }
+    
     public String getVersion() {
         return version;
     }

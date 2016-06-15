@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import com.amazonaws.services.s3.AmazonS3Client;
 
 import com.google.api.services.storage.Storage;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
@@ -106,11 +107,21 @@ public class Command
   {
     int initialDelay = 300;
     int maxDelay = 20 * 1000;
-    ThrowableRetryPolicy trp = new ExpBackoffRetryPolicy(this, initialDelay,
-      maxDelay, _retryCount, TimeUnit.MILLISECONDS);
+    ThrowableRetryPolicy trp = new ExpBackoffRetryPolicy(initialDelay, maxDelay,
+      _retryCount, _stubborn, TimeUnit.MILLISECONDS);
 
-    RetriableTask rt = new ThrowableRetriableTask(callable, executor, trp);
-    return rt.retry();
+    Callable<ListenableFuture<V>> rt = new ThrowableRetriableTask(callable, executor, trp);
+    ListenableFuture<V> f;
+    try
+    {
+      f = rt.call();
+    }
+    catch (Exception e)
+    {
+      f = Futures.immediateFailedFuture(e);
+    }
+
+    return f;
   }
 
   protected static void rethrow(Throwable thrown) throws Exception

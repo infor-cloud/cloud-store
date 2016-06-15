@@ -1,9 +1,8 @@
 package com.logicblox.s3lib;
 
 
-interface ThrowableRetryPolicy {
-  int getDelay();
-  boolean shouldRetry();
-  void sleep();
-  void errorOccurred(Throwable thrown);
+interface ThrowableRetryPolicy
+{
+  long getDelay(Throwable thrown, int retryCount);
+  boolean shouldRetry(Throwable thrown, int retryCount);
 }

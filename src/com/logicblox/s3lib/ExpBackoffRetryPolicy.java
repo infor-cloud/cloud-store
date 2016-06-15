@@ -3,34 +3,35 @@ package com.logicblox.s3lib;
 
 import com.amazonaws.AmazonServiceException;
 
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-class ExpBackoffRetryPolicy implements ThrowableRetryPolicy {
-  private final Command cmd;
-  private final int initialDelay;
-  private final int maxDelay;
-  private final int maxRetryCount;
-  private final TimeUnit timeUnit;
-  private Throwable thrown;
-  private int retryCount;
+class ExpBackoffRetryPolicy implements ThrowableRetryPolicy
+{
+  private final long _initialDelay;
+  private final long _maxDelay;
+  private final int _maxRetryCount;
+  private final boolean _retryOnClientException;
 
-  public ExpBackoffRetryPolicy(Command cmd,
-                               int initialDelay,
+  public ExpBackoffRetryPolicy(int initialDelay,
                                int maxDelay,
                                int maxRetryCount,
-                               TimeUnit timeUnit) {
-    this.cmd = cmd;
-    this.initialDelay = initialDelay;
-    this.maxDelay = maxDelay;
-    this.maxRetryCount = maxRetryCount;
-    this.timeUnit = timeUnit;
+                               boolean retryOnClientException,
+                               TimeUnit timeUnit)
+  {
+    _initialDelay = timeUnit.toMillis(initialDelay);
+    _maxDelay = timeUnit.toMillis(maxDelay);
+    _maxRetryCount = maxRetryCount;
+    _retryOnClientException = retryOnClientException;
   }
 
+  /**
+   * Returns delay in milliseconds.
+   */
   @Override
-  public int getDelay()
+  public long getDelay(Throwable thrown, int retryCount)
   {
-    int delay = 0;
+    long delay = 0;
 
     if(thrown != null)
     {
@@ -40,14 +41,9 @@ class ExpBackoffRetryPolicy implements ThrowableRetryPolicy {
         if(exc.getErrorType() == AmazonServiceException.ErrorType.Service &&
           exc.getErrorCode().equals("SlowDown"))
         {
-          // Full Jitter
-          // (https://www.awsarchitectureblog.com/2015/03/backoff.html)
-          int sdInitialDelay = Math.max(initialDelay * 10, 10_0000);
-          int sdMaxDelay     = Math.max(maxDelay * 10, 600_0000);
-          int max = Math.min(sdMaxDelay, sdInitialDelay * (int) Math.pow(2, retryCount - 1));
-
-          Random random = new Random();
-          delay = random.nextInt(max);
+          long sdInitialDelay = TimeUnit.SECONDS.toMillis(10);
+          long sdMaxDelay     = TimeUnit.MINUTES.toMillis(10);
+          delay = expBackoffFullJitter(sdInitialDelay, sdMaxDelay, retryCount);
 
           return delay;
         }
@@ -56,37 +52,40 @@ class ExpBackoffRetryPolicy implements ThrowableRetryPolicy {
 
     if(retryCount > 0)
     {
-      delay = initialDelay * (int) Math.pow(2, retryCount - 1);
-      delay = Math.min(delay, maxDelay);
+      delay = expBackoff(_initialDelay, _maxDelay, retryCount);
     }
 
     return delay;
   }
 
   @Override
-  public boolean shouldRetry()
+  public boolean shouldRetry(Throwable thrown, int retryCount)
   {
-    return (!isClientError() && retryCount < maxRetryCount);
+    return (!isClientError(thrown) && retryCount < _maxRetryCount);
   }
 
-  @Override
-  public void sleep()
+  /**
+   * Full Jitter exponential backoff as described in
+   * https://www.awsarchitectureblog.com/2015/03/backoff.html
+   */
+  private long expBackoffFullJitter(long initialDelay, long maxDelay, int
+    retryCount)
   {
-    int delay = getDelay();
-    if(delay > 0)
-    {
-      try
-      {
-        Thread.sleep(timeUnit.toMillis(delay));
-      }
-      catch(InterruptedException ignored)
-      {}
-    }
+    long delay = expBackoff(initialDelay, maxDelay, retryCount);
+
+    return ThreadLocalRandom.current().nextLong(delay);
   }
 
-  private boolean isClientError()
+  private long expBackoff(long initialDelay, long maxDelay, int retryCount)
   {
-    if(!cmd.getRetryClientException() && thrown instanceof AmazonServiceException)
+    long delay = initialDelay * (int) Math.pow(2, retryCount - 1);
+
+    return Math.min(delay, maxDelay);
+  }
+
+  private boolean isClientError(Throwable thrown)
+  {
+    if(!_retryOnClientException && thrown instanceof AmazonServiceException)
     {
       AmazonServiceException exc = (AmazonServiceException) thrown;
       if(exc.getErrorType() == AmazonServiceException.ErrorType.Client)
@@ -94,12 +93,5 @@ class ExpBackoffRetryPolicy implements ThrowableRetryPolicy {
     }
 
     return false;
-  }
-
-  @Override
-  public void errorOccurred(Throwable thrown)
-  {
-    this.thrown = thrown;
-    retryCount++;
   }
 }

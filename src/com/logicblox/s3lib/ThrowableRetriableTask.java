@@ -7,29 +7,31 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
-class ThrowableRetriableTask<V> implements RetriableTask<V>{
-  private final Callable<ListenableFuture<V>> callable;
-  private final ListeningScheduledExecutorService executor;
-  private final ThrowableRetryPolicy retryPolicy;
+class ThrowableRetriableTask<V> implements Callable<ListenableFuture<V>>
+{
+  private final Callable<ListenableFuture<V>> _callable;
+  private final ListeningScheduledExecutorService _executor;
+  private final ThrowableRetryPolicy _retryPolicy;
+  private int _retryCount;
 
   ThrowableRetriableTask(Callable<ListenableFuture<V>> callable,
                          ListeningScheduledExecutorService executor,
                          ThrowableRetryPolicy retryPolicy)
   {
-    this.callable = callable;
-    this.executor = executor;
-    this.retryPolicy = retryPolicy;
+    _callable = callable;
+    _executor = executor;
+    _retryPolicy = retryPolicy;
   }
 
-  public ListenableFuture<V> retry()
+  @Override
+  public ListenableFuture<V> call()
   {
-    retryPolicy.sleep();
-
     ListenableFuture<V> future;
     try
     {
-      future = callable.call();
+      future = _callable.call();
     }
     catch(Exception exc)
     {
@@ -42,14 +44,19 @@ class ThrowableRetriableTask<V> implements RetriableTask<V>{
       {
         public ListenableFuture<V> create(Throwable t)
         {
-          retryPolicy.errorOccurred(t);
-          if(retryPolicy.shouldRetry())
+          _retryCount++;
+          if(_retryPolicy.shouldRetry(t, _retryCount))
           {
-            String msg = "Info: Retriable exception: " + callable.toString() +
+            String msg = "Info: Retriable exception: " + _callable.toString() +
               ": " + t.getMessage();
-
             System.err.println(msg);
-            return retry();
+
+            long delay = _retryPolicy.getDelay(t, _retryCount);
+            // TODO: actually use the scheduled executor once Guava 15 is out
+            // Futures.dereference(_executor.schedule(_callable, delay, TimeUnit.MILLISECONDS));
+            sleep(delay);
+
+            return call();
           }
           else
           {
@@ -57,5 +64,18 @@ class ThrowableRetriableTask<V> implements RetriableTask<V>{
           }
         }
       });
+  }
+
+  private void sleep(long delay)
+  {
+    if(delay > 0)
+    {
+      try
+      {
+        Thread.sleep(delay);
+      }
+      catch(InterruptedException ignored)
+      {}
+    }
   }
 }

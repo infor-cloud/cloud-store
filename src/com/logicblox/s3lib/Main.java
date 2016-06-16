@@ -719,6 +719,9 @@ class Main
 
     @Parameter(names = {"-r", "--recursive"}, description = "Download recursively")
     boolean recursive = false;
+    
+    @Parameter(names = {"--version-id"}, description = "Download a specific version of a file")
+    String version = null;
 
     @Parameter(names = "--progress", description = "Enable progress indication")
     boolean progress = false;
@@ -736,6 +739,7 @@ class Main
           .setBucket(getBucket())
           .setObjectKey(getObjectKey())
           .setRecursive(recursive)
+          .setVersion(version)
           .setOverwrite(overwrite);
 
       if (progress) {

@@ -26,6 +26,7 @@ public class DownloadOptions {
     private String bucket;
     private String objectKey;
     private boolean recursive;
+    private String version;
     private boolean overwrite;
     private Optional<OverallProgressListenerFactory>
         overallProgressListenerFactory;
@@ -33,6 +34,7 @@ public class DownloadOptions {
     DownloadOptions(File file,
                     String bucket,
                     String objectKey,
+                    String version,
                     boolean recursive,
                     boolean overwrite,
                     Optional<OverallProgressListenerFactory>
@@ -41,6 +43,7 @@ public class DownloadOptions {
         this.bucket = bucket;
         this.objectKey = objectKey;
         this.recursive = recursive;
+        this.version = version;
         this.overwrite = overwrite;
         this.overallProgressListenerFactory = overallProgressListenerFactory;
     }
@@ -59,6 +62,10 @@ public class DownloadOptions {
 
     public boolean isRecursive() {
         return recursive;
+    }
+    
+    public String getVersion() {
+        return version;
     }
 
     public boolean doesOverwrite() {

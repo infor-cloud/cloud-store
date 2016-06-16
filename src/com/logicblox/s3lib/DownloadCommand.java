@@ -132,7 +132,7 @@ public class DownloadCommand extends Command
         {
           String toStringOutput = "starting download " + bucket + "/" + key;
           if (version != null) {
-        	 return toStringOutput + " version id =" + version;
+            return toStringOutput + " version id = " + version;
           }
           return toStringOutput;
         }
@@ -153,13 +153,13 @@ public class DownloadCommand extends Command
         if (meta.containsKey("s3tool-version"))
         {
           String objectVersion = meta.get("s3tool-version");
-
          
           if (!String.valueOf(Version.CURRENT).equals(objectVersion))
+          {
             throw new UsageException(
                 errPrefix + "file uploaded with unsupported version: " +
                     objectVersion + ", should be " + Version.CURRENT);
-                    
+          }
 
           if (meta.containsKey("s3tool-key-name"))
           {

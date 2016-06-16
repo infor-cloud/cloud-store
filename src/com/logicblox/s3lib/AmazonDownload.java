@@ -98,11 +98,10 @@ class AmazonDownload
     {
       GetObjectRequest req = null;
       if (version == null) {
-    	req = new GetObjectRequest(bucketName, key);
+        req = new GetObjectRequest(bucketName, key);
       }
-      
       else {
-    	 req = new GetObjectRequest(bucketName, key, version);
+        req = new GetObjectRequest(bucketName, key, version);
       }
       req.setRange(start, end);
       if (progressListener.isPresent()) {

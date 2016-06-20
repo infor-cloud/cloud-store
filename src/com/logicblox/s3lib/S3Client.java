@@ -536,6 +536,16 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
+  public ListenableFuture<List<S3File>> listObjects(
+      ListOptions lsOptions )
+  {
+    ListCommand cmd =
+            new ListCommand(_s3Executor, _executor);
+    configure(cmd);
+    return cmd.run(lsOptions);
+  }
+
+  @Override
   public ListenableFuture<List<Upload>> listPendingUploads(
       String bucket, String prefix)
   {

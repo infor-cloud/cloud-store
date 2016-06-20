@@ -285,6 +285,10 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
+    public ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions) {
+        return s3Client.listObjects(lsOptions);
+    }
+    @Override
     public ListenableFuture<List<Upload>> listPendingUploads(String bucket,
                                                              String prefix) {
         throw new UnsupportedOperationException("listPendingUploads is not " +
@@ -356,7 +360,8 @@ public class GCSClient implements CloudStoreClient {
          *
          * @param options Upload options
          */
-        public ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
+    
+         public ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
             throws IOException, ExecutionException, InterruptedException {
             File directory = options.getFile();
             String bucket = options.getBucket();

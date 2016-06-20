@@ -524,39 +524,27 @@ class Main
         "service URL prefix")
     boolean exclude_dirs = false;
 
+    @Parameter(names = {"--ls-versions"}, description = "List objects versions" +
+        "that match the provided storage " +
+        "service URL prefix")
+    boolean ls_versions = false;
+
     @Override
-    public void invoke() throws Exception
-    {
+    public void invoke() throws Exception {
       CloudStoreClient client = createCloudStoreClient();
-
-      try
-      {
-        if (exclude_dirs)
-        {
-          List<S3ObjectSummary> result = client.listObjects(getBucket(),
-              getObjectKey(), recursive).get();
-
-          for (S3ObjectSummary obj : result)
-            System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
-        }
-        else
-        {
-          List<S3File> result = client.listObjectsAndDirs(getBucket(),
-              getObjectKey(), recursive).get();
-
-          for (S3File obj : result)
-            System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
-        }
-      }
-      catch(ExecutionException exc)
-      {
+      ListOptions lsOptions =
+          new ListOptions(getBucket(), getObjectKey(), recursive, ls_versions, exclude_dirs);
+      try {
+        List<S3File> result = client.listObjects(lsOptions).get();
+        for (S3File obj : result)
+          System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
+      } catch (ExecutionException exc) {
         rethrow(exc.getCause());
       }
-
       client.shutdown();
     }
   }
-
+  
   @Parameters(commandDescription = "List pending uploads")
   class ListPendingUploadsCommandOptions extends S3ObjectCommandOptions
   {

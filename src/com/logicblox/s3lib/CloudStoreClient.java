@@ -393,6 +393,25 @@ public interface CloudStoreClient {
      * <p>
      * List results are returned in lexicographic order.
      * <p>
+     * Directories are <i>not</i> included in the results. If {@code exclude_dirs}
+     * was enabled {@link
+     * S3Client#listObjects}.
+     *
+     * @param lsOptions    Class contains all needed options for ls command
+     * @see CloudStoreClient#listObjects(ListOptions)
+     */
+    ListenableFuture<List<S3File>> listObjects(
+        ListOptions lsOptions);
+
+    /**
+     * Returns a list of summary information about the objects whose keys start
+     * with {@code prefix} and belong in the specified {@code bucket}.
+     * <p>
+     * If {@code recursive} is enabled, then all objects of all subdirectories
+     * are going to be included in the results too.
+     * <p>
+     * List results are returned in lexicographic order.
+     * <p>
      * Directories are <i>not</i> included in the results. If you are interested
      * in directories information too, then check {@link
      * S3Client#listObjectsAndDirs}.

@@ -393,10 +393,8 @@ public interface CloudStoreClient {
      * <p>
      * List results are returned in lexicographic order.
      * <p>
-     * Directories are <i>not</i> included in the results. If {@code exclude_dirs}
-     * was enabled {@link
-     * S3Client#listObjects}.
-     *
+     * If {@code exclude_dirs} is enabled, then Directories are <i>not</i> included in the results.
+     * 
      * @param lsOptions    Class contains all needed options for ls command
      * @see CloudStoreClient#listObjects(ListOptions)
      */
@@ -421,7 +419,8 @@ public interface CloudStoreClient {
      * @param recursive Include objects of all subdirectories recursively
      * @see CloudStoreClient#listObjectsAndDirs(String, String, boolean)
      */
-    ListenableFuture<List<S3ObjectSummary>> listObjects(
+    @Deprecated
+    ListenableFuture<List<S3File>> listObjects(
         String bucket, String prefix, boolean recursive);
 
     /**
@@ -438,6 +437,7 @@ public interface CloudStoreClient {
      * @param recursive Include objects of all subdirectories recursively
      * @see CloudStoreClient#listObjects(String, String, boolean)
      */
+    @Deprecated
     ListenableFuture<List<S3File>> listObjectsAndDirs(
         String bucket, String prefix, boolean recursive);
 

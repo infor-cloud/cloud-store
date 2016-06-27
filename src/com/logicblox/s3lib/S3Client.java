@@ -516,31 +516,35 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<List<S3ObjectSummary>> listObjects(
+  public ListenableFuture<List<S3File>> listObjects(
       String bucket, String prefix, boolean recursive)
   {
-    ListObjectsCommand cmd =
-            new ListObjectsCommand(_s3Executor, _executor);
-    configure(cmd);
-    return cmd.run(bucket, prefix, recursive);
+    ListOptionsBuilder lob = new ListOptionsBuilder()
+        .setBucket(bucket)
+        .setObjectKey(prefix)
+        .setRecursive(recursive)
+        .setShowVersions(false)
+        .setExcludeDirs(true);
+    return listObjects(lob.createListOptions());
   }
 
   @Override
   public ListenableFuture<List<S3File>> listObjectsAndDirs(
-      String bucket, String prefix, boolean recursive)
-  {
-    ListObjectsAndDirsCommand cmd =
-            new ListObjectsAndDirsCommand(_s3Executor, _executor);
-    configure(cmd);
-    return cmd.run(bucket, prefix, recursive);
+      String bucket,
+      String prefix,
+      boolean recursive) {
+    ListOptionsBuilder lob = new ListOptionsBuilder()
+        .setBucket(bucket)
+        .setObjectKey(prefix)
+        .setRecursive(recursive)
+        .setShowVersions(false)
+        .setExcludeDirs(false);
+    return listObjects(lob.createListOptions());
   }
 
   @Override
-  public ListenableFuture<List<S3File>> listObjects(
-      ListOptions lsOptions )
-  {
-    ListCommand cmd =
-            new ListCommand(_s3Executor, _executor);
+  public ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions) {
+    ListCommand cmd = new ListCommand(_s3Executor, _executor);
     configure(cmd);
     return cmd.run(lsOptions);
   }

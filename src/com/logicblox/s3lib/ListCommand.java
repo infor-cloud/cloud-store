@@ -15,20 +15,16 @@ public class ListCommand extends Command {
   
   private ListeningExecutorService _httpExecutor;
   private ListeningScheduledExecutorService _executor;
-  
-  public ListCommand(
-            ListeningExecutorService httpExecutor,
-            ListeningScheduledExecutorService internalExecutor)
-    {
-      _httpExecutor = httpExecutor;
-      _executor = internalExecutor;
-    }
-  
-  public ListenableFuture<List<S3File>> run(
-      final ListOptions lsOptions) {
+
+  public ListCommand(ListeningExecutorService httpExecutor,
+      ListeningScheduledExecutorService internalExecutor) {
+    _httpExecutor = httpExecutor;
+    _executor = internalExecutor;
+  }
+
+  public ListenableFuture<List<S3File>> run(final ListOptions lsOptions) {
     ListenableFuture<List<S3File>> future =
         executeWithRetry(_executor, new Callable<ListenableFuture<List<S3File>>>() {
-          
           public ListenableFuture<List<S3File>> call() {
             return runActual(lsOptions);
           }
@@ -53,16 +49,16 @@ public class ListCommand extends Command {
         List<S3File> all = new ArrayList<S3File>();
         ObjectListing current = getAmazonS3Client().listObjects(req);
         appendS3ObjectSummaryList(all, current.getObjectSummaries());
-        if (!lsOptions.isExclude_dirs()) appendS3DirStringList(all, current.getCommonPrefixes(), lsOptions.getBucket());
+        if (!lsOptions.isExcludeDirs()) appendS3DirStringList(all, current.getCommonPrefixes(), lsOptions.getBucket());
         current = getAmazonS3Client().listNextBatchOfObjects(current);
         
         while (current.isTruncated()) {
           appendS3ObjectSummaryList(all, current.getObjectSummaries());
-          if (!lsOptions.isExclude_dirs()) appendS3DirStringList(all, current.getCommonPrefixes(), lsOptions.getBucket());
+          if (!lsOptions.isExcludeDirs()) appendS3DirStringList(all, current.getCommonPrefixes(), lsOptions.getBucket());
           current = getAmazonS3Client().listNextBatchOfObjects(current);
         }
         appendS3ObjectSummaryList(all, current.getObjectSummaries());
-        if (!lsOptions.isExclude_dirs()) appendS3DirStringList(all, current.getCommonPrefixes(), lsOptions.getBucket());
+        if (!lsOptions.isExcludeDirs()) appendS3DirStringList(all, current.getCommonPrefixes(), lsOptions.getBucket());
         
         return all;
       }

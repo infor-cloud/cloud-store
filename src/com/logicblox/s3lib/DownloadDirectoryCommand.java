@@ -38,7 +38,13 @@ public class DownloadDirectoryCommand extends Command
     final OverallProgressListenerFactory progressListenerFactory)
   throws ExecutionException, InterruptedException, IOException
   {
-    List<S3ObjectSummary> lst = _client.listObjects(bucket, key, recursive).get();
+    ListOptionsBuilder lob = new ListOptionsBuilder()
+        .setBucket(bucket)
+        .setObjectKey(key)
+        .setRecursive(recursive)
+        .setShowVersions(false)
+        .setExcludeDirs(false);
+    List<S3File> lst = _client.listObjects(lob.createListOptions()).get();
 
     if (lst.size() > 1)
       if(!file.exists())
@@ -47,7 +53,7 @@ public class DownloadDirectoryCommand extends Command
 
     List<ListenableFuture<S3File>> files = new ArrayList<ListenableFuture<S3File>>();
 
-    for (S3ObjectSummary obj : lst)
+    for (S3File obj : lst)
     {
       String relFile = obj.getKey().substring(key.length());
       File outputFile = new File(file.getAbsoluteFile(), relFile);

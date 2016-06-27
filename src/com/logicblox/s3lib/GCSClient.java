@@ -269,7 +269,7 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<List<S3ObjectSummary>> listObjects(String bucket,
+    public  ListenableFuture<List<S3File>> listObjects(String bucket,
                                                                String prefix,
                                                                boolean
                                                                    recursive) {
@@ -360,8 +360,7 @@ public class GCSClient implements CloudStoreClient {
          *
          * @param options Upload options
          */
-    
-         public ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
+        public ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
             throws IOException, ExecutionException, InterruptedException {
             File directory = options.getFile();
             String bucket = options.getBucket();

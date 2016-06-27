@@ -748,7 +748,7 @@ class Main
           dob.setOverallProgressListenerFactory(cplf);
       }
 
-      if(getObjectKey().endsWith("/")) {
+      if(getObjectKey().endsWith("/") || getObjectKey().equals("")) {
         result = client.downloadDirectory(dob.createDownloadOptions());
       } else {
         // Test if storage service url exists.

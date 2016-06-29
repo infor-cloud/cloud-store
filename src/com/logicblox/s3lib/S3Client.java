@@ -516,19 +516,6 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<List<S3File>> listObjects(
-      String bucket, String prefix, boolean recursive)
-  {
-    ListOptionsBuilder lob = new ListOptionsBuilder()
-        .setBucket(bucket)
-        .setObjectKey(prefix)
-        .setRecursive(recursive)
-        .setShowVersions(false)
-        .setExcludeDirs(true);
-    return listObjects(lob.createListOptions());
-  }
-
-  @Override
   public ListenableFuture<List<S3File>> listObjectsAndDirs(
       String bucket,
       String prefix,
@@ -537,7 +524,7 @@ public class S3Client implements CloudStoreClient {
         .setBucket(bucket)
         .setObjectKey(prefix)
         .setRecursive(recursive)
-        .setShowVersions(false)
+        .setIncludeVersions(false)
         .setExcludeDirs(false);
     return listObjects(lob.createListOptions());
   }

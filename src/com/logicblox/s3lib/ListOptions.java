@@ -7,18 +7,18 @@ public class ListOptions {
   private String bucket;
   private String objectKey;
   private boolean recursive;
-  private boolean showVersions;
+  private boolean includeVersions;
   private boolean excludeDirs;
   
   ListOptions(String bucket,
       String objectKey,
       boolean recursive,
-      boolean showVersions,
+      boolean includeVersions,
       boolean excludeDirs) {
     this.bucket = bucket;
     this.objectKey = objectKey;
     this.recursive = recursive;
-    this.showVersions = showVersions;
+    this.includeVersions = includeVersions;
     this.excludeDirs = excludeDirs;
   }
   
@@ -34,8 +34,8 @@ public class ListOptions {
     return recursive;
   }
   
-  public boolean isShowVersions() {
-    return showVersions;
+  public boolean isIncludeVersions() {
+    return includeVersions;
   }
   
   public boolean isExcludeDirs() {

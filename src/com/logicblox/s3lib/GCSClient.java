@@ -269,14 +269,6 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public  ListenableFuture<List<S3File>> listObjects(String bucket,
-                                                               String prefix,
-                                                               boolean
-                                                                   recursive) {
-        return s3Client.listObjects(bucket, prefix, recursive);
-    }
-
-    @Override
     public ListenableFuture<List<S3File>> listObjectsAndDirs(String bucket,
                                                              String prefix,
                                                              boolean
@@ -288,6 +280,7 @@ public class GCSClient implements CloudStoreClient {
     public ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions) {
         return s3Client.listObjects(lsOptions);
     }
+
     @Override
     public ListenableFuture<List<Upload>> listPendingUploads(String bucket,
                                                              String prefix) {

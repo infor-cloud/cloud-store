@@ -5,7 +5,7 @@ public class ListOptionsBuilder {
   private String bucket;
   private String objectKey;
   private boolean recursive;
-  private boolean showVersions;
+  private boolean includeVersions;
   private boolean excludeDirs;
   
   public ListOptionsBuilder setBucket(String bucket) {
@@ -23,8 +23,8 @@ public class ListOptionsBuilder {
     return this;
   }
   
-  public ListOptionsBuilder setShowVersions(boolean showVersions) {
-    this.showVersions = showVersions;
+  public ListOptionsBuilder setIncludeVersions(boolean includeVersions) {
+    this.includeVersions = includeVersions;
     return this;
   }
   
@@ -34,7 +34,7 @@ public class ListOptionsBuilder {
   }
   
   public ListOptions createListOptions() {
-    return new ListOptions(bucket, objectKey, recursive, showVersions, excludeDirs);
+    return new ListOptions(bucket, objectKey, recursive, includeVersions, excludeDirs);
   }
   
 }

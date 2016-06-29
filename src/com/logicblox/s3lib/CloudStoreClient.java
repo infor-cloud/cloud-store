@@ -398,30 +398,7 @@ public interface CloudStoreClient {
      * @param lsOptions    Class contains all needed options for ls command
      * @see CloudStoreClient#listObjects(ListOptions)
      */
-    ListenableFuture<List<S3File>> listObjects(
-        ListOptions lsOptions);
-
-    /**
-     * Returns a list of summary information about the objects whose keys start
-     * with {@code prefix} and belong in the specified {@code bucket}.
-     * <p>
-     * If {@code recursive} is enabled, then all objects of all subdirectories
-     * are going to be included in the results too.
-     * <p>
-     * List results are returned in lexicographic order.
-     * <p>
-     * Directories are <i>not</i> included in the results. If you are interested
-     * in directories information too, then check {@link
-     * S3Client#listObjectsAndDirs}.
-     *
-     * @param bucket    Bucket to list objects from
-     * @param prefix    Prefix that all listed objects will start with
-     * @param recursive Include objects of all subdirectories recursively
-     * @see CloudStoreClient#listObjectsAndDirs(String, String, boolean)
-     */
-    @Deprecated
-    ListenableFuture<List<S3File>> listObjects(
-        String bucket, String prefix, boolean recursive);
+    ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions);
 
     /**
      * Returns a list of summary information about the objects and conceptual
@@ -435,7 +412,7 @@ public interface CloudStoreClient {
      * @param prefix    Prefix that all listed objects and directories will
      *                  start with
      * @param recursive Include objects of all subdirectories recursively
-     * @see CloudStoreClient#listObjects(String, String, boolean)
+     * @see CloudStoreClient#listObjects(ListOptions)
      */
     @Deprecated
     ListenableFuture<List<S3File>> listObjectsAndDirs(

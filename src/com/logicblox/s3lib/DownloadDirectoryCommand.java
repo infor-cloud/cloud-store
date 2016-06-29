@@ -42,7 +42,7 @@ public class DownloadDirectoryCommand extends Command
         .setBucket(bucket)
         .setObjectKey(key)
         .setRecursive(recursive)
-        .setShowVersions(false)
+        .setIncludeVersions(false)
         .setExcludeDirs(false);
     List<S3File> lst = _client.listObjects(lob.createListOptions()).get();
 

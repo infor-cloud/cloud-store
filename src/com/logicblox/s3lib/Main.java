@@ -524,10 +524,10 @@ class Main
         "service URL prefix")
     boolean excludeDirs = false;
 
-    @Parameter(names = {"--show-versions"}, description = "List objects versions" +
+    @Parameter(names = {"--include-versions"}, description = "List objects versions" +
         "that match the provided storage " +
         "service URL prefix")
-    boolean showVersions = false;
+    boolean includeVersions = false;
 
     @Override
     public void invoke() throws Exception {
@@ -536,7 +536,7 @@ class Main
           .setBucket(getBucket())
           .setObjectKey(getObjectKey())
           .setRecursive(recursive)
-          .setShowVersions(showVersions)
+          .setIncludeVersions(includeVersions)
           .setExcludeDirs(excludeDirs);
       try {
         List<S3File> result = client.listObjects(lob.createListOptions()).get();

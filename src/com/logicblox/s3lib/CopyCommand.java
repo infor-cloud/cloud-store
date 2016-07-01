@@ -176,7 +176,7 @@ public class CopyCommand extends Command
           }
 
           public String toString() {
-            return "copying part " + partNumber;
+            return "copying part " + (partNumber + 1);
           }
         });
   }

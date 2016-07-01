@@ -285,7 +285,7 @@ public class DownloadCommand extends Command
 
         public String toString()
         {
-          return "downloading part " + partNumber;
+          return "downloading part " + (partNumber + 1);
         }
       });
   }

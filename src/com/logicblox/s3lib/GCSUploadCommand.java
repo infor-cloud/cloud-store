@@ -211,7 +211,7 @@ public class GCSUploadCommand extends Command {
                     }
 
                     public String toString() {
-                        return "uploading part " + partNumber;
+                        return "uploading part " + (partNumber + 1);
                     }
                 });
     }

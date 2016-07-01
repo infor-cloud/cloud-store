@@ -13,9 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
-import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,11 +30,6 @@ import com.amazonaws.auth.SystemPropertiesCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.util.concurrent.FutureFallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -375,103 +368,6 @@ public class Utils
     }
 
     return clientCfg;
-  }
-
-  public static Function<Integer, Integer> createExponentialDelayFunction(final int initialDelay, final int maxDelay)
-  {
-    return new Function<Integer, Integer>()
-    {
-      public Integer apply(Integer retryCount)
-      {
-        if(retryCount > 0)
-        {
-          int delay = initialDelay * (int) Math.pow(2, retryCount - 1);
-          return Math.min(delay, maxDelay);
-        }
-        else
-        {
-          return 0;
-        }
-      }
-    };
-  }
-
-  public static Function<Integer, Integer> createLinearDelayFunction(final int increment)
-  {
-    return new Function<Integer, Integer>()
-    {
-      public Integer apply(Integer retryCount)
-      {
-        return increment * retryCount;
-      }
-    };
-  }
-
-  public static <V> ListenableFuture<V> executeWithRetry(
-    ListeningScheduledExecutorService executor,
-    Callable<ListenableFuture<V>> callable,
-    Predicate<Throwable> retryCondition,
-    Function<Integer, Integer> delayFun,
-    TimeUnit timeUnit,
-    int maxRetryCount)
-  {
-    return retry(executor, callable, retryCondition, delayFun, timeUnit, 0, maxRetryCount);
-  }
-
-  private static <V> ListenableFuture<V> retry(
-    final ListeningScheduledExecutorService executor,
-    final Callable<ListenableFuture<V>> callable,
-    final Predicate<Throwable> retryCondition,
-    final Function<Integer, Integer> delayFun,
-    final TimeUnit timeUnit,
-    final int retryCount,
-    final int maxRetryCount)
-  {
-    int delay = delayFun.apply(retryCount);
-
-    // TODO actually use the scheduled executor once Guava 15 is out
-    // Futures.dereference(executor.schedule(callable, delay, timeUnit));
-    if(delay > 0)
-    {
-      try
-      {
-        Thread.sleep(timeUnit.toMillis(delay));
-      }
-      catch(InterruptedException exc)
-      {}
-    }
-
-    ListenableFuture<V> future;
-    try
-    {
-      future = callable.call();
-    }
-    catch(Exception exc)
-    {
-      future = Futures.immediateFailedFuture(exc);
-    }
-
-    return Futures.withFallback(
-      future,
-      new FutureFallback<V>()
-      {
-        public ListenableFuture<V> create(Throwable t)
-        {
-          if(retryCondition.apply(t) && retryCount < maxRetryCount)
-          {
-            String msg = "Info: Retriable exception: " + callable.toString() +
-                ": " + t.getMessage();
-
-            System.err.println(msg);
-            return retry(executor, callable, retryCondition, delayFun, timeUnit,
-                retryCount + 1, maxRetryCount);
-          }
-          else
-          {
-            return Futures.immediateFailedFuture(t);
-          }
-        }
-      });
   }
 
   protected static void print(ObjectMetadata m)

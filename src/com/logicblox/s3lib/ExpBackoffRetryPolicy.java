@@ -61,7 +61,7 @@ class ExpBackoffRetryPolicy implements ThrowableRetryPolicy
   @Override
   public boolean shouldRetry(Throwable thrown, int retryCount)
   {
-    return (!isClientError(thrown) && retryCount < _maxRetryCount);
+    return (!isServiceError4XX(thrown) && retryCount < _maxRetryCount);
   }
 
   /**
@@ -83,7 +83,7 @@ class ExpBackoffRetryPolicy implements ThrowableRetryPolicy
     return Math.min(delay, maxDelay);
   }
 
-  private boolean isClientError(Throwable thrown)
+  private boolean isServiceError4XX(Throwable thrown)
   {
     if(!_retryOnClientException && thrown instanceof AmazonServiceException)
     {

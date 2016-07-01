@@ -1,6 +1,5 @@
 package com.logicblox.s3lib;
 
-import java.io.File;
 
 public class ListOptions {
   
@@ -34,11 +33,11 @@ public class ListOptions {
     return recursive;
   }
   
-  public boolean isIncludeVersions() {
+  public boolean versionsIncluded() {
     return includeVersions;
   }
   
-  public boolean isExcludeDirs() {
+  public boolean dirsExcluded() {
     return excludeDirs;
   }
   

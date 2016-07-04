@@ -14,8 +14,7 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3Client;
 
 import com.google.api.services.storage.Storage;
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
@@ -28,8 +27,6 @@ public class Command
   protected Key encKey;
   protected long fileLength;
   protected String scheme;
-
-  private Function<Integer, Integer> _retryDelayFunction = Utils.createExponentialDelayFunction(300, 20 * 1000);
 
   private AmazonS3Client _client = null;
 
@@ -54,7 +51,7 @@ public class Command
   {
     _stubborn = retry;
   }
-  
+
   public String getScheme()
   {
     return scheme;
@@ -104,23 +101,39 @@ public class Command
 
   protected <V> ListenableFuture<V> executeWithRetry(ListeningScheduledExecutorService executor, Callable<ListenableFuture<V>> callable)
   {
-    return Utils.executeWithRetry(executor, callable, _retryCondition, _retryDelayFunction, TimeUnit.MILLISECONDS, _retryCount);
-  }
+    int initialDelay = 300;
+    int maxDelay = 20 * 1000;
 
-  private Predicate<Throwable> _retryCondition = new Predicate<Throwable>()
-  {
-    public boolean apply(Throwable thrown)
+    ThrowableRetryPolicy trp = new ExpBackoffRetryPolicy(
+      initialDelay, maxDelay, _retryCount, TimeUnit.MILLISECONDS)
     {
-      if(!_stubborn && thrown instanceof AmazonServiceException)
+      @Override
+      public boolean retryOnThrowable(Throwable thrown)
       {
-        AmazonServiceException exc = (AmazonServiceException) thrown;
-        if(exc.getErrorType() == AmazonServiceException.ErrorType.Client)
-          return false;
-      }
+        if(!_stubborn && thrown instanceof AmazonServiceException)
+        {
+          AmazonServiceException exc = (AmazonServiceException) thrown;
+          if(exc.getErrorType() == AmazonServiceException.ErrorType.Client)
+            return false;
+        }
 
-      return true;
+        return true;
+      }
+    };
+
+    Callable<ListenableFuture<V>> rt = new ThrowableRetriableTask(callable, executor, trp);
+    ListenableFuture<V> f;
+    try
+    {
+      f = rt.call();
     }
-  };
+    catch (Exception e)
+    {
+      f = Futures.immediateFailedFuture(e);
+    }
+
+    return f;
+  }
 
   protected static void rethrow(Throwable thrown) throws Exception
   {

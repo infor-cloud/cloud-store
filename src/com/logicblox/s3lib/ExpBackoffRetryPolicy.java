@@ -6,23 +6,20 @@ import com.amazonaws.AmazonServiceException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-class ExpBackoffRetryPolicy implements ThrowableRetryPolicy
+public abstract class ExpBackoffRetryPolicy implements ThrowableRetryPolicy
 {
   private final long _initialDelay;
   private final long _maxDelay;
   private final int _maxRetryCount;
-  private final boolean _retryOnClientException;
 
   public ExpBackoffRetryPolicy(int initialDelay,
                                int maxDelay,
                                int maxRetryCount,
-                               boolean retryOnClientException,
                                TimeUnit timeUnit)
   {
     _initialDelay = timeUnit.toMillis(initialDelay);
     _maxDelay = timeUnit.toMillis(maxDelay);
     _maxRetryCount = maxRetryCount;
-    _retryOnClientException = retryOnClientException;
   }
 
   /**
@@ -61,7 +58,7 @@ class ExpBackoffRetryPolicy implements ThrowableRetryPolicy
   @Override
   public boolean shouldRetry(Throwable thrown, int retryCount)
   {
-    return (!isServiceError4XX(thrown) && retryCount < _maxRetryCount);
+    return (retryOnThrowable(thrown) && retryCount < _maxRetryCount);
   }
 
   /**
@@ -83,15 +80,5 @@ class ExpBackoffRetryPolicy implements ThrowableRetryPolicy
     return Math.min(delay, maxDelay);
   }
 
-  private boolean isServiceError4XX(Throwable thrown)
-  {
-    if(!_retryOnClientException && thrown instanceof AmazonServiceException)
-    {
-      AmazonServiceException exc = (AmazonServiceException) thrown;
-      if(exc.getErrorType() == AmazonServiceException.ErrorType.Client)
-        return true;
-    }
-
-    return false;
-  }
+  abstract public boolean retryOnThrowable(Throwable thrown);
 }

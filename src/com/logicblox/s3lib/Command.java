@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3Client;
 
 import com.google.api.services.storage.Storage;
@@ -107,8 +108,23 @@ public class Command
   {
     int initialDelay = 300;
     int maxDelay = 20 * 1000;
-    ThrowableRetryPolicy trp = new ExpBackoffRetryPolicy(initialDelay, maxDelay,
-      _retryCount, _stubborn, TimeUnit.MILLISECONDS);
+
+    ThrowableRetryPolicy trp = new ExpBackoffRetryPolicy(
+      initialDelay, maxDelay, _retryCount, TimeUnit.MILLISECONDS)
+    {
+      @Override
+      public boolean retryOnThrowable(Throwable thrown)
+      {
+        if(!_stubborn && thrown instanceof AmazonServiceException)
+        {
+          AmazonServiceException exc = (AmazonServiceException) thrown;
+          if(exc.getErrorType() == AmazonServiceException.ErrorType.Client)
+            return false;
+        }
+
+        return true;
+      }
+    };
 
     Callable<ListenableFuture<V>> rt = new ThrowableRetriableTask(callable, executor, trp);
     ListenableFuture<V> f;

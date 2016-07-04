@@ -9,16 +9,16 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-class ThrowableRetriableTask<V> implements Callable<ListenableFuture<V>>
+public class ThrowableRetriableTask<V> implements Callable<ListenableFuture<V>>
 {
   private final Callable<ListenableFuture<V>> _callable;
   private final ListeningScheduledExecutorService _executor;
   private final ThrowableRetryPolicy _retryPolicy;
   private int _retryCount;
 
-  ThrowableRetriableTask(Callable<ListenableFuture<V>> callable,
-                         ListeningScheduledExecutorService executor,
-                         ThrowableRetryPolicy retryPolicy)
+  public ThrowableRetriableTask(Callable<ListenableFuture<V>> callable,
+                                ListeningScheduledExecutorService executor,
+                                ThrowableRetryPolicy retryPolicy)
   {
     _callable = callable;
     _executor = executor;

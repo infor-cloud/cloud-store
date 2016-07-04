@@ -52,11 +52,6 @@ public class Command
     _stubborn = retry;
   }
 
-  public boolean getRetryClientException()
-  {
-    return _stubborn;
-  }
-
   public String getScheme()
   {
     return scheme;

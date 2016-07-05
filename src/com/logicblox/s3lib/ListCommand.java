@@ -53,20 +53,20 @@ public class ListCommand extends Command {
         List<S3File> all = new ArrayList<S3File>();
         ObjectListing current = getAmazonS3Client().listObjects(req);
         appendS3ObjectSummaryList(all, current.getObjectSummaries());
-        if (! lsOptions.isExcludeDirs()) {
+        if (! lsOptions.dirsExcluded()) {
           appendS3DirStringList(all, current.getCommonPrefixes(), lsOptions.getBucket());
         }
         current = getAmazonS3Client().listNextBatchOfObjects(current);
         
         while (current.isTruncated()) {
           appendS3ObjectSummaryList(all, current.getObjectSummaries());
-          if (! lsOptions.isExcludeDirs()) {
+          if (! lsOptions.dirsExcluded()) {
             appendS3DirStringList(all, current.getCommonPrefixes(), lsOptions.getBucket());
           }
           current = getAmazonS3Client().listNextBatchOfObjects(current);
         }
         appendS3ObjectSummaryList(all, current.getObjectSummaries());
-        if (! lsOptions.isExcludeDirs()) {
+        if (! lsOptions.dirsExcluded()) {
           appendS3DirStringList(all, current.getCommonPrefixes(), lsOptions.getBucket());
         }
         

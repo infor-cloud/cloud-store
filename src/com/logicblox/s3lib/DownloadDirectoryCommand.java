@@ -1,7 +1,6 @@
 package com.logicblox.s3lib;
 
 
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;

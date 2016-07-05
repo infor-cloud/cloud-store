@@ -3,7 +3,6 @@ package com.logicblox.s3lib;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.File;
@@ -393,9 +392,10 @@ public interface CloudStoreClient {
      * <p>
      * List results are returned in lexicographic order.
      * <p>
-     * If {@code exclude_dirs} is enabled, then Directories are <i>not</i> included in the results.
+     * If {@code exclude_dirs} is enabled, then Directories are <i>not</i>
+     * included in the results.
      * 
-     * @param lsOptions    Class contains all needed options for ls command
+     * @param lsOptions Class contains all needed options for ls command
      * @see CloudStoreClient#listObjects(ListOptions)
      */
     ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions);

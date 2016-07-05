@@ -269,14 +269,6 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<List<S3File>> listObjectsAndDirs(String bucket,
-                                                             String prefix,
-                                                             boolean
-                                                                 recursive) {
-        return s3Client.listObjectsAndDirs(bucket, prefix, recursive);
-    }
-
-    @Override
     public ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions) {
         return s3Client.listObjects(lsOptions);
     }

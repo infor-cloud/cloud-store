@@ -401,24 +401,6 @@ public interface CloudStoreClient {
     ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions);
 
     /**
-     * Returns a list of summary information about the objects and conceptual
-     * first-level directories whose keys start with {@code prefix} and belong
-     * in the specified {@code bucket}.
-     * <p>
-     * If {@code recursive} is enabled, then all objects and all subdirectories
-     * are going to be included in the results too.
-     *
-     * @param bucket    Bucket to list objects from
-     * @param prefix    Prefix that all listed objects and directories will
-     *                  start with
-     * @param recursive Include objects of all subdirectories recursively
-     * @see CloudStoreClient#listObjects(ListOptions)
-     */
-    @Deprecated
-    ListenableFuture<List<S3File>> listObjectsAndDirs(
-        String bucket, String prefix, boolean recursive);
-
-    /**
      * Returns a list of the pending uploads to keys that start with {@code
      * prefix}, inside {@code bucket}.
      *

@@ -4,7 +4,6 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.api.services.storage.Storage;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -269,19 +268,8 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<List<S3ObjectSummary>> listObjects(String bucket,
-                                                               String prefix,
-                                                               boolean
-                                                                   recursive) {
-        return s3Client.listObjects(bucket, prefix, recursive);
-    }
-
-    @Override
-    public ListenableFuture<List<S3File>> listObjectsAndDirs(String bucket,
-                                                             String prefix,
-                                                             boolean
-                                                                 recursive) {
-        return s3Client.listObjectsAndDirs(bucket, prefix, recursive);
+    public ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions) {
+        return s3Client.listObjects(lsOptions);
     }
 
     @Override

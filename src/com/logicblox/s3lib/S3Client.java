@@ -20,7 +20,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 
 
 /**
@@ -516,23 +515,10 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<List<S3ObjectSummary>> listObjects(
-      String bucket, String prefix, boolean recursive)
-  {
-    ListObjectsCommand cmd =
-            new ListObjectsCommand(_s3Executor, _executor);
+  public ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions) {
+    ListCommand cmd = new ListCommand(_s3Executor, _executor);
     configure(cmd);
-    return cmd.run(bucket, prefix, recursive);
-  }
-
-  @Override
-  public ListenableFuture<List<S3File>> listObjectsAndDirs(
-      String bucket, String prefix, boolean recursive)
-  {
-    ListObjectsAndDirsCommand cmd =
-            new ListObjectsAndDirsCommand(_s3Executor, _executor);
-    configure(cmd);
-    return cmd.run(bucket, prefix, recursive);
+    return cmd.run(lsOptions);
   }
 
   @Override

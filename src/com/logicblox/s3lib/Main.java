@@ -21,7 +21,6 @@ import com.amazonaws.services.s3.AmazonS3Client;
 
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.beust.jcommander.IValueValidator;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -522,37 +521,29 @@ class Main
     @Parameter(names = {"--exclude-dirs"}, description = "List only objects " +
         "(excluding first-level directories) that match the provided storage " +
         "service URL prefix")
-    boolean exclude_dirs = false;
+    boolean excludeDirs = false;
+
+    @Parameter(names = {"--include-versions"}, description = "List objects versions" +
+        "that match the provided storage " +
+        "service URL prefix")
+    boolean includeVersions = false;
 
     @Override
-    public void invoke() throws Exception
-    {
+    public void invoke() throws Exception {
       CloudStoreClient client = createCloudStoreClient();
-
-      try
-      {
-        if (exclude_dirs)
-        {
-          List<S3ObjectSummary> result = client.listObjects(getBucket(),
-              getObjectKey(), recursive).get();
-
-          for (S3ObjectSummary obj : result)
-            System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
-        }
-        else
-        {
-          List<S3File> result = client.listObjectsAndDirs(getBucket(),
-              getObjectKey(), recursive).get();
-
-          for (S3File obj : result)
-            System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
-        }
-      }
-      catch(ExecutionException exc)
-      {
+      ListOptionsBuilder lob = new ListOptionsBuilder()
+          .setBucket(getBucket())
+          .setObjectKey(getObjectKey())
+          .setRecursive(recursive)
+          .setIncludeVersions(includeVersions)
+          .setExcludeDirs(excludeDirs);
+      try {
+        List<S3File> result = client.listObjects(lob.createListOptions()).get();
+        for (S3File obj : result)
+          System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
+      } catch (ExecutionException exc) {
         rethrow(exc.getCause());
       }
-
       client.shutdown();
     }
   }

@@ -30,7 +30,6 @@ import com.google.common.base.Optional;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.FutureFallback;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -42,11 +41,11 @@ public class UploadCommand extends Command
   private String encryptedSymmetricKeyString;
   private String acl;
   private Optional<OverallProgressListenerFactory> progressListenerFactory;
+  private String pubKeyHash;
 
   private ListeningExecutorService _uploadExecutor;
   private ListeningScheduledExecutorService _executor;
 
-  private String pubKeyBase64;
 
   public UploadCommand(
     ListeningExecutorService uploadExecutor,
@@ -82,7 +81,7 @@ public class UploadCommand extends Command
           throw new UsageException("No encryption key provider is specified");
         Key pubKey = encKeyProvider.getPublicKey(this.encKeyName);
 
-        this.pubKeyBase64 = DatatypeConverter.printBase64Binary(
+        this.pubKeyHash = DatatypeConverter.printBase64Binary(
           DigestUtils.sha256(pubKey.getEncoded()));
 
         Cipher cipher = Cipher.getInstance("RSA");
@@ -184,7 +183,7 @@ public class UploadCommand extends Command
     if (this.encKeyName != null) {
       meta.put("s3tool-key-name", encKeyName);
       meta.put("s3tool-symmetric-key", encryptedSymmetricKeyString);
-      meta.put("s3tool-public-key-hash", pubKeyBase64.substring(0,8));
+      meta.put("s3tool-public-key-hash", pubKeyHash.substring(0,8));
     }
     meta.put("s3tool-chunk-size", Long.toString(chunkSize));
     meta.put("s3tool-file-length", Long.toString(fileLength));

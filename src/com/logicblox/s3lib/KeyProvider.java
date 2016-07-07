@@ -8,5 +8,6 @@ public interface KeyProvider
 {
   public PrivateKey getPrivateKey(String alias) throws NoSuchKeyException;
   public PublicKey getPublicKey(String alias) throws NoSuchKeyException;
+  public PublicKey getPublicKey(PrivateKey privateKey) throws NoSuchKeyException;
   public Certificate getCertificate(String alias) throws NoSuchKeyException;
 }

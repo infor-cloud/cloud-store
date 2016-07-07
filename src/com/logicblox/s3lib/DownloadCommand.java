@@ -7,8 +7,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.security.InvalidKeyException;
-import java.security.Key;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -164,13 +165,30 @@ public class DownloadCommand extends Command
           if (meta.containsKey("s3tool-key-name"))
           {
             String keyName = meta.get("s3tool-key-name");
-            Key privKey;
+            PrivateKey privKey;
             try
             {
               if (_encKeyProvider == null)
                 throw new UsageException(errPrefix + "No encryption key " +
                     "provider is specified");
               privKey = _encKeyProvider.getPrivateKey(keyName);
+              if (meta.containsKey("s3tool-public-key-hash"))
+              {
+                String pubKeyHashHeader = meta.get("s3tool-public-key-hash");
+                PublicKey pubKey = _encKeyProvider.getPublicKey(privKey);
+                String pubKeyHashLocal = DatatypeConverter.printBase64Binary(
+                  DigestUtils.sha256(pubKey.getEncoded())).substring(0,8);
+
+                if (!pubKeyHashLocal.equals(pubKeyHashHeader))
+                {
+                  throw new RuntimeException(
+                    "Public-key checksums do not match. Probably a different " +
+                    "key-pair is being used to decrypt the symmetric key " +
+                    "than the one used to encrypt it. " +
+                    "Calculated hash: " + pubKeyHashLocal +
+                    ", Expected hash: " + pubKeyHashHeader);
+                }
+              }
             }
             catch (NoSuchKeyException e)
             {

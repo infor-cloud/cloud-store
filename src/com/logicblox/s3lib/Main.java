@@ -527,7 +527,7 @@ class Main
         "that match the provided storage " +
         "service URL prefix")
     boolean includeVersions = false;
-
+    
     @Override
     public void invoke() throws Exception {
       CloudStoreClient client = createCloudStoreClient();
@@ -541,8 +541,11 @@ class Main
         List<S3File> result = client.listObjects(lob.createListOptions()).get();
         for (S3File obj : result) {
           if (includeVersions) {
-            System.out.format("%-50s %s%n",
-                client.getUri(obj.getBucketName(), obj.getKey()).toString(), obj.getVersionId());
+            DateFormat df = Utils.getDefaultDateFormat();
+            String timestamp = df.format(obj.getTimestamp());
+            System.out.format("%-25s %-40s %-20s %s%n",
+                client.getUri(obj.getBucketName(), obj.getKey()).toString(), obj.getVersionId(),
+                timestamp, obj.getSize().toString());
           } else {
             System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
           }

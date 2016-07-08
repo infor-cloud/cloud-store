@@ -105,6 +105,8 @@ public class ListVersionsCommand extends Command {
     of.setETag(o.getETag());
     of.setBucketName(o.getBucketName());
     of.setVersionId(o.getVersionId());
+    of.setSize(o.getSize());
+    of.setTimestamp(o.getLastModified());
     return of;
   }
   

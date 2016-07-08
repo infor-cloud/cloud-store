@@ -1,6 +1,7 @@
 package com.logicblox.s3lib;
 
 import java.io.File;
+import java.util.Date;
 
 public class S3File
 {
@@ -9,6 +10,8 @@ public class S3File
   private String _key;
   private String _bucket;
   private String _versionId;
+  private Long _size;
+  private Date _timestamp;
 
   public File getLocalFile()
   {
@@ -55,6 +58,22 @@ public class S3File
 
   public void setVersionId(String versionId) {
     _versionId = versionId;
+  }
+
+  public Long getSize() {
+    return _size;
+  }
+
+  public void setSize(Long size) {
+    _size = size;
+  }
+  
+  public Date getTimestamp() {
+    return _timestamp;
+  }
+
+  public void setTimestamp(Date timestamp) {
+    _timestamp = timestamp;
   }
 
 }

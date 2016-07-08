@@ -543,7 +543,7 @@ class Main
           if (includeVersions) {
             DateFormat df = Utils.getDefaultDateFormat();
             String timestamp = df.format(obj.getTimestamp());
-            System.out.format("%-25s %-40s %-20s %s%n",
+            System.out.format("%-30s %-40s %-20s %s%n",
                 client.getUri(obj.getBucketName(), obj.getKey()).toString(), obj.getVersionId(),
                 timestamp, obj.getSize().toString());
           } else {

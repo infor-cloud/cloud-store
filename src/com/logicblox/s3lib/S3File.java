@@ -8,6 +8,7 @@ public class S3File
   private String _eTag;
   private String _key;
   private String _bucket;
+  private String _versionId;
 
   public File getLocalFile()
   {
@@ -44,8 +45,16 @@ public class S3File
     return _bucket;
   }
 
-  public void setBucketName(String bucket)
-  {
+  public void setBucketName(String bucket) {
     _bucket = bucket;
   }
+
+  public String getVersionId() {
+    return _versionId;
+  }
+
+  public void setVersionId(String versionId) {
+    _versionId = versionId;
+  }
+
 }

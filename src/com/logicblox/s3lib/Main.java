@@ -539,15 +539,21 @@ class Main
           .setExcludeDirs(excludeDirs);
       try {
         List<S3File> result = client.listObjects(lob.createListOptions()).get();
-        for (S3File obj : result)
-          System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
+        for (S3File obj : result) {
+          if (includeVersions) {
+            System.out.format("%-50s %s%n",
+                client.getUri(obj.getBucketName(), obj.getKey()).toString(), obj.getVersionId());
+          } else {
+            System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
+          }
+        }
       } catch (ExecutionException exc) {
         rethrow(exc.getCause());
       }
       client.shutdown();
     }
   }
-
+  
   @Parameters(commandDescription = "List pending uploads")
   class ListPendingUploadsCommandOptions extends S3ObjectCommandOptions
   {

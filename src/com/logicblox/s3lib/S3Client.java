@@ -513,12 +513,20 @@ public class S3Client implements CloudStoreClient {
 
     return cmd.run(options);
   }
-
+  
   @Override
   public ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions) {
-    ListCommand cmd = new ListCommand(_s3Executor, _executor);
-    configure(cmd);
-    return cmd.run(lsOptions);
+    ListenableFuture<List<S3File>> results = null;
+    if (lsOptions.versionsIncluded()) {
+      ListVersionsCommand cmd = new ListVersionsCommand(_s3Executor, _executor);
+      configure(cmd);
+      results = cmd.run(lsOptions);
+    } else {
+      ListCommand cmd = new ListCommand(_s3Executor, _executor);
+      configure(cmd);
+      results = cmd.run(lsOptions);
+    }
+    return results;
   }
 
   @Override

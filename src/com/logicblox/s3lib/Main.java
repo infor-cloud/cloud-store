@@ -89,6 +89,8 @@ class Main
         AbortPendingUploadsCommandOptions());
     _commander.addCommand("exists", new ExistsCommandOptions());
     _commander.addCommand("list-buckets", new ListBucketsCommandOptions());
+    _commander.addCommand("add-encrypted-key", new
+      AddEncryptedKeyCommandOptions());
     _commander.addCommand("keygen", new KeyGenCommandOptions());
     _commander.addCommand("version", new VersionCommand());
     _commander.addCommand("help", new HelpCommand());
@@ -763,6 +765,43 @@ class Main
       }
 
       client.shutdown();
+    }
+  }
+
+  @Parameters(commandDescription = "Upload a file or directory to the storage service")
+  class AddEncryptedKeyCommandOptions extends S3ObjectCommandOptions
+  {
+    @Parameter(names = "--key",
+      description = "The name of the encrypted key to add",
+      required = true)
+    String encKeyName = null;
+
+    public void invoke() throws Exception
+    {
+      CloudStoreClient client = createCloudStoreClient();
+      try
+      {
+        if(getObjectKey().endsWith("/") || getObjectKey().equals(""))
+        {
+          throw new UsageException("Invalid object key " + getURI());
+        }
+        else
+        {
+          if (client.exists(getBucket(), getObjectKey()).get() == null)
+          {
+            throw new UsageException("Object not found at " + getURI());
+          }
+          client.addEncryptedKey(getBucket(), getObjectKey(), encKeyName).get();
+        }
+      }
+      catch(ExecutionException exc)
+      {
+        rethrow(exc.getCause());
+      }
+      finally
+      {
+        client.shutdown();
+      }
     }
   }
 

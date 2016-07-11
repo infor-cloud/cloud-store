@@ -296,6 +296,15 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
+    public ListenableFuture<S3File> addEncryptedKey(String bucket,
+                                                    String object,
+                                                    String key)
+        throws IOException {
+        throw new UnsupportedOperationException("addEncryptedKey is " +
+                                                "not supported.");
+    }
+
+    @Override
     public void shutdown() {
         s3Client.shutdown();
     }

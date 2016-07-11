@@ -1,11 +1,11 @@
 package com.logicblox.s3lib;
 
 
+import com.amazonaws.services.s3.model.AccessControlList;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -24,22 +24,43 @@ public class CopyCommand extends Command
 {
   private ListeningExecutorService _copyExecutor;
   private ListeningScheduledExecutorService _executor;
-  private String acl;
+  private String _cannedAcl;
+  private AccessControlList _acl;
+  private Map<String, String> _userMetadata;
   private Optional<OverallProgressListenerFactory> progressListenerFactory;
 
   public CopyCommand(
       ListeningExecutorService copyExecutor,
       ListeningScheduledExecutorService internalExecutor,
-      String acl,
+      String cannedAcl,
+      Map<String, String> userMetadata,
       OverallProgressListenerFactory progressListenerFactory)
   throws IOException
   {
     _copyExecutor = copyExecutor;
     _executor = internalExecutor;
 
-    this.acl = acl;
+    this._cannedAcl = cannedAcl;
+    this._userMetadata = userMetadata;
     this.progressListenerFactory = Optional.fromNullable
         (progressListenerFactory);
+  }
+
+  public CopyCommand(
+    ListeningExecutorService copyExecutor,
+    ListeningScheduledExecutorService internalExecutor,
+    AccessControlList acl,
+    Map<String, String> userMetadata,
+    OverallProgressListenerFactory progressListenerFactory)
+  throws IOException
+  {
+    _copyExecutor = copyExecutor;
+    _executor = internalExecutor;
+
+    _acl = acl;
+    _userMetadata = userMetadata;
+    this.progressListenerFactory = Optional.fromNullable
+      (progressListenerFactory);
   }
 
   public ListenableFuture<S3File> run(final String sourceBucketName,
@@ -101,8 +122,15 @@ public class CopyCommand extends Command
     long chunkSize0 = chunkSize == 0 ? Utils.getDefaultChunkSize() : chunkSize;
     MultipartAmazonCopyFactory factory = new MultipartAmazonCopyFactory
         (getAmazonS3Client(), _copyExecutor);
+    if (_acl != null)
+    {
+      return factory.startCopy(sourceBucketName, sourceKey,
+        destinationBucketName, destinationKey, _acl, _userMetadata,
+        chunkSize0);
+    }
     return factory.startCopy(sourceBucketName, sourceKey,
-        destinationBucketName, destinationKey, acl, chunkSize0);
+      destinationBucketName, destinationKey, _cannedAcl, _userMetadata,
+      chunkSize0);
   }
 
   /**

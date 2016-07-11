@@ -1,6 +1,9 @@
 package com.logicblox.s3lib;
 
+import com.amazonaws.services.s3.model.AccessControlList;
 import com.google.common.base.Optional;
+
+import java.util.Map;
 
 /**
  * {@code CopyOptions} contains all the details needed by the copy operation.
@@ -24,6 +27,8 @@ public class CopyOptions {
     private final String destinationKey;
     private final boolean recursive;
     private final Optional<String> cannedAcl;
+    private final Optional<AccessControlList> s3Acl;
+    private final Optional<Map<String,String>> userMetadata;
     private final Optional<OverallProgressListenerFactory>
         overallProgressListenerFactory;
 
@@ -32,7 +37,9 @@ public class CopyOptions {
                 String destinationBucketName,
                 String destinationKey,
                 Optional<String> cannedAcl,
+                Optional<AccessControlList> s3Acl,
                 boolean recursive,
+                Optional<Map<String,String>> userMetadata,
                 Optional<OverallProgressListenerFactory>
                     overallProgressListenerFactory) {
         this.sourceBucketName = sourceBucketName;
@@ -41,6 +48,8 @@ public class CopyOptions {
         this.destinationKey = destinationKey;
         this.recursive = recursive;
         this.cannedAcl = cannedAcl;
+        this.s3Acl = s3Acl;
+        this.userMetadata = userMetadata;
         this.overallProgressListenerFactory = overallProgressListenerFactory;
     }
 
@@ -64,8 +73,16 @@ public class CopyOptions {
         return cannedAcl;
     }
 
+    public Optional<AccessControlList> getS3Acl() {
+        return s3Acl;
+    }
+
     public boolean isRecursive() {
         return recursive;
+    }
+
+    public Optional<Map<String,String>> getUserMetadata() {
+        return userMetadata;
     }
 
     public Optional<OverallProgressListenerFactory>

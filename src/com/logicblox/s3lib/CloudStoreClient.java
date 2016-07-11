@@ -442,6 +442,17 @@ public interface CloudStoreClient {
         throws InterruptedException, ExecutionException, URISyntaxException;
 
     /**
+     * Adds a new encrypted key.
+     *
+     * @param bucket Object's bucket
+     * @param object The object we add a new encrypted key to
+     * @param key    Name of encrypted key to add
+     */
+    ListenableFuture<S3File> addEncryptedKey(String bucket, String object,
+                                             String key)
+    throws IOException;
+
+    /**
      * Makes sure all pending tasks have been completed and shuts down all
      * internal machinery properly.
      */

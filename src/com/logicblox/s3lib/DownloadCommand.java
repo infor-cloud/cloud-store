@@ -11,6 +11,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -154,7 +155,7 @@ public class DownloadCommand extends Command
         if (meta.containsKey("s3tool-version"))
         {
           String objectVersion = meta.get("s3tool-version");
-         
+
           if (!String.valueOf(Version.CURRENT).equals(objectVersion))
           {
             throw new UsageException(
@@ -164,36 +165,103 @@ public class DownloadCommand extends Command
 
           if (meta.containsKey("s3tool-key-name"))
           {
+            if (_encKeyProvider == null)
+              throw new UsageException(errPrefix + "No encryption key " +
+                                       "provider is specified");
             String keyName = meta.get("s3tool-key-name");
-            PrivateKey privKey;
-            try
+            String keyNamesStr = meta.get("s3tool-key-name");
+            List<String> keyNames = new ArrayList<>(Arrays.asList(
+              keyNamesStr.split(",")));
+            String symKeyStr;
+            PrivateKey privKey = null;
+            if (keyNames.size() == 1)
             {
-              if (_encKeyProvider == null)
-                throw new UsageException(errPrefix + "No encryption key " +
-                    "provider is specified");
-              privKey = _encKeyProvider.getPrivateKey(keyName);
-              if (meta.containsKey("s3tool-public-key-hash"))
+              try
               {
-                String pubKeyHashHeader = meta.get("s3tool-public-key-hash");
-                PublicKey pubKey = _encKeyProvider.getPublicKey(privKey);
-                String pubKeyHashLocal = DatatypeConverter.printBase64Binary(
-                  DigestUtils.sha256(pubKey.getEncoded())).substring(0,8);
-
-                if (!pubKeyHashLocal.equals(pubKeyHashHeader))
+                privKey = _encKeyProvider.getPrivateKey(keyName);
+                if (meta.containsKey("s3tool-public-key-hash"))
                 {
-                  throw new RuntimeException(
-                    "Public-key checksums do not match. Probably a different " +
-                    "key-pair is being used to decrypt the symmetric key " +
-                    "than the one used to encrypt it. " +
-                    "Calculated hash: " + pubKeyHashLocal +
-                    ", Expected hash: " + pubKeyHashHeader);
+                  String pubKeyHashHeader = meta.get("s3tool-public-key-hash");
+                  PublicKey pubKey = _encKeyProvider.getPublicKey(privKey);
+                  String pubKeyHashLocal = DatatypeConverter.printBase64Binary(
+                    DigestUtils.sha256(pubKey.getEncoded())).substring(0, 8);
+
+                  if (!pubKeyHashLocal.equals(pubKeyHashHeader))
+                  {
+                    throw new RuntimeException(
+                      "Public-key checksums do not match. Probably a different " +
+
+                      "key-pair is being used to decrypt the symmetric key " +
+                      "than the one used to encrypt it. " +
+                      "Calculated hash: " + pubKeyHashLocal +
+                      ", Expected hash: " + pubKeyHashHeader);
+                  }
                 }
               }
+              catch (NoSuchKeyException e)
+              {
+                throw new UsageException(errPrefix + "private key '" + keyName
+                                         + "' is not available to decrypt");
+              }
+              symKeyStr = meta.get("s3tool-symmetric-key");
             }
-            catch (NoSuchKeyException e)
+            else
             {
-              throw new UsageException(errPrefix + "private key '" + keyName
-                  + "' is not available to decrypt");
+              if (!meta.containsKey("s3tool-public-key-hash"))
+              {
+                // TODO(geokollias): Relax this requirement?
+                throw new UsageException(errPrefix + " public key hashes are " +
+                                         "required when object has multiple " +
+                                         "encrypted keys");
+              }
+              String pubKeyHashHeadersStr = meta.get("s3tool-public-key-hash");
+              List<String> pubKeyHashHeaders = new ArrayList<>(Arrays.asList(
+                pubKeyHashHeadersStr.split(",")));
+              int privKeyIndex = -1;
+              boolean privKeyFound = false;
+              for (String kn : keyNames)
+              {
+                privKeyIndex++;
+                try
+                {
+                  privKey = _encKeyProvider.getPrivateKey(kn);
+                }
+                catch (NoSuchKeyException e)
+                {
+                  // We might find an eligible key later.
+                  continue;
+                }
+
+                try
+                {
+                  PublicKey pubKey = _encKeyProvider.getPublicKey(privKey);
+                  String pubKeyHashLocal = DatatypeConverter.printBase64Binary(
+                    DigestUtils.sha256(pubKey.getEncoded())).substring(0, 8);
+
+                  if (pubKeyHashLocal.equals(pubKeyHashHeaders.get(privKeyIndex)))
+                  {
+                    // Successfully-read, validated key.
+                    privKeyFound = true;
+                    break;
+                  }
+                }
+                catch (NoSuchKeyException e)
+                {
+                  throw new UsageException(errPrefix + "Cannot generate the " +
+                                           "public key out of the private one" +
+                                           " for " + kn);
+                }
+              }
+
+              if (privKey == null || !privKeyFound)
+              {
+                // No private key found
+                throw new UsageException(errPrefix + "No eligible private key" +
+                                         " found");
+              }
+              List<String> symKeys = new ArrayList<>(Arrays.asList(
+                meta.get("s3tool-symmetric-key").split(",")));
+              symKeyStr = symKeys.get(privKeyIndex);
             }
 
             Cipher cipher;
@@ -202,7 +270,8 @@ public class DownloadCommand extends Command
             {
               cipher = Cipher.getInstance("RSA");
               cipher.init(Cipher.DECRYPT_MODE, privKey);
-              encKeyBytes = cipher.doFinal(DatatypeConverter.parseBase64Binary(meta.get("s3tool-symmetric-key")));
+              encKeyBytes = cipher.doFinal(DatatypeConverter.parseBase64Binary(
+                symKeyStr));
             }
             catch (NoSuchAlgorithmException e)
             {

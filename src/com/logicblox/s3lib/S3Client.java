@@ -7,10 +7,12 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
@@ -494,11 +496,22 @@ public class S3Client implements CloudStoreClient {
   throws IOException
   {
     String cannedAcl = options.getCannedAcl().or("bucket-owner-full-control");
+    Optional<AccessControlList> s3Acl = options.getS3Acl();
+    Map<String,String> userMetada = options.getUserMetadata().orNull();
     OverallProgressListenerFactory progressListenerFactory = options
         .getOverallProgressListenerFactory().orNull();
 
-    CopyCommand cmd = new CopyCommand(_s3Executor, _executor, cannedAcl,
+    CopyCommand cmd;
+    if (s3Acl.isPresent())
+    {
+      cmd = new CopyCommand(_s3Executor, _executor, s3Acl.get(), userMetada,
         progressListenerFactory);
+    }
+    else
+    {
+      cmd = new CopyCommand(_s3Executor, _executor, cannedAcl, userMetada,
+        progressListenerFactory);
+    }
     configure(cmd);
     return cmd.run(options.getSourceBucketName(), options.getSourceKey(),
         options.getDestinationBucketName(), options.getDestinationKey());
@@ -549,6 +562,18 @@ public class S3Client implements CloudStoreClient {
           new AbortOldPendingUploadsCommand(_s3Executor, _executor, this);
       configure(cmd);
       return cmd.run(bucket, prefix, date);
+  }
+
+  @Override
+  public ListenableFuture<S3File> addEncryptedKey(String bucket, String object,
+                                                  String key)
+  throws IOException
+  {
+    AddEncryptedKeyCommand cmd = new AddEncryptedKeyCommand(_s3Executor,
+      _executor, this, key, _keyProvider);
+
+    configure(cmd);
+    return cmd.run(bucket, object, null);
   }
 
   /**

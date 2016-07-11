@@ -542,10 +542,11 @@ class Main
         for (S3File obj : result) {
           if (includeVersions) {
             DateFormat df = Utils.getDefaultDateFormat();
-            String timestamp = df.format(obj.getTimestamp());
+            String timstamp =
+                (obj.getTimestamp() != null) ? df.format(obj.getTimestamp()) : "Not applicable";
             System.out.format("%-30s %-40s %-20s %s%n",
                 client.getUri(obj.getBucketName(), obj.getKey()).toString(), obj.getVersionId(),
-                timestamp, obj.getSize().toString());
+                timstamp, obj.getSize());
           } else {
             System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
           }

@@ -538,16 +538,29 @@ class Main
           .setIncludeVersions(includeVersions)
           .setExcludeDirs(excludeDirs);
       try {
-        List<S3File> result = client.listObjects(lob.createListOptions()).get();
-        for (S3File obj : result) {
-          if (includeVersions) {
-            DateFormat df = Utils.getDefaultDateFormat();
+        List<S3File> listCommandResutls = client.listObjects(lob.createListOptions()).get();
+        if (includeVersions) {
+          String[][] table = new String[listCommandResutls.size()][4];
+          int[] max = new int[4];
+          DateFormat df = Utils.getDefaultDateFormat();
+          for (int i = 0; i < listCommandResutls.size(); i++) {
+            S3File obj = listCommandResutls.get(i);
             String timstamp =
                 (obj.getTimestamp() != null) ? df.format(obj.getTimestamp()) : "Not applicable";
-            System.out.format("%-30s %-40s %-20s %s%n",
-                client.getUri(obj.getBucketName(), obj.getKey()).toString(), obj.getVersionId(),
-                timstamp, obj.getSize());
-          } else {
+            table[i][0] = client.getUri(obj.getBucketName(), obj.getKey()).toString();
+            table[i][1] = obj.getVersionId();
+            table[i][2] = timstamp;
+            table[i][3] = obj.getSize().toString();
+            for (int j = 0; j < 4; j++)
+              max[j] = Math.max(table[i][j].length(), max[j]);
+          }
+          for (final String[] row : table) {
+            System.out.format(
+                "%-" + (max[0] + 4) + "s%-" + (max[1] + 4) + "s%-" + (max[2] + 3) + "s%-" + (max[3] + 3)+ "s\n", row[0],
+                row[1], row[2],row[3]);
+          }
+        } else {
+          for (S3File obj : listCommandResutls) {
             System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
           }
         }

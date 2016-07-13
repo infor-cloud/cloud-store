@@ -179,20 +179,18 @@ public class DownloadCommand extends Command
               try
               {
                 privKey = _encKeyProvider.getPrivateKey(keyName);
-                if (meta.containsKey("s3tool-public-key-hash"))
+                if (meta.containsKey("s3tool-pubkey-hash"))
                 {
-                  String pubKeyHashHeader = meta.get("s3tool-public-key-hash");
-                  PublicKey pubKey = _encKeyProvider.getPublicKey(privKey);
+                  String pubKeyHashHeader = meta.get("s3tool-pubkey-hash");
+                  PublicKey pubKey = Command.getPublicKey(privKey);
                   String pubKeyHashLocal = DatatypeConverter.printBase64Binary(
                     DigestUtils.sha256(pubKey.getEncoded())).substring(0, 8);
 
                   if (!pubKeyHashLocal.equals(pubKeyHashHeader))
                   {
-                    throw new RuntimeException(
-                      "Public-key checksums do not match. Probably a different " +
+                    throw new UsageException(
+                      "Public-key checksums do not match. " +
 
-                      "key-pair is being used to decrypt the symmetric key " +
-                      "than the one used to encrypt it. " +
                       "Calculated hash: " + pubKeyHashLocal +
                       ", Expected hash: " + pubKeyHashHeader);
                   }
@@ -201,7 +199,7 @@ public class DownloadCommand extends Command
               catch (NoSuchKeyException e)
               {
                 throw new UsageException(errPrefix + "private key '" + keyName
-                                         + "' is not available to decrypt");
+                    + "' is not available to decrypt");
               }
               symKeyStr = meta.get("s3tool-symmetric-key");
             }
@@ -234,7 +232,7 @@ public class DownloadCommand extends Command
 
                 try
                 {
-                  PublicKey pubKey = _encKeyProvider.getPublicKey(privKey);
+                  PublicKey pubKey = Command.getPublicKey(privKey);
                   String pubKeyHashLocal = DatatypeConverter.printBase64Binary(
                     DigestUtils.sha256(pubKey.getEncoded())).substring(0, 8);
 

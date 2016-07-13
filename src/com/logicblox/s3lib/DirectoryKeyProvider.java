@@ -16,10 +16,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
-import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.regex.Pattern;
 import javax.xml.bind.DatatypeConverter;
@@ -88,28 +86,6 @@ public class DirectoryKeyProvider implements KeyProvider
       throw new NoSuchKeyException(exc);
     }
     catch(IOException exc)
-    {
-      throw new NoSuchKeyException(exc);
-    }
-  }
-
-  @Override
-  public PublicKey getPublicKey(PrivateKey privateKey)
-  throws NoSuchKeyException
-  {
-    try
-    {
-      RSAPrivateCrtKey privateCrtKey = (RSAPrivateCrtKey)privateKey;
-      RSAPublicKeySpec publicKeySpec = new RSAPublicKeySpec(
-        privateCrtKey.getModulus(), privateCrtKey.getPublicExponent());
-      KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-      return keyFactory.generatePublic(publicKeySpec);
-    }
-    catch (NoSuchAlgorithmException exc)
-    {
-      throw new RuntimeException(exc);
-    }
-    catch (InvalidKeySpecException exc)
     {
       throw new NoSuchKeyException(exc);
     }

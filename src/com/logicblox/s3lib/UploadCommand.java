@@ -183,7 +183,7 @@ public class UploadCommand extends Command
     if (this.encKeyName != null) {
       meta.put("s3tool-key-name", encKeyName);
       meta.put("s3tool-symmetric-key", encryptedSymmetricKeyString);
-      meta.put("s3tool-public-key-hash", pubKeyHash.substring(0,8));
+      meta.put("s3tool-pubkey-hash", pubKeyHash.substring(0,8));
     }
     meta.put("s3tool-chunk-size", Long.toString(chunkSize));
     meta.put("s3tool-file-length", Long.toString(fileLength));

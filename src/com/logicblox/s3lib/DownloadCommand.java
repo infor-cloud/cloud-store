@@ -172,19 +172,19 @@ public class DownloadCommand extends Command
                 throw new UsageException(errPrefix + "No encryption key " +
                     "provider is specified");
               privKey = _encKeyProvider.getPrivateKey(keyName);
-              if (meta.containsKey("s3tool-public-key-hash"))
+              if (meta.containsKey("s3tool-pubkey-hash"))
               {
-                String pubKeyHashHeader = meta.get("s3tool-public-key-hash");
-                PublicKey pubKey = _encKeyProvider.getPublicKey(privKey);
+                String pubKeyHashHeader = meta.get("s3tool-pubkey-hash");
+                PublicKey pubKey = Command.getPublicKey(privKey);
                 String pubKeyHashLocal = DatatypeConverter.printBase64Binary(
                   DigestUtils.sha256(pubKey.getEncoded())).substring(0,8);
 
+                System.err.println("pubKeyHashLocal = " + pubKeyHashLocal +
+                                   ", pubKeyHashHeader = " + pubKeyHashHeader);
                 if (!pubKeyHashLocal.equals(pubKeyHashHeader))
                 {
-                  throw new RuntimeException(
-                    "Public-key checksums do not match. Probably a different " +
-                    "key-pair is being used to decrypt the symmetric key " +
-                    "than the one used to encrypt it. " +
+                  throw new UsageException(
+                    "Public-key checksums do not match. " +
                     "Calculated hash: " + pubKeyHashLocal +
                     ", Expected hash: " + pubKeyHashHeader);
                 }

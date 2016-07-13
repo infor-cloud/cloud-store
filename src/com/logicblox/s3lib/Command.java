@@ -5,6 +5,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.security.Key;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.interfaces.RSAPrivateCrtKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.RSAPublicKeySpec;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -143,5 +150,26 @@ public class Command
       throw (Error) thrown;
     else
       throw new RuntimeException(thrown);
+  }
+
+  public static PublicKey getPublicKey(PrivateKey privateKey)
+  throws NoSuchKeyException
+  {
+    try
+    {
+      RSAPrivateCrtKey privateCrtKey = (RSAPrivateCrtKey)privateKey;
+      RSAPublicKeySpec publicKeySpec = new RSAPublicKeySpec(
+        privateCrtKey.getModulus(), privateCrtKey.getPublicExponent());
+      KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+      return keyFactory.generatePublic(publicKeySpec);
+    }
+    catch (NoSuchAlgorithmException exc)
+    {
+      throw new RuntimeException(exc);
+    }
+    catch (InvalidKeySpecException exc)
+    {
+      throw new NoSuchKeyException(exc);
+    }
   }
 }

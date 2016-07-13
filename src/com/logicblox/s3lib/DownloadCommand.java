@@ -179,8 +179,6 @@ public class DownloadCommand extends Command
                 String pubKeyHashLocal = DatatypeConverter.printBase64Binary(
                   DigestUtils.sha256(pubKey.getEncoded())).substring(0,8);
 
-                System.err.println("pubKeyHashLocal = " + pubKeyHashLocal +
-                                   ", pubKeyHashHeader = " + pubKeyHashHeader);
                 if (!pubKeyHashLocal.equals(pubKeyHashHeader))
                 {
                   throw new UsageException(

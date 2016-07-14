@@ -1,34 +1,15 @@
 package com.logicblox.s3lib;
 
 
-import java.io.InputStream;
-import java.io.BufferedInputStream;
-import java.io.ObjectInputStream;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
-
-import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-
-import com.google.common.base.Functions;
-import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+
+import java.util.concurrent.Callable;
 
 public class ExistsCommand extends Command
 {

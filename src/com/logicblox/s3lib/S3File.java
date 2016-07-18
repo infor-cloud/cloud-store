@@ -8,6 +8,7 @@ public class S3File
   private String _eTag;
   private String _key;
   private String _bucket;
+  private Long _size;
 
   public File getLocalFile()
   {
@@ -47,5 +48,13 @@ public class S3File
   public void setBucketName(String bucket)
   {
     _bucket = bucket;
+  }
+  
+  public Long getSize() {
+    return _size;
+  }
+
+  public void setSize(Long size) {
+    _size = size;
   }
 }

@@ -83,6 +83,7 @@ class Main
     _commander.addCommand("download", new DownloadCommandOptions());
     _commander.addCommand("copy", new CopyCommandOptions());
     _commander.addCommand("ls", new ListCommandOptions());
+    _commander.addCommand("du", new DiskUsageCommandOptions());
     _commander.addCommand("list-pending-uploads", new
         ListPendingUploadsCommandOptions());
     _commander.addCommand("abort-pending-uploads", new
@@ -541,6 +542,34 @@ class Main
         List<S3File> result = client.listObjects(lob.createListOptions()).get();
         for (S3File obj : result)
           System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
+      } catch (ExecutionException exc) {
+        rethrow(exc.getCause());
+      }
+      client.shutdown();
+    }
+  }
+  
+  @Parameters(commandDescription = "List objects sizes in storage service")
+  class DiskUsageCommandOptions extends S3ObjectCommandOptions
+  {
+    @Override
+    public void invoke() throws Exception {
+      CloudStoreClient client = createCloudStoreClient();
+      ListOptionsBuilder lob = new ListOptionsBuilder()
+          .setBucket(getBucket())
+          .setObjectKey(getObjectKey())
+          .setRecursive(true)
+          .setIncludeVersions(false)
+          .setExcludeDirs(true);
+      Long numberOfFiles = (long) 0;
+      Long totalSize = (long) 0;
+      try {
+        List<S3File> result = client.listObjects(lob.createListOptions()).get();
+        for (S3File obj : result) {
+          numberOfFiles += 1;
+          totalSize += obj.getSize();
+        }
+        System.out.format("%-20d %-15d %-15s %n", totalSize, numberOfFiles, getURI().toString());
       } catch (ExecutionException exc) {
         rethrow(exc.getCause());
       }

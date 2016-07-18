@@ -572,8 +572,9 @@ class Main
         System.out.format("%-15d %d objects %s %n", totalSize, numberOfFiles, getURI().toString());
       } catch (ExecutionException exc) {
         rethrow(exc.getCause());
+      } finally {
+        client.shutdown();
       }
-      client.shutdown();
     }
   }
 

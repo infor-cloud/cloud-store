@@ -569,7 +569,7 @@ class Main
           numberOfFiles += 1;
           totalSize += obj.getSize();
         }
-        System.out.format("%-20d %-15d %-15s %n", totalSize, numberOfFiles, getURI().toString());
+        System.out.format("%-15d %-15d %s %n", totalSize, numberOfFiles, getURI().toString());
       } catch (ExecutionException exc) {
         rethrow(exc.getCause());
       }

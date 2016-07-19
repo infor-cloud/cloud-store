@@ -556,6 +556,7 @@ class Main
   @Parameters(commandDescription = "List objects sizes in storage service")
   class DiskUsageCommandOptions extends S3ObjectCommandOptions {
     
+    
     @Parameter(names = {
         "-d", "--max-depth"
     }, description = "Print sizes total for directories " + "with depth N")
@@ -589,7 +590,7 @@ class Main
         for (S3File obj : result) {
           numberOfFiles += 1;
           totalSize += obj.getSize();
-          if (maxDepth > 0 ) {
+          if (maxDepth > 0) {
             tree.addElement(
                 client.getUri(obj.getBucketName(), obj.getKey()).toString().replace("s3://", ""),
                 obj.getSize());
@@ -621,14 +622,14 @@ class Main
     while (! queue.isEmpty()) {
       DirectoryNode node = queue.remove();
       for (DirectoryNode n : node.childs) {
-        if(all || (!all && !n.file)){
-        if (humanReadble ) {
-          size = getReadableString(n.size);
-        } else {
-          size = Long.toString(n.size);
+        if (all || (! all && ! n.file)) {
+          if (humanReadble) {
+            size = getReadableString(n.size);
+          } else {
+            size = Long.toString(n.size);
+          }
+          System.out.format("%-15s  %s %n", size, n.rootPath);
         }
-        System.out.format("%-15s  %s %n", size, n.rootPath);
-      }
       }
       if (node.childs.size() > 0 && node.childs.get(0).depth == depth)
         break;

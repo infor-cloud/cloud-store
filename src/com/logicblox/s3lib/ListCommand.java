@@ -109,7 +109,7 @@ public class ListCommand extends Command {
     S3File df = new S3File();
     df.setKey(dir);
     df.setBucketName(bucket);
-    df.setSize((long) 0);
+    df.setSize(new Long(0));
     
     return df;
   }

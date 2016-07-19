@@ -1,17 +1,21 @@
 package com.logicblox.s3lib;
 
 import java.io.File;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.GeneralSecurityException;
 import java.text.DateFormat;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutionException;
 
@@ -550,17 +554,34 @@ class Main
   }
   
   @Parameters(commandDescription = "List objects sizes in storage service")
-  class DiskUsageCommandOptions extends S3ObjectCommandOptions
-  {
+  class DiskUsageCommandOptions extends S3ObjectCommandOptions {
+    
+    @Parameter(names = {
+        "-d", "--max-depth"
+    }, description = "Print sizes total for directories " + "with depth N")
+    int maxDepth = 0;
+    
+    @Parameter(names = {
+        "--all"
+    }, description = "Print all files in directories " + "with depth N")
+    boolean all = false;
+    
+    @Parameter(names = {
+        "-H", "--human-readable-sizes"
+    }, description = "Print sizes in human readable form " + "(eg 1kB instead of 1234)")
+    boolean humanReadble = false;
+    
     @Override
     public void invoke() throws Exception {
       CloudStoreClient client = createCloudStoreClient();
+      DirectoryTree tree = new DirectoryTree();
+      String du = null;
       ListOptionsBuilder lob = new ListOptionsBuilder()
           .setBucket(getBucket())
           .setObjectKey(getObjectKey())
           .setRecursive(true)
           .setIncludeVersions(false)
-          .setExcludeDirs(true);
+          .setExcludeDirs(false);
       Long numberOfFiles = (long) 0;
       Long totalSize = (long) 0;
       try {
@@ -568,8 +589,22 @@ class Main
         for (S3File obj : result) {
           numberOfFiles += 1;
           totalSize += obj.getSize();
+          if (maxDepth > 0 ) {
+            tree.addElement(
+                client.getUri(obj.getBucketName(), obj.getKey()).toString().replace("s3://", ""),
+                obj.getSize());
+          }
         }
-        System.out.format("%-15d %d objects %s %n", totalSize, numberOfFiles, getURI().toString());
+        if (humanReadble) {
+          du = getReadableString(totalSize);
+        } else {
+          du = Long.toString(totalSize);
+        }
+        if (maxDepth > 0) {
+          printTree(tree, maxDepth, humanReadble, all);
+          
+        }
+        System.out.format("%-15s %d objects %s %n", du, numberOfFiles, getURI().toString());
       } catch (ExecutionException exc) {
         rethrow(exc.getCause());
       } finally {
@@ -577,7 +612,45 @@ class Main
       }
     }
   }
-
+  
+  public void printTree(DirectoryTree tree, int depth, boolean humanReadble, boolean all) {
+    Queue<DirectoryNode> queue = new LinkedList<DirectoryNode>();
+    queue.clear();
+    queue.add(tree.root);
+    String size = null;
+    while (! queue.isEmpty()) {
+      DirectoryNode node = queue.remove();
+      for (DirectoryNode n : node.childs) {
+        if(all || (!all && !n.file)){
+        if (humanReadble ) {
+          size = getReadableString(n.size);
+        } else {
+          size = Long.toString(n.size);
+        }
+        System.out.format("%-15s  %s %n", size, n.rootPath);
+      }
+      }
+      if (node.childs.size() > 0 && node.childs.get(0).depth == depth)
+        break;
+      queue.addAll(node.childs);
+      
+    }
+  }
+  
+  private static final String[] units = new String[] {
+      "", "K", "M", "G", "T", "P", "E"
+  };
+  
+  public String getReadableString(long bytes) {
+    for (int i = 6; i > 0; i--) {
+      double step = Math.pow(1024, i);
+      if (bytes > step) {
+        return new DecimalFormat("#,##0.#").format(bytes / step) + " " + units[i];
+      }
+    }
+    return Long.toString(bytes);
+  }
+  
   @Parameters(commandDescription = "List pending uploads")
   class ListPendingUploadsCommandOptions extends S3ObjectCommandOptions
   {

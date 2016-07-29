@@ -6,10 +6,11 @@ import com.amazonaws.services.s3.model.ListVersionsRequest;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.amazonaws.services.s3.internal.Constants;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 
 public class ListVersionsCommand extends Command {
@@ -102,21 +103,23 @@ public class ListVersionsCommand extends Command {
   
   private S3File versionSummaryToS3File(S3VersionSummary o) {
     S3File of = new S3File();
-    String versionId = (o.getVersionId().equals(Constants.NULL_VERSION_ID) ) ? "No VersionId": o.getVersionId()  ;
     of.setKey(o.getKey());
     of.setETag(o.getETag());
     of.setBucketName(o.getBucketName());
-    of.setVersionId(versionId);
+    of.setVersionId(Optional.ofNullable(o.getVersionId()));
     of.setSize(o.getSize());
-    of.setTimestamp(o.getLastModified());
+    of.setTimestamp(Optional.ofNullable(o.getLastModified()));
     return of;
   }
-  
+
   private S3File versionsDirStringToS3File(String dir, String bucket) {
     S3File df = new S3File();
     df.setKey(dir);
     df.setBucketName(bucket);
-    df.setVersionId("No versionId");
+    Optional<String> versionId = Optional.empty();
+    df.setVersionId(versionId);
+    Optional<Date> timestamp = Optional.empty();
+    df.setTimestamp(timestamp);
     df.setSize((long) 0);
     return df;
   }

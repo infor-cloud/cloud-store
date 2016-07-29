@@ -12,12 +12,14 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.internal.Constants;
 
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -538,29 +540,35 @@ class Main
           .setIncludeVersions(includeVersions)
           .setExcludeDirs(excludeDirs);
       try {
-        List<S3File> listCommandResutls = client.listObjects(lob.createListOptions()).get();
+        List<S3File> listCommandResults = client.listObjects(lob.createListOptions()).get();
         if (includeVersions) {
-          String[][] table = new String[listCommandResutls.size()][4];
+          String[][] table = new String[listCommandResults.size()][4];
           int[] max = new int[4];
           DateFormat df = Utils.getDefaultDateFormat();
-          for (int i = 0; i < listCommandResutls.size(); i++) {
-            S3File obj = listCommandResutls.get(i);
-            String timstamp =
-                (obj.getTimestamp() != null) ? df.format(obj.getTimestamp()) : "Not applicable";
+          for (int i = 0; i < listCommandResults.size(); i++) {
+            S3File obj = listCommandResults.get(i);
             table[i][0] = client.getUri(obj.getBucketName(), obj.getKey()).toString();
-            table[i][1] = obj.getVersionId();
-            table[i][2] = timstamp;
-            table[i][3] = obj.getSize().toString();
+            if (obj.getVersionId().isPresent()
+                && ! obj.getVersionId().get().equals(Constants.NULL_VERSION_ID)) {
+              table[i][1] = obj.getVersionId().get();
+            } else {
+              table[i][1] = "No Version Id";
+            }
+            if (obj.getTimestamp().isPresent()) {
+              table[i][2] = df.format(obj.getTimestamp().get());
+            } else {
+              table[i][2] = "Not applicable";
+            }
+            table[i][3] = String.valueOf(obj.getSize());
             for (int j = 0; j < 4; j++)
               max[j] = Math.max(table[i][j].length(), max[j]);
           }
           for (final String[] row : table) {
-            System.out.format(
-                "%-" + (max[0] + 4) + "s%-" + (max[1] + 4) + "s%-" + (max[2] + 3) + "s%-" + (max[3] + 3)+ "s\n", row[0],
-                row[1], row[2],row[3]);
+            System.out.format("%-" + (max[0] + 4) + "s%-" + (max[1] + 4) + "s%-" + (max[2] + 3)
+                + "s%-" + (max[3] + 3) + "s\n", row[0], row[1], row[2], row[3]);
           }
         } else {
-          for (S3File obj : listCommandResutls) {
+          for (S3File obj : listCommandResults) {
             System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
           }
         }

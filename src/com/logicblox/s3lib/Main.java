@@ -548,8 +548,7 @@ class Main
           for (int i = 0; i < listCommandResults.size(); i++) {
             S3File obj = listCommandResults.get(i);
             table[i][0] = client.getUri(obj.getBucketName(), obj.getKey()).toString();
-            if (obj.getVersionId().isPresent()
-                && ! obj.getVersionId().get().equals(Constants.NULL_VERSION_ID)) {
+            if (obj.getVersionId().isPresent()) {
               table[i][1] = obj.getVersionId().get();
             } else {
               table[i][1] = "No Version Id";
@@ -559,7 +558,11 @@ class Main
             } else {
               table[i][2] = "Not applicable";
             }
-            table[i][3] = String.valueOf(obj.getSize());
+            if (obj.getSize().isPresent()) {
+              table[i][3] = obj.getSize().get().toString();
+            } else {
+              table[i][3] = "0";
+            }
             for (int j = 0; j < 4; j++)
               max[j] = Math.max(table[i][j].length(), max[j]);
           }

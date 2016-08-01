@@ -10,9 +10,9 @@ public class S3File
   private String _eTag;
   private String _key;
   private String _bucket;
-  private Optional<String> _versionId;
-  private long _size;
-  private Optional<Date> _timestamp;
+  private Optional<String> _versionId = Optional.empty();
+  private Optional<Long> _size = Optional.empty();
+  private Optional<Date> _timestamp = Optional.empty();
 
   public File getLocalFile()
   {
@@ -57,24 +57,37 @@ public class S3File
     return _versionId;
   }
 
-  public void setVersionId(Optional<String> versionId) {
-    _versionId = versionId;
+  public void setVersionId(String versionId) throws  IllegalArgumentException {
+    if(versionId == null){
+      throw new  IllegalArgumentException ("Error : Version Id should not be set to Null");
+    }else {
+      _versionId = Optional.of(versionId);
+    }
   }
 
-  public long getSize() {
+  public Optional<Long> getSize() {
     return _size;
   }
 
-  public void setSize(long size) {
-    _size = size;
+  public void setSize(Long size) throws  IllegalArgumentException {
+    if(size == null){
+      throw new  IllegalArgumentException ("Error : size should not be set to Null");
+    }else {
+    _size = Optional.of(size);
+    }
   }
   
   public Optional<Date> getTimestamp() {
     return _timestamp;
   }
 
-  public void setTimestamp(Optional<Date> timestamp) {
-    _timestamp = timestamp;
+  public void setTimestamp(Date timestamp) throws  IllegalArgumentException {
+    if(timestamp == null){
+      throw new  IllegalArgumentException ("Error : timestamp should not be set to Null");
+    }else {
+      _timestamp = Optional.of(timestamp);
+    }
   }
+  
 
 }

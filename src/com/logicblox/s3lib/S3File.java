@@ -57,10 +57,10 @@ public class S3File
     return _versionId;
   }
 
-  public void setVersionId(String versionId) throws  IllegalArgumentException {
-    if(versionId == null){
-      throw new  IllegalArgumentException ("Error : Version Id should not be set to Null");
-    }else {
+  public void setVersionId(String versionId) throws IllegalArgumentException {
+    if (versionId == null) {
+      throw new IllegalArgumentException("Error : Version Id should not be set to Null");
+    } else {
       _versionId = Optional.of(versionId);
     }
   }
@@ -69,11 +69,11 @@ public class S3File
     return _size;
   }
 
-  public void setSize(Long size) throws  IllegalArgumentException {
-    if(size == null){
-      throw new  IllegalArgumentException ("Error : size should not be set to Null");
-    }else {
-    _size = Optional.of(size);
+  public void setSize(Long size) throws IllegalArgumentException {
+    if (size == null) {
+      throw new IllegalArgumentException("Error : size should not be set to Null");
+    } else {
+      _size = Optional.of(size);
     }
   }
   
@@ -81,10 +81,10 @@ public class S3File
     return _timestamp;
   }
 
-  public void setTimestamp(Date timestamp) throws  IllegalArgumentException {
-    if(timestamp == null){
-      throw new  IllegalArgumentException ("Error : timestamp should not be set to Null");
-    }else {
+  public void setTimestamp(Date timestamp) throws IllegalArgumentException {
+    if (timestamp == null) {
+      throw new IllegalArgumentException("Error : timestamp should not be set to Null");
+    } else {
       _timestamp = Optional.of(timestamp);
     }
   }

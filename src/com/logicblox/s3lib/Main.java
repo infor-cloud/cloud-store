@@ -2,6 +2,7 @@ package com.logicblox.s3lib;
 
 import java.io.File;
 
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -13,9 +14,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
+import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutionException;
 
@@ -532,7 +534,7 @@ class Main
         "that match the provided storage " +
         "service URL prefix")
     boolean includeVersions = false;
-
+    
     @Override
     public void invoke() throws Exception {
       CloudStoreClient client = createCloudStoreClient();
@@ -575,25 +577,68 @@ class Main
     @Override
     public void invoke() throws Exception {
       CloudStoreClient client = createCloudStoreClient();
-      DirectoryTree tree = new DirectoryTree();
-      String du = null;
       ListOptionsBuilder lob = new ListOptionsBuilder()
           .setBucket(getBucket())
           .setObjectKey(getObjectKey())
           .setRecursive(true)
           .setIncludeVersions(false)
           .setExcludeDirs(false);
-      Long numberOfFiles = (long) 0;
-      Long totalSize = (long) 0;
+      long numberOfFiles = 0;
+      long totalSize = 0;
+      int baseDepth = getObjectKey().equals("") ? 1 : getObjectKey().split("/").length + 1;
+     // System.out.print(baseDepth);
+      String du = null;
+      Map<String, DirectoryNode> dirs = new HashMap<String, DirectoryNode>();
       try {
         List<S3File> result = client.listObjects(lob.createListOptions()).get();
         for (S3File obj : result) {
           numberOfFiles += 1;
           totalSize += obj.getSize();
           if (maxDepth > 0) {
-            tree.addElement(
-                client.getUri(obj.getBucketName(), obj.getKey()).toString().replace("s3://", ""),
-                obj.getSize());
+            String current = obj.getKey();
+            String parent = findParent(current);
+            long depth = current.split("/").length - baseDepth + 1;
+            //System.out.print("current" + current + "depth" + depth + "\n");
+            // add size to the parent Node if parent Node to be displayed
+            if (0 <= depth - 1 && depth - 1 <= maxDepth) {
+              DirectoryNode parentNode = dirs.get(parent);
+              if (parentNode != null) {
+                parentNode.size = parentNode.size + obj.getSize();
+              } else {
+                parentNode = new DirectoryNode(obj.getSize(), parent);
+                dirs.put(parent, parentNode);
+              }
+              // handle children if they were to be displayed
+              if (depth <= maxDepth) {
+                // if child node was a directory add them to the map of directories
+                if (current.endsWith("/")) {
+                  if (! dirs.containsKey(current)) {
+                    current = current.substring(0, current.length() - 1);
+                    DirectoryNode currentNode = new DirectoryNode(obj.getSize(), current);
+                    parentNode.childs.add(currentNode);
+                    dirs.put(current, currentNode);
+                  }
+                }
+                // else add file Node to children if all was enabled to be displayed
+                else if (all) {
+                  DirectoryNode currentNode = new DirectoryNode(obj.getSize(), current);
+                  parentNode.childs.add(currentNode);
+                }
+              }
+            }
+            // add size of current to all great Parents who will be displayed
+            while (parent.length() > 0 && parent.split("/").length - baseDepth < maxDepth
+                && 0 < parent.split("/").length - baseDepth) {
+              parent = findParent(parent);
+              DirectoryNode parentNode = dirs.get(parent);
+              if (parentNode != null) {
+                parentNode.size = parentNode.size + obj.getSize();
+              } else {
+                parentNode = new DirectoryNode(obj.getSize(), parent);
+                dirs.put(parent, parentNode);
+              }
+              depth--;
+            }
           }
         }
         if (humanReadble) {
@@ -601,11 +646,11 @@ class Main
         } else {
           du = Long.toString(totalSize);
         }
-        if (maxDepth > 0) {
-          printTree(tree, maxDepth, humanReadble, all);
-          
-        }
         System.out.format("%-15s %d objects %s %n", du, numberOfFiles, getURI().toString());
+        
+        if (dirs.size() > 0) {
+          printTree(dirs, humanReadble, all, getObjectKey());
+        }
       } catch (ExecutionException exc) {
         rethrow(exc.getCause());
       } finally {
@@ -614,27 +659,43 @@ class Main
     }
   }
   
-  public void printTree(DirectoryTree tree, int depth, boolean humanReadble, boolean all) {
-    Queue<DirectoryNode> queue = new LinkedList<DirectoryNode>();
-    queue.clear();
-    queue.add(tree.root);
-    String size = null;
-    while (! queue.isEmpty()) {
-      DirectoryNode node = queue.remove();
-      for (DirectoryNode n : node.childs) {
-        if (all || (! all && ! n.file)) {
+  public String findParent(String current) {
+    if (current.lastIndexOf('/') != - 1) {
+      if (current.endsWith("/")) {
+        current = current.substring(0, current.length() - 1);
+        return current.substring(0, current.lastIndexOf('/'));
+      } else {
+        return current.substring(0, current.lastIndexOf('/'));
+      }
+    } else {
+      return "";
+    }
+  }
+  
+  public void printTree( Map<String, DirectoryNode> map, boolean humanReadble,
+      boolean all, String root) {
+    for (Map.Entry<String, DirectoryNode> entry : map.entrySet()) {
+      String size = "";
+      if (! entry.getKey().equals(root)) {// skip root info
+        if (humanReadble) {
+          size = getReadableString(entry.getValue().size);
+        } else {
+          size = Long.toString(entry.getValue().size);
+        }
+        System.out.format("%-15s  %s %n", size, "/" + entry.getValue().fileName + "/");
+      }
+      if (all) {
+        for (DirectoryNode n : entry.getValue().childs) {
+          if (map.containsKey(n.fileName))
+            continue;
           if (humanReadble) {
             size = getReadableString(n.size);
           } else {
             size = Long.toString(n.size);
           }
-          System.out.format("%-15s  %s %n", size, n.rootPath);
+          System.out.format("%-15s  %s %n", size, "/" + n.fileName);
         }
       }
-      if (node.childs.size() > 0 && node.childs.get(0).depth == depth)
-        break;
-      queue.addAll(node.childs);
-      
     }
   }
   

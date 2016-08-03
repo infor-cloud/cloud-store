@@ -10,6 +10,7 @@ import java.security.GeneralSecurityException;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -647,7 +648,6 @@ class Main
           du = Long.toString(totalSize);
         }
         System.out.format("%-15s %d objects %s %n", du, numberOfFiles, getURI().toString());
-        
         if (dirs.size() > 0) {
           printTree(dirs, humanReadble, all, getObjectKey());
         }
@@ -674,6 +674,9 @@ class Main
   
   public void printTree( Map<String, DirectoryNode> map, boolean humanReadble,
       boolean all, String root) {
+    ArrayList <String[]> table = new ArrayList <String[]>();
+    int[] max = new int[2];
+    int tableCounter =0;
     for (Map.Entry<String, DirectoryNode> entry : map.entrySet()) {
       String size = "";
       if (! entry.getKey().equals(root)) {// skip root info
@@ -682,7 +685,11 @@ class Main
         } else {
           size = Long.toString(entry.getValue().size);
         }
-        System.out.format("%-15s  %s %n", size, "/" + entry.getValue().fileName + "/");
+        String [] row = {size, "/" + entry.getValue().fileName + "/"};
+        table.add(tableCounter,row);
+        for (int j = 0; j < 2; j++)
+          max[j] = Math.max(table.get(tableCounter)[j].length(), max[j]);
+        tableCounter ++;
       }
       if (all) {
         for (DirectoryNode n : entry.getValue().childs) {
@@ -693,9 +700,16 @@ class Main
           } else {
             size = Long.toString(n.size);
           }
-          System.out.format("%-15s  %s %n", size, "/" + n.fileName);
+          String [] row = {size, "/" + n.fileName};
+          table.add(tableCounter,row );
+          for (int j = 0; j < 2; j++)
+            max[j] = Math.max(table.get(tableCounter)[j].length(), max[j]);
+          tableCounter ++;
         }
       }
+    }
+    for (final String[] row : table) {
+      System.out.format("%-" + (max[0] + 4) + "s%-" + (max[1] + 4) + "s\n", row[0], row[1]);
     }
   }
   
@@ -707,7 +721,7 @@ class Main
     for (int i = 6; i > 0; i--) {
       double step = Math.pow(1024, i);
       if (bytes > step) {
-        return new DecimalFormat("#,##0.#").format(bytes / step) + " " + units[i];
+        return new DecimalFormat("#,##0.#").format(bytes / step) + units[i];
       }
     }
     return Long.toString(bytes);

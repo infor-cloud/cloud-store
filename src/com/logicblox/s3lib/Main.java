@@ -548,11 +548,7 @@ class Main
           for (int i = 0; i < listCommandResults.size(); i++) {
             S3File obj = listCommandResults.get(i);
             table[i][0] = client.getUri(obj.getBucketName(), obj.getKey()).toString();
-            if (obj.getVersionId().isPresent()) {
-              table[i][1] = obj.getVersionId().get();
-            } else {
-              table[i][1] = "No Version Id";
-            }
+            table[i][1] = obj.getVersionId().orElse("No Version Id");
             if (obj.getTimestamp().isPresent()) {
               table[i][2] = df.format(obj.getTimestamp().get());
             } else {

@@ -721,7 +721,7 @@ class Main
     for (int i = 6; i > 0; i--) {
       double step = Math.pow(1024, i);
       if (bytes > step) {
-        return new DecimalFormat("#,##0.#").format(bytes / step) + units[i];
+        return new DecimalFormat("#,##0.##").format(bytes / step) + units[i];
       }
     }
     return Long.toString(bytes);

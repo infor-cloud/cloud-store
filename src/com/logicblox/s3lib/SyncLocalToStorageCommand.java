@@ -19,6 +19,7 @@ import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 
 public class SyncLocalToStorageCommand extends Command {
+  
   private ListeningExecutorService _httpExecutor;
   private ListeningScheduledExecutorService _executor;
   
@@ -28,9 +29,11 @@ public class SyncLocalToStorageCommand extends Command {
     _executor = internalExecutor;
   }
   
-  public ListenableFuture<List<SyncFile>> run(final SyncCommandOptions syncOptions) throws FileNotFoundException {
+  public ListenableFuture<List<SyncFile>> run(final SyncCommandOptions syncOptions)
+      throws FileNotFoundException {
     ListenableFuture<List<SyncFile>> future =
         executeWithRetry(_executor, new Callable<ListenableFuture<List<SyncFile>>>() {
+          
           
           public ListenableFuture<List<SyncFile>> call() throws FileNotFoundException {
             return runActual(syncOptions);
@@ -44,12 +47,14 @@ public class SyncLocalToStorageCommand extends Command {
     return future;
   }
   
-  private ListenableFuture<List<SyncFile>> runActual(final SyncCommandOptions syncOptions) throws FileNotFoundException{
+  private ListenableFuture<List<SyncFile>> runActual(final SyncCommandOptions syncOptions)
+      throws FileNotFoundException {
     return _httpExecutor.submit(new Callable<List<SyncFile>>() {
+      
       
       public List<SyncFile> call() throws FileNotFoundException {
         System.out.println("Syncing " + syncOptions.getSourceFilePath() + " to "
-            + syncOptions.getDestinationBucket()+"/"+syncOptions.getDestinatioKey());
+            + syncOptions.getDestinationBucket() + "/" + syncOptions.getDestinatioKey());
         
         Map<String, File> fileMap = new HashMap<String, File>();
         File file = new File(syncOptions.getSourceFilePath());
@@ -60,14 +65,6 @@ public class SyncLocalToStorageCommand extends Command {
         Map<String, Long[]> localFiles = getLocalFiles(file, fileMap);
         Map<String, Long[]> S3Files =
             getS3Files(syncOptions.getDestinationBucket(), syncOptions.getDestinatioKey());
-        /*for (Map.Entry<String, Long[]> entry : localFiles.entrySet()) {
-          System.out.print("\n" + entry.getKey());
-          
-        }
-        for (Map.Entry<String, Long[]> entry : S3Files.entrySet()) {
-          System.out.print("\n" + entry.getKey());
-        }*/
-        
         for (Map.Entry<String, Long[]> entry : localFiles.entrySet()) {
           if (S3Files.containsKey(entry.getKey())
               && S3Files.get(entry.getKey())[0].equals(entry.getValue()[0])
@@ -75,15 +72,16 @@ public class SyncLocalToStorageCommand extends Command {
             // file is up to date
             
           } else {// I need to sync the file by uploading it to S3
-            //Skip uploading entire folder and just upload sub files of the folder
-           if(entry.getKey().endsWith("/")){
+            // Skip uploading entire folder and just upload sub files of the folder
+            if (entry.getKey().endsWith("/")) {
               continue;
-           }
-           //Skip files that are up to date 
-           if(S3Files.containsKey(entry.getKey()) && upTodate(entry.getValue()[0],S3Files.get(entry.getKey())[0])) {
-             continue ;
-           }
-           
+            }
+            // Skip files that are up to date
+            if (S3Files.containsKey(entry.getKey())
+                && upTodate(entry.getValue()[0], S3Files.get(entry.getKey())[0])) {
+              continue;
+            }
+            
             SyncFile syncfile = new SyncFile();
             syncfile.set_destination_bucket(syncOptions.getDestinationBucket());
             syncfile.set_destination_key(entry.getKey());
@@ -94,7 +92,7 @@ public class SyncLocalToStorageCommand extends Command {
           }
         }
         for (Map.Entry<String, Long[]> entry : S3Files.entrySet()) {
-          if (!localFiles.containsKey(entry.getKey())) {
+          if (! localFiles.containsKey(entry.getKey())) {
             SyncFile syncfile = new SyncFile();
             syncfile.setSyncAction(SyncFile.SyncAction.DELETEREMOTE);
             syncfile.set_destination_bucket(syncOptions.getDestinationBucket());
@@ -109,11 +107,12 @@ public class SyncLocalToStorageCommand extends Command {
     
   }
   
-  public boolean upTodate(long sourceLastModified, long destinationLastModified){
+  public boolean upTodate(long sourceLastModified, long destinationLastModified) {
     
     long delta = destinationLastModified - sourceLastModified;
-    if (delta>=0) return true;
-    return false ;
+    if (delta >= 0)
+      return true;
+    return false;
     
   }
   
@@ -121,7 +120,7 @@ public class SyncLocalToStorageCommand extends Command {
     
     Map<String, Long[]> files = new TreeMap<String, Long[]>();
     
-    getLocalFilesRecursive(root, files, fileMap, root.getName()+"/");
+    getLocalFilesRecursive(root, files, fileMap, root.getName() + "/");
     
     return files;
     
@@ -148,8 +147,7 @@ public class SyncLocalToStorageCommand extends Command {
         list.put(key, data);
         fileMap.put(key, file);
       } else if (file.isDirectory()) {
-        String key = prefix + file.getName()+"/";
-        key = key.replaceFirst("\\.noex\\.[^\\.]+$", "");
+        String key = prefix + file.getName() + "/";
         Long[] data = {
             file.lastModified(), file.length()
         };
@@ -165,12 +163,10 @@ public class SyncLocalToStorageCommand extends Command {
     
     Map<String, Long[]> files = new TreeMap<String, Long[]>();
     
-    ListObjectsRequest req = new ListObjectsRequest()
-        .withBucketName(bucketName)
-        .withPrefix(prefix);
+    ListObjectsRequest req = new ListObjectsRequest().withBucketName(bucketName).withPrefix(prefix);
     
-   ObjectListing current;
-
+    ObjectListing current;
+    
     do {
       current = getAmazonS3Client().listObjects(req);
       for (S3ObjectSummary summary : current.getObjectSummaries()) {
@@ -189,8 +185,5 @@ public class SyncLocalToStorageCommand extends Command {
     return files;
     
   }
-  
-
-  
   
 }

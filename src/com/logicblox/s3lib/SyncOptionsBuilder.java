@@ -2,7 +2,6 @@ package com.logicblox.s3lib;
 
 public class SyncOptionsBuilder {
   
-  
   private String sourcebucket;
   private String sourceoKey;
   private String destinationBucket;

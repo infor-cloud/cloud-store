@@ -18,7 +18,8 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 
-public class SyncStorageToLocalCommand extends Command{
+public class SyncStorageToLocalCommand extends Command {
+  
   
   private ListeningExecutorService _httpExecutor;
   private ListeningScheduledExecutorService _executor;
@@ -29,9 +30,11 @@ public class SyncStorageToLocalCommand extends Command{
     _executor = internalExecutor;
   }
   
-  public ListenableFuture<List<SyncFile>> run(final SyncCommandOptions syncOptions) throws FileNotFoundException {
+  public ListenableFuture<List<SyncFile>> run(final SyncCommandOptions syncOptions)
+      throws FileNotFoundException {
     ListenableFuture<List<SyncFile>> future =
         executeWithRetry(_executor, new Callable<ListenableFuture<List<SyncFile>>>() {
+          
           
           public ListenableFuture<List<SyncFile>> call() throws FileNotFoundException {
             return runActual(syncOptions);
@@ -45,12 +48,14 @@ public class SyncStorageToLocalCommand extends Command{
     return future;
   }
   
-  private ListenableFuture<List<SyncFile>> runActual(final SyncCommandOptions syncOptions) throws FileNotFoundException{
+  private ListenableFuture<List<SyncFile>> runActual(final SyncCommandOptions syncOptions)
+      throws FileNotFoundException {
     return _httpExecutor.submit(new Callable<List<SyncFile>>() {
       
+      
       public List<SyncFile> call() throws FileNotFoundException {
-        System.out.println("Syncing " + syncOptions.getSourcebucket() + 
-             syncOptions.getSourceoKey()+ " to "+syncOptions.getDestinationFilePath());
+        System.out.println("Syncing " + syncOptions.getSourcebucket() + syncOptions.getSourceoKey()
+            + " to " + syncOptions.getDestinationFilePath());
         
         Map<String, File> fileMap = new HashMap<String, File>();
         File file = new File(syncOptions.getDestinationFilePath());
@@ -61,13 +66,13 @@ public class SyncStorageToLocalCommand extends Command{
         Map<String, Long[]> localFiles = getLocalFiles(file, fileMap);
         Map<String, Long[]> S3Files =
             getS3Files(syncOptions.getSourcebucket(), syncOptions.getSourceoKey());
-        /*for (Map.Entry<String, Long[]> entry : localFiles.entrySet()) {
-          System.out.print("\n" + entry.getKey());
-          
-        }
-        for (Map.Entry<String, Long[]> entry : S3Files.entrySet()) {
-          System.out.print("\n" + entry.getKey());
-        }*/
+        /*
+         * for (Map.Entry<String, Long[]> entry : localFiles.entrySet()) { System.out.print("\n" +
+         * entry.getKey());
+         * 
+         * } for (Map.Entry<String, Long[]> entry : S3Files.entrySet()) { System.out.print("\n" +
+         * entry.getKey()); }
+         */
         
         for (Map.Entry<String, Long[]> entry : S3Files.entrySet()) {
           if (localFiles.containsKey(entry.getKey())
@@ -75,29 +80,30 @@ public class SyncStorageToLocalCommand extends Command{
               && localFiles.get(entry.getKey())[1].equals(entry.getValue()[1])) {
             // file is up to date
           } else {// I need to sync the file by downloading it to local path
-            //Skip downloading empty folder and just download sub files of the folder if there
-            if(entry.getKey().endsWith("/")){
-               continue;
+            // Skip downloading empty folder and just download sub files of the folder if there
+            if (entry.getKey().endsWith("/")) {
+              continue;
             }
             
-           //Skip files that are up to date 
-           if(localFiles.containsKey(entry.getKey()) && upTodate(entry.getValue()[0],localFiles.get(entry.getKey())[0])) {
-             continue ;
-           }
+            // Skip files that are up to date
+            if (localFiles.containsKey(entry.getKey())
+                && upTodate(entry.getValue()[0], localFiles.get(entry.getKey())[0])) {
+              continue;
+            }
             SyncFile syncfile = new SyncFile();
             syncfile.set_source_bucket(syncOptions.getSourcebucket());
             syncfile.set_source_key(entry.getKey());
             syncfile.setSyncAction(SyncFile.SyncAction.DOWNLOAD);
-            if(localFiles.containsKey(entry.getKey())) {
-            syncfile.setLocalFile(fileMap.get(entry.getKey()));
-            }else{
-              syncfile.setLocalFile(new File(file.getParent()+"/"+entry.getKey()));
+            if (localFiles.containsKey(entry.getKey())) {
+              syncfile.setLocalFile(fileMap.get(entry.getKey()));
+            } else {
+              syncfile.setLocalFile(new File(file.getParent() + "/" + entry.getKey()));
             }
             all.add(syncfile);
           }
         }
         for (Map.Entry<String, Long[]> entry : localFiles.entrySet()) {
-          if (!S3Files.containsKey(entry.getKey())) {
+          if (! S3Files.containsKey(entry.getKey())) {
             SyncFile syncfile = new SyncFile();
             syncfile.setSyncAction(SyncFile.SyncAction.DELETELOCAL);
             syncfile.setLocalFile(fileMap.get(entry.getKey()));
@@ -111,11 +117,12 @@ public class SyncStorageToLocalCommand extends Command{
     
   }
   
-  public boolean upTodate(long sourceLastModified, long destinationLastModified){
-    //Which way it should be ???
+  public boolean upTodate(long sourceLastModified, long destinationLastModified) {
+    // Which way it should be ???
     long delta = destinationLastModified - sourceLastModified;
-    if (delta<=0) return true;
-    return false ;
+    if (delta <= 0)
+      return true;
+    return false;
     
   }
   
@@ -123,7 +130,7 @@ public class SyncStorageToLocalCommand extends Command{
     
     Map<String, Long[]> files = new TreeMap<String, Long[]>();
     
-    getLocalFilesRecursive(root, files, fileMap, root.getName()+"/");
+    getLocalFilesRecursive(root, files, fileMap, root.getName() + "/");
     
     return files;
     
@@ -150,8 +157,7 @@ public class SyncStorageToLocalCommand extends Command{
         list.put(key, data);
         fileMap.put(key, file);
       } else if (file.isDirectory()) {
-        String key = prefix + file.getName()+"/";
-        key = key.replaceFirst("\\.noex\\.[^\\.]+$", "");
+        String key = prefix + file.getName() + "/";
         Long[] data = {
             file.lastModified(), file.length()
         };
@@ -167,12 +173,10 @@ public class SyncStorageToLocalCommand extends Command{
     
     Map<String, Long[]> files = new TreeMap<String, Long[]>();
     
-    ListObjectsRequest req = new ListObjectsRequest()
-        .withBucketName(bucketName)
-        .withPrefix(prefix);
+    ListObjectsRequest req = new ListObjectsRequest().withBucketName(bucketName).withPrefix(prefix);
     
-   ObjectListing current;
-
+    ObjectListing current;
+    
     do {
       current = getAmazonS3Client().listObjects(req);
       for (S3ObjectSummary summary : current.getObjectSummaries()) {
@@ -191,8 +195,5 @@ public class SyncStorageToLocalCommand extends Command{
     return files;
     
   }
-  
-
-  
   
 }

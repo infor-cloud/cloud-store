@@ -626,7 +626,6 @@ class Main
     }, description = "if dry run is enabled  ")
     boolean runDelete = false;
     
-    
     @Override
     public void invoke() throws Exception {
       
@@ -644,13 +643,12 @@ class Main
         } else {
           // check out if Destination exists
           File f = new File(getDestinationURL());
-          if(!f.exists()){
+          if (! f.exists()) {
             throw new FileNotFoundException(f.getPath());
           }
           if (f.isDirectory() && ! sourceKey.endsWith("/")) {
-            throw new UsageException(
-                "source key " + client.getUri(sourceBucket, sourceKey)
-                    + " should end with '/', since a directory is to be synced.");
+            throw new UsageException("source key " + client.getUri(sourceBucket, sourceKey)
+                + " should end with '/', since a directory is to be synced.");
           }
           SyncOptionsBuilder builder = new SyncOptionsBuilder()
               .setSourcebucket(sourceBucket)
@@ -672,7 +670,7 @@ class Main
         } else {
           // check out if source exists
           File f = new File(getSourceURL());
-          if(!f.exists()){
+          if (! f.exists()) {
             throw new FileNotFoundException(f.getPath());
           }
           if (f.isDirectory() && ! destinationKey.endsWith("/")) {
@@ -718,83 +716,81 @@ class Main
       } else {
         System.out.println("In :None of them is valid ");
       }
-      if(results!= null ){
-      String[][] table = new String[results.size()][2];
-      int[] max = new int[2];
-      for (int i = 0; i < results.size(); i++) {
-        SyncFile obj = results.get(i);
-        boolean upload = obj.getSyncAction().equals(SyncAction.UPLOAD)? true : false;
-        boolean deleteRemote = obj.getSyncAction().equals(SyncAction.DELETEREMOTE)? true : false;
-        boolean download = obj.getSyncAction().equals(SyncAction.DOWNLOAD)? true : false;
-        boolean deleteLocal = obj.getSyncAction().equals(SyncAction.DELETELOCAL)? true : false;
-        boolean copy = obj.getSyncAction().equals(SyncAction.COPY)? true : false;
-        if (upload || deleteLocal) {
-          table[i][0] = obj.getLocalFile().getAbsolutePath();
-          table[i][1] = String.valueOf(obj.getSyncAction());
-          
-        } else if( copy || download ){
-          String s3url = "s3//" + obj.get_source_bucket() + "/"  + obj.get_source_key();
-          table[i][0] = s3url;
-          table[i][1] = String.valueOf(obj.getSyncAction());
-          
-        }else if(deleteRemote){
-          String s3url = "s3//" + obj.get_destination_bucket()+ "/"  + obj.get_destination_key();
-          table[i][0] = s3url;
-          table[i][1] = String.valueOf(obj.getSyncAction());
+      if (results != null) {
+        String[][] table = new String[results.size()][2];
+        int[] max = new int[2];
+        for (int i = 0; i < results.size(); i++) {
+          SyncFile obj = results.get(i);
+          boolean upload = obj.getSyncAction().equals(SyncAction.UPLOAD) ? true : false;
+          boolean deleteRemote = obj.getSyncAction().equals(SyncAction.DELETEREMOTE) ? true : false;
+          boolean download = obj.getSyncAction().equals(SyncAction.DOWNLOAD) ? true : false;
+          boolean deleteLocal = obj.getSyncAction().equals(SyncAction.DELETELOCAL) ? true : false;
+          boolean copy = obj.getSyncAction().equals(SyncAction.COPY) ? true : false;
+          if (upload || deleteLocal) {
+            table[i][0] = obj.getLocalFile().getAbsolutePath();
+            table[i][1] = String.valueOf(obj.getSyncAction());
+            
+          } else if (copy || download) {
+            String s3url = "s3//" + obj.get_source_bucket() + "/" + obj.get_source_key();
+            table[i][0] = s3url;
+            table[i][1] = String.valueOf(obj.getSyncAction());
+            
+          } else if (deleteRemote) {
+            String s3url = "s3//" + obj.get_destination_bucket() + "/" + obj.get_destination_key();
+            table[i][0] = s3url;
+            table[i][1] = String.valueOf(obj.getSyncAction());
+          }
+          for (int j = 0; j < 2; j++)
+            max[j] = Math.max(table[i][j].length(), max[j]);
+          if (! dryRun && upload) {
+            UploadOptionsBuilder uob = new UploadOptionsBuilder();
+            File uploadFile = obj.getLocalFile();
+            uob.setFile(uploadFile).setBucket(obj.get_destination_bucket()).setObjectKey(
+                obj.get_destination_key());
+            if (uploadFile.isFile()) {
+              if (obj.get_destination_key().endsWith("/"))
+                uob.setObjectKey(obj.get_destination_key() + uploadFile.getName());
+              client.upload(uob.createUploadOptions()).get();
+            } else {
+              throw new UsageException("File '" + uploadFile + "' is not a file. ");
+            }
+          } else if (! dryRun && runDelete && deleteRemote) {
+            client.delete(obj.get_destination_bucket(), obj.get_destination_key()).get();
+          } else if (! dryRun && download) {
+            DownloadOptionsBuilder dob = new DownloadOptionsBuilder();
+            File filePath = obj.getLocalFile();
+            dob
+                .setBucket(obj.get_source_bucket())
+                .setOverwrite(true)
+                .setRecursive(false)
+                .setObjectKey(obj.get_source_key())
+                .setFile(filePath.getAbsoluteFile());
+            if (obj.get_source_key().endsWith("/") || obj.get_source_key().equals("")) {
+              client.downloadDirectory(dob.createDownloadOptions());
+            } else {
+              client.download(dob.createDownloadOptions()).get();
+            }
+          } else if (! dryRun && runDelete && deleteLocal ) {
+            File localFile = obj.getLocalFile();
+            if (localFile.delete()) {
+              System.out.println(localFile.getName() + " is deleted!");
+            } else {
+              throw new UsageException("\n Error in Deleting File '" + localFile + "\n");
+            }
+          } else if (! dryRun && copy) {
+            CopyOptions options = new CopyOptionsBuilder()
+                .setSourceBucketName(obj.get_source_bucket())
+                .setSourceKey(obj.get_source_key())
+                .setDestinationBucketName(obj.get_destination_bucket())
+                .setDestinationKey(obj.get_destination_key())
+                .createCopyOptions();
+            client.copy(options).get();
+          }
         }
-        for (int j = 0; j < 2; j++)
-          max[j] = Math.max(table[i][j].length(), max[j]);
-        if(!dryRun && upload){
-          //System.out.print(" \n Start Upload "+obj.getLocalFile().getAbsolutePath() +"\n ");
-          UploadOptionsBuilder uob = new UploadOptionsBuilder();
-          File uploadFile = obj.getLocalFile();
-          uob.setFile(uploadFile)
-              .setBucket(obj.get_destination_bucket())
-              .setObjectKey(obj.get_destination_key());
-          if(uploadFile.isFile()) {
-            if (obj.get_destination_key().endsWith("/"))
-              uob.setObjectKey(obj.get_destination_key() + uploadFile.getName());
-            client.upload(uob.createUploadOptions()).get();
-          } else {
-            throw new UsageException("File '" + uploadFile + "' is not a file. ");
-          }
-        }else if(!dryRun && runDelete && deleteRemote){
-          client.delete(obj.get_destination_bucket(), obj.get_destination_key()).get();
-        } else if(!dryRun && download){
-          DownloadOptionsBuilder dob = new DownloadOptionsBuilder();
-          File filePath = obj.getLocalFile();
-          dob.setBucket(obj.get_source_bucket())
-          .setOverwrite(true)
-          .setRecursive(false)
-          .setObjectKey(obj.get_source_key())
-          .setFile(filePath.getAbsoluteFile());
-          if(obj.get_source_key().endsWith("/") || obj.get_source_key().equals("")) {
-            client.downloadDirectory(dob.createDownloadOptions());
-          } else
-          {
-          client.download(dob.createDownloadOptions()).get();
-          }
-        }else if(!dryRun && deleteLocal){
-          //System.out.format("\n should Delete %s",obj.getLocalFile() );
-          File localFile = obj.getLocalFile() ;
-          if(localFile.delete()){
-            System.out.println(localFile.getName() + " is deleted!");
-          }else{
-            throw new UsageException("\n Error in Deleting File '" + localFile + "\n");
-          }
-        } else if(!dryRun && copy ){
-          CopyOptions options = new CopyOptionsBuilder()
-              .setSourceBucketName(obj.get_source_bucket())
-              .setSourceKey(obj.get_source_key())
-              .setDestinationBucketName(obj.get_destination_bucket())
-              .setDestinationKey(obj.get_destination_key()).createCopyOptions();
-               client.copy(options).get();
+        for (final String[] row : table) {
+          System.out.format("%-" + (max[0] + 4) + "s%-" + (max[1] + 4) + "s\n", row[0], row[1]);
         }
-      }
-      for (final String[] row : table) {
-        System.out.format("%-" + (max[0] + 4) + "s%-" + (max[1] + 4) + "s\n", row[0], row[1]);
-      }
-      
+        
       }
       client.shutdown();
     }

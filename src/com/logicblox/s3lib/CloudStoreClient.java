@@ -77,6 +77,14 @@ public interface CloudStoreClient {
      */
     ListenableFuture<S3File> upload(UploadOptions options)
         throws IOException;
+  
+  /**
+   * sync directories and files under specific destination URL from a source URL Sync direction can
+   * be either from local to storage service url, storage service url to local and sotrage service
+   * url to storage service url
+   */
+    ListenableFuture<List<SyncFile>> sync (SyncCommandOptions syncOptions)
+        throws IOException;
 
     /**
      * Uploads the specified {@code file} under the specified {@code bucket} and

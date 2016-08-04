@@ -10,6 +10,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 import java.io.InputStream;
+import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
@@ -21,6 +22,7 @@ class AmazonDownload
   private String key;
   private String bucketName;
   private String version;
+  private Date timestamp;
 
   public AmazonDownload(
     AmazonS3 client,
@@ -69,7 +71,10 @@ class AmazonDownload
   {
     return key;
   }
-
+  public Date getTimestamp()
+  {
+    return meta.getLastModified();
+  }
   public String getVersion()
   {
     return version;

@@ -1,6 +1,7 @@
 package com.logicblox.s3lib;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -273,6 +274,26 @@ public class S3Client implements CloudStoreClient {
     configure(cmd);
 
     return cmd.run(options.getBucket(), options.getObjectKey());
+  }
+
+  @Override
+  public ListenableFuture<List<SyncFile>> sync(SyncCommandOptions syncOptions)
+      throws IOException, FileNotFoundException {
+    ListenableFuture<List<SyncFile>> results = null;
+    if (syncOptions.getDestinationBucket() != null && syncOptions.getSourceFilePath() != null) {
+      SyncLocalToStorageCommand cmd = new SyncLocalToStorageCommand(_s3Executor, _executor);
+      configure(cmd);
+      results = cmd.run(syncOptions);
+    }else if (syncOptions.getSourcebucket() != null && syncOptions.getDestinationFilePath()!= null) {
+      SyncStorageToLocalCommand cmd = new SyncStorageToLocalCommand(_s3Executor, _executor);
+      configure(cmd);
+      results = cmd.run(syncOptions);
+    } else if (syncOptions.getSourcebucket()!= null && syncOptions.getDestinationBucket() != null ){
+      SyncStorageToStorageCommand cmd = new SyncStorageToStorageCommand(_s3Executor, _executor);
+     configure(cmd);
+     results = cmd.run(syncOptions);
+    }
+    return results;
   }
 
   @Override

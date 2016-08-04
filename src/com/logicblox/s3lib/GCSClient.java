@@ -108,6 +108,11 @@ public class GCSClient implements CloudStoreClient {
     public ListenableFuture<S3File> upload(UploadOptions options) throws IOException {
         return s3Client.upload(options);
     }
+    
+  @Override
+  public ListenableFuture<List<SyncFile>> sync(SyncCommandOptions syncOptions) throws IOException {
+    return s3Client.sync(syncOptions);
+  }
 
     @Override
     public ListenableFuture<S3File> upload(File file, String bucket, String

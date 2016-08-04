@@ -1,8 +1,6 @@
 package com.logicblox.s3lib;
 
 import java.io.File;
-
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -25,6 +23,7 @@ import java.util.concurrent.ExecutionException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.internal.Constants;
 
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -546,9 +545,37 @@ class Main
           .setIncludeVersions(includeVersions)
           .setExcludeDirs(excludeDirs);
       try {
-        List<S3File> result = client.listObjects(lob.createListOptions()).get();
-        for (S3File obj : result)
-          System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
+        List<S3File> listCommandResults = client.listObjects(lob.createListOptions()).get();
+        if (includeVersions) {
+          String[][] table = new String[listCommandResults.size()][4];
+          int[] max = new int[4];
+          DateFormat df = Utils.getDefaultDateFormat();
+          for (int i = 0; i < listCommandResults.size(); i++) {
+            S3File obj = listCommandResults.get(i);
+            table[i][0] = client.getUri(obj.getBucketName(), obj.getKey()).toString();
+            table[i][1] = obj.getVersionId().orElse("No Version Id");
+            if (obj.getTimestamp().isPresent()) {
+              table[i][2] = df.format(obj.getTimestamp().get());
+            } else {
+              table[i][2] = "Not applicable";
+            }
+            if (obj.getSize().isPresent()) {
+              table[i][3] = obj.getSize().get().toString();
+            } else {
+              table[i][3] = "0";
+            }
+            for (int j = 0; j < 4; j++)
+              max[j] = Math.max(table[i][j].length(), max[j]);
+          }
+          for (final String[] row : table) {
+            System.out.format("%-" + (max[0] + 4) + "s%-" + (max[1] + 4) + "s%-" + (max[2] + 3)
+                + "s%-" + (max[3] + 3) + "s\n", row[0], row[1], row[2], row[3]);
+          }
+        } else {
+          for (S3File obj : listCommandResults) {
+            System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
+          }
+        }
       } catch (ExecutionException exc) {
         rethrow(exc.getCause());
       }

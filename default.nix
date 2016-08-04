@@ -6,7 +6,7 @@
 , stdenv ? pkgs.stdenv
 , fetchurl ? pkgs.fetchurl
 , python ? pkgs.pythonFull
-, jdk ? pkgs.openjdk7 or pkgs.openjdk
+, jdk ? pkgs.openjdk8 or pkgs.openjdk
 , unzip ? pkgs.unzip
 , s3lib ? { outPath = ./.; rev = "1234"; }
 }:

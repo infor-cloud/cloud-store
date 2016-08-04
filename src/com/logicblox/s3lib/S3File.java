@@ -79,5 +79,4 @@ public class S3File {
     }
     _timestamp = Optional.of(timestamp);
   }
-
 }

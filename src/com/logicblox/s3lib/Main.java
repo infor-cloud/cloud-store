@@ -621,7 +621,7 @@ class Main
         List<S3File> result = client.listObjects(lob.createListOptions()).get();
         for (S3File obj : result) {
           numberOfFiles += 1;
-          totalSize += obj.getSize().get();
+          totalSize += obj.getSize().orElse((long)0);
           if (maxDepth > 0) {
             String current = obj.getKey();
             String parent = findParent(current);
@@ -631,9 +631,9 @@ class Main
             if (0 <= depth - 1 && depth - 1 <= maxDepth) {
               DirectoryNode parentNode = dirs.get(parent);
               if (parentNode != null) {
-                parentNode.size = parentNode.size + obj.getSize().get();
+                parentNode.size = parentNode.size + obj.getSize().orElse((long)0);
               } else {
-                parentNode = new DirectoryNode(obj.getSize().get(), parent);
+                parentNode = new DirectoryNode(obj.getSize().orElse((long)0), parent);
                 dirs.put(parent, parentNode);
               }
               // handle children if they were to be displayed
@@ -642,14 +642,14 @@ class Main
                 if (current.endsWith("/")) {
                   if (! dirs.containsKey(current)) {
                     current = current.substring(0, current.length() - 1);
-                    DirectoryNode currentNode = new DirectoryNode(obj.getSize().get(), current);
+                    DirectoryNode currentNode = new DirectoryNode(obj.getSize().orElse((long)0), current);
                     parentNode.childs.add(currentNode);
                     dirs.put(current, currentNode);
                   }
                 }
                 // else add file Node to children if all was enabled to be displayed
                 else if (all) {
-                  DirectoryNode currentNode = new DirectoryNode(obj.getSize().get(), current);
+                  DirectoryNode currentNode = new DirectoryNode(obj.getSize().orElse((long)0), current);
                   parentNode.childs.add(currentNode);
                 }
               }
@@ -660,9 +660,9 @@ class Main
               parent = findParent(parent);
               DirectoryNode parentNode = dirs.get(parent);
               if (parentNode != null) {
-                parentNode.size = parentNode.size + obj.getSize().get();
+                parentNode.size = parentNode.size + obj.getSize().orElse((long)0);
               } else {
-                parentNode = new DirectoryNode(obj.getSize().get(), parent);
+                parentNode = new DirectoryNode(obj.getSize().orElse((long)0), parent);
                 dirs.put(parent, parentNode);
               }
               depth--;

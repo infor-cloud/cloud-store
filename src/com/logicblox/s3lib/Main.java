@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.ClientConfiguration;
@@ -614,9 +615,8 @@ class Main
       long numberOfFiles = 0;
       long totalSize = 0;
       int baseDepth = getObjectKey().equals("") ? 1 : getObjectKey().split("/").length + 1;
-     // System.out.print(baseDepth);
       String du = null;
-      Map<String, DirectoryNode> dirs = new HashMap<String, DirectoryNode>();
+      TreeMap<String, DirectoryNode> dirs = new TreeMap<String, DirectoryNode>();
       try {
         List<S3File> result = client.listObjects(lob.createListOptions()).get();
         for (S3File obj : result) {
@@ -626,7 +626,6 @@ class Main
             String current = obj.getKey();
             String parent = findParent(current);
             long depth = current.split("/").length - baseDepth + 1;
-            //System.out.print("current" + current + "depth" + depth + "\n");
             // add size to the parent Node if parent Node to be displayed
             if (0 <= depth - 1 && depth - 1 <= maxDepth) {
               DirectoryNode parentNode = dirs.get(parent);

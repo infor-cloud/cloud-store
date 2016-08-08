@@ -731,7 +731,7 @@ class Main
             table[i][1] = String.valueOf(obj.getSyncAction());
             
           } else if (copy || download) {
-            String s3url = client.getUri(obj.get_source_bucket(),obj.get_source_key() ).toString();
+            String s3url = client.getUri(obj.get_source_bucket(), obj.get_source_key()).toString();
             table[i][0] = s3url;
             table[i][1] = String.valueOf(obj.getSyncAction());
             
@@ -751,7 +751,7 @@ class Main
               if (obj.get_destination_key().endsWith("/"))
                 uob.setObjectKey(obj.get_destination_key() + uploadFile.getName());
               client.upload(uob.createUploadOptions()).get();
-            } else if(uploadFile.isDirectory()) {
+            } else if (uploadFile.isDirectory()) {
               client.uploadDirectory(uob.createUploadOptions()).get();
             }
           } else if (! dryRun && runDelete && deleteRemote) {
@@ -765,12 +765,12 @@ class Main
                 .setRecursive(false)
                 .setObjectKey(obj.get_source_key())
                 .setFile(filePath.getAbsoluteFile());
-           if (obj.get_source_key().endsWith("/") || obj.get_source_key().equals("")) {
+            if (obj.get_source_key().endsWith("/") || obj.get_source_key().equals("")) {
               client.downloadDirectory(dob.createDownloadOptions()).get();
             } else {
               client.download(dob.createDownloadOptions()).get();
-           }
-          } else if (! dryRun && runDelete && deleteLocal ) {
+            }
+          } else if (! dryRun && runDelete && deleteLocal) {
             File localFile = obj.getLocalFile();
             if (localFile.delete()) {
               System.out.println(localFile.getName() + " is deleted!");

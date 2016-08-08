@@ -82,7 +82,6 @@ public class UploadDirectoryCommand extends Command
     
     List<ListenableFuture<S3File>> files = new ArrayList<ListenableFuture<S3File>>();
     if (files.size() == 0) {
-      System.out.print("here" + object);
       final File finalFolder = dir;
       final String finalbucket = bucket;
       final String finalKey = object;

@@ -112,7 +112,6 @@ public class SyncStorageToLocalCommand extends Command {
   }
   
   public boolean upTodate(long sourceLastModified, long destinationLastModified) {
-    // Which way it should be ???
     long delta = destinationLastModified - sourceLastModified;
     if (delta <= 0)
       return true;

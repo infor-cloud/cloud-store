@@ -72,7 +72,8 @@ public class SyncStorageToStorageCommand extends Command {
             
           } else {// I need to sync the file by copying to destination it to S3
             // Skip copying entire folder and just copy sub files of the folder
-            if (entry.getKey().endsWith("/") && entry.getValue()[1] > - 1) {
+            if (entry.getKey().endsWith("/")
+                && (entry.getValue()[1] > - 1 || S3DestinationFiles.containsKey(entry.getKey()))) {
               continue;
             }
             // Skip files that are up to date

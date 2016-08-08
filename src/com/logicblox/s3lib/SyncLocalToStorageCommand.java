@@ -2,7 +2,6 @@ package com.logicblox.s3lib;
 
 import java.io.File;
 
-
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,6 +19,7 @@ import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 
 public class SyncLocalToStorageCommand extends Command {
+  
   
   private ListeningExecutorService _httpExecutor;
   private ListeningScheduledExecutorService _executor;
@@ -71,12 +71,13 @@ public class SyncLocalToStorageCommand extends Command {
               && S3Files.get(entry.getKey())[0].equals(entry.getValue()[0])
               && S3Files.get(entry.getKey())[1].equals(entry.getValue()[1])) {
             // file is up to date
-            
           } else {// sync the file by uploading it to S3
-            // Skip uploading entire folder and just upload sub files of the folder or upload empty files
-           if (entry.getKey().endsWith("/") && entry.getValue()[1] >-1 ) {
+            // Skip uploading entire folder and just upload sub files of the folder or upload empty
+            // files if they dont exist in destination
+            if ((entry.getKey().endsWith("/"))
+                && (entry.getValue()[1] > - 1 || S3Files.containsKey(entry.getKey()))) {
               continue;
-            } 
+            }
             // Skip files that are up to date
             if (S3Files.containsKey(entry.getKey())
                 && upTodate(entry.getValue()[0], S3Files.get(entry.getKey())[0])) {
@@ -148,8 +149,8 @@ public class SyncLocalToStorageCommand extends Command {
         fileMap.put(key, file);
       } else if (file.isDirectory()) {
         String key = prefix + file.getName() + "/";
-        long actualSize =-1;
-        if(file.list().length > 0){
+        long actualSize = - 1;
+        if (file.list().length > 0) {
           actualSize = file.length();
         }
         Long[] data = {
@@ -174,22 +175,23 @@ public class SyncLocalToStorageCommand extends Command {
     do {
       current = getAmazonS3Client().listObjects(req);
       for (S3ObjectSummary summary : current.getObjectSummaries()) {
-        GetObjectMetadataRequest metadataReq =
-            new GetObjectMetadataRequest(bucketName, summary.getKey());
-        // add folders that are empty only 
-        if(summary.getKey().endsWith("/")){
-          ListObjectsRequest listRequest = new ListObjectsRequest().withBucketName(bucketName).withPrefix(summary.getKey());
-          
+        long actualSize = 0;
+        // add folders that are empty only
+        if (summary.getKey().endsWith("/")) {
+          ListObjectsRequest listRequest =
+              new ListObjectsRequest().withBucketName(bucketName).withPrefix(summary.getKey());
           // Get a list of objects
           ObjectListing listResponse = getAmazonS3Client().listObjects(listRequest);
-          if(!(listResponse.getObjectSummaries().size()== 0))
-            continue;
+          if (! (listResponse.getObjectSummaries().size() > 1))
+            actualSize = - 1;
+        } else {
+          GetObjectMetadataRequest metadataReq =
+              new GetObjectMetadataRequest(bucketName, summary.getKey());
+          ObjectMetadata metadata = getAmazonS3Client().getObjectMetadata(metadataReq);
+          Map<String, String> userMetadata = metadata.getUserMetadata();
+          actualSize = userMetadata.get("s3tool-file-length") != null
+              ? Long.valueOf(userMetadata.get("s3tool-file-length")) : summary.getSize();
         }
-          
-        ObjectMetadata metadata = getAmazonS3Client().getObjectMetadata(metadataReq);
-        Map<String, String> userMetadata = metadata.getUserMetadata();
-        Long actualSize = userMetadata.get("s3tool-file-length") != null
-            ? Long.valueOf(userMetadata.get("s3tool-file-length")) : summary.getSize();
         Long[] data = {
             summary.getLastModified().getTime(), actualSize
         };

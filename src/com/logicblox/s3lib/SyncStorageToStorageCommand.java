@@ -20,6 +20,7 @@ import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 
 public class SyncStorageToStorageCommand extends Command {
+  
   private ListeningExecutorService _httpExecutor;
   private ListeningScheduledExecutorService _executor;
   
@@ -29,9 +30,11 @@ public class SyncStorageToStorageCommand extends Command {
     _executor = internalExecutor;
   }
   
-  public ListenableFuture<List<SyncFile>> run(final SyncCommandOptions syncOptions) throws FileNotFoundException {
+  public ListenableFuture<List<SyncFile>> run(final SyncCommandOptions syncOptions)
+      throws FileNotFoundException {
     ListenableFuture<List<SyncFile>> future =
         executeWithRetry(_executor, new Callable<ListenableFuture<List<SyncFile>>>() {
+          
           
           public ListenableFuture<List<SyncFile>> call() throws FileNotFoundException {
             return runActual(syncOptions);
@@ -45,12 +48,15 @@ public class SyncStorageToStorageCommand extends Command {
     return future;
   }
   
-  private ListenableFuture<List<SyncFile>> runActual(final SyncCommandOptions syncOptions) throws FileNotFoundException{
+  private ListenableFuture<List<SyncFile>> runActual(final SyncCommandOptions syncOptions)
+      throws FileNotFoundException {
     return _httpExecutor.submit(new Callable<List<SyncFile>>() {
       
+      
       public List<SyncFile> call() throws FileNotFoundException {
-        System.out.println("Syncing " + syncOptions.getSourcebucket() + "/"+syncOptions.getSourceoKey() +" to "
-            + syncOptions.getDestinationBucket()+"/"+syncOptions.getDestinatioKey());
+        System.out.println(
+            "Syncing " + syncOptions.getSourcebucket() + "/" + syncOptions.getSourceoKey() + " to "
+                + syncOptions.getDestinationBucket() + "/" + syncOptions.getDestinatioKey());
         
         List<SyncFile> all = new ArrayList<SyncFile>();
         Map<String, Long[]> S3SourceFiles =
@@ -65,15 +71,16 @@ public class SyncStorageToStorageCommand extends Command {
             // file is up to date
             
           } else {// I need to sync the file by copying to destination it to S3
-            //Skip copying entire folder and just copy sub files of the folder
-           if(entry.getKey().endsWith("/")){
+            // Skip copying entire folder and just copy sub files of the folder
+            if (entry.getKey().endsWith("/") && entry.getValue()[1] > - 1) {
               continue;
-           }
-           //Skip files that are up to date 
-           if(S3DestinationFiles.containsKey(entry.getKey()) && upTodate(entry.getValue()[0],S3DestinationFiles.get(entry.getKey())[0])) {
-             continue ;
-           }
-           
+            }
+            // Skip files that are up to date
+            if (S3DestinationFiles.containsKey(entry.getKey())
+                && upTodate(entry.getValue()[0], S3DestinationFiles.get(entry.getKey())[0])) {
+              continue;
+            }
+            
             SyncFile syncfile = new SyncFile();
             syncfile.set_destination_bucket(syncOptions.getDestinationBucket());
             syncfile.set_destination_key(entry.getKey());
@@ -86,7 +93,7 @@ public class SyncStorageToStorageCommand extends Command {
         }
         // Delete files that are not in the remote source, skip directories
         for (Map.Entry<String, Long[]> entry : S3DestinationFiles.entrySet()) {
-          if (!S3SourceFiles.containsKey(entry.getKey()) && !entry.getKey().endsWith("/")) {
+          if (! S3SourceFiles.containsKey(entry.getKey()) && ! entry.getKey().endsWith("/")) {
             SyncFile syncfile = new SyncFile();
             syncfile.setSyncAction(SyncFile.SyncAction.DELETEREMOTE);
             syncfile.set_destination_bucket(syncOptions.getDestinationBucket());
@@ -100,11 +107,12 @@ public class SyncStorageToStorageCommand extends Command {
     
   }
   
-  public boolean upTodate(long sourceLastModified, long destinationLastModified){
+  public boolean upTodate(long sourceLastModified, long destinationLastModified) {
     
     long delta = destinationLastModified - sourceLastModified;
-    if (delta>=0) return true;
-    return false ;
+    if (delta >= 0)
+      return true;
+    return false;
     
   }
   
@@ -112,21 +120,29 @@ public class SyncStorageToStorageCommand extends Command {
     
     Map<String, Long[]> files = new TreeMap<String, Long[]>();
     
-    ListObjectsRequest req = new ListObjectsRequest()
-        .withBucketName(bucketName)
-        .withPrefix(prefix);
+    ListObjectsRequest req = new ListObjectsRequest().withBucketName(bucketName).withPrefix(prefix);
     
-   ObjectListing current;
-
+    ObjectListing current;
+    
     do {
       current = getAmazonS3Client().listObjects(req);
       for (S3ObjectSummary summary : current.getObjectSummaries()) {
-        GetObjectMetadataRequest metadataReq =
-            new GetObjectMetadataRequest(bucketName, summary.getKey());
-        ObjectMetadata metadata = getAmazonS3Client().getObjectMetadata(metadataReq);
-        Map<String, String> userMetadata = metadata.getUserMetadata();
-        Long actualSize = userMetadata.get("s3tool-file-length") != null
-            ? Long.valueOf(userMetadata.get("s3tool-file-length")) : summary.getSize();
+        long actualSize = 0;
+        if (summary.getKey().endsWith("/")) {
+          ListObjectsRequest listRequest =
+              new ListObjectsRequest().withBucketName(bucketName).withPrefix(summary.getKey());
+          // Get a list of objects
+          ObjectListing listResponse = getAmazonS3Client().listObjects(listRequest);
+          if (! (listResponse.getObjectSummaries().size() > 1))
+            actualSize = - 1;
+        } else {
+          GetObjectMetadataRequest metadataReq =
+              new GetObjectMetadataRequest(bucketName, summary.getKey());
+          ObjectMetadata metadata = getAmazonS3Client().getObjectMetadata(metadataReq);
+          Map<String, String> userMetadata = metadata.getUserMetadata();
+          actualSize = userMetadata.get("s3tool-file-length") != null
+              ? Long.valueOf(userMetadata.get("s3tool-file-length")) : summary.getSize();
+        }
         Long[] data = {
             summary.getLastModified().getTime(), actualSize
         };
@@ -136,8 +152,5 @@ public class SyncStorageToStorageCommand extends Command {
     return files;
     
   }
-  
-
-  
   
 }

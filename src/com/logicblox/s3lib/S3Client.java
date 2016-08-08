@@ -490,7 +490,6 @@ public class S3Client implements CloudStoreClient {
     boolean overwrite = options.doesOverwrite();
     OverallProgressListenerFactory progressListenerFactory = options
         .getOverallProgressListenerFactory().orNull();
-
     return cmd.run(directory, bucket, object, recursive, overwrite,
         progressListenerFactory);
   }

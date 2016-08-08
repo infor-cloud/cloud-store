@@ -66,13 +66,6 @@ public class SyncStorageToLocalCommand extends Command {
         Map<String, Long[]> localFiles = getLocalFiles(file, fileMap);
         Map<String, Long[]> S3Files =
             getS3Files(syncOptions.getSourcebucket(), syncOptions.getSourceoKey());
-        /*
-         * for (Map.Entry<String, Long[]> entry : localFiles.entrySet()) { System.out.print("\n" +
-         * entry.getKey());
-         * 
-         * } for (Map.Entry<String, Long[]> entry : S3Files.entrySet()) { System.out.print("\n" +
-         * entry.getKey()); }
-         */
         
         for (Map.Entry<String, Long[]> entry : S3Files.entrySet()) {
           if (localFiles.containsKey(entry.getKey())
@@ -80,16 +73,17 @@ public class SyncStorageToLocalCommand extends Command {
               && localFiles.get(entry.getKey())[1].equals(entry.getValue()[1])) {
             // file is up to date
           } else {// I need to sync the file by downloading it to local path
-            // Skip downloading empty folder and just download sub files of the folder if there
-            if (entry.getKey().endsWith("/")) {
+            // Skip downloading existing folders
+            if (entry.getKey().endsWith("/")
+                && (entry.getValue()[1] > - 1 || localFiles.containsKey(entry.getKey()))) {
               continue;
             }
-            
             // Skip files that are up to date
             if (localFiles.containsKey(entry.getKey())
                 && upTodate(entry.getValue()[0], localFiles.get(entry.getKey())[0])) {
               continue;
             }
+            
             SyncFile syncfile = new SyncFile();
             syncfile.set_source_bucket(syncOptions.getSourcebucket());
             syncfile.set_source_key(entry.getKey());
@@ -180,15 +174,26 @@ public class SyncStorageToLocalCommand extends Command {
     do {
       current = getAmazonS3Client().listObjects(req);
       for (S3ObjectSummary summary : current.getObjectSummaries()) {
-        GetObjectMetadataRequest metadataReq =
-            new GetObjectMetadataRequest(bucketName, summary.getKey());
-        ObjectMetadata metadata = getAmazonS3Client().getObjectMetadata(metadataReq);
-        Map<String, String> userMetadata = metadata.getUserMetadata();
-        long actualSize = userMetadata.get("s3tool-file-length") != null
-            ? Long.valueOf(userMetadata.get("s3tool-file-length")) : summary.getSize();
+        long actualSize = 0;
+        if (summary.getKey().endsWith("/")) {
+          ListObjectsRequest listRequest =
+              new ListObjectsRequest().withBucketName(bucketName).withPrefix(summary.getKey());
+          // Get a list of objects
+          ObjectListing listResponse = getAmazonS3Client().listObjects(listRequest);
+          if (! (listResponse.getObjectSummaries().size() > 1))
+            actualSize = - 1;
+        } else {
+          GetObjectMetadataRequest metadataReq =
+              new GetObjectMetadataRequest(bucketName, summary.getKey());
+          ObjectMetadata metadata = getAmazonS3Client().getObjectMetadata(metadataReq);
+          Map<String, String> userMetadata = metadata.getUserMetadata();
+          actualSize = userMetadata.get("s3tool-file-length") != null
+              ? Long.valueOf(userMetadata.get("s3tool-file-length")) : summary.getSize();
+        }
         Long[] data = {
             summary.getLastModified().getTime(), actualSize
         };
+        
         files.put(summary.getKey(), data);
       }
     } while (current.isTruncated());

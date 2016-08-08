@@ -731,7 +731,7 @@ class Main
             table[i][1] = String.valueOf(obj.getSyncAction());
             
           } else if (copy || download) {
-            String s3url = "s3//" + obj.get_source_bucket() + "/" + obj.get_source_key();
+            String s3url = client.getUri(obj.get_source_bucket(),obj.get_source_key() ).toString();
             table[i][0] = s3url;
             table[i][1] = String.valueOf(obj.getSyncAction());
             
@@ -751,8 +751,8 @@ class Main
               if (obj.get_destination_key().endsWith("/"))
                 uob.setObjectKey(obj.get_destination_key() + uploadFile.getName());
               client.upload(uob.createUploadOptions()).get();
-            } else {
-              throw new UsageException("File '" + uploadFile + "' is not a file. ");
+            } else if(uploadFile.isDirectory()) {
+              client.uploadDirectory(uob.createUploadOptions()).get();
             }
           } else if (! dryRun && runDelete && deleteRemote) {
             client.delete(obj.get_destination_bucket(), obj.get_destination_key()).get();
@@ -761,15 +761,15 @@ class Main
             File filePath = obj.getLocalFile();
             dob
                 .setBucket(obj.get_source_bucket())
-                .setOverwrite(true)
+                .setOverwrite(false)
                 .setRecursive(false)
                 .setObjectKey(obj.get_source_key())
                 .setFile(filePath.getAbsoluteFile());
-            if (obj.get_source_key().endsWith("/") || obj.get_source_key().equals("")) {
-              client.downloadDirectory(dob.createDownloadOptions());
+           if (obj.get_source_key().endsWith("/") || obj.get_source_key().equals("")) {
+              client.downloadDirectory(dob.createDownloadOptions()).get();
             } else {
               client.download(dob.createDownloadOptions()).get();
-            }
+           }
           } else if (! dryRun && runDelete && deleteLocal ) {
             File localFile = obj.getLocalFile();
             if (localFile.delete()) {

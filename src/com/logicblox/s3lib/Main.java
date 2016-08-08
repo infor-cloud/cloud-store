@@ -6,14 +6,18 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.GeneralSecurityException;
 import java.text.DateFormat;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
 import java.util.TimeZone;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.ClientConfiguration;
@@ -85,6 +89,7 @@ class Main
     _commander.addCommand("download", new DownloadCommandOptions());
     _commander.addCommand("copy", new CopyCommandOptions());
     _commander.addCommand("ls", new ListCommandOptions());
+    _commander.addCommand("du", new DiskUsageCommandOptions());
     _commander.addCommand("list-pending-uploads", new
         ListPendingUploadsCommandOptions());
     _commander.addCommand("abort-pending-uploads", new
@@ -576,6 +581,175 @@ class Main
       }
       client.shutdown();
     }
+  }
+  
+  @Parameters(commandDescription = "List objects sizes in storage service")
+  class DiskUsageCommandOptions extends S3ObjectCommandOptions {
+    
+    
+    @Parameter(names = {
+        "-d", "--max-depth"
+    }, description = "Print sizes total for directories " + "with depth N")
+    int maxDepth = 0;
+    
+    @Parameter(names = {
+        "--all"
+    }, description = "Print all files in directories " + "with depth N")
+    boolean all = false;
+    
+    @Parameter(names = {
+        "-H", "--human-readable-sizes"
+    }, description = "Print sizes in human readable form " + "(eg 1kB instead of 1234)")
+    boolean humanReadble = false;
+    
+    @Override
+    public void invoke() throws Exception {
+      CloudStoreClient client = createCloudStoreClient();
+      ListOptionsBuilder lob = new ListOptionsBuilder()
+          .setBucket(getBucket())
+          .setObjectKey(getObjectKey())
+          .setRecursive(true)
+          .setIncludeVersions(false)
+          .setExcludeDirs(false);
+      long numberOfFiles = 0;
+      long totalSize = 0;
+      int baseDepth = getObjectKey().equals("") ? 1 : getObjectKey().split("/").length + 1;
+      String du = null;
+      TreeMap<String, DirectoryNode> dirs = new TreeMap<String, DirectoryNode>();
+      try {
+        List<S3File> result = client.listObjects(lob.createListOptions()).get();
+        for (S3File obj : result) {
+          numberOfFiles += 1;
+          totalSize += obj.getSize().orElse((long)0);
+          if (maxDepth > 0) {
+            String current = obj.getKey();
+            String parent = findParent(current);
+            long depth = current.split("/").length - baseDepth + 1;
+            // add size to the parent Node if parent Node to be displayed
+            if (0 <= depth - 1 && depth - 1 <= maxDepth) {
+              DirectoryNode parentNode = dirs.get(parent);
+              if (parentNode != null) {
+                parentNode.size = parentNode.size + obj.getSize().orElse((long)0);
+              } else {
+                parentNode = new DirectoryNode(obj.getSize().orElse((long)0), parent);
+                dirs.put(parent, parentNode);
+              }
+              // handle children if they were to be displayed
+              if (depth <= maxDepth) {
+                // if child node was a directory add them to the map of directories
+                if (current.endsWith("/")) {
+                  if (! dirs.containsKey(current)) {
+                    current = current.substring(0, current.length() - 1);
+                    DirectoryNode currentNode = new DirectoryNode(obj.getSize().orElse((long)0), current);
+                    parentNode.childs.add(currentNode);
+                    dirs.put(current, currentNode);
+                  }
+                }
+                // else add file Node to children if all was enabled to be displayed
+                else if (all) {
+                  DirectoryNode currentNode = new DirectoryNode(obj.getSize().orElse((long)0), current);
+                  parentNode.childs.add(currentNode);
+                }
+              }
+            }
+            // add size of current to all great Parents who will be displayed
+            while (parent.length() > 0 && parent.split("/").length - baseDepth < maxDepth
+                && 0 < parent.split("/").length - baseDepth) {
+              parent = findParent(parent);
+              DirectoryNode parentNode = dirs.get(parent);
+              if (parentNode != null) {
+                parentNode.size = parentNode.size + obj.getSize().orElse((long)0);
+              } else {
+                parentNode = new DirectoryNode(obj.getSize().orElse((long)0), parent);
+                dirs.put(parent, parentNode);
+              }
+              depth--;
+            }
+          }
+        }
+        if (humanReadble) {
+          du = getReadableString(totalSize);
+        } else {
+          du = Long.toString(totalSize);
+        }
+        System.out.format("%-15s %d objects %s %n", du, numberOfFiles, getURI().toString());
+        if (dirs.size() > 0) {
+          printTree(dirs, humanReadble, all, getObjectKey());
+        }
+      } catch (ExecutionException exc) {
+        rethrow(exc.getCause());
+      } finally {
+        client.shutdown();
+      }
+    }
+  }
+  
+  public String findParent(String current) {
+    if (current.lastIndexOf('/') != - 1) {
+      if (current.endsWith("/")) {
+        current = current.substring(0, current.length() - 1);
+        return current.substring(0, current.lastIndexOf('/'));
+      } else {
+        return current.substring(0, current.lastIndexOf('/'));
+      }
+    } else {
+      return "";
+    }
+  }
+  
+  public void printTree( Map<String, DirectoryNode> map, boolean humanReadble,
+      boolean all, String root) {
+    ArrayList <String[]> table = new ArrayList <String[]>();
+    int[] max = new int[2];
+    int tableCounter =0;
+    for (Map.Entry<String, DirectoryNode> entry : map.entrySet()) {
+      String size = "";
+      if (! entry.getKey().equals(root)) {// skip root info
+        if (humanReadble) {
+          size = getReadableString(entry.getValue().size);
+        } else {
+          size = Long.toString(entry.getValue().size);
+        }
+        String [] row = {size, "/" + entry.getValue().fileName + "/"};
+        table.add(tableCounter,row);
+        for (int j = 0; j < 2; j++)
+          max[j] = Math.max(table.get(tableCounter)[j].length(), max[j]);
+        tableCounter ++;
+      }
+      if (all) {
+        for (DirectoryNode n : entry.getValue().childs) {
+          if (map.containsKey(n.fileName))
+            continue;
+          if (humanReadble) {
+            size = getReadableString(n.size);
+          } else {
+            size = Long.toString(n.size);
+          }
+          String [] row = {size, "/" + n.fileName};
+          table.add(tableCounter,row );
+          for (int j = 0; j < 2; j++)
+            max[j] = Math.max(table.get(tableCounter)[j].length(), max[j]);
+          tableCounter ++;
+        }
+      }
+    }
+    for (final String[] row : table) {
+      System.out.format("%-" + (max[0] + 4) + "s%-" + (max[1] + 4) + "s\n", row[0], row[1]);
+    }
+  }
+  
+  private static final String[] units = new String[] {
+      "", "K", "M", "G", "T", "P", "E"
+  };
+  
+  public String getReadableString(long bytes) {
+    for (int i = 6; i > 0; i--) {
+      double step = Math.pow(1024, i);
+      if (bytes > step) {
+        return new DecimalFormat("#,##0.##").format(bytes / step) + units[i];
+      }
+    }
+    return Long.toString(bytes);
   }
   
   @Parameters(commandDescription = "List pending uploads")

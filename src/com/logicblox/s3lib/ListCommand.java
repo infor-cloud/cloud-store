@@ -101,6 +101,7 @@ public class ListCommand extends Command {
     of.setKey(o.getKey());
     of.setETag(o.getETag());
     of.setBucketName(o.getBucketName());
+    of.setSize(o.getSize());
     return of;
   }
   
@@ -108,6 +109,7 @@ public class ListCommand extends Command {
     S3File df = new S3File();
     df.setKey(dir);
     df.setBucketName(bucket);
+    df.setSize(new Long(0));
     
     return df;
   }

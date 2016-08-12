@@ -4,86 +4,85 @@ import java.io.File;
 
 public class SyncFile {
   
-public SyncAction syncAction; 
-private String _source_key;
-private String _source_bucket;
-private String _destination_key;
-private String _destination_bucket;
-public File localFile; 
+public SyncAction _syncAction; 
+private String _sourcekey;
+private String _sourceBucket;
+private String _destinationkey;
+private String _destinationBucket;
+public File _localFile; 
   
   
 public SyncAction getSyncAction() {
-  return syncAction;
+  return _syncAction;
 }
 
 
 public void setSyncAction(SyncAction syncAction) {
-  this.syncAction = syncAction;
+  this._syncAction = syncAction;
 }
 
 public File getLocalFile() {
-  return localFile;
+  return _localFile;
 }
 
 
 public void setLocalFile(File localFile) {
-  this.localFile = localFile;
+  this._localFile = localFile;
 }
 
   
-public String get_source_key() {
-  return _source_key;
+public String getSourcekey() {
+  return _sourcekey;
 }
 
 
 
-public void set_source_key(String _source_key) {
-  this._source_key = _source_key;
+public void setSourcKey(String sourceKey) {
+  this._sourcekey = sourceKey;
 }
 
 
 
-public String get_source_bucket() {
-  return _source_bucket;
+public String getSourceBucket() {
+  return _sourceBucket;
 }
 
 
 
-public void set_source_bucket(String _source_bucket) {
-  this._source_bucket = _source_bucket;
+public void setSourceBucket(String sourceBucket) {
+  this._sourceBucket = sourceBucket;
 }
 
 
 
-public String get_destination_key() {
-  return _destination_key;
+public String getDestinationKey() {
+  return _destinationkey;
 }
 
 
 
-public void set_destination_key(String _destination_key) {
-  this._destination_key = _destination_key;
+public void setDestinationkey(String destinationkey) {
+  this._destinationkey = destinationkey;
 }
 
 
 
-public String get_destination_bucket() {
-  return _destination_bucket;
+public String getDestinationBucket() {
+  return _destinationBucket;
 }
 
 
 
-public void set_destination_bucket(String _destination_bucket) {
-  this._destination_bucket = _destination_bucket;
+public void setDestinationBucket(String destinationBucket) {
+  this._destinationBucket = destinationBucket;
 }
-
+  
   public enum SyncAction {
-    UPLOAD ,
-  DOWNLOAD ,
-  COPY,
-  DELETELOCAL,
-  DELETEREMOTE;
+    UPLOAD, DOWNLOAD, COPY, DELETE
   }
   
+  public enum UrlType {
+    Storage, Local
+  }
   
 }

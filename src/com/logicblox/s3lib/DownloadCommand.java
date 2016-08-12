@@ -91,7 +91,7 @@ public class DownloadCommand extends Command
       {
         public S3File apply(AmazonDownload download)
         {
-          DownloadCommand.this.file.setLastModified(download.getTimestamp().getTime());
+          file.setLastModified(download.getLastModified().getTime());
           S3File f = new S3File();
           f.setLocalFile(DownloadCommand.this.file);
           f.setETag(download.getETag());

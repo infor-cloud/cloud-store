@@ -71,7 +71,7 @@ class AmazonDownload
   {
     return key;
   }
-  public Date getTimestamp()
+  public Date getLastModified()
   {
     return meta.getLastModified();
   }

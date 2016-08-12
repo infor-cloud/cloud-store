@@ -275,27 +275,16 @@ public class S3Client implements CloudStoreClient {
 
     return cmd.run(options.getBucket(), options.getObjectKey());
   }
-
+  
   @Override
   public ListenableFuture<List<SyncFile>> sync(SyncCommandOptions syncOptions)
-      throws IOException, FileNotFoundException {
-    ListenableFuture<List<SyncFile>> results = null;
-    if (syncOptions.getDestinationBucket() != null && syncOptions.getSourceFilePath() != null) {
-      SyncLocalToStorageCommand cmd = new SyncLocalToStorageCommand(_s3Executor, _executor);
-      configure(cmd);
-      results = cmd.run(syncOptions);
-    }else if (syncOptions.getSourcebucket() != null && syncOptions.getDestinationFilePath()!= null) {
-      SyncStorageToLocalCommand cmd = new SyncStorageToLocalCommand(_s3Executor, _executor);
-      configure(cmd);
-      results = cmd.run(syncOptions);
-    } else if (syncOptions.getSourcebucket()!= null && syncOptions.getDestinationBucket() != null ){
-      SyncStorageToStorageCommand cmd = new SyncStorageToStorageCommand(_s3Executor, _executor);
-     configure(cmd);
-     results = cmd.run(syncOptions);
-    }
+      throws IOException, FileNotFoundException , ExecutionException , InterruptedException {
+    SyncCommand cmd = new SyncCommand(_s3Executor, _executor, this);
+    configure(cmd);
+    ListenableFuture<List<SyncFile>> results = cmd.run(syncOptions);
     return results;
   }
-
+  
   @Override
   public ListenableFuture<S3File> upload(File file, String bucket, String
       object, String key, CannedAccessControlList acl)

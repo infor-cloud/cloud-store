@@ -84,7 +84,7 @@ public interface CloudStoreClient {
    * url to storage service url
    */
     ListenableFuture<List<SyncFile>> sync (SyncCommandOptions syncOptions)
-        throws IOException;
+        throws IOException, ExecutionException , InterruptedException;
 
     /**
      * Uploads the specified {@code file} under the specified {@code bucket} and

@@ -1,6 +1,5 @@
 package com.logicblox.s3lib;
 
-
 import com.google.common.util.concurrent.Futures;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -22,7 +21,6 @@ public class DownloadDirectoryCommand extends Command
   private ListeningExecutorService _httpExecutor;
   private ListeningScheduledExecutorService _executor;
   private CloudStoreClient _client;
-
   public DownloadDirectoryCommand(
           ListeningExecutorService httpExecutor,
           ListeningScheduledExecutorService internalExecutor,
@@ -32,7 +30,6 @@ public class DownloadDirectoryCommand extends Command
     _executor = internalExecutor;
     _client = client;
   }
-
   public ListenableFuture<List<S3File>> run(
     final File file,
     final String bucket,
@@ -49,33 +46,28 @@ public class DownloadDirectoryCommand extends Command
         .setIncludeVersions(false)
         .setExcludeDirs(false);
     List<S3File> lst = _client.listObjects(lob.createListOptions()).get();
-
+    
     if (lst.size() > 1)
-      if(!file.exists())
-        if(!file.mkdirs())
+      if (! file.exists())
+        if (! file.mkdirs())
           throw new UsageException("Could not create directory '" + file + "'");
-
+    
     List<ListenableFuture<S3File>> files = new ArrayList<ListenableFuture<S3File>>();
-    for (S3File obj : lst)
-    {
+    for (S3File obj : lst) {
       String relFile = obj.getKey().substring(key.length());
-      File outputFile = new File(file.getAbsoluteFile(), relFile);
+      final File outputFile = new File(file.getAbsoluteFile(), relFile);
       File outputPath = new File(outputFile.getParent());
-      if(!outputPath.exists())
-        if(!outputPath.mkdirs())
-          throw new UsageException("Could not create directory '"+file+"'");
-        if (!obj.getKey().endsWith("/"))
-      {
-        if(outputFile.exists())
-        {
-          if(overwrite)
-          {
-            if(!outputFile.delete())
+      if (! outputPath.exists())
+        if (! outputPath.mkdirs())
+          throw new UsageException("Could not create directory '" + file + "'");
+      if (! obj.getKey().endsWith("/")) {
+        if (outputFile.exists()) {
+          if (overwrite) {
+            if (! outputFile.delete())
               throw new UsageException("Could not overwrite existing file '" + file + "'");
-          }
-          else
+          } else
             throw new UsageException(
-              "File '" + outputFile + "' already exists. Please delete or use --overwrite");
+                "File '" + outputFile + "' already exists. Please delete or use --overwrite");
         }
         DownloadOptions options = new DownloadOptionsBuilder()
             .setFile(outputFile)
@@ -85,38 +77,38 @@ public class DownloadDirectoryCommand extends Command
             .createDownloadOptions();
         ListenableFuture<S3File> result = _client.download(options);
         files.add(result);
-      }else if(outputFile.mkdir()){
+      } else {
         // create empty folder
-        final File finaloutputFile  = outputFile;
-        final String  finalbucket = bucket;
-        final String finalKey = obj.getKey();
-      ListenableFuture<S3File> future =
-          executeWithRetry(_executor, new Callable<ListenableFuture<S3File>>() {
-            public ListenableFuture<S3File> call() {
-              return getMetadata( finaloutputFile,finalbucket ,finalKey );
+        ListenableFuture<S3File> future =
+            executeWithRetry(_executor, new Callable<ListenableFuture<S3File>>() {
               
-            }
-          });
+              public ListenableFuture<S3File> call() {
+                return getMetadata(outputFile, bucket, key);
+              }
+            });
         files.add(future);
+        outputFile.mkdir();
       }
     }
     return Futures.allAsList(files);
   }
-    
-    private ListenableFuture<S3File> getMetadata(final File outputFile, final String bucket, final  String key ) {
-      return _httpExecutor.submit(new Callable<S3File>() {
-
-        public S3File call() {
-          ObjectMetadata meta = getAmazonS3Client().getObjectMetadata(bucket, key);
-          outputFile.setLastModified(meta.getLastModified().getTime());
-          S3File f = new S3File();
-          f.setLocalFile(outputFile);
-          f.setETag(meta.getETag());
-          f.setBucketName(bucket);
-          f.setKey(key);
-          return f;
-        }
-      });
-    }
-
+  
+  private ListenableFuture<S3File> getMetadata(
+      final File outputFile,
+      final String bucket,
+      final String key) {
+    return _httpExecutor.submit(new Callable<S3File>() {
+      public S3File call() {
+        ObjectMetadata meta = getAmazonS3Client().getObjectMetadata(bucket, key);
+        outputFile.setLastModified(meta.getLastModified().getTime());
+        S3File f = new S3File();
+        f.setLocalFile(outputFile);
+        f.setETag(meta.getETag());
+        f.setBucketName(bucket);
+        f.setKey(key);
+        return f;
+      }
+    });
+  }
+  
 }

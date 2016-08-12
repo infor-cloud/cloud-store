@@ -101,6 +101,7 @@ public class ListCommand extends Command {
     of.setKey(o.getKey());
     of.setETag(o.getETag());
     of.setBucketName(o.getBucketName());
+    of.setTimestamp(o.getLastModified());
     of.setSize(o.getSize());
     return of;
   }

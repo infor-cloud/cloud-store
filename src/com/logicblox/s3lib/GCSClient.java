@@ -110,7 +110,7 @@ public class GCSClient implements CloudStoreClient {
     }
     
   @Override
-  public ListenableFuture<List<SyncFile>> sync(SyncCommandOptions syncOptions) throws IOException {
+  public ListenableFuture<List<SyncFile>> sync(SyncCommandOptions syncOptions) throws IOException , ExecutionException , InterruptedException {
     return s3Client.sync(syncOptions);
   }
 

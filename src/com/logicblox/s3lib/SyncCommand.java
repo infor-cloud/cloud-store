@@ -189,18 +189,6 @@ public class SyncCommand extends Command {
     });
     
   }
-  /*
-   * public Map<String, Long[]> getLocalFiles(File root, Map<String, File> fileMap) {
-   * 
-   * Map<String, Long[]> files = new TreeMap<String, Long[]>();
-   * 
-   * getLocalFilesRecursive(root, files, fileMap, root.getName() + "/");
-   * 
-   * return files;
-   * 
-   * }
-   */
-  
   void listFiles(Path path, ArrayList<Path> files) throws IOException {
     try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
       for (Path entry : stream) {
@@ -243,7 +231,7 @@ public class SyncCommand extends Command {
         fileMap.put(key, file);
       } else if (file.isDirectory()) {
         long actualSize = - 1;
-        if (file.list().length > 0) {
+        if (file.list().length > 1) {
           actualSize = file.length();
         }
         Long[] data = {

@@ -82,14 +82,11 @@ public class UploadDirectoryCommand extends Command
     
     List<ListenableFuture<S3File>> files = new ArrayList<ListenableFuture<S3File>>();
     if (files.size() == 0) {
-      final File finalFolder = dir;
-      final String finalbucket = bucket;
-      final String finalKey = object;
       ListenableFuture<S3File> future =
           executeWithRetry(_executor, new Callable<ListenableFuture<S3File>>() {
             
             public ListenableFuture<S3File> call() {
-              return createFolder(finalFolder, finalbucket, finalKey);
+              return createFolder(dir, bucket, object);
               
             }
           });

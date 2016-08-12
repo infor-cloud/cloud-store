@@ -257,12 +257,6 @@ public class SyncCommand extends Command {
     List<S3File> listCommandResults = _client.listObjects(lob.createListOptions()).get();
     for (S3File obj : listCommandResults) {
       long actualSize = 0;
-      String fileName = obj.getKey().substring(obj.getKey().lastIndexOf("/")+1);
-      if (fileName.equals("Thumbs.db"))
-        continue;
-      if (fileName.startsWith(".")) {
-        continue;
-      }
       if (obj.getKey().endsWith("/")) {
         ListOptionsBuilder inlob = new ListOptionsBuilder()
             .setBucket(bucketName)

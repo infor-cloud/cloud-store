@@ -118,10 +118,15 @@ public class UploadDirectoryCommand extends Command
     return _httpExecutor.submit(new Callable<S3File>() {
 
       public S3File call() {
-        ObjectMetadata metadata = new ObjectMetadata();
+        final InputStream emptyContent = new InputStream() {
+          @Override
+          public int read() throws IOException {
+            return -1;
+          }
+        };
+        final ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(0L);
         metadata.setLastModified(new Date(outputFile.lastModified()));
-        metadata.setContentLength(0);
-        InputStream emptyContent = new ByteArrayInputStream(new byte[0]);
         PutObjectRequest putObjectRequest =
             new PutObjectRequest(bucket, key, emptyContent, metadata);
         getAmazonS3Client().putObject(putObjectRequest);

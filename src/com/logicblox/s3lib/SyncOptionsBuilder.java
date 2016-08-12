@@ -3,9 +3,9 @@ package com.logicblox.s3lib;
 public class SyncOptionsBuilder {
   
   private String sourcebucket;
-  private String sourceoKey;
+  private String sourceKey;
   private String destinationBucket;
-  private String destinatioKey;
+  private String destinationKey;
   private String sourceFilePath;
   private String destinationFilePath;
   
@@ -14,8 +14,8 @@ public class SyncOptionsBuilder {
     return this;
   }
   
-  public SyncOptionsBuilder setSourceKey(String sourceoKey) {
-    this.sourceoKey = sourceoKey;
+  public SyncOptionsBuilder setSourceKey(String sourceKey) {
+    this.sourceKey = sourceKey;
     return this;
   }
   
@@ -24,8 +24,8 @@ public class SyncOptionsBuilder {
     return this;
   }
   
-  public SyncOptionsBuilder setDestinationKey(String destinatioKey) {
-    this.destinatioKey = destinatioKey;
+  public SyncOptionsBuilder setDestinationKey(String destinationKey) {
+    this.destinationKey = destinationKey;
     return this;
   }
   
@@ -40,7 +40,7 @@ public class SyncOptionsBuilder {
   }
   
   public SyncCommandOptions createSyncCommandOptions() {
-    return new  SyncCommandOptions( sourcebucket, sourceoKey, destinationBucket, destinatioKey, sourceFilePath, destinationFilePath) ;
+    return new  SyncCommandOptions( sourcebucket, sourceKey, destinationBucket, destinationKey, sourceFilePath, destinationFilePath) ;
     
   }
   

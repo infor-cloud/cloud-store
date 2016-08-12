@@ -52,7 +52,7 @@ public class SyncCommand extends Command {
           }
           
           public String toString() {
-            return "Sync";
+            return "Sync Source URL with Destination URL";
             
           }
         });

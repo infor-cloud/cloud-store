@@ -14,7 +14,7 @@ public class SyncOptionsBuilder {
     return this;
   }
   
-  public SyncOptionsBuilder setSourceoKey(String sourceoKey) {
+  public SyncOptionsBuilder setSourceKey(String sourceoKey) {
     this.sourceoKey = sourceoKey;
     return this;
   }
@@ -24,7 +24,7 @@ public class SyncOptionsBuilder {
     return this;
   }
   
-  public SyncOptionsBuilder setDestinatioKey(String destinatioKey) {
+  public SyncOptionsBuilder setDestinationKey(String destinatioKey) {
     this.destinatioKey = destinatioKey;
     return this;
   }

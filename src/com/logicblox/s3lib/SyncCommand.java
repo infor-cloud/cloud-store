@@ -77,14 +77,14 @@ public class SyncCommand extends Command {
         
         if (syncOptions.getDestinationBucket() != null && syncOptions.getSourceFilePath() != null) {
           System.out.println("Syncing " + syncOptions.getSourceFilePath() + " to "
-              + syncOptions.getDestinationBucket() + "/" + syncOptions.getDestinatioKey());
+              + syncOptions.getDestinationBucket() + "/" + syncOptions.getDestinationKey());
           file = new File(syncOptions.getSourceFilePath());
           if (! file.exists()) {
             throw new FileNotFoundException(file.getPath());
           }
           sourceFiles = getLocalFiles(file, fileMap);
           destinationFiles =
-              getS3Files(syncOptions.getDestinationBucket(), syncOptions.getDestinatioKey());
+              getS3Files(syncOptions.getDestinationBucket(), syncOptions.getDestinationKey());
           sourceType = UrlType.Local.name();
           destinationType = UrlType.Storage.name();
           toStorage = true;
@@ -92,8 +92,8 @@ public class SyncCommand extends Command {
         } else if (syncOptions.getSourceBucket() != null
             && syncOptions.getDestinationFilePath() != null) {
           System.out.println("Syncing " + syncOptions.getSourceBucket()
-              + syncOptions.getSourceoKey() + " to " + syncOptions.getDestinationFilePath());
-          sourceFiles = getS3Files(syncOptions.getSourceBucket(), syncOptions.getSourceoKey());
+              + syncOptions.getSourceKey() + " to " + syncOptions.getDestinationFilePath());
+          sourceFiles = getS3Files(syncOptions.getSourceBucket(), syncOptions.getSourceKey());
           file = new File(syncOptions.getDestinationFilePath());
           if (! file.exists()) {
             throw new FileNotFoundException(file.getPath());
@@ -106,11 +106,11 @@ public class SyncCommand extends Command {
         } else if (syncOptions.getSourceBucket() != null
             && syncOptions.getDestinationBucket() != null) {
           System.out.println("Syncing " + syncOptions.getSourceBucket() + "/"
-              + syncOptions.getSourceoKey() + " to " + syncOptions.getDestinationBucket() + "/"
-              + syncOptions.getDestinatioKey());
-          sourceFiles = getS3Files(syncOptions.getSourceBucket(), syncOptions.getSourceoKey());
+              + syncOptions.getSourceKey() + " to " + syncOptions.getDestinationBucket() + "/"
+              + syncOptions.getDestinationKey());
+          sourceFiles = getS3Files(syncOptions.getSourceBucket(), syncOptions.getSourceKey());
           destinationFiles =
-              getS3Files(syncOptions.getDestinationBucket(), syncOptions.getDestinatioKey());
+              getS3Files(syncOptions.getDestinationBucket(), syncOptions.getDestinationKey());
           sourceType = UrlType.Storage.name();
           destinationType = UrlType.Storage.name();
           toStorage = true;

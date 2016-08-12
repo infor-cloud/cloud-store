@@ -661,7 +661,7 @@ class Main
           }
           SyncOptionsBuilder builder = new SyncOptionsBuilder()
               .setSourcebucket(sourceBucket)
-              .setSourceoKey(sourceKey)
+              .setSourceKey(sourceKey)
               .setDestinationFilePath(getDestinationURL());
           results = client.sync(builder.createSyncCommandOptions()).get();
         }
@@ -691,7 +691,7 @@ class Main
           SyncOptionsBuilder builder = new SyncOptionsBuilder()
               .setSourceFilePath(getSourceURL())
               .setDestinationBucket(destinationBucket)
-              .setDestinatioKey(destinationKey);
+              .setDestinationKey(destinationKey);
           results = client.sync(builder.createSyncCommandOptions()).get();
         }
       }
@@ -714,10 +714,10 @@ class Main
             throw new UsageException("Bucket not found at " + client.getUri(destinationBucket, ""));
           } else {
             SyncOptionsBuilder builder = new SyncOptionsBuilder()
-                .setSourceoKey(sourceKey)
+                .setSourceKey(sourceKey)
                 .setSourcebucket(sourceBucket)
                 .setDestinationBucket(destinationBucket)
-                .setDestinatioKey(destinationKey);
+                .setDestinationKey(destinationKey);
             results = client.sync(builder.createSyncCommandOptions()).get();
           }
         }

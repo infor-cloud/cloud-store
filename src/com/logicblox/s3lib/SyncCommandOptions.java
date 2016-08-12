@@ -29,7 +29,7 @@ public class SyncCommandOptions {
     return _sourceBucket;
   }
   
-  public String getSourceoKey() {
+  public String getSourceKey() {
     return _sourceKey;
   }
   
@@ -37,7 +37,7 @@ public class SyncCommandOptions {
     return _destinationBucket;
   }
   
-  public String getDestinatioKey() {
+  public String getDestinationKey() {
     return _destinationKey;
   }
   

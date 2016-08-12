@@ -79,16 +79,24 @@ public class DownloadDirectoryCommand extends Command
         ListenableFuture<S3File> result = _client.download(options);
         files.add(result);
       } else {
-        // create empty folder
-        ListenableFuture<S3File> future =
-            executeWithRetry(_executor, new Callable<ListenableFuture<S3File>>() {
-              
-              public ListenableFuture<S3File> call() {
-                return getMetadata(outputFile, bucket, key);
-              }
-            });
-        files.add(future);
-        outputFile.mkdir();
+        // create folder if folder is empty
+        ListOptionsBuilder objlob = new ListOptionsBuilder()
+            .setBucket(bucket)
+            .setObjectKey(obj.getKey())
+            .setRecursive(recursive)
+            .setIncludeVersions(false)
+            .setExcludeDirs(false);
+        List<S3File> objlst = _client.listObjects(objlob.createListOptions()).get();
+        if (! (objlst.size() > 1)) {
+          ListenableFuture<S3File> future =
+              executeWithRetry(_executor, new Callable<ListenableFuture<S3File>>() {
+                public ListenableFuture<S3File> call() {
+                  return getMetadata(outputFile, bucket, key);
+                }
+              });
+          files.add(future);
+          outputFile.mkdir();
+        }
       }
     }
     return Futures.allAsList(files);

@@ -161,6 +161,7 @@ class Main
           (maxConcurrentConnections);
 
       Utils.StorageService service = detectStorageService();
+
       CloudStoreClient client;
       if (service == Utils.StorageService.GCS) {
         AWSCredentialsProvider gcsXMLProvider =
@@ -180,6 +181,7 @@ class Main
         AWSCredentialsProvider credsProvider =
             Utils.getCredentialsProviderS3(credentialProvidersS3);
         AmazonS3Client s3Client = new AmazonS3Client(credsProvider, clientCfg);
+
         client = new S3ClientBuilder()
             .setInternalS3Client(s3Client)
             .setApiExecutor(uploadExecutor)
@@ -194,6 +196,7 @@ class Main
       {
         client.setEndpoint(endpoint);
       }
+
       return client;
     }
   }
@@ -220,7 +223,7 @@ class Main
 
     protected URI getURI() throws URISyntaxException
     {
-      if(urls.size() != 1 )
+      if(urls.size() != 1)
         throw new UsageException("A single storage service object URL is " +
             "required");
 

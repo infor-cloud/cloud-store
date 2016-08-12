@@ -48,8 +48,8 @@ public class DownloadDirectoryCommand extends Command
     List<S3File> lst = _client.listObjects(lob.createListOptions()).get();
     
     if (lst.size() > 1)
-      if (! file.exists())
-        if (! file.mkdirs())
+      if (!file.exists())
+        if (!file.mkdirs())
           throw new UsageException("Could not create directory '" + file + "'");
     
     List<ListenableFuture<S3File>> files = new ArrayList<ListenableFuture<S3File>>();
@@ -57,13 +57,14 @@ public class DownloadDirectoryCommand extends Command
       String relFile = obj.getKey().substring(key.length());
       final File outputFile = new File(file.getAbsoluteFile(), relFile);
       File outputPath = new File(outputFile.getParent());
-      if (! outputPath.exists())
-        if (! outputPath.mkdirs())
+      if (!outputPath.exists())
+        if (!outputPath.mkdirs())
           throw new UsageException("Could not create directory '" + file + "'");
-      if (! obj.getKey().endsWith("/")) {
+      if (!obj.getKey().endsWith("/")) {
         if (outputFile.exists()) {
-          if (overwrite) {
-            if (! outputFile.delete())
+          if (overwrite)
+          {
+            if (!outputFile.delete())
               throw new UsageException("Could not overwrite existing file '" + file + "'");
           } else
             throw new UsageException(

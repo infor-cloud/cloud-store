@@ -77,7 +77,7 @@ public class DownloadCommand extends Command
 
     if(!file.createNewFile())
       throw new IOException("File '" + file + "' already exists");
-     
+
   }
 
   public ListenableFuture<S3File> run(final String bucket, final String key, final String version)

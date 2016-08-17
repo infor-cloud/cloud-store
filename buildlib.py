@@ -6,10 +6,11 @@ import argparse
 g_args = {}
 g_libpath = {}
 
-def parse_arguments(prefix, deps = {}):
+def parse_arguments(prefix, debug = False, deps = {}):
     global g_args
     parser = argparse.ArgumentParser(description='configure build of package')
     parser.add_argument('--prefix', help='installation prefix', default=prefix)
+    parser.add_argument('--debug', help='debug mode', action='store_true')
 
     for k, v in deps.iteritems():
       if isinstance(v, basestring):

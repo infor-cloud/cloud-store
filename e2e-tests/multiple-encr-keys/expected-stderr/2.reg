@@ -1,0 +1,1 @@
+DEBUG AddEncryptedKeyCommand - userMetadata = {s3tool-key-name=test1, s3tool-file-length=4, s3tool-pubkey-hash=UENMOemr, s3tool-version=3, s3tool-symmetric-key=.{344}, s3tool-chunk-size=5242880}

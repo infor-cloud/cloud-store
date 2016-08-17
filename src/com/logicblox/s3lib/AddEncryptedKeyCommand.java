@@ -11,6 +11,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -25,12 +27,15 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+// TODO(geokollias): Maybe rename to AddEncryptionKeyCommand ?
 public class AddEncryptedKeyCommand extends Command
 {
+  private final Logger _logger;
   private CloudStoreClient _client;
   private ListeningExecutorService _httpExecutor;
   private ListeningScheduledExecutorService _executor;
@@ -50,6 +55,8 @@ public class AddEncryptedKeyCommand extends Command
     _client = client;
     _encKeyName = encKeyName;
     _encKeyProvider = encKeyProvider;
+
+    _logger = LoggerFactory.getLogger(AddEncryptedKeyCommand.class);
   }
 
   public ListenableFuture<S3File> run(final String bucket,final String key,
@@ -113,22 +120,16 @@ public class AddEncryptedKeyCommand extends Command
       {
         public ListenableFuture<S3ObjectMetadata> apply(S3ObjectMetadata metadata)
         {
-          String errPrefix = getUri(metadata.getBucket(), metadata.getKey()) +
-                             ": ";
           Map<String, String> userMetadata = metadata.getUserMetadata();
           String obj = getUri(metadata.getBucket(), metadata.getKey());
           if (!userMetadata.containsKey("s3tool-key-name"))
           {
-            throw new UsageException(errPrefix + " doesn't seem to be " +
-                                     "encrypted");
+            throw new UsageException("Object doesn't seem to be encrypted");
           }
-          // TODO(geokollias): We could relax that requirement and try
-          // private keys even if no "s3tool-public-key-hash" header is present
-          if (!userMetadata.containsKey("s3tool-public-key-hash"))
+           if (!userMetadata.containsKey("s3tool-pubkey-hash"))
           {
-            throw new UsageException(errPrefix + " public key hashes are " +
-                                     "required when object has multiple " +
-                                     "encrypted keys");
+            throw new UsageException("Public key hashes are required when " +
+                                     "object has multiple encrypted keys");
           }
           return Futures.immediateFuture(metadata);
         }
@@ -172,11 +173,13 @@ public class AddEncryptedKeyCommand extends Command
       throw new UsageException(errPrefix + "No encryption key name is " +
                                  "specified");
     }
-    Map<String, String> userMetadata = metadata.getUserMetadata();
+    Map<String, String> userMetadata = new LinkedHashMap(
+      metadata.getUserMetadata());
+    _logger.debug("userMetadata = {}", userMetadata);
     String keyNamesStr = userMetadata.get("s3tool-key-name");
     List<String> keyNames = new ArrayList<>(Arrays.asList(
       keyNamesStr.split(",")));
-    String pubKeyHashHeadersStr = userMetadata.get("s3tool-public-key-hash");
+    String pubKeyHashHeadersStr = userMetadata.get("s3tool-pubkey-hash");
     List<String> pubKeyHashHeaders = new ArrayList<>(Arrays.asList(
       pubKeyHashHeadersStr.split(",")));
     if (keyNames.contains(_encKeyName))
@@ -205,20 +208,9 @@ public class AddEncryptedKeyCommand extends Command
         continue;
       }
 
-      // TODO(geokollias): Allow this case?
-//      if (!userMetadata.containsKey("s3tool-public-key-hash"))
-//      {
-//        // Successfully-read, *not* validated key.
-//        // We allow this case for backwards-compatibility.
-//        //
-//        // Warning: It might lead to picking a wrong private key that
-//        // happens to be in a .pem file named "kn".
-//        break;
-//      }
-
       try
       {
-        PublicKey pubKey = _encKeyProvider.getPublicKey(privKey);
+        PublicKey pubKey = Command.getPublicKey(privKey);
         String pubKeyHashLocal = DatatypeConverter.printBase64Binary(
           DigestUtils.sha256(pubKey.getEncoded())).substring(0, 8);
 
@@ -308,8 +300,8 @@ public class AddEncryptedKeyCommand extends Command
     symKeys.add(encSymKeyString);
     allMeta.addUserMetadata("s3tool-symmetric-key",
       Joiner.on(",").join(symKeys));
-    String pubKeyHashesStr = userMetadata.get("s3tool-public-key-hash");
-    allMeta.addUserMetadata("s3tool-public-key-hash",
+    String pubKeyHashesStr = userMetadata.get("s3tool-pubkey-hash");
+    allMeta.addUserMetadata("s3tool-pubkey-hash",
       pubKeyHashesStr.concat("," + pubKeyHash));
 
     return metadata;

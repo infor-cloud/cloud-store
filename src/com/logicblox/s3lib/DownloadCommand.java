@@ -176,6 +176,9 @@ public class DownloadCommand extends Command
             PrivateKey privKey = null;
             if (keyNames.size() == 1)
             {
+              // We handle objects with a single encryption key separately
+              // because it's allowed not to have "s3tool-pubkey-hash" header
+              // (for backwards compatibility)
               try
               {
                 privKey = _encKeyProvider.getPrivateKey(keyName);
@@ -205,14 +208,16 @@ public class DownloadCommand extends Command
             }
             else
             {
-              if (!meta.containsKey("s3tool-public-key-hash"))
+              // Objects with multiple encryption keys must have
+              // "s3tool-pubkey-hash" header. We might want to relax this
+              // requirement.
+              if (!meta.containsKey("s3tool-pubkey-hash"))
               {
-                // TODO(geokollias): Relax this requirement?
                 throw new UsageException(errPrefix + " public key hashes are " +
                                          "required when object has multiple " +
                                          "encrypted keys");
               }
-              String pubKeyHashHeadersStr = meta.get("s3tool-public-key-hash");
+              String pubKeyHashHeadersStr = meta.get("s3tool-pubkey-hash");
               List<String> pubKeyHashHeaders = new ArrayList<>(Arrays.asList(
                 pubKeyHashHeadersStr.split(",")));
               int privKeyIndex = -1;

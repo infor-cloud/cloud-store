@@ -179,9 +179,9 @@ public class AddEncryptedKeyCommand extends Command
     String keyNamesStr = userMetadata.get("s3tool-key-name");
     List<String> keyNames = new ArrayList<>(Arrays.asList(
       keyNamesStr.split(",")));
-    String pubKeyHashHeadersStr = userMetadata.get("s3tool-pubkey-hash");
-    List<String> pubKeyHashHeaders = new ArrayList<>(Arrays.asList(
-      pubKeyHashHeadersStr.split(",")));
+    String pubKeyHashesStr = userMetadata.get("s3tool-pubkey-hash");
+    List<String> pubKeyHashes = new ArrayList<>(Arrays.asList(
+      pubKeyHashesStr.split(",")));
     if (keyNames.contains(_encKeyName))
     {
       throw new UsageException(errPrefix + _encKeyName + " already exists.");
@@ -214,7 +214,7 @@ public class AddEncryptedKeyCommand extends Command
         String pubKeyHashLocal = DatatypeConverter.printBase64Binary(
           DigestUtils.sha256(pubKey.getEncoded())).substring(0, 8);
 
-        if (pubKeyHashLocal.equals(pubKeyHashHeaders.get(privKeyIndex)))
+        if (pubKeyHashLocal.equals(pubKeyHashes.get(privKeyIndex)))
         {
           // Successfully-read, validated key.
           privKeyFound = true;
@@ -294,15 +294,18 @@ public class AddEncryptedKeyCommand extends Command
 
     // Update user-metadata
     ObjectMetadata allMeta = metadata.getAllMetadata();
+
     keyNames.add(_encKeyName);
     allMeta.addUserMetadata("s3tool-key-name",
       Joiner.on(",").join(keyNames));
+
     symKeys.add(encSymKeyString);
     allMeta.addUserMetadata("s3tool-symmetric-key",
       Joiner.on(",").join(symKeys));
-    String pubKeyHashesStr = userMetadata.get("s3tool-pubkey-hash");
+
+    pubKeyHashes.add(pubKeyHash);
     allMeta.addUserMetadata("s3tool-pubkey-hash",
-      pubKeyHashesStr.concat("," + pubKeyHash));
+      Joiner.on(",").join(pubKeyHashes));
 
     return metadata;
   }

@@ -768,7 +768,7 @@ class Main
     }
   }
 
-  @Parameters(commandDescription = "Upload a file or directory to the storage service")
+  @Parameters(commandDescription = "Add new encrypted key")
   class AddEncryptedKeyCommandOptions extends S3ObjectCommandOptions
   {
     @Parameter(names = "--key",

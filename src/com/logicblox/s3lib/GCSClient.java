@@ -305,6 +305,15 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
+    public ListenableFuture<S3File> removeEncryptedKey(String bucket,
+                                                       String object,
+                                                       String key)
+        throws IOException {
+        throw new UnsupportedOperationException("removeEncryptedKey is " +
+                                                "not supported.");
+    }
+
+  @Override
     public void shutdown() {
         s3Client.shutdown();
     }

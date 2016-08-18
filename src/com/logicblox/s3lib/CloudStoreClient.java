@@ -453,6 +453,17 @@ public interface CloudStoreClient {
     throws IOException;
 
     /**
+     * Removes an existing encrypted key.
+     *
+     * @param bucket Object's bucket
+     * @param object The object we remove the encrypted key from
+     * @param key    Name of encrypted key to remove
+     */
+    ListenableFuture<S3File> removeEncryptedKey(String bucket, String object,
+                                                String key)
+    throws IOException;
+
+    /**
      * Makes sure all pending tasks have been completed and shuts down all
      * internal machinery properly.
      */

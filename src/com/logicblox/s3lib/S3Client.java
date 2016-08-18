@@ -576,6 +576,18 @@ public class S3Client implements CloudStoreClient {
     return cmd.run(bucket, object, null);
   }
 
+  @Override
+  public ListenableFuture<S3File> removeEncryptedKey(String bucket, String object,
+                                                     String key)
+  throws IOException
+  {
+    RemoveEncryptedKeyCommand cmd = new RemoveEncryptedKeyCommand(_s3Executor,
+      _executor, this, key, _keyProvider);
+
+    configure(cmd);
+    return cmd.run(bucket, object, null);
+  }
+
   /**
    * Returns s3lib package version in this format:
    * "Version.RevNum-RevHash_BuildDatetime"

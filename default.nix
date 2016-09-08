@@ -21,8 +21,8 @@ let
   name = "s3lib-${revision}";
 
   jobs = rec {
-    source_tarball = 
-      pkgs.releaseTools.sourceTarball { 
+    source_tarball =
+      pkgs.releaseTools.sourceTarball {
         inherit name;
         src = "${s3lib}";
         buildInputs = [python jdk];
@@ -30,7 +30,7 @@ let
       };
 
      build =
-      pkgs.releaseTools.nixBuild { 
+      pkgs.releaseTools.nixBuild {
         inherit name;
         src = source_tarball;
 
@@ -43,7 +43,12 @@ let
           "--with-aws-java-sdk=${deps.aws_java_sdk}"
           "--with-gcs-java-sdk=${deps.gcs_java_sdk}"
         ];
-        buildInputs = [ python jdk];
+
+        buildInputs = [ python jdk pkgs.makeWrapper ];
+
+        postInstall = ''
+          wrapProgram $out/bin/cloud-store --prefix PATH : ${jdk.jre}/bin
+        '';
       };
 
      binary_tarball =

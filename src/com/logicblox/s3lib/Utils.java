@@ -47,7 +47,10 @@ public class Utils
 
   public static String getDefaultKeyDirectory()
   {
-    return System.getProperty("user.home") + File.separator + ".s3lib-keys";
+    String home = System.getenv("HOME");
+    if (home == null)
+      home = System.getProperty("user.home");
+    return home + File.separator + ".s3lib-keys";
   }
 
   public static long getDefaultChunkSize()

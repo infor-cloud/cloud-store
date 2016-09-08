@@ -898,7 +898,7 @@ class Main
       }
       catch(Exception exc)
       {
-        rethrow(exc.getCause());
+        rethrow(exc.getCause() != null ? exc.getCause() : exc);
       }
     }
   }

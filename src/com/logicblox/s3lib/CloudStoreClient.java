@@ -442,25 +442,25 @@ public interface CloudStoreClient {
         throws InterruptedException, ExecutionException, URISyntaxException;
 
     /**
-     * Adds a new encrypted key.
+     * Adds a new encryption key.
      *
      * @param bucket Object's bucket
-     * @param object The object we add a new encrypted key to
-     * @param key    Name of encrypted key to add
+     * @param object The object we add a new encryption key to
+     * @param key    Name of encryption key to add
      */
-    ListenableFuture<S3File> addEncryptedKey(String bucket, String object,
-                                             String key)
+    ListenableFuture<S3File> addEncryptionKey(String bucket, String object,
+                                              String key)
     throws IOException;
 
     /**
-     * Removes an existing encrypted key.
+     * Removes an existing encryption key.
      *
      * @param bucket Object's bucket
-     * @param object The object we remove the encrypted key from
-     * @param key    Name of encrypted key to remove
+     * @param object The object we remove the encryption key from
+     * @param key    Name of encryption key to remove
      */
-    ListenableFuture<S3File> removeEncryptedKey(String bucket, String object,
-                                                String key)
+    ListenableFuture<S3File> removeEncryptionKey(String bucket, String object,
+                                                 String key)
     throws IOException;
 
     /**

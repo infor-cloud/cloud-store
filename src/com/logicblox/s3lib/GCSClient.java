@@ -296,20 +296,20 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<S3File> addEncryptedKey(String bucket,
-                                                    String object,
-                                                    String key)
+    public ListenableFuture<S3File> addEncryptionKey(String bucket,
+                                                     String object,
+                                                     String key)
         throws IOException {
-        throw new UnsupportedOperationException("addEncryptedKey is " +
+        throw new UnsupportedOperationException("addEncryptionKey is " +
                                                 "not supported.");
     }
 
     @Override
-    public ListenableFuture<S3File> removeEncryptedKey(String bucket,
-                                                       String object,
-                                                       String key)
+    public ListenableFuture<S3File> removeEncryptionKey(String bucket,
+                                                        String object,
+                                                        String key)
         throws IOException {
-        throw new UnsupportedOperationException("removeEncryptedKey is " +
+        throw new UnsupportedOperationException("removeEncryptionKey is " +
                                                 "not supported.");
     }
 

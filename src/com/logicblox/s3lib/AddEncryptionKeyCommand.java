@@ -32,8 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-// TODO(geokollias): Maybe rename to AddEncryptionKeyCommand ?
-public class AddEncryptedKeyCommand extends Command
+public class AddEncryptionKeyCommand extends Command
 {
   private final Logger _logger;
   private CloudStoreClient _client;
@@ -42,7 +41,7 @@ public class AddEncryptedKeyCommand extends Command
   private String _encKeyName;
   private KeyProvider _encKeyProvider;
 
-  public AddEncryptedKeyCommand(
+  public AddEncryptionKeyCommand(
     ListeningExecutorService httpExecutor,
     ListeningScheduledExecutorService internalExecutor,
     CloudStoreClient client,
@@ -56,7 +55,7 @@ public class AddEncryptedKeyCommand extends Command
     _encKeyName = encKeyName;
     _encKeyProvider = encKeyProvider;
 
-    _logger = LoggerFactory.getLogger(AddEncryptedKeyCommand.class);
+    _logger = LoggerFactory.getLogger(AddEncryptionKeyCommand.class);
   }
 
   public ListenableFuture<S3File> run(final String bucket,final String key,
@@ -129,7 +128,7 @@ public class AddEncryptedKeyCommand extends Command
            if (!userMetadata.containsKey("s3tool-pubkey-hash"))
           {
             throw new UsageException("Public key hashes are required when " +
-                                     "object has multiple encrypted keys");
+                                     "object has multiple encryption keys");
           }
           return Futures.immediateFuture(metadata);
         }
@@ -139,7 +138,7 @@ public class AddEncryptedKeyCommand extends Command
   }
 
   /**
-   * Step 2: Add new encrypted key
+   * Step 2: Add new encryption key
    */
   private AsyncFunction<S3ObjectMetadata, S3ObjectMetadata> addNewEncryptionKeyFn()
   {
@@ -151,7 +150,7 @@ public class AddEncryptedKeyCommand extends Command
         {
           public S3ObjectMetadata call()
           {
-            return addNewEncryptedKey(metadata);
+            return addNewEncryptionKey(metadata);
           }
         };
 
@@ -160,7 +159,7 @@ public class AddEncryptedKeyCommand extends Command
     };
   }
 
-  private S3ObjectMetadata addNewEncryptedKey(S3ObjectMetadata metadata)
+  private S3ObjectMetadata addNewEncryptionKey(S3ObjectMetadata metadata)
   {
     String errPrefix = getUri(metadata.getBucket(), metadata.getKey()) + ": ";
     if (_encKeyProvider == null)

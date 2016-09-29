@@ -565,11 +565,11 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> addEncryptedKey(String bucket, String object,
-                                                  String key)
+  public ListenableFuture<S3File> addEncryptionKey(String bucket, String object,
+                                                   String key)
   throws IOException
   {
-    AddEncryptedKeyCommand cmd = new AddEncryptedKeyCommand(_s3Executor,
+    AddEncryptionKeyCommand cmd = new AddEncryptionKeyCommand(_s3Executor,
       _executor, this, key, _keyProvider);
 
     configure(cmd);
@@ -577,11 +577,11 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> removeEncryptedKey(String bucket, String object,
-                                                     String key)
+  public ListenableFuture<S3File> removeEncryptionKey(String bucket, String object,
+                                                      String key)
   throws IOException
   {
-    RemoveEncryptedKeyCommand cmd = new RemoveEncryptedKeyCommand(_s3Executor,
+    RemoveEncryptionKeyCommand cmd = new RemoveEncryptionKeyCommand(_s3Executor,
       _executor, this, key, _keyProvider);
 
     configure(cmd);

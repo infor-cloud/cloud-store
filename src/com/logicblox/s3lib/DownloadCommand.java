@@ -215,7 +215,7 @@ public class DownloadCommand extends Command
               {
                 throw new UsageException(errPrefix + " public key hashes are " +
                                          "required when object has multiple " +
-                                         "encrypted keys");
+                                         "encryption keys");
               }
               String pubKeyHashHeadersStr = meta.get("s3tool-pubkey-hash");
               List<String> pubKeyHashHeaders = new ArrayList<>(Arrays.asList(

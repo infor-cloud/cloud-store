@@ -89,10 +89,10 @@ class Main
         AbortPendingUploadsCommandOptions());
     _commander.addCommand("exists", new ExistsCommandOptions());
     _commander.addCommand("list-buckets", new ListBucketsCommandOptions());
-    _commander.addCommand("add-encrypted-key", new
-      AddEncryptedKeyCommandOptions());
-    _commander.addCommand("remove-encrypted-key", new
-      RemoveEncryptedKeyCommandOptions());
+    _commander.addCommand("add-encryption-key", new
+      AddEncryptionKeyCommandOptions());
+    _commander.addCommand("remove-encryption-key", new
+      RemoveEncryptionKeyCommandOptions());
     _commander.addCommand("keygen", new KeyGenCommandOptions());
     _commander.addCommand("version", new VersionCommand());
     _commander.addCommand("help", new HelpCommand());
@@ -770,11 +770,11 @@ class Main
     }
   }
 
-  @Parameters(commandDescription = "Add new encrypted key")
-  class AddEncryptedKeyCommandOptions extends S3ObjectCommandOptions
+  @Parameters(commandDescription = "Add new encryption key")
+  class AddEncryptionKeyCommandOptions extends S3ObjectCommandOptions
   {
     @Parameter(names = "--key",
-      description = "The name of the encrypted key to add",
+      description = "The name of the encryption key to add",
       required = true)
     String encKeyName = null;
 
@@ -793,7 +793,7 @@ class Main
           {
             throw new UsageException("Object not found at " + getURI());
           }
-          client.addEncryptedKey(getBucket(), getObjectKey(), encKeyName).get();
+          client.addEncryptionKey(getBucket(), getObjectKey(), encKeyName).get();
         }
       }
       catch(ExecutionException exc)
@@ -807,11 +807,11 @@ class Main
     }
   }
 
-  @Parameters(commandDescription = "Remove existing encrypted key")
-  class RemoveEncryptedKeyCommandOptions extends S3ObjectCommandOptions
+  @Parameters(commandDescription = "Remove existing encryption key")
+  class RemoveEncryptionKeyCommandOptions extends S3ObjectCommandOptions
   {
     @Parameter(names = "--key",
-      description = "The name of the encrypted key to remove",
+      description = "The name of the encryption key to remove",
       required = true)
     String encKeyName = null;
 
@@ -830,7 +830,7 @@ class Main
           {
             throw new UsageException("Object not found at " + getURI());
           }
-          client.removeEncryptedKey(getBucket(), getObjectKey(),
+          client.removeEncryptionKey(getBucket(), getObjectKey(),
             encKeyName).get();
         }
       }

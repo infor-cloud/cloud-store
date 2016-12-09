@@ -37,7 +37,7 @@ deps = [
     '$(aws_java_sdk)/lib/java/jackson-annotations-2.5.3.jar',
     '$(aws_java_sdk)/lib/java/jackson-core-2.5.3.jar',
     '$(aws_java_sdk)/lib/java/jackson-databind-2.5.3.jar',
-    '$(aws_java_sdk)/lib/java/aws-java-sdk-1.10.20.jar',
+    '$(aws_java_sdk)/lib/java/aws-java-sdk-1.10.32.jar',
     '$(gcs_java_sdk)/lib/java/google-api-services-storage-v1-rev26-1.19.1.jar',
     '$(gcs_java_sdk)/lib/java/google-api-client-1.19.1.jar',
     '$(gcs_java_sdk)/lib/java/google-oauth-client-1.19.0.jar',

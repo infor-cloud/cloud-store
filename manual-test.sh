@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 
 set -e
-# set -x
+set -x
 set -u
 
 file=$1
@@ -19,7 +19,7 @@ function exec_no_encryption()
   base=$(basename $f)
 
   echo "cloud-store upload ${dir_uri%%/}/$base -i $f"
-  cloud-store upload ${dir_uri%%/}/$base -i $f
+  cloud-store upload ${dir_uri%%/}/$base -i $f --endpoint http://localhost:9000/
   rm -f $base.tmp
   echo "cloud-store download ${dir_uri%%/}/$base -o $base.tmp"
   cloud-store download ${dir_uri%%/}/$base -o $base.tmp

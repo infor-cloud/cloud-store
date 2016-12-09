@@ -41,7 +41,7 @@ Download:
 
     $ cloud-store download s3://bucket/AS400.jpg -o AS400-2.jpg
 
-Before you can run the `cloud-store` command, you need to set the environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_KEY` to the corresponding values from your AWS credentials.
+Before you can run the `cloud-store` command, you need to set the environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to the corresponding values from your AWS credentials.
 
 Authors
 ---------------

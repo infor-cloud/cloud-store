@@ -573,7 +573,7 @@ class Main
           }
         } else {
           for (S3File obj : listCommandResults) {
-            System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
+            System.out.println(client.getUri(obj.getBucketName(), "") + obj.getKey());
           }
         }
       } catch (ExecutionException exc) {

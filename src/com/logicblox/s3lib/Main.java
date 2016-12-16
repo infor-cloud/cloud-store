@@ -122,7 +122,7 @@ class Main
   {
     @Parameter(names = {"--max-concurrent-connections"}, description = "The " +
         "maximum number of concurrent HTTP connections to the storage service")
-    int maxConcurrentConnections = 10;
+    int maxConcurrentConnections = Utils.getDefaultMaxConcurrentConnections();
 
     @Parameter(names = "--endpoint", description = "Endpoint")
     String endpoint = null;
@@ -134,7 +134,7 @@ class Main
     boolean _stubborn = false;
 
     @Parameter(names = "--retry", description = "Number of retries on failures")
-    int _retryCount = 10;
+    int _retryCount = Utils.getDefaultRetryCount();
 
     @Parameter(names = {"--chunk-size"}, description = "The size of each chunk read from the file")
     long chunkSize = Utils.getDefaultChunkSize();
@@ -150,52 +150,25 @@ class Main
 
     protected Utils.StorageService detectStorageService() throws URISyntaxException
     {
-      return Utils.detectStorageService(endpoint, null);
+      return Utils.detectStorageService(endpoint, getScheme());
+    }
+
+    protected URI getURI() throws URISyntaxException
+    {
+      return null;
+    }
+
+    protected String getScheme() throws URISyntaxException
+    {
+      return null;
     }
 
     protected CloudStoreClient createCloudStoreClient()
-        throws URISyntaxException, IOException, GeneralSecurityException {
-      ListeningExecutorService uploadExecutor = Utils.getHttpExecutor
-          (maxConcurrentConnections);
-
-      Utils.StorageService service = detectStorageService();
-
-      CloudStoreClient client;
-      if (service == Utils.StorageService.GCS) {
-        AWSCredentialsProvider gcsXMLProvider =
-            Utils.getGCSXMLEnvironmentVariableCredentialsProvider();
-        AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(gcsXMLProvider);
-
-        client = new GCSClientBuilder()
-            .setInternalS3Client(s3Client)
-            .setApiExecutor(uploadExecutor)
-            .setChunkSize(chunkSize)
-            .setKeyProvider(Utils.getKeyProvider(encKeyDirectory))
-            .createGCSClient();
-      }
-      else {
-        ClientConfiguration clientCfg = new ClientConfiguration();
-        clientCfg = Utils.setProxy(clientCfg);
-        AWSCredentialsProvider credsProvider =
-            Utils.getCredentialsProviderS3(credentialProvidersS3);
-        AmazonS3Client s3Client = new AmazonS3Client(credsProvider, clientCfg);
-
-        client = new S3ClientBuilder()
-            .setInternalS3Client(s3Client)
-            .setApiExecutor(uploadExecutor)
-            .setChunkSize(chunkSize)
-            .setKeyProvider(Utils.getKeyProvider(encKeyDirectory))
-            .createS3Client();
-      }
-
-      client.setRetryClientException(_stubborn);
-      client.setRetryCount(_retryCount);
-      if(endpoint != null)
-      {
-        client.setEndpoint(endpoint);
-      }
-
-      return client;
+        throws URISyntaxException, IOException, GeneralSecurityException
+    {
+      return Utils.createCloudStoreClient(
+        getScheme(), endpoint, maxConcurrentConnections, chunkSize, 
+        encKeyDirectory, credentialProvidersS3, _stubborn, _retryCount);
     }
   }
 
@@ -238,10 +211,11 @@ class Main
       return Utils.getObjectKey(getURI());
     }
 
-    protected Utils.StorageService detectStorageService() throws URISyntaxException
+    protected String getScheme() throws URISyntaxException
     {
-      return Utils.detectStorageService(endpoint, getURI());
+      return getURI().getScheme();
     }
+
   }
 
   /**
@@ -275,6 +249,11 @@ class Main
       return Utils.getBucket(getSourceURI());
     }
 
+    protected String getScheme() throws URISyntaxException
+    {
+      return getSourceURI().getScheme();
+    }
+
     protected String getSourceObjectKey() throws URISyntaxException
     {
       return Utils.getObjectKey(getSourceURI());
@@ -297,13 +276,34 @@ class Main
 
     protected Utils.StorageService detectStorageService() throws URISyntaxException
     {
-      return Utils.detectStorageService(endpoint, getSourceURI());
+      return Utils.detectStorageService(endpoint, getScheme());
     }
   }
 
   @Parameters(commandDescription = "List storage service buckets")
   class ListBucketsCommandOptions extends S3CommandOptions
   {
+    @Parameter(description = "service", required = false)
+    List<String> services;
+
+    protected String getScheme()
+    {
+      if(null == services)
+      {
+        if(null == endpoint)
+          throw new UsageException("Either 's3' or 'gs' service is required");
+        return null;
+      }
+
+      if(services.size() != 1)
+        throw new UsageException("Only one service name may be specified");
+
+      String service = services.get(0);
+      if(!service.equals("s3") && !service.equals("gs"))
+        throw new UsageException("Either 's3' or 'gs' service is required");
+      return service;
+    }
+
     public void invoke() throws Exception
     {
       CloudStoreClient client = createCloudStoreClient();

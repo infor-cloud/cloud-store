@@ -34,8 +34,35 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
+
+
 public class Utils
 {
+
+  static void initLogging()
+  {
+    Logger root = Logger.getRootLogger();
+    root.setLevel(Level.INFO);
+
+    ConsoleAppender console = new ConsoleAppender();
+    String PATTERN = "%d [%p|%c|%C{1}] %m%n";
+    console.setLayout(new PatternLayout(PATTERN));
+    console.setThreshold(Level.ERROR);
+    console.activateOptions();
+
+    Logger s3libLogger = Logger.getLogger("com.logicblox.s3lib");
+    s3libLogger.addAppender(console);
+    Logger awsLogger = Logger.getLogger("com.amazonaws");
+    awsLogger.addAppender(console);
+    Logger apacheLogger = Logger.getLogger("org.apache.http");
+    apacheLogger.addAppender(console);
+  }
+
+  
   public static DateFormat getDefaultDateFormat()
   {
     DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");

@@ -4,10 +4,12 @@ from buildlib import *
 from time import gmtime, strftime
 
 depdir = os.getenv('LB_UNIVERSE_DEPS', '/opt/logicblox/lb-universe-deps')
+home_dir = os.getenv('LOGICBLOX_HOME')
 
 parse_arguments(
   prefix='/opt/logicblox/s3lib',
   deps = { 
+           'logicblox' : home_dir,
            'guava' : depdir,
            'jcommander' : depdir,
            'commons-io' : depdir,
@@ -62,6 +64,17 @@ jar(
                                    ('Implementation-Title', "com.logicblox.s3lib"),
                                    ('Implementation-Version', impl_version),
                                    ('Implementation-Vendor', "LogicBlox, Inc.")]},
+   java_version = "1.7")
+
+
+jar(
+   name = 's3lib-test',
+   srcdirs = ['test/src'],
+   classpath = deps + [
+     '$(build)/jars/s3lib-$(version).jar', 
+     '$(logicblox)/share/java/junit-4.8.2.jar'],
+   manifest = {'add_classpath': True,
+               'main_class': "com.logicblox.s3lib.TestRunner"},
    java_version = "1.7")
 
 

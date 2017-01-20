@@ -361,4 +361,23 @@ public class GCSClient implements CloudStoreClient {
                 progressListenerFactory);
         }
     }
+
+    @Override
+    public boolean hasBucket(String bucketName)
+    {
+      throw new RuntimeException("FIXME - not yet implemented");
+    }
+
+    @Override
+    public void createBucket(String bucketName)
+    {
+      throw new RuntimeException("FIXME - not yet implemented");
+    }
+
+    @Override
+    public void destroyBucket(String bucketName)
+    {
+      throw new RuntimeException("FIXME - not yet implemented");
+    }
+
 }

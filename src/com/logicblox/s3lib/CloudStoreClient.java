@@ -449,4 +449,10 @@ public interface CloudStoreClient {
      * internal machinery properly.
      */
     void shutdown();
+
+
+    boolean hasBucket(String bucketName);
+    void createBucket(String bucketName);
+    void destroyBucket(String bucketName);
+
 }

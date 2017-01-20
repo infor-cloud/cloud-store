@@ -33,10 +33,12 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 
+/*
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
+*/
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -49,7 +51,7 @@ class Main
 
   public static void main(String[] args)
   {
-    initLogging();
+    Utils.initLogging();
 
     try
     {
@@ -63,6 +65,7 @@ class Main
     }
   }
 
+/*
   private static void initLogging() {
     Logger root = Logger.getRootLogger();
     root.setLevel(Level.INFO);
@@ -80,6 +83,7 @@ class Main
     Logger apacheLogger = Logger.getLogger("org.apache.http");
     apacheLogger.addAppender(console);
   }
+*/
 
   public Main()
   {

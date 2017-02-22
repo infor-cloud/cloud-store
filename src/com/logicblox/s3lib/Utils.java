@@ -55,6 +55,20 @@ public class Utils
     return 5 * 1024 * 1024;
   }
 
+  public static long getDefaultChunkSize(long fileSize)
+  {
+    long chunkSize = getDefaultChunkSize();
+    long partsNum = fileSize / chunkSize;
+    // S3 requires the number of parts to be less that 10K. GCS might not have
+    // that requirement (whenever we happen to use its native API call) but,
+    // still, it seems like a good idea to avoid huge number of parts.
+    while (partsNum > 10000) {
+      chunkSize *= 1.5;
+      partsNum = fileSize / chunkSize;
+    }
+    return chunkSize;
+  }
+
   public static URI getURI(String s) throws URISyntaxException
   {
     URI uri = new URI(s);

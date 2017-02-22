@@ -35,6 +35,7 @@ public class UploadDirectoryCommand extends Command
   public ListenableFuture<List<S3File>> run(final File dir,
                                             final String bucket,
                                             final String object,
+                                            final Long chunkSize,
                                             final String encKey,
                                             final String acl,
                                             OverallProgressListenerFactory
@@ -85,6 +86,7 @@ public class UploadDirectoryCommand extends Command
           .setFile(file)
           .setBucket(bucket)
           .setObjectKey(key)
+          .setChunkSize(chunkSize)
           .setEncKey(encKey)
           .setAcl(acl)
           .setOverallProgressListenerFactory(progressListenerFactory)

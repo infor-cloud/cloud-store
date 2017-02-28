@@ -107,7 +107,7 @@ public class S3Client implements CloudStoreClient {
    *                    during upload/download.
    * @see S3Client#S3Client(AmazonS3Client)
    * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService,
-   * ListeningScheduledExecutorService, long, KeyProvider)
+   * ListeningScheduledExecutorService, KeyProvider)
    */
   public S3Client(AmazonS3Client s3Client,
                   KeyProvider keyProvider)
@@ -136,7 +136,7 @@ public class S3Client implements CloudStoreClient {
    *                    during upload/download.
    * @see S3Client#S3Client(AmazonS3Client)
    * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService,
-   * ListeningScheduledExecutorService, long, KeyProvider)
+   * ListeningScheduledExecutorService, KeyProvider)
    */
   public S3Client(
     AWSCredentialsProvider credentials,

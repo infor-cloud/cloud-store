@@ -13,7 +13,7 @@ import java.io.File;
  * to compute a chunk size so that the number of the uploaded parts be less
  * than 10000 (current S3 limit). If the {@code chunkSize} is explicit (i.e.
  * not {@code null}, then no check will take place and any possible failure due
- * to >10000 parts will happen later.
+ * to more than 10000 parts will happen later.
  * <p>
  * The specified {@code acl} is applied to the uploaded file.
  * <p>

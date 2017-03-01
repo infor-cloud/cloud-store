@@ -46,9 +46,6 @@ public class S3Client implements CloudStoreClient {
    */
   ListeningScheduledExecutorService _executor;
 
-  /** The size of an upload/download chunk (part) in bytes. */
-  long _chunkSize;
-
   /** The AWS credentials to use when making requests to the service. */
   AWSCredentialsProvider _credentials;
 
@@ -89,14 +86,13 @@ public class S3Client implements CloudStoreClient {
    * @param s3Client Low-level AWS S3 client responsible for authentication,
    *                 proxying and HTTP requests
    * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService,
-   * ListeningScheduledExecutorService, long, KeyProvider)
+   * ListeningScheduledExecutorService, KeyProvider)
    */
   public S3Client(AmazonS3Client s3Client)
   {
     this(s3Client,
         Utils.getHttpExecutor(10),
         Utils.getInternalExecutor(50),
-        Utils.getDefaultChunkSize(),
         Utils.getKeyProvider(Utils.getDefaultKeyDirectory()));
     this.setRetryCount(10);
   }
@@ -111,7 +107,7 @@ public class S3Client implements CloudStoreClient {
    *                    during upload/download.
    * @see S3Client#S3Client(AmazonS3Client)
    * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService,
-   * ListeningScheduledExecutorService, long, KeyProvider)
+   * ListeningScheduledExecutorService, KeyProvider)
    */
   public S3Client(AmazonS3Client s3Client,
                   KeyProvider keyProvider)
@@ -119,7 +115,6 @@ public class S3Client implements CloudStoreClient {
     this(s3Client,
         Utils.getHttpExecutor(10),
         Utils.getInternalExecutor(50),
-        Utils.getDefaultChunkSize(),
         keyProvider);
     this.setRetryCount(10);
   }
@@ -137,23 +132,20 @@ public class S3Client implements CloudStoreClient {
    * @param executor    Responsible for executing internal s3lib tasks
    *                    asynchrounsly. Such tasks include file I/O, file
    *                    encryption, file splitting and error handling.
-   * @param chunkSize   The size of an upload/download chunk (part) in bytes.
    * @param keyProvider The provider of key-pairs used to encrypt/decrypt files
    *                    during upload/download.
    * @see S3Client#S3Client(AmazonS3Client)
    * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService,
-   * ListeningScheduledExecutorService, long, KeyProvider)
+   * ListeningScheduledExecutorService, KeyProvider)
    */
   public S3Client(
     AWSCredentialsProvider credentials,
     ListeningExecutorService s3Executor,
     ListeningScheduledExecutorService executor,
-    long chunkSize,
     KeyProvider keyProvider)
   {
     _executor = executor;
     _s3Executor = s3Executor;
-    _chunkSize = chunkSize;
     _keyProvider = keyProvider;
     _credentials = credentials;
     if(_credentials != null)
@@ -175,7 +167,6 @@ public class S3Client implements CloudStoreClient {
    * @param executor    Responsible for executing internal s3lib tasks
    *                    asynchrounsly. Such tasks include file I/O, file
    *                    encryption, file splitting and error handling.
-   * @param chunkSize   The size of an upload/download chunk (part) in bytes.
    * @param keyProvider The provider of key-pairs used to encrypt/decrypt files
    *                    during upload/download.
    * @see S3Client#S3Client(AmazonS3Client)
@@ -184,12 +175,10 @@ public class S3Client implements CloudStoreClient {
       AmazonS3Client s3Client,
       ListeningExecutorService s3Executor,
       ListeningScheduledExecutorService executor,
-      long chunkSize,
       KeyProvider keyProvider)
   {
     _executor = executor;
     _s3Executor = s3Executor;
-    _chunkSize = chunkSize;
     _keyProvider = keyProvider;
     _client = s3Client;
   }
@@ -262,13 +251,14 @@ public class S3Client implements CloudStoreClient {
       throws IOException
   {
     File file = options.getFile();
+    long chunkSize = options.getChunkSize();
     String acl = options.getAcl().or("bucket-owner-full-control");
     String encKey = options.getEncKey().orNull();
     Optional<OverallProgressListenerFactory> progressListenerFactory = options
         .getOverallProgressListenerFactory();
 
     UploadCommand cmd =
-        new UploadCommand(_s3Executor, _executor, file, _chunkSize, encKey,
+        new UploadCommand(_s3Executor, _executor, file, chunkSize, encKey,
             _keyProvider, acl, progressListenerFactory);
     configure(cmd);
 
@@ -337,6 +327,7 @@ public class S3Client implements CloudStoreClient {
     File directory = options.getFile();
     String bucket = options.getBucket();
     String object = options.getObjectKey();
+    long chunkSize = options.getChunkSize();
     String encKey = options.getEncKey().orNull();
     String acl = options.getAcl().or("bucket-owner-full-control");
     OverallProgressListenerFactory progressListenerFactory = options
@@ -345,7 +336,8 @@ public class S3Client implements CloudStoreClient {
     UploadDirectoryCommand cmd = new UploadDirectoryCommand(_s3Executor,
         _executor, this);
     configure(cmd);
-    return cmd.run(directory, bucket, object, encKey, acl, progressListenerFactory);
+    return cmd.run(directory, bucket, object, chunkSize,  encKey, acl,
+      progressListenerFactory);
   }
 
   @Override

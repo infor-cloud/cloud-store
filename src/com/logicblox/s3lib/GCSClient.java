@@ -43,7 +43,6 @@ public class GCSClient implements CloudStoreClient {
      * @param internalS3Client  Low-level S3-client
      * @param apiExecutor       Executor for executing GCS API calls
      * @param internalExecutor  Executor for internally initiating uploads
-     * @param chunkSize         Size of chunks. Currently, it is not used
      * @param keyProvider       Provider of encryption keys
      */
     GCSClient(
@@ -51,10 +50,9 @@ public class GCSClient implements CloudStoreClient {
         AmazonS3Client internalS3Client,
         ListeningExecutorService apiExecutor,
         ListeningScheduledExecutorService internalExecutor,
-        long chunkSize,
         KeyProvider keyProvider) {
         s3Client = new S3ClientDelegatee(internalS3Client, apiExecutor,
-            internalExecutor, chunkSize, keyProvider);
+            internalExecutor, keyProvider);
         gcsClient = internalGCSClient;
         setEndpoint(GCS_XML_API_ENDPOINT);
     }
@@ -305,10 +303,8 @@ public class GCSClient implements CloudStoreClient {
             AmazonS3Client internalS3Client,
             ListeningExecutorService apiExecutor,
             ListeningScheduledExecutorService internalExecutor,
-            long chunkSize,
             KeyProvider keyProvider) {
-            super(internalS3Client, apiExecutor, internalExecutor, chunkSize,
-                keyProvider);
+            super(internalS3Client, apiExecutor, internalExecutor, keyProvider);
         }
 
         void configure(Command cmd) {
@@ -327,6 +323,7 @@ public class GCSClient implements CloudStoreClient {
         public ListenableFuture<S3File> upload(UploadOptions options)
             throws IOException {
             File file = options.getFile();
+            long chunkSize = options.getChunkSize();
             String acl = options.getAcl().or("projectPrivate");
             String encKey = options.getEncKey().orNull();
             Optional<OverallProgressListenerFactory> progressListenerFactory =
@@ -334,7 +331,7 @@ public class GCSClient implements CloudStoreClient {
 
             GCSUploadCommand cmd =
                 new GCSUploadCommand(_s3Executor, _executor, file,
-                    _chunkSize, encKey, _keyProvider, acl, progressListenerFactory);
+                    chunkSize, encKey, _keyProvider, acl, progressListenerFactory);
             s3Client.configure(cmd);
             return cmd.run(options.getBucket(), options.getObjectKey());
         }
@@ -349,6 +346,7 @@ public class GCSClient implements CloudStoreClient {
             File directory = options.getFile();
             String bucket = options.getBucket();
             String object = options.getObjectKey();
+            long chunkSize = options.getChunkSize();
             String encKey = options.getEncKey().orNull();
             String acl = options.getAcl().or("projectPrivate");
             OverallProgressListenerFactory progressListenerFactory = options
@@ -357,7 +355,7 @@ public class GCSClient implements CloudStoreClient {
             UploadDirectoryCommand cmd = new UploadDirectoryCommand(_s3Executor,
                 _executor, this);
             s3Client.configure(cmd);
-            return cmd.run(directory, bucket, object, encKey, acl,
+            return cmd.run(directory, bucket, object, chunkSize, encKey, acl,
                 progressListenerFactory);
         }
     }

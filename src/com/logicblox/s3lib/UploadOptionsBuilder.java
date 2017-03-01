@@ -16,6 +16,7 @@ public class UploadOptionsBuilder {
     private File file;
     private String bucket;
     private String objectKey;
+    private long chunkSize;
     private Optional<String> encKey = Optional.absent();
     private Optional<String> acl = Optional.absent();
     private Optional<OverallProgressListenerFactory>
@@ -33,6 +34,11 @@ public class UploadOptionsBuilder {
 
     public UploadOptionsBuilder setObjectKey(String objectKey) {
         this.objectKey = objectKey;
+        return this;
+    }
+
+    public UploadOptionsBuilder setChunkSize(long chunkSize) {
+        this.chunkSize = chunkSize;
         return this;
     }
 
@@ -59,7 +65,7 @@ public class UploadOptionsBuilder {
     }
 
     public UploadOptions createUploadOptions() {
-        return new UploadOptions(file, bucket, objectKey, encKey, acl,
-            overallProgressListenerFactory);
+        return new UploadOptions(file, bucket, objectKey, chunkSize, encKey,
+            acl, overallProgressListenerFactory);
     }
 }

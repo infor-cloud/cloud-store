@@ -35,7 +35,6 @@ public class GCSClientBuilder {
     private AmazonS3Client s3Client;
     private ListeningExecutorService apiExecutor;
     private ListeningScheduledExecutorService internalExecutor;
-    private long chunkSize = Utils.getDefaultChunkSize();
     private KeyProvider keyProvider;
 
     private final String APPLICATION_NAME = "LogicBlox-cloud-store/1.0";
@@ -80,11 +79,6 @@ public class GCSClientBuilder {
     public GCSClientBuilder setInternalExecutor
         (ListeningScheduledExecutorService internalExecutor) {
         this.internalExecutor = internalExecutor;
-        return this;
-    }
-
-    public GCSClientBuilder setChunkSize(long chunkSize) {
-        this.chunkSize = chunkSize;
         return this;
     }
 
@@ -253,6 +247,6 @@ public class GCSClientBuilder {
             setKeyProvider(Utils.getKeyProvider(Utils.getDefaultKeyDirectory()));
         }
         return new GCSClient(gcsClient, s3Client, apiExecutor,
-            internalExecutor, chunkSize, keyProvider);
+            internalExecutor, keyProvider);
     }
 }

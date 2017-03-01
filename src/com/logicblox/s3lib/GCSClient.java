@@ -346,7 +346,7 @@ public class GCSClient implements CloudStoreClient {
             File directory = options.getFile();
             String bucket = options.getBucket();
             String object = options.getObjectKey();
-            Long chunkSize = options.getChunkSize();
+            long chunkSize = options.getChunkSize();
             String encKey = options.getEncKey().orNull();
             String acl = options.getAcl().or("projectPrivate");
             OverallProgressListenerFactory progressListenerFactory = options

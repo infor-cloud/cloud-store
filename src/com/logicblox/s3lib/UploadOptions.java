@@ -31,7 +31,7 @@ public class UploadOptions {
     private File file;
     private String bucket;
     private String objectKey;
-    private Long chunkSize;
+    private long chunkSize;
     private Optional<String> encKey;
     private Optional<String> acl;
     private Optional<OverallProgressListenerFactory>
@@ -40,7 +40,7 @@ public class UploadOptions {
     UploadOptions(File file,
                   String bucket,
                   String objectKey,
-                  Long chunkSize,
+                  long chunkSize,
                   Optional<String> encKey,
                   Optional<String> acl,
                   Optional<OverallProgressListenerFactory>
@@ -66,12 +66,11 @@ public class UploadOptions {
         return objectKey;
     }
 
-    // TODO: Return Optional<Long>
-    public Long getChunkSize() {
+    public long getChunkSize() {
         if (file.isDirectory()) {
-            return null;
+            return -1;
         }
-        if (chunkSize == null) {
+        if (chunkSize == -1) {
             return Utils.getDefaultChunkSize(file.length());
         }
         return chunkSize;

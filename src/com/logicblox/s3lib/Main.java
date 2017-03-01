@@ -469,7 +469,7 @@ class Main
     @Parameter(names = {"--chunk-size"},
       description = "The size of each chunk read from the file. Determined " +
                     "automatically if not set.")
-    Long chunkSize = null;
+    long chunkSize = -1;
 
     public void invoke() throws Exception
     {

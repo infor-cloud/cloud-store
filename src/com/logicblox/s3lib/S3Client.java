@@ -327,7 +327,7 @@ public class S3Client implements CloudStoreClient {
     File directory = options.getFile();
     String bucket = options.getBucket();
     String object = options.getObjectKey();
-    Long chunkSize = options.getChunkSize();
+    long chunkSize = options.getChunkSize();
     String encKey = options.getEncKey().orNull();
     String acl = options.getAcl().or("bucket-owner-full-control");
     OverallProgressListenerFactory progressListenerFactory = options

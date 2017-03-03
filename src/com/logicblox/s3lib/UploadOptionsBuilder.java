@@ -16,7 +16,7 @@ public class UploadOptionsBuilder {
     private File file;
     private String bucket;
     private String objectKey;
-    private long chunkSize;
+    private long chunkSize = -1;
     private Optional<String> encKey = Optional.absent();
     private Optional<String> acl = Optional.absent();
     private Optional<OverallProgressListenerFactory>

@@ -31,7 +31,7 @@ public class UploadOptions {
     private File file;
     private String bucket;
     private String objectKey;
-    private long chunkSize;
+    private long chunkSize = -1;
     private Optional<String> encKey;
     private Optional<String> acl;
     private Optional<OverallProgressListenerFactory>

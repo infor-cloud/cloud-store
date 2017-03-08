@@ -1,11 +1,13 @@
 package com.logicblox.s3lib;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
 import java.net.URL;
+import java.security.GeneralSecurityException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -28,6 +30,7 @@ import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.auth.SystemPropertiesCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -94,6 +97,16 @@ public class Utils
       partsNum = fileSize / chunkSize;
     }
     return chunkSize;
+  }
+
+  public static int getDefaultMaxConcurrentConnections()
+  {
+    return 10;
+  }
+
+  public static int getDefaultRetryCount()
+  {
+    return 10;
   }
 
   public static URI getURI(String s) throws URISyntaxException
@@ -186,7 +199,7 @@ public class Utils
     S3, GCS
   }
 
-  public static StorageService detectStorageService(String endpoint, URI uri)
+  public static StorageService detectStorageService(String endpoint, String scheme)
       throws URISyntaxException
   {
     // We consider endpoint (if exists) stronger evidence than URI
@@ -204,9 +217,9 @@ public class Utils
         return StorageService.GCS;
     }
 
-    if (uri != null)
+    if (scheme != null)
     {
-      switch (uri.getScheme())
+      switch (scheme)
       {
         case "s3":
           return StorageService.S3;
@@ -215,8 +228,8 @@ public class Utils
       }
     }
 
-    throw new UsageException("Cannot detect storage service: endpoint " +
-        endpoint +  ", URI " + uri);
+    throw new UsageException("Cannot detect storage service: (endpoint=" +
+        endpoint +  ", scheme=" + scheme + ")");
   }
 
   public static String getDefaultCannedACLFor(StorageService service)
@@ -409,6 +422,71 @@ public class Utils
     }
 
     return clientCfg;
+  }
+
+  public static CloudStoreClient createCloudStoreClient(String scheme, String endpoint)
+      throws URISyntaxException, GeneralSecurityException, IOException
+  {
+    return createCloudStoreClient(
+      scheme, endpoint, getDefaultMaxConcurrentConnections(), 
+      getDefaultKeyDirectory(), new ArrayList<String>(),
+      false, getDefaultRetryCount());
+  }
+
+  public static CloudStoreClient createCloudStoreClient()
+      throws URISyntaxException, GeneralSecurityException, IOException
+  {
+    return createCloudStoreClient(
+      null, null, getDefaultMaxConcurrentConnections(),
+      getDefaultKeyDirectory(), new ArrayList<String>(),
+      false, getDefaultRetryCount());
+  }
+
+  public static CloudStoreClient createCloudStoreClient(
+    String scheme, String endpoint, int maxConcurrentConnections,
+    String encKeyDirectory, List<String> credentialProvidersS3,
+    boolean stubborn, int retryCount)
+      throws URISyntaxException, GeneralSecurityException, IOException
+  {
+    ListeningExecutorService uploadExecutor = 
+      getHttpExecutor(maxConcurrentConnections);
+
+    Utils.StorageService service = detectStorageService(endpoint, scheme);
+
+    CloudStoreClient client;
+    if(service == Utils.StorageService.GCS)
+    {
+      AWSCredentialsProvider gcsXMLProvider =
+        getGCSXMLEnvironmentVariableCredentialsProvider();
+      AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(gcsXMLProvider);
+
+      client = new GCSClientBuilder()
+          .setInternalS3Client(s3Client)
+          .setApiExecutor(uploadExecutor)
+          .setKeyProvider(getKeyProvider(encKeyDirectory))
+          .createGCSClient();
+    }
+    else
+    {
+      ClientConfiguration clientCfg = new ClientConfiguration();
+      clientCfg = Utils.setProxy(clientCfg);
+      AWSCredentialsProvider credsProvider =
+        Utils.getCredentialsProviderS3(credentialProvidersS3);
+      AmazonS3Client s3Client = new AmazonS3Client(credsProvider, clientCfg);
+
+      client = new S3ClientBuilder()
+          .setInternalS3Client(s3Client)
+          .setApiExecutor(uploadExecutor)
+          .setKeyProvider(getKeyProvider(encKeyDirectory))
+          .createS3Client();
+    }
+
+    client.setRetryClientException(stubborn);
+    client.setRetryCount(retryCount);
+    if(endpoint != null)
+      client.setEndpoint(endpoint);
+
+    return client;
   }
 
   protected static void print(ObjectMetadata m)

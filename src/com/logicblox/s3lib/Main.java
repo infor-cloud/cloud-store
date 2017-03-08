@@ -126,7 +126,7 @@ class Main
   {
     @Parameter(names = {"--max-concurrent-connections"}, description = "The " +
         "maximum number of concurrent HTTP connections to the storage service")
-    int maxConcurrentConnections = 10;
+    int maxConcurrentConnections = Utils.getDefaultMaxConcurrentConnections();
 
     @Parameter(names = "--endpoint", description = "Endpoint")
     String endpoint = null;
@@ -138,7 +138,7 @@ class Main
     boolean _stubborn = false;
 
     @Parameter(names = "--retry", description = "Number of retries on failures")
-    int _retryCount = 10;
+    int _retryCount = Utils.getDefaultRetryCount();
 
     @Parameter(names = {"--credential-providers-s3"}, description = "The " +
         "order of the credential providers that should be checked for S3. The" +
@@ -151,50 +151,25 @@ class Main
 
     protected Utils.StorageService detectStorageService() throws URISyntaxException
     {
-      return Utils.detectStorageService(endpoint, null);
+      return Utils.detectStorageService(endpoint, getScheme());
+    }
+
+    protected URI getURI() throws URISyntaxException
+    {
+      return null;
+    }
+
+    protected String getScheme() throws URISyntaxException
+    {
+      return null;
     }
 
     protected CloudStoreClient createCloudStoreClient()
-        throws URISyntaxException, IOException, GeneralSecurityException {
-      ListeningExecutorService uploadExecutor = Utils.getHttpExecutor
-          (maxConcurrentConnections);
-
-      Utils.StorageService service = detectStorageService();
-
-      CloudStoreClient client;
-      if (service == Utils.StorageService.GCS) {
-        AWSCredentialsProvider gcsXMLProvider =
-            Utils.getGCSXMLEnvironmentVariableCredentialsProvider();
-        AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(gcsXMLProvider);
-
-        client = new GCSClientBuilder()
-            .setInternalS3Client(s3Client)
-            .setApiExecutor(uploadExecutor)
-            .setKeyProvider(Utils.getKeyProvider(encKeyDirectory))
-            .createGCSClient();
-      }
-      else {
-        ClientConfiguration clientCfg = new ClientConfiguration();
-        clientCfg = Utils.setProxy(clientCfg);
-        AWSCredentialsProvider credsProvider =
-            Utils.getCredentialsProviderS3(credentialProvidersS3);
-        AmazonS3Client s3Client = new AmazonS3Client(credsProvider, clientCfg);
-
-        client = new S3ClientBuilder()
-            .setInternalS3Client(s3Client)
-            .setApiExecutor(uploadExecutor)
-            .setKeyProvider(Utils.getKeyProvider(encKeyDirectory))
-            .createS3Client();
-      }
-
-      client.setRetryClientException(_stubborn);
-      client.setRetryCount(_retryCount);
-      if(endpoint != null)
-      {
-        client.setEndpoint(endpoint);
-      }
-
-      return client;
+        throws URISyntaxException, IOException, GeneralSecurityException
+    {
+      return Utils.createCloudStoreClient(
+        getScheme(), endpoint, maxConcurrentConnections, 
+        encKeyDirectory, credentialProvidersS3, _stubborn, _retryCount);
     }
   }
 
@@ -237,9 +212,9 @@ class Main
       return Utils.getObjectKey(getURI());
     }
 
-    protected Utils.StorageService detectStorageService() throws URISyntaxException
+    protected String getScheme() throws URISyntaxException
     {
-      return Utils.detectStorageService(endpoint, getURI());
+      return getURI().getScheme();
     }
   }
 
@@ -279,6 +254,11 @@ class Main
       return Utils.getObjectKey(getSourceURI());
     }
 
+    protected String getScheme() throws URISyntaxException
+    {
+      return getSourceURI().getScheme();
+    }
+
     protected URI getDestinationURI() throws URISyntaxException
     {
       return Utils.getURI(urls.get(1));
@@ -296,7 +276,7 @@ class Main
 
     protected Utils.StorageService detectStorageService() throws URISyntaxException
     {
-      return Utils.detectStorageService(endpoint, getSourceURI());
+      return Utils.detectStorageService(endpoint, getScheme());
     }
   }
 

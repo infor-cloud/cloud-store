@@ -468,6 +468,14 @@ public class DownloadCommand extends Command
             String remoteEtag = download.getETag();
             String localDigest = "";
             String fn = "'s3://" + download.getBucket() + "/" + download.getKey() + "'";
+
+            if(null == remoteEtag)
+            {
+              System.err.println("Warning: Skipped checksum validation for " + 
+                fn + ".  No etag attached to object.");
+              return download;
+            }
+
             if ((remoteEtag.length() > 32) &&
                 (remoteEtag.charAt(32) == '-')) {
               // Object has been uploaded using S3's multipart upload protocol,

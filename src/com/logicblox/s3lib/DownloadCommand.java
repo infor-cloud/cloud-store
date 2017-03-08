@@ -234,7 +234,7 @@ public class DownloadCommand extends Command
           setFileLength(download.getLength());
           if (chunkSize == 0)
           {
-            setChunkSize(Utils.getDefaultChunkSize());
+            setChunkSize(Utils.getDefaultChunkSize(download.getLength()));
           }
         }
 

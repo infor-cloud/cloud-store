@@ -140,9 +140,6 @@ class Main
     @Parameter(names = "--retry", description = "Number of retries on failures")
     int _retryCount = 10;
 
-    @Parameter(names = {"--chunk-size"}, description = "The size of each chunk read from the file")
-    long chunkSize = Utils.getDefaultChunkSize();
-
     @Parameter(names = {"--credential-providers-s3"}, description = "The " +
         "order of the credential providers that should be checked for S3. The" +
         " default order is: \"env-vars\", " + "\"system-properties\", " +
@@ -173,7 +170,6 @@ class Main
         client = new GCSClientBuilder()
             .setInternalS3Client(s3Client)
             .setApiExecutor(uploadExecutor)
-            .setChunkSize(chunkSize)
             .setKeyProvider(Utils.getKeyProvider(encKeyDirectory))
             .createGCSClient();
       }
@@ -187,7 +183,6 @@ class Main
         client = new S3ClientBuilder()
             .setInternalS3Client(s3Client)
             .setApiExecutor(uploadExecutor)
-            .setChunkSize(chunkSize)
             .setKeyProvider(Utils.getKeyProvider(encKeyDirectory))
             .createS3Client();
       }
@@ -475,6 +470,11 @@ class Main
         + S3Client.cannedACLsDescConst + " " + GCSClient.cannedACLsDescConst)
     String cannedAcl;
 
+    @Parameter(names = {"--chunk-size"},
+      description = "The size of each chunk read from the file. Determined " +
+                    "automatically if not set.")
+    long chunkSize = -1;
+
     public void invoke() throws Exception
     {
       if (cannedAcl == null)
@@ -500,6 +500,7 @@ class Main
       uob.setFile(f)
           .setBucket(getBucket())
           .setObjectKey(getObjectKey())
+          .setChunkSize(chunkSize)
           .setEncKey(encKeyName)
           .setAcl(cannedAcl);
       if (progress) {

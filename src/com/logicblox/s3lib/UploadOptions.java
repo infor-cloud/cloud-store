@@ -9,6 +9,12 @@ import java.io.File;
  * operation. The specified {@code file} will be uploaded under the specified
  * {@code bucket} and {@code objectKey}.
  * <p>
+ * If the {@code chunkSize} is {@code null}, then {@code getChunkSize} will try
+ * to compute a chunk size so that the number of the uploaded parts be less
+ * than 10000 (current S3 limit). If the {@code chunkSize} is explicit (i.e.
+ * not {@code null}, then no check will take place and any possible failure due
+ * to more than 10000 parts will happen later.
+ * <p>
  * The specified {@code acl} is applied to the uploaded file.
  * <p>
  * If the {@code enckey} is present, the {@code keyProvider} will be asked to
@@ -25,6 +31,7 @@ public class UploadOptions {
     private File file;
     private String bucket;
     private String objectKey;
+    private long chunkSize = -1;
     private Optional<String> encKey;
     private Optional<String> acl;
     private Optional<OverallProgressListenerFactory>
@@ -33,6 +40,7 @@ public class UploadOptions {
     UploadOptions(File file,
                   String bucket,
                   String objectKey,
+                  long chunkSize,
                   Optional<String> encKey,
                   Optional<String> acl,
                   Optional<OverallProgressListenerFactory>
@@ -40,6 +48,7 @@ public class UploadOptions {
         this.file = file;
         this.bucket = bucket;
         this.objectKey = objectKey;
+        this.chunkSize = chunkSize;
         this.encKey = encKey;
         this.acl = acl;
         this.overallProgressListenerFactory = overallProgressListenerFactory;
@@ -55,6 +64,16 @@ public class UploadOptions {
 
     public String getObjectKey() {
         return objectKey;
+    }
+
+    public long getChunkSize() {
+        if (file.isDirectory()) {
+            return -1;
+        }
+        if (chunkSize == -1) {
+            return Utils.getDefaultChunkSize(file.length());
+        }
+        return chunkSize;
     }
 
     public Optional<String> getEncKey() {

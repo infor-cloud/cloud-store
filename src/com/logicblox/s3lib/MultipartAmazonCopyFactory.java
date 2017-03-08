@@ -31,11 +31,10 @@ class MultipartAmazonCopyFactory
                                           String sourceKey,
                                           String destinationBucketName,
                                           String destinationKey,
-                                          String cannedAcl,
-                                          long chunkSize)
+                                          String cannedAcl)
   {
     return executor.submit(new StartCallable(sourceBucketName, sourceKey,
-        destinationBucketName, destinationKey, cannedAcl, chunkSize));
+        destinationBucketName, destinationKey, cannedAcl));
   }
 
   private class StartCallable implements Callable<Copy>
@@ -45,18 +44,15 @@ class MultipartAmazonCopyFactory
     private String destinationBucketName;
     private String destinationKey;
     private String cannedAcl;
-    private long chunkSize;
 
     public StartCallable(String sourceBucketName, String sourceKey, String
-        destinationBucketName, String destinationKey, String cannedAcl, long
-        chunkSize)
+        destinationBucketName, String destinationKey, String cannedAcl)
     {
       this.sourceBucketName = sourceBucketName;
       this.sourceKey = sourceKey;
       this.destinationBucketName = destinationBucketName;
       this.destinationKey = destinationKey;
       this.cannedAcl = cannedAcl;
-      this.chunkSize = chunkSize;
     }
 
     public Copy call() throws Exception
@@ -66,6 +62,8 @@ class MultipartAmazonCopyFactory
 
       if (metadata.getUserMetaDataOf("s3tool-version") == null)
       {
+        long chunkSize = Utils.getDefaultChunkSize(metadata.getContentLength());
+
         metadata.addUserMetadata("s3tool-version", String.valueOf(Version.CURRENT));
         metadata.addUserMetadata("s3tool-chunk-size", Long.toString(chunkSize));
         metadata.addUserMetadata("s3tool-file-length",

@@ -557,7 +557,7 @@ class Main
           DateFormat df = Utils.getDefaultDateFormat();
           for (int i = 0; i < listCommandResults.size(); i++) {
             S3File obj = listCommandResults.get(i);
-            table[i][0] = client.getUri(obj.getBucketName(), obj.getKey()).toString();
+            table[i][0] = client.getUri(obj.getBucketName(), "") + obj.getKey();
             table[i][1] = obj.getVersionId().orElse("No Version Id");
             if (obj.getTimestamp().isPresent()) {
               table[i][2] = df.format(obj.getTimestamp().get());
@@ -578,7 +578,7 @@ class Main
           }
         } else {
           for (S3File obj : listCommandResults) {
-            System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
+            System.out.println(client.getUri(obj.getBucketName(), "") + obj.getKey());
           }
         }
       } catch (ExecutionException exc) {

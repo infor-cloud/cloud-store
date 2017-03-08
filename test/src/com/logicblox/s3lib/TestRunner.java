@@ -16,6 +16,8 @@ public class TestRunner
   {
     Utils.initLogging();
     TestOptions.parseArgs(args);
+    System.out.println(
+      "Running tests against service " + TestOptions.getServiceDescription());
     JUnitCore core = new JUnitCore();
     core.addListener(new TextListener(System.out));
     core.run(TestRunner.class);

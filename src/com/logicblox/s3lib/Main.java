@@ -283,6 +283,27 @@ class Main
   @Parameters(commandDescription = "List storage service buckets")
   class ListBucketsCommandOptions extends S3CommandOptions
   {
+    @Parameter(description = "service", required = false)
+    List<String> services;
+
+    protected String getScheme()
+    {
+      if(null == services)
+      {
+        if(null == endpoint)
+          throw new UsageException("Either 's3' or 'gs' service is required");
+        return null;
+      }
+
+      if(services.size() != 1)
+        throw new UsageException("Only one service name may be specified");
+
+      String service = services.get(0);
+      if(!service.equals("s3") && !service.equals("gs"))
+        throw new UsageException("Either 's3' or 'gs' service is required");
+      return service;
+    }
+
     public void invoke() throws Exception
     {
       CloudStoreClient client = createCloudStoreClient();

@@ -6,5 +6,5 @@ s3lib_jars=$LB_INSTALL_PREFIX/s3lib/lib/java
 test_jars=$PWD/build/jars
    # for local testing
 
-cp="$LOGICBLOX_HOME/share/java/junit-4.8.2.jar:$test_jars/s3lib-test.jar:$s3lib_jars/s3lib-test.jar:$s3lib_jars/aws-java-sdk-1.10.20.jar"
+cp="$LOGICBLOX_HOME/share/java/junit-4.8.2.jar:$test_jars/s3lib-test.jar:$s3lib_jars/s3lib-test.jar"
 java -cp $cp com.logicblox.s3lib.TestRunner $*

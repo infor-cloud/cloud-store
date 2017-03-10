@@ -451,8 +451,29 @@ public interface CloudStoreClient {
     void shutdown();
 
 
+    /**
+     * Query for the existance of a bucket.
+     *
+     * @param bucketName The name of the bucket
+     */
     boolean hasBucket(String bucketName);
+
+
+    /**
+     * Create a new bucket with default permissions.  An exception will be
+     * thrown if a bucket with that name already exists.
+     *
+     * @param bucketName The name of the bucket
+     */
     void createBucket(String bucketName);
+
+
+    /**
+     * Delete a bucket.  An exception will be thrown if the bucket does not
+     * exist.
+     *
+     * @param bucketName The name of the bucket
+     */
     void destroyBucket(String bucketName);
 
 }

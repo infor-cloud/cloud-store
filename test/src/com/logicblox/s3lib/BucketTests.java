@@ -1,14 +1,8 @@
 package com.logicblox.s3lib;
 
 import com.amazonaws.services.s3.model.Bucket;
-import java.lang.InterruptedException;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.security.GeneralSecurityException;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import junit.framework.Assert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -22,28 +16,22 @@ public class BucketTests
 
   @BeforeClass
   public static void setUp()
-    throws URISyntaxException, InterruptedException, MalformedURLException,
-           GeneralSecurityException, IOException
+    throws Throwable
   {
-    _client = Utils.createCloudStoreClient(
-      TestOptions.getService(), TestOptions.getEndpointString());
+    _client = TestOptions.createClient(0);
   }
 
 
   @AfterClass
   public static void tearDown()
   {
-    if(null != _client)
-    {
-      _client.shutdown();
-      _client = null;
-    }
+    TestOptions.destroyClient(_client);
   }
 
 
   @Test
   public void testBasics()
-    throws InterruptedException, ExecutionException
+    throws Throwable
   {
     List<Bucket> buckets = _client.listBuckets().get();
     int originalCount = buckets.size();
@@ -58,8 +46,10 @@ public class BucketTests
     Assert.assertEquals(originalCount + 1, buckets.size());
     boolean found = false;
     for(Bucket b : buckets)
+    {
       if(b.getName().equals(testBucket))
         found = true;
+    }
     Assert.assertTrue(found);
 
     _client.destroyBucket(testBucket);

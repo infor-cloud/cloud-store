@@ -157,6 +157,9 @@ public class TestOptions
   public static void destroyBucket(CloudStoreClient client, String bucket)
     throws InterruptedException, ExecutionException
   {
+    if((null == bucket) || bucket.isEmpty())
+      return;
+
     ListOptions lsOpts = new ListOptionsBuilder()
       .setBucket(bucket)
       .setRecursive(true)

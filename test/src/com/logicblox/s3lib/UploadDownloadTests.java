@@ -14,6 +14,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
+import java.util.HashSet;
 import junit.framework.Assert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -25,10 +27,30 @@ import java.net.URISyntaxException;
 
 
 public class UploadDownloadTests
+  implements OverallProgressListenerFactory, OverallProgressListener
 {
   private static CloudStoreClient _client = null;
   private static String _testBucket = null;
+  private static String _testBucket2 = null;
   private static Random _rand = null;
+
+  private Set<String> _partSet = new HashSet<String>();
+
+
+  // OverallProgressListenerFactory
+  @Override
+  public OverallProgressListener create(ProgressOptions progressOptions)
+  {
+    return this;
+  }
+
+
+  // OverallProgressListener
+  @Override
+  public synchronized void progress(PartProgressEvent ev)
+  {
+    _partSet.add(ev.getPartId());
+  }
 
 
   @BeforeClass
@@ -46,8 +68,10 @@ public class UploadDownloadTests
     throws Throwable
   {
     TestOptions.destroyBucket(_client, _testBucket);
+    TestOptions.destroyBucket(_client, _testBucket2);
     TestOptions.destroyClient(_client);
     _testBucket = null;
+    _testBucket2 = null;
     _client = null;
   }
 
@@ -56,18 +80,18 @@ public class UploadDownloadTests
   public void testSimpleUploadDownload()
     throws Throwable
   {
-    List<S3File> objs = listObjects();
+    String rootPrefix = "a/b/";
+    List<S3File> objs = listObjects(_testBucket, rootPrefix);
     int originalCount = objs.size();
 
     // create a small file and upload it
     File toUpload = createTextFile(100);
-    String rootPrefix = "a/b/";
     URI dest = getUri(toUpload, rootPrefix);
     S3File f = uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
 
     // make sure file was uploaded
-    objs = listObjects();
+    objs = listObjects(_testBucket, rootPrefix);
     Assert.assertEquals(originalCount + 1, objs.size());
     String key = rootPrefix + toUpload.getName();
     Assert.assertTrue(findObject(objs, key));
@@ -253,17 +277,17 @@ public class UploadDownloadTests
       File sub2 = createTmpDir(sub);
       File e = createTextFile(sub2, 100);
 
-      List<S3File> objs = listObjects();
+      String rootPrefix = "dir-ul-dl/";
+      List<S3File> objs = listObjects(_testBucket, rootPrefix);
       int originalCount = objs.size();
 
       // upload the directory
-      String rootPrefix = "a/b/";
       URI dest = getUri(top, rootPrefix);
       List<S3File> uploaded = uploadDir(top, dest);
       Assert.assertEquals(5, uploaded.size());
 
       // verify that the structure was replicated
-      objs = listObjects();
+      objs = listObjects(_testBucket, rootPrefix);
       Assert.assertEquals(originalCount + 5, objs.size());
       String topN = rootPrefix + top.getName() + "/";
       String subN = topN + sub.getName() + "/";
@@ -301,6 +325,329 @@ public class UploadDownloadTests
       Assert.assertEquals(1, dlsub2.list().length);
       Assert.assertTrue(compareFiles(e, new File(dlsub2, e.getName())));
 
+    }
+    finally
+    {
+      destroyDir(top);
+      destroyDir(dlDir);
+      destroyDir(dlDir2);
+    }
+  }
+
+
+  @Test
+  public void testTinyChunk()
+    throws Throwable
+  {
+    List<S3File> objs = listObjects();
+    int originalCount = objs.size();
+
+    // create test file
+    int fileSize = 100;
+    int chunkSize = 10;
+    File toUpload = createTextFile(fileSize);
+    URI dest = getUri(toUpload, "");
+
+    // upload file in multiple concurrent chunks
+    clearParts();
+    UploadOptions upOpts = new UploadOptionsBuilder()
+      .setFile(toUpload)
+      .setBucket(Utils.getBucket(dest))
+      .setObjectKey(Utils.getObjectKey(dest))
+      .setOverallProgressListenerFactory(this)
+      .setChunkSize(chunkSize)
+      .createUploadOptions();
+    S3File f = _client.upload(upOpts).get();
+    Assert.assertNotNull(f);
+
+    // validate the upload
+    int partCount = getPartCount();
+    Assert.assertEquals(fileSize / chunkSize, partCount);
+    objs = listObjects();
+    Assert.assertEquals(originalCount + 1, objs.size());
+    Assert.assertTrue(findObject(objs, toUpload.getName()));
+
+    // download the file and compare it with the original
+    File dlTemp = createTmpFile();
+    DownloadOptions dlOpts = new DownloadOptionsBuilder()
+      .setFile(dlTemp)
+      .setUri(dest)
+      .setRecursive(false)
+      .setOverwrite(true)
+      .setOverallProgressListenerFactory(this)
+      .createDownloadOptions();
+    clearParts();
+    f = _client.download(dlOpts).get();
+    partCount = getPartCount();
+    Assert.assertEquals(fileSize / chunkSize, partCount);
+    Assert.assertNotNull(f.getLocalFile());
+    Assert.assertTrue(compareFiles(toUpload, f.getLocalFile()));
+  }
+
+
+  @Test
+  public void testSimpleCopy()
+    throws Throwable
+  {
+    List<S3File> objs = listObjects();
+    int originalCount = objs.size();
+
+    // create test file and upload it
+    int fileSize = 100;
+    File toUpload = createTextFile(fileSize);
+    URI dest = getUri(toUpload, "");
+    S3File f = uploadFile(toUpload, dest);
+    Assert.assertNotNull(f);
+
+    // make sure file was uploaded
+    objs = listObjects();
+    Assert.assertEquals(originalCount + 1, objs.size());
+    Assert.assertTrue(findObject(objs, toUpload.getName()));
+
+    // copy file
+    CopyOptions copyOpts = new CopyOptionsBuilder()
+       .setSourceBucketName(_testBucket)
+       .setSourceKey(f.getKey())
+       .setDestinationBucketName(_testBucket)
+       .setDestinationKey(f.getKey() + "-COPY")
+       .createCopyOptions();
+    S3File copy = _client.copy(copyOpts).get();
+
+    // check for the copy
+    objs = listObjects();
+    Assert.assertEquals(originalCount + 2, objs.size());
+    Assert.assertTrue(findObject(objs, toUpload.getName()));
+    Assert.assertTrue(findObject(objs, toUpload.getName() + "-COPY"));
+
+    // download and compare copy
+    File dlTemp = createTmpFile();
+    dest = new URI(dest.toString() + "-COPY");
+    f = downloadFile(dest, dlTemp);
+    Assert.assertNotNull(f.getLocalFile());
+    Assert.assertTrue(compareFiles(toUpload, f.getLocalFile()));
+  }
+
+
+  @Test
+  public void testCrossBucketCopy()
+    throws Throwable
+  {
+    List<S3File> objs = listObjects();
+    int originalCount = objs.size();
+
+    // create test file and upload it
+    int fileSize = 100;
+    File toUpload = createTextFile(fileSize);
+    URI dest = getUri(toUpload, "");
+    S3File f = uploadFile(toUpload, dest);
+    Assert.assertNotNull(f);
+
+    // make sure file was uploaded
+    objs = listObjects();
+    Assert.assertEquals(originalCount + 1, objs.size());
+    Assert.assertTrue(findObject(objs, toUpload.getName()));
+
+    // copy file
+    String bucket2 = createTestBucket2();
+    CopyOptions copyOpts = new CopyOptionsBuilder()
+       .setSourceBucketName(_testBucket)
+       .setSourceKey(f.getKey())
+       .setDestinationBucketName(bucket2)
+       .setDestinationKey(f.getKey())
+       .createCopyOptions();
+    S3File copy = _client.copy(copyOpts).get();
+
+    // check for the copy in 1st bucket, should be the same
+    List<S3File> copyObjs = listObjects();
+    Assert.assertEquals(objs.size(), copyObjs.size());
+    for(S3File sf : copyObjs)
+      Assert.assertTrue(findObject(objs, sf.getKey()));
+
+    // check for the copy in 2nd bucket
+    copyObjs = listObjects(bucket2);
+    Assert.assertEquals(1, copyObjs.size());
+    Assert.assertTrue(findObject(copyObjs, toUpload.getName()));
+
+    // download and compare copy
+    File dlTemp = createTmpFile();
+    URI src = new URI(TestOptions.getService() + "://" + bucket2 + "/"
+                      + toUpload.getName());
+    DownloadOptions dlOpts = new DownloadOptionsBuilder()
+      .setFile(dlTemp)
+      .setUri(src)
+      .setRecursive(false)
+      .setOverwrite(true)
+      .createDownloadOptions();
+    f = _client.download(dlOpts).get();
+
+    Assert.assertNotNull(f.getLocalFile());
+    Assert.assertTrue(compareFiles(toUpload, f.getLocalFile()));
+  }
+
+
+  @Test
+  public void testCopyDir()
+    throws Throwable
+  {
+    File top = null;
+    File dlDir = null;
+    File dlDir2 = null;
+    try
+    {
+      // create simple directory structure with a few files
+      top = createTmpDir();
+      File a = createTextFile(top, 100);
+      File b = createTextFile(top, 100);
+      File sub = createTmpDir(top);
+      File c = createTextFile(sub, 100);
+      File d = createTextFile(sub, 100);
+      File sub2 = createTmpDir(sub);
+      File e = createTextFile(sub2, 100);
+
+      String rootPrefix = "copy-dir/";
+      List<S3File> objs = listObjects(_testBucket, rootPrefix);
+      int originalCount = objs.size();
+
+      // upload the directory
+      URI dest = getUri(top, rootPrefix);
+      List<S3File> uploaded = uploadDir(top, dest);
+      Assert.assertEquals(5, uploaded.size());
+
+      // non-recursive copy
+      String topN = rootPrefix + top.getName() + "/";
+      String copyTopN = rootPrefix + top.getName() + "-COPY/";
+      CopyOptions copyOpts = new CopyOptionsBuilder()
+         .setSourceBucketName(_testBucket)
+         .setSourceKey(topN)
+         .setDestinationBucketName(_testBucket)
+         .setDestinationKey(copyTopN)
+         .setRecursive(false)
+         .createCopyOptions();
+      List<S3File> copy = _client.copyToDir(copyOpts).get();
+      Assert.assertEquals(2, copy.size());
+
+      // verify the non-recursive copy
+      List<S3File> copyObjs = listObjects(_testBucket, rootPrefix);
+      int currentSize = copyObjs.size();
+      Assert.assertEquals(originalCount + 5 + 2, currentSize);
+          // original files plus 5 uploaded plus 2 copied
+      Assert.assertTrue(findObject(copyObjs, copyTopN + a.getName()));
+      Assert.assertTrue(findObject(copyObjs, copyTopN + b.getName()));
+
+      // recursive copy
+      String copyTopN2 = topN + "COPY2/";
+      copyOpts = new CopyOptionsBuilder()
+         .setSourceBucketName(_testBucket)
+         .setSourceKey(topN)
+         .setDestinationBucketName(_testBucket)
+         .setDestinationKey(copyTopN2)
+         .setRecursive(true)
+         .createCopyOptions();
+      copy = _client.copyToDir(copyOpts).get();
+      Assert.assertEquals(5, copy.size());
+
+      // verify the recursive copy
+      String subN = copyTopN2 + sub.getName() + "/";
+      String sub2N = subN + sub2.getName() + "/";
+      copyObjs = listObjects(_testBucket, rootPrefix);
+      int lastSize = copyObjs.size();
+      Assert.assertEquals(currentSize + 5, lastSize);
+         // previous size plus 5 copies
+      Assert.assertTrue(findObject(copyObjs, copyTopN2 + a.getName()));
+      Assert.assertTrue(findObject(copyObjs, copyTopN2 + b.getName()));
+      Assert.assertTrue(findObject(copyObjs, subN + c.getName()));
+      Assert.assertTrue(findObject(copyObjs, subN + d.getName()));
+      Assert.assertTrue(findObject(copyObjs, sub2N + e.getName()));
+    }
+    finally
+    {
+      destroyDir(top);
+      destroyDir(dlDir);
+      destroyDir(dlDir2);
+    }
+  }
+
+  @Test
+  public void testCrossBucketCopyDir()
+    throws Throwable
+  {
+    File top = null;
+    File dlDir = null;
+    File dlDir2 = null;
+    try
+    {
+      // create simple directory structure with a few files
+      top = createTmpDir();
+      File a = createTextFile(top, 100);
+      File b = createTextFile(top, 100);
+      File sub = createTmpDir(top);
+      File c = createTextFile(sub, 100);
+      File d = createTextFile(sub, 100);
+      File sub2 = createTmpDir(sub);
+      File e = createTextFile(sub2, 100);
+
+      String rootPrefix = "copy-dir-bucket/";
+      List<S3File> objs = listObjects(_testBucket, rootPrefix);
+      int originalCount = objs.size();
+
+      // upload the directory
+      URI dest = getUri(top, rootPrefix);
+      List<S3File> uploaded = uploadDir(top, dest);
+      Assert.assertEquals(5, uploaded.size());
+
+      // non-recursive copy
+      String bucket2 = createTestBucket2();
+      List<S3File> objs2 = listObjects(bucket2, rootPrefix);
+      int originalCount2 = objs2.size();
+      String topN = rootPrefix + top.getName() + "/";
+      CopyOptions copyOpts = new CopyOptionsBuilder()
+         .setSourceBucketName(_testBucket)
+         .setSourceKey(topN)
+         .setDestinationBucketName(bucket2)
+         .setDestinationKey(topN)
+         .setRecursive(false)
+         .createCopyOptions();
+      List<S3File> copy = _client.copyToDir(copyOpts).get();
+      Assert.assertEquals(2, copy.size());
+
+      // verify the non-recursive copy
+      objs = listObjects(_testBucket, rootPrefix);
+      Assert.assertEquals(originalCount + 5, objs.size());
+         // original files plus 5 uploaded
+
+      List<S3File> copyObjs = listObjects(bucket2, rootPrefix);
+      Assert.assertEquals(originalCount2 + 2, copyObjs.size());
+         // original files plus 2 copied
+      Assert.assertTrue(findObject(copyObjs, topN + a.getName()));
+      Assert.assertTrue(findObject(copyObjs, topN + b.getName()));
+
+      // recursive copy
+      String copyTopN = rootPrefix + top.getName() + "-COPY/";
+      copyOpts = new CopyOptionsBuilder()
+         .setSourceBucketName(_testBucket)
+         .setSourceKey(topN)
+         .setDestinationBucketName(bucket2)
+         .setDestinationKey(copyTopN)
+         .setRecursive(true)
+         .createCopyOptions();
+      copy = _client.copyToDir(copyOpts).get();
+      Assert.assertEquals(5, copy.size());
+
+      // verify the recursive copy
+      String subN = copyTopN + sub.getName() + "/";
+      String sub2N = subN + sub2.getName() + "/";
+      objs = listObjects(_testBucket, rootPrefix);
+      Assert.assertEquals(originalCount + 5, objs.size());
+         // same original plus 5 uploaded
+      int lastSize = copyObjs.size();
+      copyObjs = listObjects(bucket2, rootPrefix);
+      Assert.assertEquals(lastSize + 5, copyObjs.size());
+         // previous size plus 5 copies
+      Assert.assertTrue(findObject(copyObjs, copyTopN + a.getName()));
+      Assert.assertTrue(findObject(copyObjs, copyTopN + b.getName()));
+      Assert.assertTrue(findObject(copyObjs, subN + c.getName()));
+      Assert.assertTrue(findObject(copyObjs, subN + d.getName()));
+      Assert.assertTrue(findObject(copyObjs, sub2N + e.getName()));
     }
     finally
     {
@@ -382,11 +729,32 @@ public class UploadDownloadTests
   private List<S3File> listObjects()
     throws Throwable
   {
+    return listObjects(_testBucket);
+  }
+
+
+  private List<S3File> listObjects(String bucket)
+    throws Throwable
+  {
     ListOptions lsOpts = new ListOptionsBuilder()
-      .setBucket(_testBucket)
+      .setBucket(bucket)
       .setRecursive(true)
       .setIncludeVersions(false)
       .setExcludeDirs(false)
+      .createListOptions();
+    return _client.listObjects(lsOpts).get();
+  }
+
+
+  private List<S3File> listObjects(String bucket, String key)
+    throws Throwable
+  {
+    ListOptions lsOpts = new ListOptionsBuilder()
+      .setBucket(bucket)
+      .setRecursive(true)
+      .setIncludeVersions(false)
+      .setExcludeDirs(false)
+      .setObjectKey(key)
       .createListOptions();
     return _client.listObjects(lsOpts).get();
   }
@@ -498,6 +866,26 @@ public class UploadDownloadTests
         return FileVisitResult.CONTINUE;
       }
     });
+  }
+
+
+  private synchronized int getPartCount()
+  {
+    return _partSet.size();
+  }
+
+
+  private synchronized void clearParts()
+  {
+    _partSet.clear();
+  }
+
+
+  private String createTestBucket2()
+  {
+    if(null == _testBucket2)
+      _testBucket2 = TestOptions.createBucket(_client);
+    return _testBucket2;
   }
 
 }

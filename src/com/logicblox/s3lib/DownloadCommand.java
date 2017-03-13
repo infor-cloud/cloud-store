@@ -79,8 +79,21 @@ public class DownloadCommand extends Command
       throw new IOException("File '" + file + "' already exists");
   }
 
-  public ListenableFuture<S3File> run(final String bucket, final String key, final String version)
+  public ListenableFuture<S3File> run(final String bucket, final String key, final String version, final boolean overwrite)
   {
+    if(this.file.exists())
+    {
+      if(overwrite)
+      {
+        if(!this.file.delete())
+          throw new UsageException("Could not overwrite existing file '" 
+            + this.file + "'");
+      }
+      else
+        throw new UsageException("File '" + this.file 
+           + "' already exists. Please delete or use --overwrite");
+    }
+
     ListenableFuture<AmazonDownload> download = startDownload(bucket, key, version);
     download = Futures.transform(download, startPartsAsyncFunction());
     download = Futures.transform(download, validate());

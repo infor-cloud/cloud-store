@@ -420,7 +420,11 @@ public class S3Client implements CloudStoreClient {
     DownloadCommand cmd = new DownloadCommand(_s3Executor, _executor, file,
         _keyProvider, progressListenerFactory);
     configure(cmd);
-    return cmd.run(options.getBucket(), options.getObjectKey(), options.getVersion());
+    String bucket = options.getBucket();
+    String key = options.getObjectKey();
+    boolean overwrite = options.doesOverwrite();
+    String version = options.getVersion();
+    return cmd.run(bucket, key, version, overwrite);
   }
 
   @Override

@@ -414,17 +414,17 @@ public class S3Client implements CloudStoreClient {
   throws IOException
   {
     File file = options.getFile();
+    boolean overwrite = options.doesOverwrite();
     OverallProgressListenerFactory progressListenerFactory = options
         .getOverallProgressListenerFactory().orNull();
 
     DownloadCommand cmd = new DownloadCommand(_s3Executor, _executor, file,
-        _keyProvider, progressListenerFactory);
+        overwrite, _keyProvider, progressListenerFactory);
     configure(cmd);
     String bucket = options.getBucket();
     String key = options.getObjectKey();
-    boolean overwrite = options.doesOverwrite();
     String version = options.getVersion();
-    return cmd.run(bucket, key, version, overwrite);
+    return cmd.run(bucket, key, version);
   }
 
   @Override

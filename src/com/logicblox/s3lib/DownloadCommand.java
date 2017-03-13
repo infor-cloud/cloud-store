@@ -48,6 +48,7 @@ public class DownloadCommand extends Command
     ListeningExecutorService downloadExecutor,
     ListeningScheduledExecutorService internalExecutor,
     File file,
+    boolean overwrite,
     KeyProvider encKeyProvider,
     OverallProgressListenerFactory progressListenerFactory)
   throws IOException
@@ -57,12 +58,12 @@ public class DownloadCommand extends Command
     _encKeyProvider = encKeyProvider;
 
     this.file = file;
-    createNewFile();
+    createNewFile(overwrite);
     this.progressListenerFactory = Optional.fromNullable
         (progressListenerFactory);
   }
 
-  private void createNewFile() throws IOException
+  private void createNewFile(boolean overwrite) throws IOException
   {
     file = file.getAbsoluteFile();
     File dir = file.getParentFile();
@@ -72,28 +73,26 @@ public class DownloadCommand extends Command
         throw new IOException("Could not create directory '" + dir + "'");
     }
 
-    if(file.exists() && !file.delete())
-      throw new IOException("Could not delete existing file '" + file + "'");
+    if(file.exists())
+    {
+      if(overwrite)
+      {
+        if(!file.delete())
+          throw new IOException("Could not delete existing file '" + file + "'");
+      }
+      else
+      {
+        throw new IOException("File '" + file 
+          + "' already exists.  Please delete or use --overwrite");
+      }
+    }
 
     if(!file.createNewFile())
       throw new IOException("File '" + file + "' already exists");
   }
 
-  public ListenableFuture<S3File> run(final String bucket, final String key, final String version, final boolean overwrite)
+  public ListenableFuture<S3File> run(final String bucket, final String key, final String version)
   {
-    if(this.file.exists())
-    {
-      if(overwrite)
-      {
-        if(!this.file.delete())
-          throw new UsageException("Could not overwrite existing file '" 
-            + this.file + "'");
-      }
-      else
-        throw new UsageException("File '" + this.file 
-           + "' already exists. Please delete or use --overwrite");
-    }
-
     ListenableFuture<AmazonDownload> download = startDownload(bucket, key, version);
     download = Futures.transform(download, startPartsAsyncFunction());
     download = Futures.transform(download, validate());

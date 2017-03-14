@@ -33,13 +33,6 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 
-/*
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-*/
-
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
@@ -65,25 +58,6 @@ class Main
     }
   }
 
-/*
-  private static void initLogging() {
-    Logger root = Logger.getRootLogger();
-    root.setLevel(Level.INFO);
-
-    ConsoleAppender console = new ConsoleAppender();
-    String PATTERN = "%d [%p|%c|%C{1}] %m%n";
-    console.setLayout(new PatternLayout(PATTERN));
-    console.setThreshold(Level.ERROR);
-    console.activateOptions();
-
-    Logger s3libLogger = Logger.getLogger("com.logicblox.s3lib");
-    s3libLogger.addAppender(console);
-    Logger awsLogger = Logger.getLogger("com.amazonaws");
-    awsLogger.addAppender(console);
-    Logger apacheLogger = Logger.getLogger("org.apache.http");
-    apacheLogger.addAppender(console);
-  }
-*/
 
   public Main()
   {

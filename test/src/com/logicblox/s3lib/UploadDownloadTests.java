@@ -2,6 +2,7 @@ package com.logicblox.s3lib;
 
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import java.io.File;
+import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.net.URI;
@@ -33,6 +34,7 @@ public class UploadDownloadTests
   private static String _testBucket = null;
   private static String _testBucket2 = null;
   private static Random _rand = null;
+  private static Set<File> _autoDeleteDirs = new HashSet<File>();
 
   private Set<String> _partSet = new HashSet<String>();
 
@@ -67,6 +69,10 @@ public class UploadDownloadTests
   public static void tearDown()
     throws Throwable
   {
+    for(File dir : _autoDeleteDirs)
+      destroyDir(dir);
+    _autoDeleteDirs.clear();
+
     TestOptions.destroyBucket(_client, _testBucket);
     TestOptions.destroyBucket(_client, _testBucket2);
     TestOptions.destroyClient(_client);
@@ -262,76 +268,63 @@ public class UploadDownloadTests
   public void testDirectoryUploadDownload()
     throws Throwable
   {
-    File top = null;
-    File dlDir = null;
-    File dlDir2 = null;
-    try
-    {
-      // create simple directory structure with a few files
-      top = createTmpDir();
-      File a = createTextFile(top, 100);
-      File b = createTextFile(top, 100);
-      File sub = createTmpDir(top);
-      File c = createTextFile(sub, 100);
-      File d = createTextFile(sub, 100);
-      File sub2 = createTmpDir(sub);
-      File e = createTextFile(sub2, 100);
+    // create simple directory structure with a few files
+    File top = createTmpDir(true);
+    File a = createTextFile(top, 100);
+    File b = createTextFile(top, 100);
+    File sub = createTmpDir(top);
+    File c = createTextFile(sub, 100);
+    File d = createTextFile(sub, 100);
+    File sub2 = createTmpDir(sub);
+    File e = createTextFile(sub2, 100);
 
-      String rootPrefix = "dir-ul-dl/";
-      List<S3File> objs = listObjects(_testBucket, rootPrefix);
-      int originalCount = objs.size();
+    String rootPrefix = "dir-ul-dl/";
+    List<S3File> objs = listObjects(_testBucket, rootPrefix);
+    int originalCount = objs.size();
 
-      // upload the directory
-      URI dest = getUri(top, rootPrefix);
-      List<S3File> uploaded = uploadDir(top, dest);
-      Assert.assertEquals(5, uploaded.size());
+    // upload the directory
+    URI dest = getUri(top, rootPrefix);
+    List<S3File> uploaded = uploadDir(top, dest);
+    Assert.assertEquals(5, uploaded.size());
 
-      // verify that the structure was replicated
-      objs = listObjects(_testBucket, rootPrefix);
-      Assert.assertEquals(originalCount + 5, objs.size());
-      String topN = rootPrefix + top.getName() + "/";
-      String subN = topN + sub.getName() + "/";
-      String sub2N = subN + sub2.getName() + "/";
-      Assert.assertTrue(findObject(objs, topN + a.getName()));
-      Assert.assertTrue(findObject(objs, topN + b.getName()));
-      Assert.assertTrue(findObject(objs, subN + c.getName()));
-      Assert.assertTrue(findObject(objs, subN + d.getName()));
-      Assert.assertTrue(findObject(objs, sub2N + e.getName()));
+    // verify that the structure was replicated
+    objs = listObjects(_testBucket, rootPrefix);
+    Assert.assertEquals(originalCount + 5, objs.size());
+    String topN = rootPrefix + top.getName() + "/";
+    String subN = topN + sub.getName() + "/";
+    String sub2N = subN + sub2.getName() + "/";
+    Assert.assertTrue(findObject(objs, topN + a.getName()));
+    Assert.assertTrue(findObject(objs, topN + b.getName()));
+    Assert.assertTrue(findObject(objs, subN + c.getName()));
+    Assert.assertTrue(findObject(objs, subN + d.getName()));
+    Assert.assertTrue(findObject(objs, sub2N + e.getName()));
 
-      // non-recursive directory download
-      dlDir = createTmpDir();
-      List<S3File> downloaded = downloadDir(dest, dlDir, false);
-      Assert.assertEquals(2, downloaded.size());
-      Assert.assertEquals(2, dlDir.list().length);
-      Assert.assertTrue(compareFiles(a, new File(dlDir, a.getName())));
-      Assert.assertTrue(compareFiles(b, new File(dlDir, b.getName())));
+    // non-recursive directory download
+    File dlDir = createTmpDir(true);
+    List<S3File> downloaded = downloadDir(dest, dlDir, false);
+    Assert.assertEquals(2, downloaded.size());
+    Assert.assertEquals(2, dlDir.list().length);
+    Assert.assertTrue(compareFiles(a, new File(dlDir, a.getName())));
+    Assert.assertTrue(compareFiles(b, new File(dlDir, b.getName())));
 
-      // recursive directory download
-      dlDir2 = createTmpDir();
-      downloaded = downloadDir(dest, dlDir2, true);
-      Assert.assertEquals(5, downloaded.size());
-      Assert.assertEquals(3, dlDir2.list().length);
-      Assert.assertTrue(compareFiles(a, new File(dlDir2, a.getName())));
-      Assert.assertTrue(compareFiles(b, new File(dlDir2, b.getName())));
+    // recursive directory download
+    File dlDir2 = createTmpDir(true);
+    downloaded = downloadDir(dest, dlDir2, true);
+    Assert.assertEquals(5, downloaded.size());
+    Assert.assertEquals(3, dlDir2.list().length);
+    Assert.assertTrue(compareFiles(a, new File(dlDir2, a.getName())));
+    Assert.assertTrue(compareFiles(b, new File(dlDir2, b.getName())));
 
-      File dlsub = new File(dlDir2, sub.getName());
-      Assert.assertTrue(dlsub.exists() && dlsub.isDirectory());
-      Assert.assertEquals(3, dlsub.list().length);
-      Assert.assertTrue(compareFiles(c, new File(dlsub, c.getName())));
-      Assert.assertTrue(compareFiles(d, new File(dlsub, d.getName())));
+    File dlsub = new File(dlDir2, sub.getName());
+    Assert.assertTrue(dlsub.exists() && dlsub.isDirectory());
+    Assert.assertEquals(3, dlsub.list().length);
+    Assert.assertTrue(compareFiles(c, new File(dlsub, c.getName())));
+    Assert.assertTrue(compareFiles(d, new File(dlsub, d.getName())));
 
-      File dlsub2 = new File(dlsub, sub2.getName());
-      Assert.assertTrue(dlsub2.exists() && dlsub2.isDirectory());
-      Assert.assertEquals(1, dlsub2.list().length);
-      Assert.assertTrue(compareFiles(e, new File(dlsub2, e.getName())));
-
-    }
-    finally
-    {
-      destroyDir(top);
-      destroyDir(dlDir);
-      destroyDir(dlDir2);
-    }
+    File dlsub2 = new File(dlsub, sub2.getName());
+    Assert.assertTrue(dlsub2.exists() && dlsub2.isDirectory());
+    Assert.assertEquals(1, dlsub2.list().length);
+    Assert.assertTrue(compareFiles(e, new File(dlsub2, e.getName())));
   }
 
 
@@ -489,172 +482,239 @@ public class UploadDownloadTests
   public void testCopyDir()
     throws Throwable
   {
-    File top = null;
-    File dlDir = null;
-    File dlDir2 = null;
-    try
-    {
-      // create simple directory structure with a few files
-      top = createTmpDir();
-      File a = createTextFile(top, 100);
-      File b = createTextFile(top, 100);
-      File sub = createTmpDir(top);
-      File c = createTextFile(sub, 100);
-      File d = createTextFile(sub, 100);
-      File sub2 = createTmpDir(sub);
-      File e = createTextFile(sub2, 100);
+    // create simple directory structure with a few files
+    File top = createTmpDir(true);
+    File a = createTextFile(top, 100);
+    File b = createTextFile(top, 100);
+    File sub = createTmpDir(top);
+    File c = createTextFile(sub, 100);
+    File d = createTextFile(sub, 100);
+    File sub2 = createTmpDir(sub);
+    File e = createTextFile(sub2, 100);
 
-      String rootPrefix = "copy-dir/";
-      List<S3File> objs = listObjects(_testBucket, rootPrefix);
-      int originalCount = objs.size();
+    String rootPrefix = "copy-dir/";
+    List<S3File> objs = listObjects(_testBucket, rootPrefix);
+    int originalCount = objs.size();
 
-      // upload the directory
-      URI dest = getUri(top, rootPrefix);
-      List<S3File> uploaded = uploadDir(top, dest);
-      Assert.assertEquals(5, uploaded.size());
+    // upload the directory
+    URI dest = getUri(top, rootPrefix);
+    List<S3File> uploaded = uploadDir(top, dest);
+    Assert.assertEquals(5, uploaded.size());
 
-      // non-recursive copy
-      String topN = rootPrefix + top.getName() + "/";
-      String copyTopN = rootPrefix + top.getName() + "-COPY/";
-      CopyOptions copyOpts = new CopyOptionsBuilder()
-         .setSourceBucketName(_testBucket)
-         .setSourceKey(topN)
-         .setDestinationBucketName(_testBucket)
-         .setDestinationKey(copyTopN)
-         .setRecursive(false)
-         .createCopyOptions();
-      List<S3File> copy = _client.copyToDir(copyOpts).get();
-      Assert.assertEquals(2, copy.size());
+    // non-recursive copy
+    String topN = rootPrefix + top.getName() + "/";
+    String copyTopN = rootPrefix + top.getName() + "-COPY/";
+    CopyOptions copyOpts = new CopyOptionsBuilder()
+       .setSourceBucketName(_testBucket)
+       .setSourceKey(topN)
+       .setDestinationBucketName(_testBucket)
+       .setDestinationKey(copyTopN)
+       .setRecursive(false)
+       .createCopyOptions();
+    List<S3File> copy = _client.copyToDir(copyOpts).get();
+    Assert.assertEquals(2, copy.size());
 
-      // verify the non-recursive copy
-      List<S3File> copyObjs = listObjects(_testBucket, rootPrefix);
-      int currentSize = copyObjs.size();
-      Assert.assertEquals(originalCount + 5 + 2, currentSize);
-          // original files plus 5 uploaded plus 2 copied
-      Assert.assertTrue(findObject(copyObjs, copyTopN + a.getName()));
-      Assert.assertTrue(findObject(copyObjs, copyTopN + b.getName()));
+    // verify the non-recursive copy
+    List<S3File> copyObjs = listObjects(_testBucket, rootPrefix);
+    int currentSize = copyObjs.size();
+    Assert.assertEquals(originalCount + 5 + 2, currentSize);
+        // original files plus 5 uploaded plus 2 copied
+    Assert.assertTrue(findObject(copyObjs, copyTopN + a.getName()));
+    Assert.assertTrue(findObject(copyObjs, copyTopN + b.getName()));
 
-      // recursive copy
-      String copyTopN2 = topN + "COPY2/";
-      copyOpts = new CopyOptionsBuilder()
-         .setSourceBucketName(_testBucket)
-         .setSourceKey(topN)
-         .setDestinationBucketName(_testBucket)
-         .setDestinationKey(copyTopN2)
-         .setRecursive(true)
-         .createCopyOptions();
-      copy = _client.copyToDir(copyOpts).get();
-      Assert.assertEquals(5, copy.size());
+    // recursive copy
+    String copyTopN2 = topN + "COPY2/";
+    copyOpts = new CopyOptionsBuilder()
+       .setSourceBucketName(_testBucket)
+       .setSourceKey(topN)
+       .setDestinationBucketName(_testBucket)
+       .setDestinationKey(copyTopN2)
+       .setRecursive(true)
+       .createCopyOptions();
+    copy = _client.copyToDir(copyOpts).get();
+    Assert.assertEquals(5, copy.size());
 
-      // verify the recursive copy
-      String subN = copyTopN2 + sub.getName() + "/";
-      String sub2N = subN + sub2.getName() + "/";
-      copyObjs = listObjects(_testBucket, rootPrefix);
-      int lastSize = copyObjs.size();
-      Assert.assertEquals(currentSize + 5, lastSize);
-         // previous size plus 5 copies
-      Assert.assertTrue(findObject(copyObjs, copyTopN2 + a.getName()));
-      Assert.assertTrue(findObject(copyObjs, copyTopN2 + b.getName()));
-      Assert.assertTrue(findObject(copyObjs, subN + c.getName()));
-      Assert.assertTrue(findObject(copyObjs, subN + d.getName()));
-      Assert.assertTrue(findObject(copyObjs, sub2N + e.getName()));
-    }
-    finally
-    {
-      destroyDir(top);
-      destroyDir(dlDir);
-      destroyDir(dlDir2);
-    }
+    // verify the recursive copy
+    String subN = copyTopN2 + sub.getName() + "/";
+    String sub2N = subN + sub2.getName() + "/";
+    copyObjs = listObjects(_testBucket, rootPrefix);
+    int lastSize = copyObjs.size();
+    Assert.assertEquals(currentSize + 5, lastSize);
+       // previous size plus 5 copies
+    Assert.assertTrue(findObject(copyObjs, copyTopN2 + a.getName()));
+    Assert.assertTrue(findObject(copyObjs, copyTopN2 + b.getName()));
+    Assert.assertTrue(findObject(copyObjs, subN + c.getName()));
+    Assert.assertTrue(findObject(copyObjs, subN + d.getName()));
+    Assert.assertTrue(findObject(copyObjs, sub2N + e.getName()));
   }
+
 
   @Test
   public void testCrossBucketCopyDir()
     throws Throwable
   {
-    File top = null;
-    File dlDir = null;
-    File dlDir2 = null;
+    // create simple directory structure with a few files
+    File top = createTmpDir(true);
+    File a = createTextFile(top, 100);
+    File b = createTextFile(top, 100);
+    File sub = createTmpDir(top);
+    File c = createTextFile(sub, 100);
+    File d = createTextFile(sub, 100);
+    File sub2 = createTmpDir(sub);
+    File e = createTextFile(sub2, 100);
+
+    String rootPrefix = "copy-dir-bucket/";
+    List<S3File> objs = listObjects(_testBucket, rootPrefix);
+    int originalCount = objs.size();
+
+    // upload the directory
+    URI dest = getUri(top, rootPrefix);
+    List<S3File> uploaded = uploadDir(top, dest);
+    Assert.assertEquals(5, uploaded.size());
+
+    // non-recursive copy
+    String bucket2 = createTestBucket2();
+    List<S3File> objs2 = listObjects(bucket2, rootPrefix);
+    int originalCount2 = objs2.size();
+    String topN = rootPrefix + top.getName() + "/";
+    CopyOptions copyOpts = new CopyOptionsBuilder()
+       .setSourceBucketName(_testBucket)
+       .setSourceKey(topN)
+       .setDestinationBucketName(bucket2)
+       .setDestinationKey(topN)
+       .setRecursive(false)
+       .createCopyOptions();
+    List<S3File> copy = _client.copyToDir(copyOpts).get();
+    Assert.assertEquals(2, copy.size());
+
+    // verify the non-recursive copy
+    objs = listObjects(_testBucket, rootPrefix);
+    Assert.assertEquals(originalCount + 5, objs.size());
+       // original files plus 5 uploaded
+
+    List<S3File> copyObjs = listObjects(bucket2, rootPrefix);
+    Assert.assertEquals(originalCount2 + 2, copyObjs.size());
+       // original files plus 2 copied
+    Assert.assertTrue(findObject(copyObjs, topN + a.getName()));
+    Assert.assertTrue(findObject(copyObjs, topN + b.getName()));
+
+    // recursive copy
+    String copyTopN = rootPrefix + top.getName() + "-COPY/";
+    copyOpts = new CopyOptionsBuilder()
+       .setSourceBucketName(_testBucket)
+       .setSourceKey(topN)
+       .setDestinationBucketName(bucket2)
+       .setDestinationKey(copyTopN)
+       .setRecursive(true)
+       .createCopyOptions();
+    copy = _client.copyToDir(copyOpts).get();
+    Assert.assertEquals(5, copy.size());
+
+    // verify the recursive copy
+    String subN = copyTopN + sub.getName() + "/";
+    String sub2N = subN + sub2.getName() + "/";
+    objs = listObjects(_testBucket, rootPrefix);
+    Assert.assertEquals(originalCount + 5, objs.size());
+       // same original plus 5 uploaded
+    int lastSize = copyObjs.size();
+    copyObjs = listObjects(bucket2, rootPrefix);
+    Assert.assertEquals(lastSize + 5, copyObjs.size());
+       // previous size plus 5 copies
+    Assert.assertTrue(findObject(copyObjs, copyTopN + a.getName()));
+    Assert.assertTrue(findObject(copyObjs, copyTopN + b.getName()));
+    Assert.assertTrue(findObject(copyObjs, subN + c.getName()));
+    Assert.assertTrue(findObject(copyObjs, subN + d.getName()));
+    Assert.assertTrue(findObject(copyObjs, sub2N + e.getName()));
+  }
+
+
+  @Test
+  public void testEncryptedUploadDownload()
+    throws Throwable
+  {
+    // generate a new public/private key pair
+    String keyName = "cloud-store-ut";
+    File keydir = createTmpDir(true);
+    File keydir2 = createTmpDir(true);
+    KeyGenCommand kgc = new KeyGenCommand("RSA", 2048);
+    File keyfile = new File(keydir, keyName + ".pem");
+    kgc.savePemKeypair(keyfile);
+    String[] keys = parsePem(keyfile);
+    String privateKey = keys[0];
+    String publicKey = keys[1];
+
+    // capture files currently in test bucket
+    String rootPrefix = "";
+    List<S3File> objs = listObjects(_testBucket, rootPrefix);
+    int originalCount = objs.size();
+
+    // create a small file
+    File toUpload = createTextFile(100);
+    URI dest = getUri(toUpload, rootPrefix);
+
+    // upload should fail if key can't be found
+    setKeyProvider(keydir2);
     try
     {
-      // create simple directory structure with a few files
-      top = createTmpDir();
-      File a = createTextFile(top, 100);
-      File b = createTextFile(top, 100);
-      File sub = createTmpDir(top);
-      File c = createTextFile(sub, 100);
-      File d = createTextFile(sub, 100);
-      File sub2 = createTmpDir(sub);
-      File e = createTextFile(sub2, 100);
-
-      String rootPrefix = "copy-dir-bucket/";
-      List<S3File> objs = listObjects(_testBucket, rootPrefix);
-      int originalCount = objs.size();
-
-      // upload the directory
-      URI dest = getUri(top, rootPrefix);
-      List<S3File> uploaded = uploadDir(top, dest);
-      Assert.assertEquals(5, uploaded.size());
-
-      // non-recursive copy
-      String bucket2 = createTestBucket2();
-      List<S3File> objs2 = listObjects(bucket2, rootPrefix);
-      int originalCount2 = objs2.size();
-      String topN = rootPrefix + top.getName() + "/";
-      CopyOptions copyOpts = new CopyOptionsBuilder()
-         .setSourceBucketName(_testBucket)
-         .setSourceKey(topN)
-         .setDestinationBucketName(bucket2)
-         .setDestinationKey(topN)
-         .setRecursive(false)
-         .createCopyOptions();
-      List<S3File> copy = _client.copyToDir(copyOpts).get();
-      Assert.assertEquals(2, copy.size());
-
-      // verify the non-recursive copy
-      objs = listObjects(_testBucket, rootPrefix);
-      Assert.assertEquals(originalCount + 5, objs.size());
-         // original files plus 5 uploaded
-
-      List<S3File> copyObjs = listObjects(bucket2, rootPrefix);
-      Assert.assertEquals(originalCount2 + 2, copyObjs.size());
-         // original files plus 2 copied
-      Assert.assertTrue(findObject(copyObjs, topN + a.getName()));
-      Assert.assertTrue(findObject(copyObjs, topN + b.getName()));
-
-      // recursive copy
-      String copyTopN = rootPrefix + top.getName() + "-COPY/";
-      copyOpts = new CopyOptionsBuilder()
-         .setSourceBucketName(_testBucket)
-         .setSourceKey(topN)
-         .setDestinationBucketName(bucket2)
-         .setDestinationKey(copyTopN)
-         .setRecursive(true)
-         .createCopyOptions();
-      copy = _client.copyToDir(copyOpts).get();
-      Assert.assertEquals(5, copy.size());
-
-      // verify the recursive copy
-      String subN = copyTopN + sub.getName() + "/";
-      String sub2N = subN + sub2.getName() + "/";
-      objs = listObjects(_testBucket, rootPrefix);
-      Assert.assertEquals(originalCount + 5, objs.size());
-         // same original plus 5 uploaded
-      int lastSize = copyObjs.size();
-      copyObjs = listObjects(bucket2, rootPrefix);
-      Assert.assertEquals(lastSize + 5, copyObjs.size());
-         // previous size plus 5 copies
-      Assert.assertTrue(findObject(copyObjs, copyTopN + a.getName()));
-      Assert.assertTrue(findObject(copyObjs, copyTopN + b.getName()));
-      Assert.assertTrue(findObject(copyObjs, subN + c.getName()));
-      Assert.assertTrue(findObject(copyObjs, subN + d.getName()));
-      Assert.assertTrue(findObject(copyObjs, sub2N + e.getName()));
+      uploadEncryptedFile(toUpload, dest, keyName);
+      Assert.fail("Expected upload error (key not found)");
     }
-    finally
+    catch(Throwable t)
     {
-      destroyDir(top);
-      destroyDir(dlDir);
-      destroyDir(dlDir2);
+      // expected
     }
+
+    // upload should succeed now
+    setKeyProvider(keydir);
+    S3File f = uploadEncryptedFile(toUpload, dest, keyName);
+    Assert.assertNotNull(f);
+
+    // make sure file was uploaded
+    objs = listObjects(_testBucket, rootPrefix);
+    Assert.assertEquals(originalCount + 1, objs.size());
+    String key = rootPrefix + toUpload.getName();
+    Assert.assertTrue(findObject(objs, key));
+
+    // download the file and compare it with the original
+    File dlTemp = createTmpFile();
+    f = downloadFile(dest, dlTemp);
+    Assert.assertNotNull(f.getLocalFile());
+    Assert.assertTrue(compareFiles(toUpload, f.getLocalFile()));
+
+    // should fail to download if we can't find the key
+    setKeyProvider(keydir2);
+    try
+    {
+      f = downloadFile(dest, dlTemp);
+      Assert.fail("Expected download error (key not found)");
+    }
+    catch(Throwable t)
+    {
+      // expected
+    }
+
+    // try download with only private key in keydir.  should succeed
+    writeToFile(privateKey, new File(keydir2, keyfile.getName()));
+    dlTemp = createTmpFile();
+    f = downloadFile(dest, dlTemp);
+    Assert.assertNotNull(f.getLocalFile());
+    Assert.assertTrue(compareFiles(toUpload, f.getLocalFile()));
+
+    // upload should fail if only have private key
+    try
+    {
+      uploadEncryptedFile(toUpload, dest, keyName);
+      Assert.fail("Expected upload error (key not found)");
+    }
+    catch(Throwable t)
+    {
+      // expected
+    }
+
+    // upload with only public key in key dir.  should succeed
+    writeToFile(publicKey, new File(keydir2, keyfile.getName()));
+    f = uploadEncryptedFile(toUpload, dest, keyName);
+    Assert.assertNotNull(f);
   }
 
 
@@ -676,6 +736,19 @@ public class UploadDownloadTests
       .setFile(src)
       .setBucket(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
+      .createUploadOptions();
+    return _client.upload(upOpts).get();
+  }
+
+
+  private S3File uploadEncryptedFile(File src, URI dest, String keyName)
+    throws Throwable
+  {
+    UploadOptions upOpts = new UploadOptionsBuilder()
+      .setFile(src)
+      .setBucket(Utils.getBucket(dest))
+      .setObjectKey(Utils.getObjectKey(dest))
+      .setEncKey(keyName)
       .createUploadOptions();
     return _client.upload(upOpts).get();
   }
@@ -830,18 +903,38 @@ public class UploadDownloadTests
   private File createTmpDir()
     throws IOException
   {
-    return Files.createTempDirectory("cloud-store-ut").toFile();
+    return createTmpDir(false);
+  }
+
+
+  private File createTmpDir(boolean autoDelete)
+    throws IOException
+  {
+    File tmp = Files.createTempDirectory("cloud-store-ut").toFile();
+    if(autoDelete)
+      _autoDeleteDirs.add(tmp);
+    return tmp;
   }
 
 
   private File createTmpDir(File parent)
     throws IOException
   {
-    return Files.createTempDirectory(parent.toPath(), "cloud-store-ut").toFile();
+    return createTmpDir(parent, false);
   }
 
 
-  private void destroyDir(File dirF)
+  private File createTmpDir(File parent, boolean autoDelete)
+    throws IOException
+  {
+    File tmp = Files.createTempDirectory(parent.toPath(), "cloud-store-ut").toFile();
+    if(autoDelete)
+      _autoDeleteDirs.add(tmp);
+    return tmp;
+  }
+
+
+  private static void destroyDir(File dirF)
     throws IOException
   {
     if((null == dirF) || !dirF.exists())
@@ -886,6 +979,68 @@ public class UploadDownloadTests
     if(null == _testBucket2)
       _testBucket2 = TestOptions.createBucket(_client);
     return _testBucket2;
+  }
+
+
+  private void setKeyProvider(File keydir)
+  {
+    _client.setKeyProvider(Utils.getKeyProvider(keydir.getAbsolutePath()));
+  }
+
+
+  private String[] parsePem(File keyfile)
+    throws Throwable
+  {
+    final String privateBegin = "-----BEGIN PRIVATE KEY-----";
+    final String privateEnd = "-----END PRIVATE KEY-----";
+    final String publicBegin = "-----BEGIN PUBLIC KEY-----";
+    final String publicEnd = "-----END PUBLIC KEY-----";
+
+    BufferedReader r = new BufferedReader(new FileReader(keyfile));
+    String line = null;
+    boolean inPrivateSection = false;
+    boolean inPublicSection = false;
+    StringBuilder privateKey = new StringBuilder();
+    StringBuilder publicKey = new StringBuilder();
+    while((line = r.readLine()) != null)
+    {
+      if(inPrivateSection)
+      {
+        privateKey.append(line).append("\n");
+        inPrivateSection = !line.equals(privateEnd);
+      }
+      else if(inPublicSection)
+      {
+        publicKey.append(line).append("\n");
+        inPublicSection = !line.equals(publicEnd);
+      }
+      else
+      {
+        inPrivateSection = line.equals(privateBegin);
+        if(inPrivateSection)
+          privateKey.append(line).append("\n");
+        inPublicSection = line.equals(publicBegin);
+        if(inPublicSection)
+          publicKey.append(line).append("\n");
+      }
+    }
+    r.close();
+
+    String[] keys = new String[2];
+    keys[0] = privateKey.toString();
+    keys[1] = publicKey.toString();
+    return keys;
+  }
+
+
+  private void writeToFile(String data, File f)
+    throws IOException
+  {
+    if(f.exists())
+      f.delete();
+    FileWriter fw = new FileWriter(f);
+    fw.write(data);
+    fw.close();
   }
 
 }

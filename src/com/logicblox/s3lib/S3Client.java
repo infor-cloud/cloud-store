@@ -619,4 +619,11 @@ public class S3Client implements CloudStoreClient {
   {
     _client.deleteBucket(bucketName);
   }
+
+  // needed for testing
+  @Override
+  public void setKeyProvider(KeyProvider kp)
+  {
+    _keyProvider = kp;
+  }
 }

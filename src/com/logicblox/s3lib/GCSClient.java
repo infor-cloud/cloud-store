@@ -378,4 +378,10 @@ public class GCSClient implements CloudStoreClient {
       throw new RuntimeException("FIXME - not yet implemented");
     }
 
+    // needed for testing
+    @Override
+    public void setKeyProvider(KeyProvider kp)
+    {
+      s3Client.setKeyProvider(kp);
+    }
 }

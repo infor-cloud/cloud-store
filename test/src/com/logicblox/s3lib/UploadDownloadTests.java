@@ -73,8 +73,6 @@ public class UploadDownloadTests
       if(!_prefix.endsWith("/"))
         _prefix = _prefix + "/";
     }
-System.out.println("++++++ _testBucket = [" + _testBucket + "]");
-System.out.println("++++++ _prefix = [" + _prefix + "]");
     _rand = new Random(System.currentTimeMillis());
   }
 
@@ -134,8 +132,6 @@ System.out.println("++++++ _prefix = [" + _prefix + "]");
 
     Assert.assertNotNull(_client.delete(dest).get());
     Assert.assertNull(_client.exists(dest).get());
-    Assert.assertNotNull(_client.delete(_testBucket, key).get());
-       // this should succeed even though the file is gone, according to the interface
   }
 
 
@@ -754,7 +750,7 @@ System.out.println("++++++ _prefix = [" + _prefix + "]");
     Assert.assertNotNull(f);
   }
 
-
+  
   private boolean findObject(List<S3File> objs, String key)
   {
     for(S3File o : objs)

@@ -210,10 +210,7 @@ public class TestOptions
     ListOptions lsOpts = builder.createListOptions();
     List<S3File> objs = client.listObjects(lsOpts).get();
     for(S3File f : objs)
-{
-System.out.println("++++++ DELETING " + f.getKey());
       client.delete(bucket, f.getKey()).get();
-}
   }
 
 

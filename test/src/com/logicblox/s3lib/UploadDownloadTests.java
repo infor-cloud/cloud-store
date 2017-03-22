@@ -31,10 +31,11 @@ public class UploadDownloadTests
   implements OverallProgressListenerFactory, OverallProgressListener
 {
   private static CloudStoreClient _client = null;
+  private static String _prefix = null;
   private static String _testBucket = null;
-  private static String _testBucket2 = null;
-  private static Random _rand = null;
+  private static Set<String> _bucketsToDestroy = new HashSet<String>();
   private static Set<File> _autoDeleteDirs = new HashSet<File>();
+  private static Random _rand = null;
 
   private Set<String> _partSet = new HashSet<String>();
 
@@ -60,7 +61,20 @@ public class UploadDownloadTests
     throws Throwable
   {
     _client = TestOptions.createClient(0);
-    _testBucket = TestOptions.createBucket(_client);
+    URI destUri = TestOptions.getDestUri();
+    if(null == destUri)
+    {
+      _testBucket = createTestBucket();
+    }
+    else
+    {
+      _testBucket = Utils.getBucket(destUri);
+      _prefix = Utils.getObjectKey(destUri);
+      if(!_prefix.endsWith("/"))
+        _prefix = _prefix + "/";
+    }
+System.out.println("++++++ _testBucket = [" + _testBucket + "]");
+System.out.println("++++++ _prefix = [" + _prefix + "]");
     _rand = new Random(System.currentTimeMillis());
   }
 
@@ -73,11 +87,15 @@ public class UploadDownloadTests
       destroyDir(dir);
     _autoDeleteDirs.clear();
 
-    TestOptions.destroyBucket(_client, _testBucket);
-    TestOptions.destroyBucket(_client, _testBucket2);
-    TestOptions.destroyClient(_client);
+    if(null != _prefix)
+      TestOptions.clearBucket(_client, _testBucket, _prefix);
+
+    for(String bucket : _bucketsToDestroy)
+       TestOptions.destroyBucket(_client, bucket);
+    _bucketsToDestroy.clear();
     _testBucket = null;
-    _testBucket2 = null;
+
+    TestOptions.destroyClient(_client);
     _client = null;
   }
 
@@ -86,7 +104,7 @@ public class UploadDownloadTests
   public void testSimpleUploadDownload()
     throws Throwable
   {
-    String rootPrefix = "a/b/";
+    String rootPrefix = addPrefix("a/b/");
     List<S3File> objs = listObjects(_testBucket, rootPrefix);
     int originalCount = objs.size();
 
@@ -130,35 +148,36 @@ public class UploadDownloadTests
     File toUpload = createTextFile(fileSize);
 
     Assert.assertEquals(fileSize, toUpload.length());
-    URI dest = getUri(toUpload, "");
+    String rootPrefix = addPrefix("");
+    URI dest = getUri(toUpload, rootPrefix);
     S3File f = uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
     Assert.assertEquals(
       toUpload.getAbsolutePath(), f.getLocalFile().getAbsolutePath());
     Assert.assertNotNull(f.getETag());
-    Assert.assertEquals(toUpload.getName(), f.getKey());
+    Assert.assertEquals(addPrefix(toUpload.getName()), f.getKey());
     Assert.assertEquals(_testBucket, f.getBucketName());
-    Assert.assertFalse(f.getVersionId().isPresent());
-// WHY?
-    Assert.assertFalse(f.getSize().isPresent());
-// WHY?
-    Assert.assertFalse(f.getTimestamp().isPresent());
-// WHY?
+//    Assert.assertTrue(f.getVersionId().isPresent());
+      // FIXME - this info is not being populated right now
+//    Assert.assertTrue(f.getSize().isPresent());
+      // FIXME - this info is not being populated right now
+//    Assert.assertTrue(f.getTimestamp().isPresent());
+      // FIXME - this info is not being populated right now
 
-    List<S3File> objs = listObjects();
+    List<S3File> objs = listTestBucketObjects();
     for(S3File o : objs)
     {
-      if(o.getKey() == toUpload.getName())
+      if(o.getKey() == addPrefix(toUpload.getName()))
       {
         Assert.assertNull(o.getLocalFile());
-        Assert.assertEquals("", o.getETag());
-// WHY?
+//        Assert.asserTrue(o.getETag() != "");
+          // FIXME - this info is not being populated right now
         Assert.assertEquals(_testBucket, o.getBucketName());
-        Assert.assertFalse(o.getVersionId().isPresent());
-// WHY?
+//        Assert.assertTrue(o.getVersionId().isPresent());
+          // FIXME - this info is not being populated right now
         Assert.assertEquals(fileSize, o.getSize().get().longValue());
-        Assert.assertFalse(o.getTimestamp().isPresent());
-// WHY?
+//        Assert.assertTrue(o.getTimestamp().isPresent());
+          // FIXME - this info is not being populated right now
       }
     }
 
@@ -177,7 +196,8 @@ public class UploadDownloadTests
     // create a small file and upload it
     long fileSize = 100;
     File toUpload = createTextFile(fileSize);
-    URI dest = getUri(toUpload, "");
+    String rootPrefix = addPrefix("");
+    URI dest = getUri(toUpload, rootPrefix);
     uploadFile(toUpload, dest);
 
     // now download it
@@ -187,14 +207,14 @@ public class UploadDownloadTests
     Assert.assertEquals(
       dlTemp.getAbsolutePath(), f.getLocalFile().getAbsolutePath());
     Assert.assertNotNull(f.getETag());
-    Assert.assertEquals(toUpload.getName(), f.getKey());
+    Assert.assertEquals(addPrefix(toUpload.getName()), f.getKey());
     Assert.assertEquals(_testBucket, f.getBucketName());
-    Assert.assertFalse(f.getVersionId().isPresent());
-// WHY?
-    Assert.assertFalse(f.getSize().isPresent());
-// WHY?
-    Assert.assertFalse(f.getTimestamp().isPresent());
-// WHY?
+//    Assert.assertTrue(f.getVersionId().isPresent());
+      // FIXME - this info is not being populated right now
+//    Assert.assertTrue(f.getSize().isPresent());
+      // FIXME - this info is not being populated right now
+//    Assert.assertTrue(f.getTimestamp().isPresent());
+      // FIXME - this info is not being populated right now
   }
 
 
@@ -202,20 +222,21 @@ public class UploadDownloadTests
   public void testEmptyFile()
     throws Throwable
   {
-    List<S3File> objs = listObjects();
+    List<S3File> objs = listTestBucketObjects();
     int originalCount = objs.size();
 
     // upload a file
     File toUpload = createTextFile(0);
     Assert.assertEquals(0, toUpload.length());
-    URI dest = getUri(toUpload, "");
+    String rootPrefix = addPrefix("");
+    URI dest = getUri(toUpload, rootPrefix);
     S3File f = uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
 
     // make sure file was uploaded
-    objs = listObjects();
+    objs = listTestBucketObjects();
     Assert.assertEquals(originalCount + 1, objs.size());
-    String key = toUpload.getName();
+    String key = addPrefix(toUpload.getName());
     Assert.assertTrue(findObject(objs, key));
 
     // download, overwriting a larger file
@@ -230,19 +251,20 @@ public class UploadDownloadTests
   public void testDownloadNoOverwriteFile()
     throws Throwable
   {
-    List<S3File> objs = listObjects();
+    List<S3File> objs = listTestBucketObjects();
     int originalCount = objs.size();
 
     // upload a file
     File toUpload = createTextFile(100);
-    URI dest = getUri(toUpload, "");
+    String rootPrefix = addPrefix("");
+    URI dest = getUri(toUpload, rootPrefix);
     S3File f = uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
 
     // make sure file was uploaded
-    objs = listObjects();
+    objs = listTestBucketObjects();
     Assert.assertEquals(originalCount + 1, objs.size());
-    String key = toUpload.getName();
+    String key = addPrefix(toUpload.getName());
     Assert.assertTrue(findObject(objs, key));
 
     // download without overwrite to make sure it fails
@@ -278,7 +300,7 @@ public class UploadDownloadTests
     File sub2 = createTmpDir(sub);
     File e = createTextFile(sub2, 100);
 
-    String rootPrefix = "dir-ul-dl/";
+    String rootPrefix = addPrefix("dir-ul-dl/");
     List<S3File> objs = listObjects(_testBucket, rootPrefix);
     int originalCount = objs.size();
 
@@ -332,14 +354,15 @@ public class UploadDownloadTests
   public void testTinyChunk()
     throws Throwable
   {
-    List<S3File> objs = listObjects();
+    List<S3File> objs = listTestBucketObjects();
     int originalCount = objs.size();
 
     // create test file
     int fileSize = 100;
     int chunkSize = 10;
     File toUpload = createTextFile(fileSize);
-    URI dest = getUri(toUpload, "");
+    String rootPrefix = addPrefix("");
+    URI dest = getUri(toUpload, rootPrefix);
 
     // upload file in multiple concurrent chunks
     clearParts();
@@ -356,9 +379,9 @@ public class UploadDownloadTests
     // validate the upload
     int partCount = getPartCount();
     Assert.assertEquals(fileSize / chunkSize, partCount);
-    objs = listObjects();
+    objs = listTestBucketObjects();
     Assert.assertEquals(originalCount + 1, objs.size());
-    Assert.assertTrue(findObject(objs, toUpload.getName()));
+    Assert.assertTrue(findObject(objs, addPrefix(toUpload.getName())));
 
     // download the file and compare it with the original
     File dlTemp = createTmpFile();
@@ -382,20 +405,21 @@ public class UploadDownloadTests
   public void testSimpleCopy()
     throws Throwable
   {
-    List<S3File> objs = listObjects();
+    List<S3File> objs = listTestBucketObjects();
     int originalCount = objs.size();
 
     // create test file and upload it
     int fileSize = 100;
     File toUpload = createTextFile(fileSize);
-    URI dest = getUri(toUpload, "");
+    String rootPrefix = addPrefix("");
+    URI dest = getUri(toUpload, rootPrefix);
     S3File f = uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
 
     // make sure file was uploaded
-    objs = listObjects();
+    objs = listTestBucketObjects();
     Assert.assertEquals(originalCount + 1, objs.size());
-    Assert.assertTrue(findObject(objs, toUpload.getName()));
+    Assert.assertTrue(findObject(objs, addPrefix(toUpload.getName())));
 
     // copy file
     CopyOptions copyOpts = new CopyOptionsBuilder()
@@ -407,10 +431,10 @@ public class UploadDownloadTests
     S3File copy = _client.copy(copyOpts).get();
 
     // check for the copy
-    objs = listObjects();
+    objs = listTestBucketObjects();
     Assert.assertEquals(originalCount + 2, objs.size());
-    Assert.assertTrue(findObject(objs, toUpload.getName()));
-    Assert.assertTrue(findObject(objs, toUpload.getName() + "-COPY"));
+    Assert.assertTrue(findObject(objs, addPrefix(toUpload.getName())));
+    Assert.assertTrue(findObject(objs, addPrefix(toUpload.getName() + "-COPY")));
 
     // download and compare copy
     File dlTemp = createTmpFile();
@@ -425,23 +449,30 @@ public class UploadDownloadTests
   public void testCrossBucketCopy()
     throws Throwable
   {
-    List<S3File> objs = listObjects();
+    // skip this if we're using a pre-exising test bucket, assuming we're
+    // running against a server that we don't want to (or can't) create
+    // buckets in...
+    if(null != _prefix)
+       return;
+    
+    List<S3File> objs = listTestBucketObjects();
     int originalCount = objs.size();
 
     // create test file and upload it
     int fileSize = 100;
     File toUpload = createTextFile(fileSize);
-    URI dest = getUri(toUpload, "");
+    String rootPrefix = addPrefix("");
+    URI dest = getUri(toUpload, rootPrefix);
     S3File f = uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
 
     // make sure file was uploaded
-    objs = listObjects();
+    objs = listTestBucketObjects();
     Assert.assertEquals(originalCount + 1, objs.size());
-    Assert.assertTrue(findObject(objs, toUpload.getName()));
+    Assert.assertTrue(findObject(objs, addPrefix(toUpload.getName())));
 
     // copy file
-    String bucket2 = createTestBucket2();
+    String bucket2 = createTestBucket();
     CopyOptions copyOpts = new CopyOptionsBuilder()
        .setSourceBucketName(_testBucket)
        .setSourceKey(f.getKey())
@@ -451,13 +482,13 @@ public class UploadDownloadTests
     S3File copy = _client.copy(copyOpts).get();
 
     // check for the copy in 1st bucket, should be the same
-    List<S3File> copyObjs = listObjects();
+    List<S3File> copyObjs = listTestBucketObjects();
     Assert.assertEquals(objs.size(), copyObjs.size());
     for(S3File sf : copyObjs)
       Assert.assertTrue(findObject(objs, sf.getKey()));
 
     // check for the copy in 2nd bucket
-    copyObjs = listObjects(bucket2);
+    copyObjs = listObjects(bucket2, rootPrefix);
     Assert.assertEquals(1, copyObjs.size());
     Assert.assertTrue(findObject(copyObjs, toUpload.getName()));
 
@@ -492,7 +523,7 @@ public class UploadDownloadTests
     File sub2 = createTmpDir(sub);
     File e = createTextFile(sub2, 100);
 
-    String rootPrefix = "copy-dir/";
+    String rootPrefix = addPrefix("copy-dir/");
     List<S3File> objs = listObjects(_testBucket, rootPrefix);
     int originalCount = objs.size();
 
@@ -553,6 +584,12 @@ public class UploadDownloadTests
   public void testCrossBucketCopyDir()
     throws Throwable
   {
+    // skip this if we're using a pre-exising test bucket, assuming we're
+    // running against a server that we don't want to (or can't) create
+    // buckets in...
+    if(null != _prefix)
+       return;
+    
     // create simple directory structure with a few files
     File top = createTmpDir(true);
     File a = createTextFile(top, 100);
@@ -563,7 +600,7 @@ public class UploadDownloadTests
     File sub2 = createTmpDir(sub);
     File e = createTextFile(sub2, 100);
 
-    String rootPrefix = "copy-dir-bucket/";
+    String rootPrefix = addPrefix("copy-dir-bucket/");
     List<S3File> objs = listObjects(_testBucket, rootPrefix);
     int originalCount = objs.size();
 
@@ -573,7 +610,7 @@ public class UploadDownloadTests
     Assert.assertEquals(5, uploaded.size());
 
     // non-recursive copy
-    String bucket2 = createTestBucket2();
+    String bucket2 = createTestBucket();
     List<S3File> objs2 = listObjects(bucket2, rootPrefix);
     int originalCount2 = objs2.size();
     String topN = rootPrefix + top.getName() + "/";
@@ -644,7 +681,7 @@ public class UploadDownloadTests
     String publicKey = keys[1];
 
     // capture files currently in test bucket
-    String rootPrefix = "";
+    String rootPrefix = addPrefix("");
     List<S3File> objs = listObjects(_testBucket, rootPrefix);
     int originalCount = objs.size();
 
@@ -799,37 +836,44 @@ public class UploadDownloadTests
   }
 
 
-  private List<S3File> listObjects()
+  private List<S3File> listTestBucketObjects()
     throws Throwable
   {
-    return listObjects(_testBucket);
+    return listObjects(_testBucket, _prefix);
   }
 
 
   private List<S3File> listObjects(String bucket)
     throws Throwable
   {
-    ListOptions lsOpts = new ListOptionsBuilder()
-      .setBucket(bucket)
-      .setRecursive(true)
-      .setIncludeVersions(false)
-      .setExcludeDirs(false)
-      .createListOptions();
-    return _client.listObjects(lsOpts).get();
+    return listObjects(bucket, null);
   }
 
 
   private List<S3File> listObjects(String bucket, String key)
     throws Throwable
   {
-    ListOptions lsOpts = new ListOptionsBuilder()
+    ListOptionsBuilder builder = new ListOptionsBuilder()
       .setBucket(bucket)
       .setRecursive(true)
       .setIncludeVersions(false)
-      .setExcludeDirs(false)
-      .setObjectKey(key)
-      .createListOptions();
+      .setExcludeDirs(false);
+    if(null != key)
+      builder.setObjectKey(key);
+    ListOptions lsOpts = builder.createListOptions();
     return _client.listObjects(lsOpts).get();
+  }
+
+
+  // add _prefix to this if it is defined to create files within a
+  // specific location in a pre-existing bucket.  assumes _prefix ends
+  // with a / and the path passed in does not start with a /
+  private String addPrefix(String path)
+  {
+    if(null == _prefix)
+      return path;
+    else
+      return _prefix + path;
   }
 
 
@@ -974,11 +1018,18 @@ public class UploadDownloadTests
   }
 
 
-  private String createTestBucket2()
+  private static String createTestBucket()
   {
-    if(null == _testBucket2)
-      _testBucket2 = TestOptions.createBucket(_client);
-    return _testBucket2;
+    return createTestBucket(true);
+  }
+
+  
+  private static String createTestBucket(boolean destroy)
+  {
+    String bucket = TestOptions.createBucket(_client);
+    if(destroy)
+      _bucketsToDestroy.add(bucket);
+    return bucket;
   }
 
 

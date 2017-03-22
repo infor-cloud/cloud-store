@@ -2,6 +2,7 @@ package com.logicblox.s3lib;
 
 import java.io.IOException;
 import java.lang.InterruptedException;
+import java.net.URI;
 import java.net.URL;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -14,11 +15,13 @@ public class TestOptions
 {
   private static String _service = "s3";
   private static String _endpoint = null;
+  private static URI _destUri = null;
 
 
   // handle all input parameters
   public static void parseArgs(String[] args)
   {
+    String destPrefix = null;
     for(int i = 0; i < args.length; ++i)
     {
       if(args[i].equals("--help") || args[i].equals("-h"))
@@ -36,10 +39,30 @@ public class TestOptions
         ++i;
         _endpoint = args[i];
       }
+      else if(args[i].equals("--dest-prefix"))
+      {
+        ++i;
+        destPrefix = args[i];
+      }
       else
       {
         System.out.println("Error:  '" + args[i] + "' unexpected");
         System.exit(1);
+      }
+    }
+
+    if(null != destPrefix)
+    {
+      try
+      {
+        _destUri = Utils.getURI(destPrefix);
+        _service = _destUri.getScheme();
+      }
+      catch(Throwable t)
+      {
+        System.out.println("Error: could not parse --dest-prefix URL ["
+	   + t.getMessage() + "]");
+	System.exit(1);
       }
     }
 
@@ -82,6 +105,12 @@ public class TestOptions
   }
 
 
+  public static URI getDestUri()
+  {
+    return _destUri;
+  }
+
+
   // return a string that describes the storage service used for the tests
   public static String getServiceDescription()
   {
@@ -90,7 +119,10 @@ public class TestOptions
       ep = "AWS";
     else if((null == ep) && _service.equals("gs"))
       ep = "GCS";
-    return _service + " (" + ep + ")";
+    String svc =_service + " (" + ep + ")";
+    if(null != _destUri)
+       svc = svc + ", in " + _destUri;
+    return svc;
   }
 
 
@@ -160,23 +192,34 @@ public class TestOptions
     if((null == bucket) || bucket.isEmpty())
       return;
 
-    ListOptions lsOpts = new ListOptionsBuilder()
+    clearBucket(client, bucket, null);
+    client.destroyBucket(bucket);
+  }
+
+
+  public static void clearBucket(CloudStoreClient client, String bucket, String prefix)
+    throws InterruptedException, ExecutionException
+  {
+    ListOptionsBuilder builder = new ListOptionsBuilder()
       .setBucket(bucket)
       .setRecursive(true)
       .setIncludeVersions(false)
-      .setExcludeDirs(false)
-      .createListOptions();
+      .setExcludeDirs(false);
+    if((null != prefix) && !prefix.isEmpty())
+      builder.setObjectKey(prefix);
+    ListOptions lsOpts = builder.createListOptions();
     List<S3File> objs = client.listObjects(lsOpts).get();
     for(S3File f : objs)
+{
+System.out.println("++++++ DELETING " + f.getKey());
       client.delete(bucket, f.getKey()).get();
-
-    client.destroyBucket(bucket);
+}
   }
 
 
   private static void usage()
   {
-    System.out.println("usage:  TestRunner {--help || -h} {--service s3|gs} {--endpoint url}");
+    System.out.println("usage:  TestRunner {--help || -h} {--service s3|gs} {--endpoint url} {--dest-prefix url");
   }
 
 }

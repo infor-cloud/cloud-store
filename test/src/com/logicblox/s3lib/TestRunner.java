@@ -9,7 +9,7 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses( { 
-  BucketTests.class,
+//  BucketTests.class,
   UploadDownloadTests.class
  })
 public class TestRunner

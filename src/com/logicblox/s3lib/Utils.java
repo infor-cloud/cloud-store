@@ -451,14 +451,19 @@ public class Utils
     ListeningExecutorService uploadExecutor = 
       getHttpExecutor(maxConcurrentConnections);
 
-    Utils.StorageService service = detectStorageService(endpoint, scheme);
+    StorageService service = detectStorageService(endpoint, scheme);
 
     CloudStoreClient client;
-    if(service == Utils.StorageService.GCS)
+    if(service == StorageService.GCS)
     {
       AWSCredentialsProvider gcsXMLProvider =
         getGCSXMLEnvironmentVariableCredentialsProvider();
-      AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(gcsXMLProvider);
+
+      // make the AWS interfaces use V2 signatures for authentication
+      ClientConfiguration config = new ClientConfiguration();
+      config.setSignerOverride("S3SignerType");
+
+      AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(gcsXMLProvider, config);
 
       client = new GCSClientBuilder()
           .setInternalS3Client(s3Client)
@@ -469,9 +474,9 @@ public class Utils
     else
     {
       ClientConfiguration clientCfg = new ClientConfiguration();
-      clientCfg = Utils.setProxy(clientCfg);
+      clientCfg = setProxy(clientCfg);
       AWSCredentialsProvider credsProvider =
-        Utils.getCredentialsProviderS3(credentialProvidersS3);
+        getCredentialsProviderS3(credentialProvidersS3);
       AmazonS3Client s3Client = new AmazonS3Client(credsProvider, clientCfg);
 
       client = new S3ClientBuilder()

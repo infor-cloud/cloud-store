@@ -238,8 +238,12 @@ public class DownloadCommand extends Command
             encKey = new SecretKeySpec(encKeyBytes, "AES");
           }
 
-          setChunkSize(Long.valueOf(meta.get("s3tool-chunk-size")));
-          setFileLength(Long.valueOf(meta.get("s3tool-file-length")));
+	  long cs = Long.valueOf(meta.get("s3tool-chunk-size"));
+	  long len = Long.valueOf(meta.get("s3tool-file-length"));
+	  if(cs == 0)
+	    cs = Utils.getDefaultChunkSize(len);
+          setChunkSize(cs);
+          setFileLength(len);
         }
         else
         {

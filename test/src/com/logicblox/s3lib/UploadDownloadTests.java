@@ -347,15 +347,15 @@ public class UploadDownloadTests
 
 
   @Test
-  public void testTinyChunk()
+  public void testMultipartUploadDownload()
     throws Throwable
   {
     List<S3File> objs = listTestBucketObjects();
     int originalCount = objs.size();
 
-    // create test file
-    int fileSize = 100;
-    int chunkSize = 10;
+    // create test file - AWS requires a min 5M chunk size...
+    int chunkSize = 5 * 1024 * 1024;
+    int fileSize = chunkSize + 1000000;
     File toUpload = createTextFile(fileSize);
     String rootPrefix = addPrefix("");
     URI dest = getUri(toUpload, rootPrefix);
@@ -374,7 +374,8 @@ public class UploadDownloadTests
 
     // validate the upload
     int partCount = getPartCount();
-    Assert.assertEquals(fileSize / chunkSize, partCount);
+    int expectedCount = getExpectedPartCount(fileSize, chunkSize);
+    Assert.assertEquals(expectedCount, partCount);
     objs = listTestBucketObjects();
     Assert.assertEquals(originalCount + 1, objs.size());
     Assert.assertTrue(findObject(objs, addPrefix(toUpload.getName())));
@@ -391,11 +392,66 @@ public class UploadDownloadTests
     clearParts();
     f = _client.download(dlOpts).get();
     partCount = getPartCount();
-    Assert.assertEquals(fileSize / chunkSize, partCount);
+    Assert.assertEquals(expectedCount, partCount);
     Assert.assertNotNull(f.getLocalFile());
     Assert.assertTrue(compareFiles(toUpload, f.getLocalFile()));
   }
 
+
+  @Test
+  public void testSmallMultipartUploadDownload()
+    throws Throwable
+  {
+    // files smaller than the minimum chunk size can still be uploaded using
+    // multi-part protocol.  should just use a single part.
+    
+    List<S3File> objs = listTestBucketObjects();
+    int originalCount = objs.size();
+
+    // create test file - AWS requires a min 5M chunk size...
+    int chunkSize = 5 * 1024 * 1024;
+    int fileSize = 100;
+    File toUpload = createTextFile(fileSize);
+    String rootPrefix = addPrefix("");
+    URI dest = getUri(toUpload, rootPrefix);
+
+    // upload file in multiple concurrent chunks
+    clearParts();
+    UploadOptions upOpts = new UploadOptionsBuilder()
+      .setFile(toUpload)
+      .setBucket(Utils.getBucket(dest))
+      .setObjectKey(Utils.getObjectKey(dest))
+      .setOverallProgressListenerFactory(this)
+      .setChunkSize(chunkSize)
+      .createUploadOptions();
+    S3File f = _client.upload(upOpts).get();
+    Assert.assertNotNull(f);
+
+    // validate the upload
+    int partCount = getPartCount();
+    int expectedCount = getExpectedPartCount(fileSize, chunkSize);
+    Assert.assertEquals(expectedCount, partCount);
+    objs = listTestBucketObjects();
+    Assert.assertEquals(originalCount + 1, objs.size());
+    Assert.assertTrue(findObject(objs, addPrefix(toUpload.getName())));
+
+    // download the file and compare it with the original
+    File dlTemp = createTmpFile();
+    DownloadOptions dlOpts = new DownloadOptionsBuilder()
+      .setFile(dlTemp)
+      .setUri(dest)
+      .setRecursive(false)
+      .setOverwrite(true)
+      .setOverallProgressListenerFactory(this)
+      .createDownloadOptions();
+    clearParts();
+    f = _client.download(dlOpts).get();
+    partCount = getPartCount();
+    Assert.assertEquals(expectedCount, partCount);
+    Assert.assertNotNull(f.getLocalFile());
+    Assert.assertTrue(compareFiles(toUpload, f.getLocalFile()));
+  }
+  
 
   @Test
   public void testSimpleCopy()
@@ -901,6 +957,22 @@ public class UploadDownloadTests
     if(src.isDirectory())
       end = "/";
     return new URI(TestOptions.getService() + "://" + _testBucket + prefix + src.getName() + end);
+  }
+
+
+  // GCS implementation currently doesn't support multipart uploads
+  private boolean supportsMultiPart()
+  {
+    return !TestOptions.getService().equalsIgnoreCase("gs");
+  }
+
+
+  private int getExpectedPartCount(int fileSize, int chunkSize)
+  {
+    if(supportsMultiPart())
+      return (int) Math.ceil(((double) fileSize) / chunkSize);
+    else
+      return 1;
   }
 
 

@@ -688,8 +688,6 @@ class Main
   public String findParent(String current)
   {
     if (current.endsWith("/")) {
-      // TODO(gk): `current` is updated in-place. Not sure if it was intended or
-      // not. Revisit.
       current = current.substring(0, current.length() - 1);
     }
     int endIndex = current.lastIndexOf('/');

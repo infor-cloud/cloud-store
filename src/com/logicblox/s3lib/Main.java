@@ -684,18 +684,14 @@ class Main
       }
     }
   }
-  
-  public String findParent(String current) {
-    if (current.lastIndexOf('/') != - 1) {
-      if (current.endsWith("/")) {
-        current = current.substring(0, current.length() - 1);
-        return current.substring(0, current.lastIndexOf('/'));
-      } else {
-        return current.substring(0, current.lastIndexOf('/'));
-      }
-    } else {
-      return "";
+
+  public String findParent(String current)
+  {
+    if (current.endsWith("/")) {
+      current = current.substring(0, current.length() - 1);
     }
+    int endIndex = current.lastIndexOf('/');
+    return current.substring(0, endIndex == -1 ? 0 : endIndex);
   }
   
   public void printTree( Map<String, DirectoryNode> map, boolean humanReadble,

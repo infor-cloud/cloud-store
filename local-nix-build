@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -e
+
+# This wraps use of nix-build to run the test job in default.nix, passing in
+# args that point to my local source directories.
+
+# NOTE:  For some reason, this required me to set up the following symbolic
+#        links.  Not sure how to set the LOGICBLOX_HOME and LB_UNIVERSE_DEPS
+#        environment variables for nix-build.
+#             sudo mkdir /opt/logicblox
+#             cd /opt/logicblox
+#             ln -s ~/dev/LB4/deploy/lb-universe-deps
+#             ln -s ~/dev/LB4/deploy/logicblox/share
+
+
+builder_config=~/dev/nix-builds/config
+
+
+# clean up stuff that we don't want copied into the nix environment
+rm -rf core build Makefile buildlib.pyc config-env.sh
+
+#keep="-K"
+keep=""
+nix-build $keep -A run_test --argstr bld_cfg $builder_config local_test_wrapper.nix 2>&1 | tee nixbuild.log

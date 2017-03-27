@@ -44,9 +44,15 @@ public class TestOptions
         ++i;
         destPrefix = args[i];
       }
+      else if(args[i].equals("--keydir"))
+      {
+        ++i;
+        Utils.setDefaultKeyDir(args[i]);
+      }
       else
       {
         System.out.println("Error:  '" + args[i] + "' unexpected");
+	usage();
         System.exit(1);
       }
     }
@@ -189,17 +195,20 @@ public class TestOptions
   public static void destroyBucket(CloudStoreClient client, String bucket)
     throws InterruptedException, ExecutionException
   {
+/* DO NOT COMMIT */
     if((null == bucket) || bucket.isEmpty())
       return;
 
     clearBucket(client, bucket, null);
     client.destroyBucket(bucket);
+/* */
   }
 
 
   public static void clearBucket(CloudStoreClient client, String bucket, String prefix)
     throws InterruptedException, ExecutionException
   {
+/* DO NOT COMMIT */
     ListOptionsBuilder builder = new ListOptionsBuilder()
       .setBucket(bucket)
       .setRecursive(true)
@@ -211,12 +220,13 @@ public class TestOptions
     List<S3File> objs = client.listObjects(lsOpts).get();
     for(S3File f : objs)
       client.delete(bucket, f.getKey()).get();
+/* */
   }
 
 
   private static void usage()
   {
-    System.out.println("usage:  TestRunner {--help || -h} {--service s3|gs} {--endpoint url} {--dest-prefix url");
+    System.out.println("usage:  TestRunner {--help || -h} {--service s3|gs} {--endpoint url} {--dest-prefix url} {--keydir dir}");
   }
 
 }

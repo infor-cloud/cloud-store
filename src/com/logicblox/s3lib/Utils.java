@@ -45,7 +45,8 @@ import org.apache.log4j.PatternLayout;
 
 public class Utils
 {
-
+  private static String _defaultKeyDir = null;
+  
   static void initLogging()
   {
     Logger root = Logger.getRootLogger();
@@ -77,7 +78,14 @@ public class Utils
 
   public static String getDefaultKeyDirectory()
   {
-    return System.getProperty("user.home") + File.separator + ".s3lib-keys";
+    if(null == _defaultKeyDir)
+      _defaultKeyDir = System.getProperty("user.home") + File.separator + ".s3lib-keys";
+    return _defaultKeyDir;
+  }
+
+  public static void setDefaultKeyDir(String keydir)
+  {
+    _defaultKeyDir = keydir;
   }
 
   public static long getDefaultChunkSize()

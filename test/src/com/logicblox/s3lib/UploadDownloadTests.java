@@ -28,7 +28,8 @@ import java.net.URISyntaxException;
 
 
 public class UploadDownloadTests
-  implements OverallProgressListenerFactory, OverallProgressListener
+  implements OverallProgressListenerFactory, OverallProgressListener,
+             RetryListener
 {
   private static CloudStoreClient _client = null;
   private static String _prefix = null;
@@ -36,9 +37,18 @@ public class UploadDownloadTests
   private static Set<String> _bucketsToDestroy = new HashSet<String>();
   private static Set<File> _autoDeleteDirs = new HashSet<File>();
   private static Random _rand = null;
-
+  private static int _defaultRetryCount = 0;
+  
   private Set<String> _partSet = new HashSet<String>();
+  private int _retryCount = 0;
 
+
+  // RetryListener
+  @Override
+  public synchronized void retryTriggered(RetryEvent e)
+  {
+    ++_retryCount;
+  }
 
   // OverallProgressListenerFactory
   @Override
@@ -60,7 +70,7 @@ public class UploadDownloadTests
   public static void setUp()
     throws Throwable
   {
-    _client = TestOptions.createClient(0);
+    _client = TestOptions.createClient(_defaultRetryCount);
     URI destUri = TestOptions.getDestUri();
     if(null == destUri)
     {
@@ -95,6 +105,112 @@ public class UploadDownloadTests
 
     TestOptions.destroyClient(_client);
     _client = null;
+  }
+
+
+  @Test
+  public void testFailedUploadRetry()
+    throws Throwable
+  {
+    try
+    {
+      ThrowableRetriableTask.addRetryListener(this);
+      clearRetryCount();
+      int retryCount = 5;
+      _client.setRetryCount(retryCount);
+      UploadOptions.setAbortInjectionCounter(10);
+      List<S3File> objs = listTestBucketObjects();
+      int originalCount = objs.size();
+
+      // create test file - AWS requires a min 5M chunk size...
+      int chunkSize = 5 * 1024 * 1024;
+      int fileSize = chunkSize + 1000000;
+      File toUpload = createTextFile(fileSize);
+      String rootPrefix = addPrefix("");
+      URI dest = getUri(toUpload, rootPrefix);
+
+      // upload file in multiple concurrent chunks
+      clearParts();
+      UploadOptions upOpts = new UploadOptionsBuilder()
+        .setFile(toUpload)
+        .setBucket(Utils.getBucket(dest))
+        .setObjectKey(Utils.getObjectKey(dest))
+        .setChunkSize(chunkSize)
+        .createUploadOptions();
+      try
+      {
+        _client.upload(upOpts).get();
+        Assert.fail("expected exception");
+      }
+      catch(Throwable t)
+      {
+        // expected
+      }
+      Assert.assertEquals(retryCount - 1, getRetryCount());
+    }
+    finally
+    {
+      _client.setRetryCount(_defaultRetryCount);
+      UploadOptions.setAbortInjectionCounter(0);
+    }
+  }
+
+    
+  @Test
+  public void testSuccessfulUploadRetry()
+    throws Throwable
+  {
+    try
+    {
+      ThrowableRetriableTask.addRetryListener(this);
+      clearRetryCount();
+      int retryCount = 10;
+      int abortCount = 3;
+      _client.setRetryCount(retryCount);
+      UploadOptions.setAbortInjectionCounter(abortCount);
+      List<S3File> objs = listTestBucketObjects();
+      int originalCount = objs.size();
+
+      // create test file - AWS requires a min 5M chunk size...
+      int chunkSize = 5 * 1024 * 1024;
+      int fileSize = chunkSize + 1000000;
+      File toUpload = createTextFile(fileSize);
+      String rootPrefix = addPrefix("");
+      URI dest = getUri(toUpload, rootPrefix);
+
+      // upload file in multiple concurrent chunks
+      UploadOptions upOpts = new UploadOptionsBuilder()
+        .setFile(toUpload)
+        .setBucket(Utils.getBucket(dest))
+        .setObjectKey(Utils.getObjectKey(dest))
+        .setChunkSize(chunkSize)
+        .createUploadOptions();
+      S3File f = _client.upload(upOpts).get();
+      Assert.assertNotNull(f);
+      Assert.assertEquals(abortCount, getRetryCount());
+
+      // validate the upload
+      objs = listTestBucketObjects();
+      Assert.assertEquals(originalCount + 1, objs.size());
+      Assert.assertTrue(findObject(objs, addPrefix(toUpload.getName())));
+
+      // download the file and compare it with the original
+      File dlTemp = createTmpFile();
+      DownloadOptions dlOpts = new DownloadOptionsBuilder()
+        .setFile(dlTemp)
+        .setUri(dest)
+        .setRecursive(false)
+        .setOverwrite(true)
+        .createDownloadOptions();
+      f = _client.download(dlOpts).get();
+      Assert.assertNotNull(f.getLocalFile());
+      Assert.assertTrue(compareFiles(toUpload, f.getLocalFile()));
+    }
+    finally
+    {
+      _client.setRetryCount(_defaultRetryCount);
+      UploadOptions.setAbortInjectionCounter(0);
+    }
   }
 
 
@@ -212,7 +328,6 @@ public class UploadDownloadTests
 //    Assert.assertTrue(f.getTimestamp().isPresent());
       // FIXME - this info is not being populated right now
   }
-
 
   @Test
   public void testEmptyFile()
@@ -826,6 +941,10 @@ public class UploadDownloadTests
       .setBucket(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .createUploadOptions();
+
+System.out.println("-------- UPLOADING ---------");
+System.out.println("   bucket: " + upOpts.getBucket());
+System.out.println("   key: " + upOpts.getObjectKey());
     return _client.upload(upOpts).get();
   }
 
@@ -1160,6 +1279,16 @@ public class UploadDownloadTests
     FileWriter fw = new FileWriter(f);
     fw.write(data);
     fw.close();
+  }
+
+  private synchronized void clearRetryCount()
+  {
+    _retryCount = 0;
+  }
+
+  private synchronized int getRetryCount()
+  {
+    return _retryCount;
   }
 
 }

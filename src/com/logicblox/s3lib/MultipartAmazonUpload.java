@@ -35,6 +35,7 @@ class MultipartAmazonUpload implements Upload
   private Date initiated;
   private ListeningExecutorService executor;
 
+
   public MultipartAmazonUpload(AmazonS3 client, String bucketName, String key, String uploadId,
                                Date initiated, ListeningExecutorService executor)
   {
@@ -58,6 +59,10 @@ class MultipartAmazonUpload implements Upload
 
   public ListenableFuture<String> completeUpload()
   {
+    // added to support retry testing
+    if(UploadOptions.decrementAbortInjectionCounter(uploadId) > 0)
+      throw new RuntimeException("aborting upload");
+      
     return executor.submit(new CompleteCallable());
   }
 

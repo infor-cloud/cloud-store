@@ -117,6 +117,9 @@ jar(
 bin_program('cloud-store')
 bin_program('s3tool')
 
+# DO NOT COMMIT!
+bin_program('/home/weshunter/dev/minio/minio.latest')
+
 install_files(deps + test_deps, '$(prefix)/lib/java')
 
 dist_files(['README'])

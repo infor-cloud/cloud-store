@@ -195,20 +195,17 @@ public class TestOptions
   public static void destroyBucket(CloudStoreClient client, String bucket)
     throws InterruptedException, ExecutionException
   {
-/* DO NOT COMMIT */
     if((null == bucket) || bucket.isEmpty())
       return;
 
     clearBucket(client, bucket, null);
     client.destroyBucket(bucket);
-/* */
   }
 
 
   public static void clearBucket(CloudStoreClient client, String bucket, String prefix)
     throws InterruptedException, ExecutionException
   {
-/* DO NOT COMMIT */
     ListOptionsBuilder builder = new ListOptionsBuilder()
       .setBucket(bucket)
       .setRecursive(true)
@@ -220,7 +217,6 @@ public class TestOptions
     List<S3File> objs = client.listObjects(lsOpts).get();
     for(S3File f : objs)
       client.delete(bucket, f.getKey()).get();
-/* */
   }
 
 

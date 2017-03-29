@@ -49,7 +49,7 @@ let
         '';
       };
 
-    test2 =
+    test_cloud_store =
       pkgs.stdenv.mkDerivation {
         name = "${name}-test";
         src = build.out;
@@ -85,16 +85,16 @@ let
           keydir="$(pwd)/cloud-store-ut-keys"
           mkdir -p $keydir
 
-          minio -h
-	  minio version
+          minio_bin="minio"
+          minio_bin="./bin/minio.latest"
+          $minio_bin -h
+	  $minio_bin version
 
           MINIO_ACCESS_KEY=$AWS_ACCESS_KEY_ID MINIO_SECRET_KEY=$AWS_SECRET_ACCESS_KEY \
-            minio server $HOME/cloud-store-ut-buckets --address $s3_addr &
+            $minio_bin server $HOME/cloud-store-ut-buckets --address $s3_addr &
 
           minio_pid="$!"
           sleep 5
-
-          # cloud-store keygen --name cloud-store-ut-1234 --keydir $keydir
 
 	  $jre/bin/java -cp ./lib/java/s3lib-test.jar com.logicblox.s3lib.TestRunner --keydir $keydir --endpoint $s3_endpoint
 

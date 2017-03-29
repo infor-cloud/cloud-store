@@ -147,6 +147,9 @@ public class UploadDownloadTests
         // expected
       }
       Assert.assertEquals(retryCount - 1, getRetryCount());
+      objs = listTestBucketObjects();
+      Assert.assertEquals(originalCount, objs.size());
+      Assert.assertFalse(findObject(objs, addPrefix(toUpload.getName())));
     }
     finally
     {
@@ -328,6 +331,7 @@ public class UploadDownloadTests
 //    Assert.assertTrue(f.getTimestamp().isPresent());
       // FIXME - this info is not being populated right now
   }
+
 
   @Test
   public void testEmptyFile()
@@ -941,10 +945,6 @@ public class UploadDownloadTests
       .setBucket(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .createUploadOptions();
-
-System.out.println("-------- UPLOADING ---------");
-System.out.println("   bucket: " + upOpts.getBucket());
-System.out.println("   key: " + upOpts.getObjectKey());
     return _client.upload(upOpts).get();
   }
 

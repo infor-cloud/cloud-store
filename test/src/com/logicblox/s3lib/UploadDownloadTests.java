@@ -896,7 +896,9 @@ public class UploadDownloadTests
     File dlTemp = createTmpFile();
     f = downloadFile(dest, dlTemp);
     Assert.assertNotNull(f.getLocalFile());
+    Assert.assertTrue(dlTemp.exists());
     Assert.assertTrue(compareFiles(toUpload, f.getLocalFile()));
+    dlTemp.delete();
 
     // should fail to download if we can't find the key
     setKeyProvider(keydir2);
@@ -909,11 +911,13 @@ public class UploadDownloadTests
     {
       // expected
     }
+    Assert.assertFalse(dlTemp.exists());
 
     // try download with only private key in keydir.  should succeed
     writeToFile(privateKey, new File(keydir2, keyfile.getName()));
     dlTemp = createTmpFile();
     f = downloadFile(dest, dlTemp);
+    Assert.assertTrue(dlTemp.exists());
     Assert.assertNotNull(f.getLocalFile());
     Assert.assertTrue(compareFiles(toUpload, f.getLocalFile()));
 

@@ -34,12 +34,10 @@ class MultipartAmazonCopyFactory
                                           String destinationBucketName,
                                           String destinationKey,
                                           String cannedAcl,
-                                          Map<String, String> _userMetadata,
-                                          long chunkSize)
+                                          Map<String, String> _userMetadata)
   {
     return executor.submit(new StartCallable(sourceBucketName, sourceKey,
-      destinationBucketName, destinationKey, cannedAcl, _userMetadata,
-      chunkSize));
+      destinationBucketName, destinationKey, cannedAcl, _userMetadata));
   }
 
   public ListenableFuture<Copy> startCopy(String sourceBucketName,
@@ -47,12 +45,10 @@ class MultipartAmazonCopyFactory
                                           String destinationBucketName,
                                           String destinationKey,
                                           AccessControlList acl,
-                                          Map<String, String> _userMetadata,
-                                          long chunkSize)
+                                          Map<String, String> _userMetadata)
   {
     return executor.submit(new StartCallable(sourceBucketName, sourceKey,
-      destinationBucketName, destinationKey, acl, _userMetadata,
-      chunkSize));
+      destinationBucketName, destinationKey, acl, _userMetadata));
   }
 
   private class StartCallable implements Callable<Copy>
@@ -64,12 +60,10 @@ class MultipartAmazonCopyFactory
     private String cannedAcl;
     private AccessControlList acl;
     private Map<String, String> userMetadata;
-    private long chunkSize;
 
     public StartCallable(String sourceBucketName, String sourceKey,
                          String destinationBucketName, String destinationKey,
-                         String cannedAcl, Map<String, String> userMetadata,
-                         long chunkSize)
+                         String cannedAcl, Map<String, String> userMetadata)
     {
       this.sourceBucketName = sourceBucketName;
       this.sourceKey = sourceKey;
@@ -77,13 +71,12 @@ class MultipartAmazonCopyFactory
       this.destinationKey = destinationKey;
       this.cannedAcl = cannedAcl;
       this.userMetadata = userMetadata;
-      this.chunkSize = chunkSize;
     }
 
     public StartCallable(String sourceBucketName, String sourceKey,
                          String destinationBucketName, String destinationKey,
                          AccessControlList acl,
-                         Map<String, String> userMetadata, long chunkSize)
+                         Map<String, String> userMetadata)
     {
       this.sourceBucketName = sourceBucketName;
       this.sourceKey = sourceKey;
@@ -91,7 +84,6 @@ class MultipartAmazonCopyFactory
       this.destinationKey = destinationKey;
       this.acl = acl;
       this.userMetadata = userMetadata;
-      this.chunkSize = chunkSize;
     }
 
     public Copy call() throws Exception
@@ -106,6 +98,8 @@ class MultipartAmazonCopyFactory
 
       if (metadata.getUserMetaDataOf("s3tool-version") == null)
       {
+        long chunkSize = Utils.getDefaultChunkSize(metadata.getContentLength());
+
         metadata.addUserMetadata("s3tool-version", String.valueOf(Version.CURRENT));
         metadata.addUserMetadata("s3tool-chunk-size", Long.toString(chunkSize));
         metadata.addUserMetadata("s3tool-file-length", Long.toString(metadata.getContentLength()));

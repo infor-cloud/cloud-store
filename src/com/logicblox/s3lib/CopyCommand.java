@@ -119,18 +119,15 @@ public class CopyCommand extends Command
                                                  final String destinationBucketName,
                                                  final String destinationKey)
   {
-    long chunkSize0 = chunkSize == 0 ? Utils.getDefaultChunkSize() : chunkSize;
     MultipartAmazonCopyFactory factory = new MultipartAmazonCopyFactory
         (getAmazonS3Client(), _copyExecutor);
     if (_acl != null)
     {
       return factory.startCopy(sourceBucketName, sourceKey,
-        destinationBucketName, destinationKey, _acl, _userMetadata,
-        chunkSize0);
+        destinationBucketName, destinationKey, _acl, _userMetadata);
     }
     return factory.startCopy(sourceBucketName, sourceKey,
-      destinationBucketName, destinationKey, _cannedAcl, _userMetadata,
-      chunkSize0);
+      destinationBucketName, destinationKey, _cannedAcl, _userMetadata);
   }
 
   /**

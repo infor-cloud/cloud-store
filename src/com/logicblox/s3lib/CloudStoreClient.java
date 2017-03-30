@@ -394,6 +394,9 @@ public interface CloudStoreClient {
      * <p>
      * If {@code exclude_dirs} is enabled, then Directories are <i>not</i>
      * included in the results.
+     * <p>
+     * If {@code include-versions} is enabled, then versions of objects will be
+     * included in the results. 
      * 
      * @param lsOptions Class contains all needed options for ls command
      * @see CloudStoreClient#listObjects(ListOptions)

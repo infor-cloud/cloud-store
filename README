@@ -29,7 +29,7 @@ Usage
 
 Generate a key pair:
 
-    $ cloud-store --keygen testkeypair
+    $ cloud-store keygen -n testkeypair
 
 By default, the key pair is installed under `~/.s3lib-keys`.
 

@@ -1,31 +1,37 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.s3.model.VersionListing;
+
+import com.amazonaws.services.s3.model.S3VersionSummary;
+import com.amazonaws.services.s3.model.ListVersionsRequest;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.amazonaws.services.s3.internal.Constants;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 
-public class ListCommand extends Command {
+public class ListVersionsCommand extends Command {
   
-
+  
   private ListeningExecutorService _httpExecutor;
   private ListeningScheduledExecutorService _executor;
-
-  public ListCommand(ListeningExecutorService httpExecutor,
+  
+  public ListVersionsCommand(ListeningExecutorService httpExecutor,
       ListeningScheduledExecutorService internalExecutor) {
     _httpExecutor = httpExecutor;
     _executor = internalExecutor;
   }
-
+  
   public ListenableFuture<List<S3File>> run(final ListOptions lsOptions) {
     ListenableFuture<List<S3File>> future =
         executeWithRetry(_executor, new Callable<ListenableFuture<List<S3File>>>() {
+          
+          
           public ListenableFuture<List<S3File>> call() {
             return runActual(lsOptions);
           }
@@ -41,33 +47,34 @@ public class ListCommand extends Command {
   
   private ListenableFuture<List<S3File>> runActual(final ListOptions lsOptions) {
     return _httpExecutor.submit(new Callable<List<S3File>>() {
-
+      
+      
       public List<S3File> call() {
-        ListObjectsRequest req = new ListObjectsRequest()
+        ListVersionsRequest req = new ListVersionsRequest()
             .withBucketName(lsOptions.getBucket())
             .withPrefix(lsOptions.getObjectKey());
         if (! lsOptions.isRecursive()) {
           req.setDelimiter("/");
         }
-
+        
         List<S3File> all = new ArrayList<S3File>();
-        ObjectListing current = getAmazonS3Client().listObjects(req);
-        appendS3ObjectSummaryList(all, current.getObjectSummaries());
+        VersionListing current = getAmazonS3Client().listVersions(req);
+        appendVersionSummaryList(all, current.getVersionSummaries());
         if (! lsOptions.dirsExcluded()) {
-          appendS3DirStringList(all, current.getCommonPrefixes(), lsOptions.getBucket());
+          appendVersionsDirStringList(all, current.getCommonPrefixes(), lsOptions.getBucket());
         }
-        current = getAmazonS3Client().listNextBatchOfObjects(current);
+        current = getAmazonS3Client().listNextBatchOfVersions(current);
         
         while (current.isTruncated()) {
-          appendS3ObjectSummaryList(all, current.getObjectSummaries());
+          appendVersionSummaryList(all, current.getVersionSummaries());
           if (! lsOptions.dirsExcluded()) {
-            appendS3DirStringList(all, current.getCommonPrefixes(), lsOptions.getBucket());
+            appendVersionsDirStringList(all, current.getCommonPrefixes(), lsOptions.getBucket());
           }
-          current = getAmazonS3Client().listNextBatchOfObjects(current);
+          current = getAmazonS3Client().listNextBatchOfVersions(current);
         }
-        appendS3ObjectSummaryList(all, current.getObjectSummaries());
+        appendVersionSummaryList(all, current.getVersionSummaries());
         if (! lsOptions.dirsExcluded()) {
-          appendS3DirStringList(all, current.getCommonPrefixes(), lsOptions.getBucket());
+          appendVersionsDirStringList(all, current.getCommonPrefixes(), lsOptions.getBucket());
         }
         
         return all;
@@ -75,42 +82,46 @@ public class ListCommand extends Command {
     });
   }
   
-  private List<S3File> appendS3ObjectSummaryList(
+  private List<S3File> appendVersionSummaryList(
       List<S3File> all,
-      List<S3ObjectSummary> appendList) {
-    for (S3ObjectSummary o : appendList) {
-      all.add(S3ObjectSummaryToS3File(o));
+      List<S3VersionSummary> appendList) {
+    for (S3VersionSummary o : appendList) {
+      all.add(versionSummaryToS3File(o));
     }
     
     return all;
   }
   
-  private List<S3File> appendS3DirStringList(
+  private List<S3File> appendVersionsDirStringList(
       List<S3File> all,
       List<String> appendList,
       String bucket) {
     for (String o : appendList) {
-      all.add(S3DirStringToS3File(o, bucket));
+      all.add(versionsDirStringToS3File(o, bucket));
     }
     
     return all;
   }
   
-  private S3File S3ObjectSummaryToS3File(S3ObjectSummary o) {
+  private S3File versionSummaryToS3File(S3VersionSummary o) {
     S3File of = new S3File();
     of.setKey(o.getKey());
     of.setETag(o.getETag());
     of.setBucketName(o.getBucketName());
+    if (! o.getVersionId().equals(Constants.NULL_VERSION_ID)) {
+      of.setVersionId(o.getVersionId());
+    }
+    if (o.getLastModified() != null) {
+      of.setTimestamp(o.getLastModified());
+    }
     of.setSize(o.getSize());
     return of;
   }
-  
-  private S3File S3DirStringToS3File(String dir, String bucket) {
+
+  private S3File versionsDirStringToS3File(String dir, String bucket) {
     S3File df = new S3File();
     df.setKey(dir);
     df.setBucketName(bucket);
-    df.setSize(new Long(0));
-    
     return df;
   }
 }

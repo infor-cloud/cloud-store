@@ -26,6 +26,9 @@ class GCSUpload implements Upload {
     private Date initiated;
     private ListeningExecutorService executor;
 
+    // for testing
+    private String uploadId;
+
     public GCSUpload(Storage client,
                      String bucketName,
                      String key,
@@ -40,6 +43,7 @@ class GCSUpload implements Upload {
         this.meta = meta;
         this.initiated = initiated;
         this.executor = executor;
+	this.uploadId = bucketName + "/" + key;
     }
 
     public ListenableFuture<Void> uploadPart(int partNumber,
@@ -47,7 +51,11 @@ class GCSUpload implements Upload {
                                              Callable<InputStream> stream,
                                              Optional<OverallProgressListener>
                                                  progressListener) {
-        return executor.submit(new UploadCallable(partNumber, partSize, stream,
+        // added to support retry testing
+        if(UploadOptions.decrementAbortInjectionCounter(uploadId) > 0)
+            throw new RuntimeException("forcing upload abort");
+
+	return executor.submit(new UploadCallable(partNumber, partSize, stream,
             progressListener));
     }
 

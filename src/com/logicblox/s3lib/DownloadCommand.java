@@ -49,6 +49,7 @@ public class DownloadCommand extends Command
     ListeningExecutorService downloadExecutor,
     ListeningScheduledExecutorService internalExecutor,
     File file,
+    boolean overwrite,
     KeyProvider encKeyProvider,
     OverallProgressListenerFactory progressListenerFactory)
   throws IOException
@@ -58,12 +59,12 @@ public class DownloadCommand extends Command
     _encKeyProvider = encKeyProvider;
 
     this.file = file;
-    createNewFile();
+    createNewFile(overwrite);
     this.progressListenerFactory = Optional.fromNullable
         (progressListenerFactory);
   }
 
-  private void createNewFile() throws IOException
+  private void createNewFile(boolean overwrite) throws IOException
   {
     file = file.getAbsoluteFile();
     File dir = file.getParentFile();
@@ -73,8 +74,19 @@ public class DownloadCommand extends Command
         throw new IOException("Could not create directory '" + dir + "'");
     }
 
-    if(file.exists() && !file.delete())
-      throw new IOException("Could not delete existing file '" + file + "'");
+    if(file.exists())
+    {
+      if(overwrite)
+      {
+        if(!file.delete())
+          throw new IOException("Could not delete existing file '" + file + "'");
+      }
+      else
+      {
+        throw new IOException("File '" + file 
+          + "' already exists.  Please delete or use --overwrite");
+      }
+    }
 
     if(!file.createNewFile())
       throw new IOException("File '" + file + "' already exists");
@@ -300,8 +312,12 @@ public class DownloadCommand extends Command
             encKey = new SecretKeySpec(encKeyBytes, "AES");
           }
 
-          setChunkSize(Long.valueOf(meta.get("s3tool-chunk-size")));
-          setFileLength(Long.valueOf(meta.get("s3tool-file-length")));
+	  long cs = Long.valueOf(meta.get("s3tool-chunk-size"));
+	  long len = Long.valueOf(meta.get("s3tool-file-length"));
+	  if(cs == 0)
+	    cs = Utils.getDefaultChunkSize(len);
+          setChunkSize(cs);
+          setFileLength(len);
         }
         else
         {
@@ -542,6 +558,14 @@ public class DownloadCommand extends Command
             String remoteEtag = download.getETag();
             String localDigest = "";
             String fn = "'s3://" + download.getBucket() + "/" + download.getKey() + "'";
+
+            if(null == remoteEtag)
+            {
+              System.err.println("Warning: Skipped checksum validation for " + 
+                fn + ".  No etag attached to object.");
+              return download;
+            }
+
             if ((remoteEtag.length() > 32) &&
                 (remoteEtag.charAt(32) == '-')) {
               // Object has been uploaded using S3's multipart upload protocol,

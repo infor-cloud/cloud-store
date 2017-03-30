@@ -16,6 +16,7 @@ import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.CreateBucketRequest;
 
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.Futures;
@@ -415,13 +416,17 @@ public class S3Client implements CloudStoreClient {
   throws IOException
   {
     File file = options.getFile();
+    boolean overwrite = options.doesOverwrite();
     OverallProgressListenerFactory progressListenerFactory = options
         .getOverallProgressListenerFactory().orNull();
 
     DownloadCommand cmd = new DownloadCommand(_s3Executor, _executor, file,
-        _keyProvider, progressListenerFactory);
+        overwrite, _keyProvider, progressListenerFactory);
     configure(cmd);
-    return cmd.run(options.getBucket(), options.getObjectKey(), options.getVersion());
+    String bucket = options.getBucket();
+    String key = options.getObjectKey();
+    String version = options.getVersion();
+    return cmd.run(bucket, key, version);
   }
 
   @Override
@@ -632,5 +637,30 @@ public class S3Client implements CloudStoreClient {
     {
       exc.printStackTrace();
     }
+  }
+
+  @Override
+  public boolean hasBucket(String bucketName)
+  {
+    return _client.doesBucketExist(bucketName);
+  }
+
+  @Override
+  public void createBucket(String bucketName)
+  {
+    _client.createBucket(new CreateBucketRequest(bucketName));
+  }
+
+  @Override
+  public void destroyBucket(String bucketName)
+  {
+    _client.deleteBucket(bucketName);
+  }
+
+  // needed for testing
+  @Override
+  public void setKeyProvider(KeyProvider kp)
+  {
+    _keyProvider = kp;
   }
 }

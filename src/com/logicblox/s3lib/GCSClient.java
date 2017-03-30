@@ -338,6 +338,7 @@ public class GCSClient implements CloudStoreClient {
          *
          * @param options Upload options
          */
+	@Override
         public ListenableFuture<S3File> upload(UploadOptions options)
             throws IOException {
             File file = options.getFile();
@@ -359,6 +360,7 @@ public class GCSClient implements CloudStoreClient {
          *
          * @param options Upload options
          */
+	@Override
         public ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
             throws IOException, ExecutionException, InterruptedException {
             File directory = options.getFile();
@@ -376,5 +378,38 @@ public class GCSClient implements CloudStoreClient {
             return cmd.run(directory, bucket, object, chunkSize, encKey, acl,
                 progressListenerFactory);
         }
+
+        @Override
+        public ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions)
+	{
+          GCSListCommand cmd = new GCSListCommand(gcsClient, _s3Executor, _executor);
+          configure(cmd);
+          return cmd.run(lsOptions);
+        }
+    }
+
+    @Override
+    public boolean hasBucket(String bucketName)
+    {
+      throw new RuntimeException("FIXME - not yet implemented");
+    }
+
+    @Override
+    public void createBucket(String bucketName)
+    {
+      throw new RuntimeException("FIXME - not yet implemented");
+    }
+
+    @Override
+    public void destroyBucket(String bucketName)
+    {
+      throw new RuntimeException("FIXME - not yet implemented");
+    }
+
+    // needed for testing
+    @Override
+    public void setKeyProvider(KeyProvider kp)
+    {
+      s3Client.setKeyProvider(kp);
     }
 }

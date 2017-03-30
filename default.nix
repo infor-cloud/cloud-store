@@ -8,7 +8,7 @@
 , python ? pkgs.pythonFull
 , jdk ? pkgs.openjdk8 or pkgs.openjdk
 , unzip ? pkgs.unzip
-, s3lib ? { outPath = ./.; rev = "1234"; }
+, s3lib ?  { outPath = ./.; rev = "1234"; }
 }:
 
 let
@@ -29,7 +29,7 @@ let
         preConfigure = "patchShebangs .";
       };
 
-     build =
+    build =
       pkgs.releaseTools.nixBuild { 
         inherit name;
         src = source_tarball;
@@ -43,10 +43,66 @@ let
           "--with-aws-java-sdk=${deps.aws_java_sdk}"
           "--with-gcs-java-sdk=${deps.gcs_java_sdk}"
         ];
-        buildInputs = [ python jdk];
+        buildInputs = [ python jdk pkgs.makeWrapper ];
+        postInstall = ''
+          wrapProgram $out/bin/cloud-store --prefix PATH : ${jdk.jre}/bin
+        '';
       };
 
-     binary_tarball =
+    test_cloud_store =
+      pkgs.stdenv.mkDerivation {
+        name = "${name}-test";
+        src = build.out;
+	jre = "${jdk.jre}";
+        buildInputs =
+          [ pkgs.minio
+            pkgs.minio-client
+            pkgs.awscli
+            build
+          ];
+        buildPhase = ''
+	  set -e
+          minio_pid=""
+
+          cleanup_minio()
+          {
+            if [[ -n "$minio_pid" ]];
+            then
+              kill $minio_pid
+            fi
+          }
+
+          trap cleanup_minio EXIT
+
+          export HOME=$(pwd)
+
+          # these are dummy keys created just for the tests
+          export AWS_ACCESS_KEY_ID=9NLZKB4SPH2OP5L845XE
+          export AWS_SECRET_ACCESS_KEY=rvzui7pQS0PI1aAOhtTHWVmJvhMY+b9xSw7arAbC
+
+          s3_addr="127.0.0.1:9000"
+	  s3_endpoint="http://$s3_addr/"
+          keydir="$(pwd)/cloud-store-ut-keys"
+          mkdir -p $keydir
+
+          minio_bin="minio"
+          minio_bin="./bin/minio.latest"
+          $minio_bin -h
+	  $minio_bin version
+
+          MINIO_ACCESS_KEY=$AWS_ACCESS_KEY_ID MINIO_SECRET_KEY=$AWS_SECRET_ACCESS_KEY \
+            $minio_bin server $HOME/cloud-store-ut-buckets --address $s3_addr &
+
+          minio_pid="$!"
+          sleep 5
+
+	  $jre/bin/java -cp ./lib/java/s3lib-test.jar com.logicblox.s3lib.TestRunner --keydir $keydir --endpoint $s3_endpoint
+
+        '';
+
+      };
+
+    binary_tarball =
       builder_config.release_helper {
         inherit name build;
         unixify = "bin/cloud-store bin/s3tool";

@@ -3,6 +3,9 @@ package com.logicblox.s3lib;
 import com.google.common.base.Optional;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
+
 
 /**
  * {@code UploadOptions} contains all the details needed by the upload
@@ -37,6 +40,11 @@ public class UploadOptions {
     private Optional<OverallProgressListenerFactory>
         overallProgressListenerFactory;
 
+    // for testing
+    private static int _abortInjectionCounter = 0;
+    private static Object _abortSync = new Object();
+    private static Map<String,Integer> _injectionCounters = new HashMap<String,Integer>();
+
     UploadOptions(File file,
                   String bucket,
                   String objectKey,
@@ -53,6 +61,33 @@ public class UploadOptions {
         this.acl = acl;
         this.overallProgressListenerFactory = overallProgressListenerFactory;
     }
+
+
+    // for testing
+    static void setAbortInjectionCounter(int counter)
+    {
+      synchronized(_abortSync)
+      {
+        _abortInjectionCounter = counter;
+      }
+    }
+
+    // for testing
+    static int decrementAbortInjectionCounter(String uploadId)
+    {
+      synchronized(_abortSync)
+      {
+        if(_abortInjectionCounter <= 0)
+          return 0;
+
+        if(!_injectionCounters.containsKey(uploadId))
+          _injectionCounters.put(uploadId, _abortInjectionCounter);
+        int current = _injectionCounters.get(uploadId);
+        _injectionCounters.put(uploadId, current - 1);
+        return current;
+      }
+    }
+    
 
     public File getFile() {
         return file;

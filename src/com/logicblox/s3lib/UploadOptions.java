@@ -42,6 +42,7 @@ public class UploadOptions {
 
     // for testing
     private static int _abortInjectionCounter = 0;
+    private static Object _abortSync = new Object();
     private static Map<String,Integer> _injectionCounters = new HashMap<String,Integer>();
 
     UploadOptions(File file,
@@ -63,22 +64,28 @@ public class UploadOptions {
 
 
     // for testing
-    static synchronized void setAbortInjectionCounter(int counter)
+    static void setAbortInjectionCounter(int counter)
     {
-      _abortInjectionCounter = counter;
+      synchronized(_abortSync)
+      {
+        _abortInjectionCounter = counter;
+      }
     }
 
     // for testing
-    static synchronized int decrementAbortInjectionCounter(String uploadId)
+    static int decrementAbortInjectionCounter(String uploadId)
     {
-      if(_abortInjectionCounter <= 0)
-        return 0;
+      synchronized(_abortSync)
+      {
+        if(_abortInjectionCounter <= 0)
+          return 0;
 
-      if(!_injectionCounters.containsKey(uploadId))
-        _injectionCounters.put(uploadId, _abortInjectionCounter);
-      int current = _injectionCounters.get(uploadId);
-      _injectionCounters.put(uploadId, current - 1);
-      return current;
+        if(!_injectionCounters.containsKey(uploadId))
+          _injectionCounters.put(uploadId, _abortInjectionCounter);
+        int current = _injectionCounters.get(uploadId);
+        _injectionCounters.put(uploadId, current - 1);
+        return current;
+      }
     }
     
 

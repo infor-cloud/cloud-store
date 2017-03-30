@@ -16,6 +16,7 @@ public class TestOptions
   private static String _service = "s3";
   private static String _endpoint = null;
   private static URI _destUri = null;
+  static boolean SKIP_CLEANUP = false;
 
 
   // handle all input parameters
@@ -195,7 +196,7 @@ public class TestOptions
   public static void destroyBucket(CloudStoreClient client, String bucket)
     throws InterruptedException, ExecutionException
   {
-    if((null == bucket) || bucket.isEmpty())
+    if(SKIP_CLEANUP || (null == bucket) || bucket.isEmpty())
       return;
 
     clearBucket(client, bucket, null);
@@ -206,6 +207,9 @@ public class TestOptions
   public static void clearBucket(CloudStoreClient client, String bucket, String prefix)
     throws InterruptedException, ExecutionException
   {
+    if(SKIP_CLEANUP)
+      return;
+      
     ListOptionsBuilder builder = new ListOptionsBuilder()
       .setBucket(bucket)
       .setRecursive(true)

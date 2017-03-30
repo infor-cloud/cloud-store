@@ -112,11 +112,12 @@ public class UploadDownloadTests
   public void testFailedUploadRetry()
     throws Throwable
   {
+    // NOTE:  This test will log an exception stack trace that can be ignored
     try
     {
       ThrowableRetriableTask.addRetryListener(this);
       clearRetryCount();
-      int retryCount = 5;
+      int retryCount = 3;
       _client.setRetryCount(retryCount);
       UploadOptions.setAbortInjectionCounter(10);
       List<S3File> objs = listTestBucketObjects();
@@ -146,13 +147,20 @@ public class UploadDownloadTests
       {
         // expected
       }
-      Assert.assertEquals(retryCount - 1, getRetryCount());
+
+      // we'll get a set of retries for each part
+      int partCount = getExpectedPartCount(fileSize, chunkSize);
+      int expectedRetryCount = partCount * (retryCount - 1);
+      Assert.assertEquals(expectedRetryCount, getRetryCount());
+
+      // make sure the file isn't on the server
       objs = listTestBucketObjects();
       Assert.assertEquals(originalCount, objs.size());
       Assert.assertFalse(findObject(objs, addPrefix(toUpload.getName())));
     }
     finally
     {
+      // reset retry and abort injection state so we don't affect other tests
       _client.setRetryCount(_defaultRetryCount);
       UploadOptions.setAbortInjectionCounter(0);
     }
@@ -211,6 +219,7 @@ public class UploadDownloadTests
     }
     finally
     {
+      // reset retry and abort injection state so we don't affect other tests
       _client.setRetryCount(_defaultRetryCount);
       UploadOptions.setAbortInjectionCounter(0);
     }

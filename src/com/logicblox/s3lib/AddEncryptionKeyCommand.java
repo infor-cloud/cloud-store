@@ -1,6 +1,5 @@
 package com.logicblox.s3lib;
 
-
 import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.base.Joiner;
@@ -137,6 +136,7 @@ public class AddEncryptionKeyCommand extends Command
     return Futures.transform(metadataFactory, checkMetadata);
   }
 
+
   /**
    * Step 2: Add new encryption key
    */
@@ -172,13 +172,14 @@ public class AddEncryptionKeyCommand extends Command
       throw new UsageException(errPrefix + "No encryption key name is " +
                                  "specified");
     }
-    Map<String, String> userMetadata = new LinkedHashMap(
-      metadata.getUserMetadata());
-    _logger.debug("userMetadata = {}", userMetadata);
+    Map<String, String> userMetadata = metadata.getUserMetadata();
     String keyNamesStr = userMetadata.get("s3tool-key-name");
-    List<String> keyNames = new ArrayList<>(Arrays.asList(
-      keyNamesStr.split(",")));
+    if(null == keyNamesStr)
+      keyNamesStr = "";
+    List<String> keyNames = new ArrayList<>(Arrays.asList(keyNamesStr.split(",")));
     String pubKeyHashesStr = userMetadata.get("s3tool-pubkey-hash");
+    if(null == pubKeyHashesStr)
+      pubKeyHashesStr = "";
     List<String> pubKeyHashes = new ArrayList<>(Arrays.asList(
       pubKeyHashesStr.split(",")));
     if (keyNames.contains(_encKeyName))
@@ -331,10 +332,8 @@ public class AddEncryptionKeyCommand extends Command
                   {
                     public AccessControlList call()
                     {
-                      AccessControlList acl = getAmazonS3Client().getObjectAcl(
-                        metadata.getBucket(), metadata.getKey());
-
-                      return acl;
+		      return Utils.getObjectAcl(
+		        getAmazonS3Client(), metadata.getBucket(), metadata.getKey());
                     }
                   });
               }

@@ -161,12 +161,13 @@ public class RemoveEncryptionKeyCommand extends Command
       throw new UsageException(errPrefix + "No encryption key name is " +
                                  "specified");
     }
-    Map<String, String> userMetadata = new LinkedHashMap(
-      metadata.getUserMetadata());
-    _logger.debug("userMetadata = {}", userMetadata);
+    Map<String, String> userMetadata = metadata.getUserMetadata();
     String keyNamesStr = userMetadata.get("s3tool-key-name");
-    List<String> keyNames = new ArrayList<>(Arrays.asList(
-      keyNamesStr.split(",")));
+    List<String> keyNames;
+    if(null == keyNamesStr)
+      keyNames = new ArrayList<String>();
+    else
+      keyNames = new ArrayList<>(Arrays.asList(keyNamesStr.split(",")));
 
     if (keyNames.size() == 1)
     {
@@ -226,10 +227,8 @@ public class RemoveEncryptionKeyCommand extends Command
                   {
                     public AccessControlList call()
                     {
-                      AccessControlList acl = getAmazonS3Client().getObjectAcl(
-                        metadata.getBucket(), metadata.getKey());
-
-                      return acl;
+		      return Utils.getObjectAcl(
+		        getAmazonS3Client(), metadata.getBucket(), metadata.getKey());
                     }
                   });
               }

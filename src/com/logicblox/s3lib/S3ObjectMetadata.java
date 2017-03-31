@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
+import java.util.HashMap;
 import java.util.Map;
 
 class S3ObjectMetadata
@@ -46,9 +47,15 @@ class S3ObjectMetadata
     return meta;
   }
 
+  // make sure all metadata keys are lowercase.  some servers (minio) return
+  // mixed case keys
   public Map<String,String> getUserMetadata()
   {
-    return meta.getUserMetadata();
+    Map<String,String> userData = meta.getUserMetadata();
+    Map<String,String> fixed = new HashMap<String,String>();
+    for(Map.Entry<String,String> e : userData.entrySet())
+      fixed.put(e.getKey().toLowerCase(), e.getValue());
+    return fixed;
   }
 
   public String getETag()

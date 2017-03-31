@@ -119,6 +119,9 @@ public class DownloadCommand extends Command
       {
         public ListenableFuture<S3File> create(Throwable t)
         {
+          if(DownloadCommand.this.file.exists())
+	    DownloadCommand.this.file.delete();
+
           if (t instanceof UsageException) {
             return Futures.immediateFailedFuture(t);
           }

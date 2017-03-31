@@ -31,6 +31,8 @@ import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.auth.SystemPropertiesCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.AccessControlList;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -500,6 +502,24 @@ public class Utils
       client.setEndpoint(endpoint);
 
     return client;
+  }
+
+  // returns null if the store does not support acl (like minio)
+  public static AccessControlList getObjectAcl(
+    AmazonS3Client client, String bucket, String key)
+      throws AmazonS3Exception
+  {
+    AccessControlList acl = null;
+    try
+    {
+      acl = client.getObjectAcl(bucket, key);
+    }
+    catch(AmazonS3Exception ex)
+    {
+      if(!ex.getErrorCode().equalsIgnoreCase("NotImplemented"))
+        throw ex;
+    }
+    return acl;
   }
 
   protected static void print(ObjectMetadata m)

@@ -10,7 +10,8 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses( { 
 //  BucketTests.class,
-  UploadDownloadTests.class
+  UploadDownloadTests.class,
+  MultiKeyTests.class
  })
 public class TestRunner
 {

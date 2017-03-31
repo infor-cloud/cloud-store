@@ -666,6 +666,14 @@ public class TestUtils
       return _prefix + path;
   }
 
+
+  public static void moveFile(String fname, File srcDir, File destDir)
+  {
+    File src = new File(srcDir, fname);
+    File dest = new File(destDir, fname);
+    src.renameTo(dest);
+  }
+
   
   private static Random getRand()
   {

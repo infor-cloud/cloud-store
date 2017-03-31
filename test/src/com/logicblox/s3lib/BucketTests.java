@@ -18,14 +18,14 @@ public class BucketTests
   public static void setUp()
     throws Throwable
   {
-    _client = TestOptions.createClient(0);
+    _client = TestUtils.createClient(0);
   }
 
 
   @AfterClass
   public static void tearDown()
   {
-    TestOptions.destroyClient(_client);
+    TestUtils.destroyClient(_client);
   }
 
 

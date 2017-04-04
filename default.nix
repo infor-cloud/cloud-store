@@ -49,16 +49,30 @@ let
         '';
       };
 
+    build_minio = pkgs.buildGoPackage rec {
+      name = "minio";
+      goPackagePath = "github.com/minio/minio";
+      rev = "e2aba9196f849c458303aff42d2d6ea3e3ea8904";
+
+      src = pkgs.fetchgit {
+        inherit rev;
+        url = "https://github.com/minio/minio.git";
+        sha256 = "1iixpxcyhfa1lln3qd4xpnmjpbkf0zicj1irk21wqjqkac3rar0s";
+      };
+    };
+
     test_cloud_store =
       pkgs.stdenv.mkDerivation {
         name = "${name}-test";
         src = build.out;
 	jre = "${jdk.jre}";
         buildInputs =
-          [ pkgs.minio
-            pkgs.minio-client
+          [
+	    # pkgs.minio
+            # pkgs.minio-client
             pkgs.awscli
             build
+	    build_minio
           ];
         buildPhase = ''
 	  set -e
@@ -85,8 +99,9 @@ let
           keydir="$(pwd)/cloud-store-ut-keys"
           mkdir -p $keydir
 
-          minio_bin="minio"
-          minio_bin="./bin/minio.latest"
+          #minio_bin="minio"
+          #minio_bin="./bin/minio.latest"
+	  minio_bin="${build_minio}/bin/minio"
           $minio_bin -h
 	  $minio_bin version
 

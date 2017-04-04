@@ -19,6 +19,7 @@ builder_config=~/dev/nix-builds/config
 # clean up stuff that we don't want copied into the nix environment
 rm -rf core build Makefile buildlib.pyc config-env.sh
 
-keep="-K"
-keep=""
-nix-build $keep -A run_test --argstr bld_cfg $builder_config local_test_wrapper.nix 2>&1 | tee nixbuild.log
+#keep="-K"
+pkgs="-I nixpkgs=/home/weshunter/dev/nix/nixpkgs-20170404"
+
+nix-build $keep $pkgs -A run_test --argstr bld_cfg $builder_config local_test_wrapper.nix 2>&1 | tee nixbuild.log

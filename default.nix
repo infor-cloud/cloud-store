@@ -113,8 +113,13 @@ let
           sleep 5
 
 	  $jre/bin/java -cp ./lib/java/s3lib-test.jar com.logicblox.s3lib.TestRunner --keydir $keydir --endpoint $s3_endpoint
-
         '';
+
+        installPhase = ''
+           # nothing to do here, but this job will fail if we don't produce
+	   # an output directory for some reason....
+	   mkdir -p $out
+	'';
 
       };
 

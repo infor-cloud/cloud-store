@@ -42,6 +42,7 @@ let
           "--with-commons-codec=${deps.commonscodec}"
           "--with-aws-java-sdk=${deps.aws_java_sdk}"
           "--with-gcs-java-sdk=${deps.gcs_java_sdk}"
+	  "--with-junit=${deps.junit}"
         ];
         buildInputs = [ python jdk pkgs.makeWrapper ];
         postInstall = ''

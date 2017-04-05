@@ -16,7 +16,8 @@ parse_arguments(
            'commons-codec' : depdir,
            'log4j' : depdir,
            'aws-java-sdk' : depdir,
-           'gcs-java-sdk' : depdir
+           'gcs-java-sdk' : depdir,
+           'junit' : home_dir
          })
 
 open_makefile()
@@ -103,7 +104,7 @@ jar(
    java_version = "1.7")
 
 test_deps = [
-  '$(logicblox)/share/java/junit-4.8.2.jar',
+  '$(junit)/lib/java/junit-4.8.2.jar',
   '$(build)/jars/s3lib-$(version).jar']
 jar(
    name = 's3lib-test',
@@ -112,7 +113,6 @@ jar(
    manifest = {'add_classpath': True,
                'main_class': "com.logicblox.s3lib.TestRunner"},
    java_version = "1.7")
-
 
 bin_program('cloud-store')
 bin_program('s3tool')

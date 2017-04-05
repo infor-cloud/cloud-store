@@ -31,7 +31,14 @@ in {
       sha256 = "0b6gjgh028jb1fk39rb3yxs9f1ywdcdlvvhas81h6527p5sxhx8n";
     };
 
-  log4j =
+  junit =
+    buildjar {
+      name = "junit-4.8.2";
+      url = https://maven.atlassian.com/content/groups/public/org/junit/com.springsource.org.junit/4.8.2/com.springsource.org.junit-4.8.2.jar;
+      sha256 = "1l8v7bykvaqrswbg4jlwwb96v308020q2wiaq8w7lv1q748k7vdh";
+    };
+
+log4j =
     buildjar {
       name = "log4j-1.2.13";
       url = http://mirrors.ibiblio.org/maven2/log4j/log4j/1.2.13/log4j-1.2.13.jar;

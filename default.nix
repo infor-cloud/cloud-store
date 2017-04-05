@@ -47,6 +47,18 @@ let
         postInstall = ''
           wrapProgram $out/bin/cloud-store --prefix PATH : ${jdk.jre}/bin
         '';
+	preCheck = ''
+	  echo "-------------- MAKEFILE -------------"
+          cat Makefile
+	  echo "-----"
+	  echo "-------------- JAVA -------------"
+          ls -lR /opt/logicblox/share/java
+	  echo "-----"
+	  
+#	  echo "LB_HOME=$LOGICBLOX_HOME"
+#	  ls -lR $LOGICBLOX_HOME/share/java
+#	  echo "-----"
+	'';
       };
 
     build_minio = pkgs.buildGoPackage rec {

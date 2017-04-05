@@ -67,6 +67,43 @@ public class UploadDownloadTests
 
 
   @Test
+  public void testSimpleUploadDownload()
+    throws Throwable
+  {
+    String rootPrefix = TestUtils.addPrefix("a/b/");
+    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    int originalCount = objs.size();
+
+    // create a small file and upload it
+    File toUpload = TestUtils.createTextFile(100);
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    S3File f = TestUtils.uploadFile(toUpload, dest);
+    Assert.assertNotNull(f);
+
+    // make sure file was uploaded
+    objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    Assert.assertEquals(originalCount + 1, objs.size());
+    String key = rootPrefix + toUpload.getName();
+    Assert.assertTrue(TestUtils.findObject(objs, key));
+
+    // download the file and compare it with the original
+    File dlTemp = TestUtils.createTmpFile();
+    f = TestUtils.downloadFile(dest, dlTemp);
+    Assert.assertNotNull(f.getLocalFile());
+    Assert.assertTrue(TestUtils.compareFiles(toUpload, f.getLocalFile()));
+
+    // test a few other misc cloud-store functions
+    Assert.assertNotNull(_client.exists(dest).get());
+    Assert.assertNotNull(_client.exists(_testBucket, key).get());
+    Assert.assertEquals(
+      dest.toString(), _client.getUri(_testBucket, key).toString());
+
+    Assert.assertNotNull(_client.delete(dest).get());
+    Assert.assertNull(_client.exists(dest).get());
+  }
+
+
+  @Test
   public void testFailedUploadRetry()
     throws Throwable
   {
@@ -181,43 +218,6 @@ public class UploadDownloadTests
       TestUtils.resetRetryCount();
       UploadOptions.setAbortInjectionCounter(0);
     }
-  }
-
-
-  @Test
-  public void testSimpleUploadDownload()
-    throws Throwable
-  {
-    String rootPrefix = TestUtils.addPrefix("a/b/");
-    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
-    int originalCount = objs.size();
-
-    // create a small file and upload it
-    File toUpload = TestUtils.createTextFile(100);
-    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, dest);
-    Assert.assertNotNull(f);
-
-    // make sure file was uploaded
-    objs = TestUtils.listObjects(_testBucket, rootPrefix);
-    Assert.assertEquals(originalCount + 1, objs.size());
-    String key = rootPrefix + toUpload.getName();
-    Assert.assertTrue(TestUtils.findObject(objs, key));
-
-    // download the file and compare it with the original
-    File dlTemp = TestUtils.createTmpFile();
-    f = TestUtils.downloadFile(dest, dlTemp);
-    Assert.assertNotNull(f.getLocalFile());
-    Assert.assertTrue(TestUtils.compareFiles(toUpload, f.getLocalFile()));
-
-    // test a few other misc cloud-store functions
-    Assert.assertNotNull(_client.exists(dest).get());
-    Assert.assertNotNull(_client.exists(_testBucket, key).get());
-    Assert.assertEquals(
-      dest.toString(), _client.getUri(_testBucket, key).toString());
-
-    Assert.assertNotNull(_client.delete(dest).get());
-    Assert.assertNull(_client.exists(dest).get());
   }
 
 

@@ -10,8 +10,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+//import org.slf4j.Logger;
+//import org.slf4j.LoggerFactory;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -33,7 +33,7 @@ import java.util.concurrent.Callable;
 
 public class AddEncryptionKeyCommand extends Command
 {
-  private final Logger _logger;
+//  private final Logger _logger;
   private CloudStoreClient _client;
   private ListeningExecutorService _httpExecutor;
   private ListeningScheduledExecutorService _executor;
@@ -54,7 +54,7 @@ public class AddEncryptionKeyCommand extends Command
     _encKeyName = encKeyName;
     _encKeyProvider = encKeyProvider;
 
-    _logger = LoggerFactory.getLogger(AddEncryptionKeyCommand.class);
+//    _logger = LoggerFactory.getLogger(AddEncryptionKeyCommand.class);
   }
 
   public ListenableFuture<S3File> run(final String bucket,final String key,

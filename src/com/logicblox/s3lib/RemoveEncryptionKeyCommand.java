@@ -10,8 +10,8 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+//import org.slf4j.Logger;
+//import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,7 +23,7 @@ import java.util.concurrent.Callable;
 
 public class RemoveEncryptionKeyCommand extends Command
 {
-  private final Logger _logger;
+//  private final Logger _logger;
   private CloudStoreClient _client;
   private ListeningExecutorService _httpExecutor;
   private ListeningScheduledExecutorService _executor;
@@ -44,7 +44,7 @@ public class RemoveEncryptionKeyCommand extends Command
     _encKeyName = encKeyName;
     _encKeyProvider = encKeyProvider;
 
-    _logger = LoggerFactory.getLogger(RemoveEncryptionKeyCommand.class);
+//    _logger = LoggerFactory.getLogger(RemoveEncryptionKeyCommand.class);
   }
 
   public ListenableFuture<S3File> run(final String bucket,final String key,

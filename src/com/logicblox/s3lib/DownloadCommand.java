@@ -82,7 +82,7 @@ public class DownloadCommand extends Command
       }
       else
       {
-        throw new IOException("File '" + file 
+        throw new UsageException("File '" + file 
           + "' already exists.  Please delete or use --overwrite");
       }
     }

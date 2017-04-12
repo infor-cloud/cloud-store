@@ -13,6 +13,17 @@ public class S3File {
   private Optional<String> _versionId = Optional.empty();
   private Optional<Long> _size = Optional.empty();
   private Optional<Date> _timestamp = Optional.empty();
+
+  public S3File()
+  {
+  }
+
+  // for internal convenience
+  S3File(String bucket, String key)
+  {
+     _bucket = bucket;
+     _key = key;
+  }
   
   public File getLocalFile() {
     return _localFile;

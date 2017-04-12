@@ -90,15 +90,19 @@ public class MultiKeyTests
     String fn2 = key2 + ".pem";
     TestUtils.moveFile(fn1, keydir, hidden);
     TestUtils.moveFile(fn2, keydir, hidden);
+    String msg = null;
     try
     {
       TestUtils.downloadFile(dest, dlTemp);
-      Assert.fail("Expected download error (key not found)");
+      msg = "Expected download error (key not found)";
     }
     catch(Throwable t)
     {
       // expected
+      Assert.assertTrue(t.getMessage().contains("No eligible private key found")
+                                  || t.getMessage().contains("is not available to decrypt"));
     }
+    Assert.assertNull(msg);
     Assert.assertFalse(dlTemp.exists());
 
     // replace key2, download should work
@@ -124,12 +128,14 @@ public class MultiKeyTests
     try
     {
       TestUtils.downloadFile(dest, dlTemp);
-      Assert.fail("Expected download error (key not found)");
+      msg = "Expected download error (key not found)";
     }
     catch(Throwable t)
     {
       // expected
+      Assert.assertTrue(t.getMessage().contains("is not available to decrypt"));
     }
+    Assert.assertNull(msg);
     Assert.assertFalse(dlTemp.exists());
 
     // replace key2, dl should work
@@ -161,16 +167,18 @@ public class MultiKeyTests
     Assert.assertNotNull(f);
 
     // test adding a key that is already used by the file
+    String msg = null;
     try
     {
       _client.addEncryptionKey(_testBucket, objKey, key1).get();
-      Assert.fail("Expected error adding key");
+      msg = "Expected error adding key";
     }
     catch(Throwable t)
     {
       // expected
+      Assert.assertTrue(t.getMessage().contains("already exists"));
     }
-
+    Assert.assertNull(msg);
   }
 
 
@@ -194,15 +202,18 @@ public class MultiKeyTests
     Assert.assertNotNull(f);
 
     // test adding key that doesn't exist
+    String msg = null;
     try
     {
       _client.addEncryptionKey(_testBucket, objKey, key2).get();
-      Assert.fail("Expected error adding key");
+      msg = "Expected error adding key";
     }
     catch(Throwable t)
     {
       // expected
+      Assert.assertTrue(t.getMessage().contains("Missing encryption key"));
     }
+    Assert.assertNull(msg);
   }
 
 
@@ -227,15 +238,18 @@ public class MultiKeyTests
     Assert.assertNotNull(f);
 
     // test removing key that doesn't exist for encrypted file
+    String msg = null;
     try
     {
       _client.removeEncryptionKey(_testBucket, objKey, key2).get();
-      Assert.fail("Expected error removing key");
+      msg = "Expected error removing key";
     }
     catch(Throwable t)
     {
       // expected
+      Assert.assertTrue(t.getMessage().contains("Cannot remove the last remaining key"));
     }
+    Assert.assertNull(msg);
   }
 
 
@@ -258,15 +272,18 @@ public class MultiKeyTests
     Assert.assertNotNull(f);
 
     // test add key for unencrypted file
+    String msg = null;
     try
     {
       _client.addEncryptionKey(_testBucket, objKey, key1).get();
-      Assert.fail("Expected exception");
+      msg = "Expected exception";
     }
     catch(Throwable t)
     {
       // expected
+      Assert.assertTrue(t.getMessage().contains("Object doesn't seem to be encrypted"));
     }
+    Assert.assertNull(msg);
   }
 
 
@@ -289,15 +306,18 @@ public class MultiKeyTests
     Assert.assertNotNull(f);
 
     // test removing key for unencrypted file
+    String msg = null;
     try
     {
       _client.removeEncryptionKey(_testBucket, objKey, key1).get();
-      Assert.fail("Expected error removing key");
+      msg = "Expected error removing key";
     }
     catch(Throwable t)
     {
       // expected
+      Assert.assertTrue(t.getMessage().contains("Object doesn't seem to be encrypted"));
     }
+    Assert.assertNull(msg);
   }
 
 
@@ -330,15 +350,18 @@ public class MultiKeyTests
     Assert.assertNotNull(f);
 
     // removing last key should fail
+    String msg = null;
     try
     {
       _client.removeEncryptionKey(_testBucket, objKey, key2).get();
-      Assert.fail("Expected error removing key");
+      msg = "Expected error removing key";
     }
     catch(Throwable t)
     {
       // expected
+      Assert.assertTrue(t.getMessage().contains("Cannot remove the last remaining key"));
     }
+    Assert.assertNull(msg);
   }
 
 
@@ -371,15 +394,18 @@ public class MultiKeyTests
       _client.addEncryptionKey(_testBucket, objKey, keys[i]).get();
 
     // one more should fail
+    String msg = null;
     try
     {
       _client.addEncryptionKey(_testBucket, objKey, keys[maxKeys]).get();
-      Assert.fail("Expected exception");
+      msg = "Expected exception";
     }
     catch(Throwable t)
     {
       // expected
+      Assert.assertTrue(t.getMessage().contains("No more than 4 keys are allowed"));
     }
+    Assert.assertNull(msg);
   }
 
 

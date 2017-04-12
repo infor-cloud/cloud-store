@@ -570,28 +570,39 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> addEncryptionKey(String bucket, String object,
-                                                   String key)
-  throws IOException
+  public ListenableFuture<S3File> addEncryptionKey(String bucket, String object, String key)
+      throws IOException
   {
-    AddEncryptionKeyCommand cmd = new AddEncryptionKeyCommand(_s3Executor,
-      _executor, this, key, _keyProvider);
-
-    configure(cmd);
+    AddEncryptionKeyCommand cmd = createAddKeyCommand(key);
     return cmd.run(bucket, object, null);
+  }
+
+  protected AddEncryptionKeyCommand createAddKeyCommand(String key)
+      throws IOException
+  {
+    AddEncryptionKeyCommand cmd = new AddEncryptionKeyCommand(
+      _s3Executor, _executor, this, key, _keyProvider);
+    configure(cmd);
+    return cmd;
   }
 
   @Override
-  public ListenableFuture<S3File> removeEncryptionKey(String bucket, String object,
-                                                      String key)
-  throws IOException
+  public ListenableFuture<S3File> removeEncryptionKey(String bucket, String object, String key)
+    throws IOException
   {
-    RemoveEncryptionKeyCommand cmd = new RemoveEncryptionKeyCommand(_s3Executor,
-      _executor, this, key, _keyProvider);
-
-    configure(cmd);
+    RemoveEncryptionKeyCommand cmd = createRemoveKeyCommand(key);
     return cmd.run(bucket, object, null);
   }
+
+  protected RemoveEncryptionKeyCommand createRemoveKeyCommand(String key)
+    throws IOException
+  {
+    RemoveEncryptionKeyCommand cmd = new RemoveEncryptionKeyCommand(
+      _s3Executor, _executor, this, key, _keyProvider);
+    configure(cmd);
+    return cmd;
+  }
+
 
   /**
    * Returns s3lib package version in this format:

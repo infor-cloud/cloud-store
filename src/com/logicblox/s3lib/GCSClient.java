@@ -253,16 +253,17 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<S3File> copy(CopyOptions options) throws IOException {
-        throw new UnsupportedOperationException("Copy operation is not " +
-            "supported for Google Cloud Storage yet.");
+    public ListenableFuture<S3File> copy(CopyOptions options)
+        throws IOException
+    {
+        return s3Client.copy(options);
     }
 
     @Override
     public ListenableFuture<List<S3File>> copyToDir(CopyOptions options)
-        throws InterruptedException, ExecutionException, IOException {
-        throw new UnsupportedOperationException("Copy operation is not " +
-            "supported for Google Cloud Storage yet.");
+        throws InterruptedException, ExecutionException, IOException, URISyntaxException
+    {
+        return s3Client.copyToDir(options);
     }
 
     @Override
@@ -294,21 +295,17 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<S3File> addEncryptionKey(String bucket,
-                                                     String object,
-                                                     String key)
-        throws IOException {
-        throw new UnsupportedOperationException("addEncryptionKey is " +
-                                                "not supported.");
+    public ListenableFuture<S3File> addEncryptionKey(String bucket, String object, String key)
+        throws IOException
+    {
+        return s3Client.addEncryptionKey(bucket, object, key);
     }
 
     @Override
-    public ListenableFuture<S3File> removeEncryptionKey(String bucket,
-                                                        String object,
-                                                        String key)
-        throws IOException {
-        throw new UnsupportedOperationException("removeEncryptionKey is " +
-                                                "not supported.");
+    public ListenableFuture<S3File> removeEncryptionKey(String bucket, String object, String key)
+        throws IOException
+    {
+        return s3Client.removeEncryptionKey(bucket, object, key);
     }
 
   @Override
@@ -386,6 +383,43 @@ public class GCSClient implements CloudStoreClient {
           configure(cmd);
           return cmd.run(lsOptions);
         }
+
+	@Override
+        public ListenableFuture<S3File> copy(CopyOptions options)
+	{
+          GCSCopyCommand cmd = new GCSCopyCommand(gcsClient, _s3Executor, _executor);
+          configure(cmd);
+          return cmd.run(options);
+	}
+
+	@Override
+        public ListenableFuture<List<S3File>> copyToDir(CopyOptions options)
+	  throws IOException
+	{
+          GCSCopyDirCommand cmd = new GCSCopyDirCommand(gcsClient, _s3Executor, _executor);
+          configure(cmd);
+          return cmd.run(options);
+	}
+
+	@Override
+        protected AddEncryptionKeyCommand createAddKeyCommand(String key)
+	    throws IOException
+        {
+	   AddEncryptionKeyCommand cmd = super.createAddKeyCommand(key);
+	   cmd.setGcsStorage(gcsClient);
+	   return cmd;
+	}
+
+	@Override
+        protected RemoveEncryptionKeyCommand createRemoveKeyCommand(String key)
+	    throws IOException
+        {
+	   RemoveEncryptionKeyCommand cmd = super.createRemoveKeyCommand(key);
+	   cmd.setGcsStorage(gcsClient);
+	   return cmd;
+	}
+
+
     }
 
     @Override

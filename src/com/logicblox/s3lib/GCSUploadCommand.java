@@ -31,6 +31,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+import org.apache.commons.codec.digest.DigestUtils;
+
 
 public class GCSUploadCommand extends Command {
     private String encKeyName;
@@ -44,7 +46,9 @@ public class GCSUploadCommand extends Command {
     private String bucket;
 
     private Optional<OverallProgressListenerFactory> progressListenerFactory;
+    private String pubKeyHash;
 
+    
     public GCSUploadCommand(
             ListeningExecutorService uploadExecutor,
             ListeningScheduledExecutorService internalExecutor,
@@ -74,6 +78,8 @@ public class GCSUploadCommand extends Command {
             this.encKey = new SecretKeySpec(encKeyBytes, "AES");
             try {
                 Key pubKey = encKeyProvider.getPublicKey(this.encKeyName);
+                this.pubKeyHash = DatatypeConverter.printBase64Binary(
+                  DigestUtils.sha256(pubKey.getEncoded()));
                 Cipher cipher = Cipher.getInstance("RSA");
                 cipher.init(Cipher.ENCRYPT_MODE, pubKey);
                 this.encryptedSymmetricKeyString = DatatypeConverter.printBase64Binary(cipher.doFinal(encKeyBytes));
@@ -146,6 +152,7 @@ public class GCSUploadCommand extends Command {
         if (this.encKeyName != null) {
             meta.put("s3tool-key-name", encKeyName);
             meta.put("s3tool-symmetric-key", encryptedSymmetricKeyString);
+            meta.put("s3tool-pubkey-hash", pubKeyHash.substring(0,8));
         }
         // single-part => chunk size == file size
         meta.put("s3tool-chunk-size", Long.toString(fileLength));

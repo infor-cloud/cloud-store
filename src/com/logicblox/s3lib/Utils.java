@@ -35,6 +35,8 @@ import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
+import com.google.api.services.storage.Storage;
+import com.google.api.services.storage.model.StorageObject;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -520,6 +522,18 @@ public class Utils
         throw ex;
     }
     return acl;
+  }
+
+
+  public static void patchMetaData(
+    Storage gcsStorage, String bucket, String key, Map<String,String> userMetadata)
+      throws IOException
+  {
+    StorageObject sobj = new StorageObject()
+      .setName(key)
+      .setMetadata(userMetadata);
+    Storage.Objects.Patch cmd = gcsStorage.objects().patch(bucket, key, sobj);
+    cmd.execute();
   }
 
   protected static void print(ObjectMetadata m)

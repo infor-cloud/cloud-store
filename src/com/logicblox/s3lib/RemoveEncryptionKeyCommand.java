@@ -3,6 +3,7 @@ package com.logicblox.s3lib;
 
 import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.google.api.services.storage.Storage;
 import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FutureFallback;
@@ -10,8 +11,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,12 +22,12 @@ import java.util.concurrent.Callable;
 
 public class RemoveEncryptionKeyCommand extends Command
 {
-//  private final Logger _logger;
   private CloudStoreClient _client;
   private ListeningExecutorService _httpExecutor;
   private ListeningScheduledExecutorService _executor;
   private String _encKeyName;
   private KeyProvider _encKeyProvider;
+  private Storage _gcsStorage = null;
 
   public RemoveEncryptionKeyCommand(
     ListeningExecutorService httpExecutor,
@@ -44,7 +43,12 @@ public class RemoveEncryptionKeyCommand extends Command
     _encKeyName = encKeyName;
     _encKeyProvider = encKeyProvider;
 
-//    _logger = LoggerFactory.getLogger(RemoveEncryptionKeyCommand.class);
+  }
+
+  // internal use
+  void setGcsStorage(Storage storage)
+  {
+    _gcsStorage = storage;
   }
 
   public ListenableFuture<S3File> run(final String bucket,final String key,
@@ -240,20 +244,36 @@ public class RemoveEncryptionKeyCommand extends Command
               public ListenableFuture<S3File> apply(
                 AccessControlList acl) throws IOException
               {
-                // It seems there is no way to update an object's metadata
-                // without re-uploading/copying the whole object. Here, we
-                // copy the object to itself in order to add the new
-                // user-metadata.
-                CopyOptions options = new CopyOptionsBuilder()
-                  .setSourceBucketName(metadata.getBucket())
-                  .setSourceKey(metadata.getKey())
-                  .setDestinationBucketName(metadata.getBucket())
-                  .setDestinationKey(metadata.getKey())
-                  .setS3Acl(acl)
-                  .setUserMetadata(metadata.getUserMetadata())
-                  .createCopyOptions();
+	        if(null == _gcsStorage)
+		{
+                  // It seems in AWS there is no way to update an object's metadata
+                  // without re-uploading/copying the whole object. Here, we
+                  // copy the object to itself in order to add the new
+                  // user-metadata.
+                  CopyOptions options = new CopyOptionsBuilder()
+                    .setSourceBucketName(metadata.getBucket())
+                    .setSourceKey(metadata.getKey())
+                    .setDestinationBucketName(metadata.getBucket())
+                    .setDestinationKey(metadata.getKey())
+                    .setS3Acl(acl)
+                    .setUserMetadata(metadata.getUserMetadata())
+                    .createCopyOptions();
 
-                return _client.copy(options);
+                  return _client.copy(options);
+		}
+		else
+		{
+		   return _executor.submit(new Callable<S3File>()
+		   {
+		     public S3File call()
+		       throws IOException
+		     {
+                       Utils.patchMetaData(_gcsStorage, metadata.getBucket(), metadata.getKey(),
+                                                    metadata.getUserMetadata());
+		       return new S3File(metadata.getBucket(), metadata.getKey());
+		     }
+                   });
+		}
               }
             };
 

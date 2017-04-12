@@ -453,13 +453,6 @@ public class TestUtils
   }
 
 
-  // GCS implementation currently doesn't support copy functions
-  public static boolean supportsCopy()
-  {
-    return !getService().equalsIgnoreCase("gs");
-  }
-
-
   public static int getExpectedPartCount(int fileSize, int chunkSize)
   {
     if(supportsMultiPart())

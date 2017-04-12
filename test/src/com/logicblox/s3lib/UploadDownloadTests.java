@@ -133,15 +133,17 @@ public class UploadDownloadTests
         .setObjectKey(Utils.getObjectKey(dest))
         .setChunkSize(chunkSize)
         .createUploadOptions();
+      String msg = null;
       try
       {
         _client.upload(upOpts).get();
-        Assert.fail("expected exception");
+        msg = "expected exception";
       }
       catch(Throwable t)
       {
         // expected
       }
+      Assert.assertNull(msg);
 
       // we'll get a set of retries for each part
       int partCount = TestUtils.getExpectedPartCount(fileSize, chunkSize);
@@ -352,16 +354,18 @@ public class UploadDownloadTests
     // download without overwrite to make sure it fails
     File dlTemp = TestUtils.createTextFile(10);
     Assert.assertFalse(TestUtils.compareFiles(toUpload, dlTemp));
+    String msg = null;
     try
     {
       f = TestUtils.downloadFile(dest, dlTemp, false);
-      Assert.fail("Expected download exception");
+      msg = "Expected download exception";
     }
     catch(Throwable t)
     {
       // expected
     }
-
+    Assert.assertNull(msg);
+    
     // now download with overwite to make sure it replaces the file
     f = TestUtils.downloadFile(dest, dlTemp, true);
     Assert.assertTrue(TestUtils.compareFiles(toUpload, dlTemp));
@@ -554,15 +558,12 @@ catch(Throwable t)
     Assert.assertNotNull(f.getLocalFile());
     Assert.assertTrue(TestUtils.compareFiles(toUpload, f.getLocalFile()));
   }
-  
+
 
   @Test
   public void testSimpleCopy()
     throws Throwable
   {
-    if(!TestUtils.supportsCopy())
-      return;
-
     List<S3File> objs = TestUtils.listTestBucketObjects();
     int originalCount = objs.size();
 
@@ -587,12 +588,14 @@ catch(Throwable t)
        .setDestinationKey(f.getKey() + "-COPY")
        .createCopyOptions();
     S3File copy = _client.copy(copyOpts).get();
+    String expectedKey = TestUtils.addPrefix(toUpload.getName() + "-COPY");
+    Assert.assertEquals(expectedKey, copy.getKey());
 
     // check for the copy
     objs = TestUtils.listTestBucketObjects();
     Assert.assertEquals(originalCount + 2, objs.size());
     Assert.assertTrue(TestUtils.findObject(objs, TestUtils.addPrefix(toUpload.getName())));
-    Assert.assertTrue(TestUtils.findObject(objs, TestUtils.addPrefix(toUpload.getName() + "-COPY")));
+    Assert.assertTrue(TestUtils.findObject(objs, expectedKey));
 
     // download and compare copy
     File dlTemp = TestUtils.createTmpFile();
@@ -671,9 +674,6 @@ catch(Throwable t)
   public void testCopyDir()
     throws Throwable
   {
-    if(!TestUtils.supportsCopy())
-      return;
-
 // directory copy/upload tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
 int retryCount = 5;
 int count = 0;
@@ -752,12 +752,11 @@ catch(Throwable t)
   ++count;
   if(count >= retryCount)
     throw t;
-//  System.out.println(" ++++++++++++++++ RETRYING: " + t.getMessage());
 }
 }
   }
 
-
+  
   @Test
   public void testCopyMissingDestBucket()
     throws Throwable
@@ -815,7 +814,6 @@ catch(Throwable t)
   ++count;
   if(count >= retryCount)
     throw t;
-//  System.out.println(" ++++++++++++++++ RETRYING: " + t.getMessage());
 }
 }
   }
@@ -917,7 +915,6 @@ catch(Throwable t)
   ++count;
   if(count >= retryCount)
     throw t;
-//  System.out.println(" ++++++++++++++++ RETRYING: " + t.getMessage());
 }
 }
   }
@@ -949,15 +946,17 @@ catch(Throwable t)
 
     // upload should fail if key can't be found
     TestUtils.setKeyProvider(keydir2);
+    String msg = null;
     try
     {
       TestUtils.uploadEncryptedFile(toUpload, dest, keyName);
-      Assert.fail("Expected upload error (key not found)");
+      msg = "Expected upload error (key not found)";
     }
     catch(Throwable t)
     {
       // expected
     }
+    Assert.assertNull(msg);
 
     // upload should succeed now
     TestUtils.setKeyProvider(keydir);
@@ -983,12 +982,13 @@ catch(Throwable t)
     try
     {
       f = TestUtils.downloadFile(dest, dlTemp);
-      Assert.fail("Expected download error (key not found)");
+      msg = "Expected download error (key not found)";
     }
     catch(Throwable t)
     {
       // expected
     }
+    Assert.assertNull(msg);
     Assert.assertFalse(dlTemp.exists());
 
     // try download with only private key in keydir.  should succeed
@@ -1003,12 +1003,13 @@ catch(Throwable t)
     try
     {
       TestUtils.uploadEncryptedFile(toUpload, dest, keyName);
-      Assert.fail("Expected upload error (key not found)");
+      msg = "Expected upload error (key not found)";
     }
     catch(Throwable t)
     {
       // expected
     }
+    Assert.assertNull(msg);
 
     // upload with only public key in key dir.  should succeed
     TestUtils.writeToFile(publicKey, new File(keydir2, keyfile.getName()));

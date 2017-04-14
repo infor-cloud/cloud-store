@@ -5,8 +5,8 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-
 import java.net.URL;
+
 import java.security.GeneralSecurityException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -500,6 +500,36 @@ public class Utils
       client.setEndpoint(endpoint);
 
     return client;
+  }
+
+  // create all missing parent directories of the specified directory.
+  // return a list of the directories that had to be created, ordered top down
+  public static List<File> mkdirs(File dir)
+    throws IOException
+  {
+     String[] subdirs = dir.getAbsolutePath().split(File.separator);
+     List<File> created = new ArrayList<File>();
+     File current = null;
+     for(String s : subdirs)
+     {
+       if(null == current)
+       {
+         if(s.isEmpty())
+	   current = new File("/");
+	 else
+	   current = new File(s);
+       }
+       else
+       {
+         current = new File(current, s);
+       }
+       if(!current.exists())
+       {
+         current.mkdir();
+	 created.add(current);
+       }
+     }
+     return created;
   }
 
   protected static void print(ObjectMetadata m)

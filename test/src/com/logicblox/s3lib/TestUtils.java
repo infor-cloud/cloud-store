@@ -673,6 +673,17 @@ public class TestUtils
       return _prefix + path;
   }
 
+
+  public static String[] createEncryptionKey(File keydir, String keyName)
+    throws Throwable
+  {
+    KeyGenCommand kgc = new KeyGenCommand("RSA", 2048);
+    File keyfile = new File(keydir, keyName + ".pem");
+    kgc.savePemKeypair(keyfile);
+    String[] keys = parsePem(keyfile);
+    return keys;
+  }
+
   
   private static Random getRand()
   {

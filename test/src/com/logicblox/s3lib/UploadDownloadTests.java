@@ -330,6 +330,43 @@ public class UploadDownloadTests
 
 
   @Test
+  public void testEmptyEncryptedFile()
+    throws Throwable
+  {
+    // generate a new public/private key pair
+    String keyName = "cloud-store-ut";
+    File keydir = TestUtils.createTmpDir(true);
+    TestUtils.setKeyProvider(keydir);
+    String[] keys = TestUtils.createEncryptionKey(keydir, keyName);
+    String privateKey = keys[0];
+    String publicKey = keys[1];
+
+    List<S3File> objs = TestUtils.listTestBucketObjects();
+    int originalCount = objs.size();
+
+    // upload a file
+    File toUpload = TestUtils.createTextFile(0);
+    Assert.assertEquals(0, toUpload.length());
+    String rootPrefix = TestUtils.addPrefix("");
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    S3File f = TestUtils.uploadEncryptedFile(toUpload, dest, keyName);
+    Assert.assertNotNull(f);
+
+    // make sure file was uploaded
+    objs = TestUtils.listTestBucketObjects();
+    Assert.assertEquals(originalCount + 1, objs.size());
+    String key = TestUtils.addPrefix(toUpload.getName());
+    Assert.assertTrue(TestUtils.findObject(objs, key));
+
+    // download, overwriting a larger file
+    File dlTemp = TestUtils.createTextFile(100);
+    Assert.assertEquals(100, dlTemp.length());
+    f = TestUtils.downloadFile(dest, dlTemp);
+    Assert.assertEquals(0, dlTemp.length());
+  }
+
+
+  @Test
   public void testDownloadNoOverwriteFile()
     throws Throwable
   {
@@ -931,10 +968,7 @@ catch(Throwable t)
     String keyName = "cloud-store-ut";
     File keydir = TestUtils.createTmpDir(true);
     File keydir2 = TestUtils.createTmpDir(true);
-    KeyGenCommand kgc = new KeyGenCommand("RSA", 2048);
-    File keyfile = new File(keydir, keyName + ".pem");
-    kgc.savePemKeypair(keyfile);
-    String[] keys = TestUtils.parsePem(keyfile);
+    String[] keys = TestUtils.createEncryptionKey(keydir, keyName);
     String privateKey = keys[0];
     String publicKey = keys[1];
 
@@ -992,7 +1026,8 @@ catch(Throwable t)
     Assert.assertFalse(dlTemp.exists());
 
     // try download with only private key in keydir.  should succeed
-    TestUtils.writeToFile(privateKey, new File(keydir2, keyfile.getName()));
+    String keyFileName = keyName + ".pem";
+    TestUtils.writeToFile(privateKey, new File(keydir2, keyFileName));
     dlTemp = TestUtils.createTmpFile();
     f = TestUtils.downloadFile(dest, dlTemp);
     Assert.assertTrue(dlTemp.exists());
@@ -1011,7 +1046,7 @@ catch(Throwable t)
     }
 
     // upload with only public key in key dir.  should succeed
-    TestUtils.writeToFile(publicKey, new File(keydir2, keyfile.getName()));
+    TestUtils.writeToFile(publicKey, new File(keydir2, keyFileName));
     f = TestUtils.uploadEncryptedFile(toUpload, dest, keyName);
     Assert.assertNotNull(f);
   }

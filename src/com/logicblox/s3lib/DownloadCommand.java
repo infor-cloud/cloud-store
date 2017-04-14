@@ -232,10 +232,10 @@ public class DownloadCommand extends Command
         else
         {
           setFileLength(download.getLength());
-          if (chunkSize == 0)
-          {
-            setChunkSize(Utils.getDefaultChunkSize(download.getLength()));
-          }
+        }
+        if (chunkSize == 0)
+        {
+          setChunkSize(Utils.getDefaultChunkSize(download.getLength()));
         }
 
         return Futures.immediateFuture(download);
@@ -388,7 +388,8 @@ public class DownloadCommand extends Command
     int bufSize = 8192;
     int offset = 0;
     byte[] buf = new byte[bufSize];
-    while (offset < postCryptSize)
+    boolean encryptedEmpty = (encKey != null) && (postCryptSize == 0);
+    while (offset < postCryptSize || encryptedEmpty)
     {
       int result;
 
@@ -415,6 +416,11 @@ public class DownloadCommand extends Command
           stream.close();
         }
         catch (IOException e) {}
+
+        if (encryptedEmpty)
+        {
+          break;
+        }
 
         throw new IOException("unexpected EOF");
       }

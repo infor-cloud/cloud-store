@@ -85,13 +85,11 @@ public class TestUtils
     {
       try
       {
-        _destUri = Utils.getURI(destPrefix);
-        _service = _destUri.getScheme();
+        setDest(destPrefix);
       }
       catch(Throwable t)
       {
-        System.out.println("Error: could not parse --dest-prefix URL ["
-	   + t.getMessage() + "]");
+        System.out.println("Error: " + t.getMessage());
 	System.exit(1);
       }
     }
@@ -101,6 +99,7 @@ public class TestUtils
       System.out.println("Error:  --service must be s3 or gs");
       System.exit(1);
     }
+
   }
 
 
@@ -381,6 +380,19 @@ public class TestUtils
       .setUri(src)
       .setRecursive(recursive)
       .setOverwrite(true)
+      .createDownloadOptions();
+    return _client.downloadDirectory(dlOpts).get();
+  }
+
+
+  public static List<S3File> downloadDir(URI src, File dest, boolean recursive, boolean overwrite)
+      throws Throwable
+  {
+    DownloadOptions dlOpts = new DownloadOptionsBuilder()
+      .setFile(dest)
+      .setUri(src)
+      .setRecursive(recursive)
+      .setOverwrite(overwrite)
       .createDownloadOptions();
     return _client.downloadDirectory(dlOpts).get();
   }
@@ -685,6 +697,56 @@ public class TestUtils
   }
 
   
+  private static void setDest(String destPrefix)
+    throws Throwable
+  {
+     if((null == destPrefix) || destPrefix.isEmpty())
+     {
+       _destUri = null;
+       return;
+     }
+
+      if(destPrefix.endsWith("/"))
+      {
+        destPrefix = destPrefix.substring(0, destPrefix.length() - 1);
+      }
+
+      try
+      {
+        _destUri = Utils.getURI(destPrefix);
+      }
+      catch(URISyntaxException ex)
+      {
+        throw new RuntimeException("could not parse --dest-prefix URL ["
+	   + ex.getMessage() + "]");
+      }
+      
+      _service = _destUri.getScheme();
+
+     // make sure that the bucket exists but folder does not if --dest-prefix
+     // is passed in so we don't accidentally trash an existing folder
+     CloudStoreClient client = null;
+     try
+     {
+       // need to end with a / to check properly....
+       URI toCheck = Utils.getURI(destPrefix + "/");
+       
+       client = createClient(_defaultRetryCount);
+       if(null != client.exists(toCheck).get())
+       {
+	 destroyClient(client);
+	 client = null;
+         throw new RuntimeException(
+	   "Folder '" + _destUri + "' specified by --dest-prefix already exists.");
+       }
+     }
+     finally
+     {
+       destroyClient(client);
+     }
+  }
+
+
   private static Random getRand()
   {
     if(_rand == null)

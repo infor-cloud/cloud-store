@@ -9,6 +9,7 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -18,6 +19,10 @@ public class DownloadDirectoryCommand extends Command
   private ListeningExecutorService _httpExecutor;
   private ListeningScheduledExecutorService _executor;
   private CloudStoreClient _client;
+  private List<ListenableFuture<S3File>> _futures;
+  private java.util.Set<File> _filesToCleanup;
+  private List<File> _dirsToCleanup;
+
 
   public DownloadDirectoryCommand(
           ListeningExecutorService httpExecutor,
@@ -27,121 +32,177 @@ public class DownloadDirectoryCommand extends Command
     _httpExecutor = httpExecutor;
     _executor = internalExecutor;
     _client = client;
+    _futures = new ArrayList<ListenableFuture<S3File>>();
+    _filesToCleanup = new java.util.HashSet<File>();
+    _dirsToCleanup = new ArrayList<File>();
   }
 
   public ListenableFuture<List<S3File>> run(
-    final File file,
-    final String bucket,
-    final String key,
-    final boolean recursive,
-    final boolean overwrite,
-    final OverallProgressListenerFactory progressListenerFactory)
-  throws ExecutionException, InterruptedException, IOException
+    File destination,
+    String bucket,
+    String key,
+    boolean recursive,
+    boolean overwrite,
+    OverallProgressListenerFactory progressFactory)
+      throws ExecutionException, InterruptedException, IOException
   {
-    ListOptionsBuilder lob = new ListOptionsBuilder()
-        .setBucket(bucket)
-        .setObjectKey(key)
-        .setRecursive(recursive)
-        .setIncludeVersions(false)
-        .setExcludeDirs(false);
-    List<S3File> lst = _client.listObjects(lob.createListOptions()).get();
-
-    final List<File> dirsToCleanup = new ArrayList<File>();
-    if (lst.size() > 1)
+    try
     {
-      if(!file.exists())
-      {
-        try
-	{
-	  dirsToCleanup.addAll(Utils.mkdirs(file));
-        }
-	catch(IOException ex)
-	{
-	  throw new UsageException("Could not create directory '" + file + "': " + ex.getMessage());
-	}
-      }
+      checkDestination(destination, overwrite);
+      List<S3File> srcFiles = querySourceFiles(bucket, key, recursive);
+      prepareFutures(srcFiles, destination, bucket, key, overwrite, progressFactory);
+    }
+    catch(UsageException ex)
+    {
+      cleanup();
+      throw ex;
     }
 
-    final List<ListenableFuture<S3File>> files = new ArrayList<ListenableFuture<S3File>>();
-    final java.util.Set<File> filesToCleanup = new java.util.HashSet<File>();
-
-    for (S3File obj : lst)
-    {
-      String relFile = obj.getKey().substring(key.length());
-      File outputFile = new File(file.getAbsoluteFile(), relFile);
-      File outputPath = new File(outputFile.getParent());
-
-      if(!outputPath.exists())
-      {
-        try
-	{
-	  dirsToCleanup.addAll(Utils.mkdirs(outputPath));
-	}
-	catch(IOException ex)
-	{
-	  throw new UsageException("Could not create directory '" + file + "': " + ex.getMessage());
-	}
-      }
-
-      if (!obj.getKey().endsWith("/"))
-      {
-        if(outputFile.exists())
-        {
-          if(overwrite)
-          {
-            if(!outputFile.delete())
-              throw new UsageException("Could not overwrite existing file '" + file + "'");
-          }
-          else
-            throw new UsageException(
-              "File '" + outputFile + "' already exists. Please delete or use --overwrite");
-        }
-	filesToCleanup.add(outputFile);
-
-        DownloadOptions options = new DownloadOptionsBuilder()
-            .setFile(outputFile)
-            .setBucket(bucket)
-            .setObjectKey(obj.getKey())
-            .setOverallProgressListenerFactory(progressListenerFactory)
-            .createDownloadOptions();
-
-        ListenableFuture<S3File> result = _client.download(options);
-        files.add(result);
-      }
-    }
-
-    // don't see a way to have all peer futures in the list fail and clean up if any
-    // one fails, even if i explicitly cancel them.  this seems to be the only way
-    // to clean up all the newly created files reliably.  note that this does not
-    // attempt to delete any directories that are created.  would have to explicitly
-    // figure out what to create instead of just using File.mkdirs().
-    ListenableFuture<List<S3File>> futureList = Futures.allAsList(files);
+    // Don't see a way to have all peer futures in the list fail and clean up if any
+    // one fails, even if explicitly cancelled.  This seems to be the only way
+    // to clean up all the newly created files reliably.
+    ListenableFuture<List<S3File>> futureList = Futures.allAsList(_futures);
     return Futures.withFallback(
       futureList,
       new FutureFallback<List<S3File>>()
       {
         public ListenableFuture<List<S3File>> create(Throwable t)
 	{
-	   // cancel any futures that may still be trying to run
-	   for(ListenableFuture<S3File> f : files)
-	     f.cancel(true);
-
-	   // delete any files we created
-           for(File f : filesToCleanup)
-	   {
-	     if(f.exists())
-	       f.delete();
-           }
-
-	   // delete any directories we created
-	   for(int i = dirsToCleanup.size() - 1; i >= 0; --i)
-	   {
-	     dirsToCleanup.get(i).delete();
-	   }
-	   
+           cleanup();
            return Futures.immediateFailedFuture(t);
         }
       });
+  }
+
+
+  private List<S3File> querySourceFiles(String bucket, String key, boolean recursive)
+    throws InterruptedException, ExecutionException
+  {
+    // find all files that need to be downloaded
+    ListOptionsBuilder lob = new ListOptionsBuilder()
+        .setBucket(bucket)
+        .setObjectKey(key)
+        .setRecursive(recursive)
+        .setIncludeVersions(false)
+        .setExcludeDirs(false);
+    List<S3File> srcFiles = _client.listObjects(lob.createListOptions()).get();
+    if(srcFiles.isEmpty())
+      throw new UsageException("No objects found for '" + getUri(bucket, key) + "'");
+    return srcFiles;
+  }
+
+
+  private void checkDestination(File dest, boolean overwrite)
+  {
+    // the destination must be a directory if it exists.  if doesn't exist, create it.
+    // overwrite flag is only checked on a file by file basis, not for the destination
+    // directory
+    if(dest.exists())
+    {
+      if(!dest.isDirectory())
+      {
+        if(overwrite)
+	  dest.delete();
+	else
+          throw new UsageException("Existing destination '" + dest + "' must be a directory");
+      }
+    }
+    else
+    {
+      try
+      {
+        _dirsToCleanup.addAll(Utils.mkdirs(dest));
+      }
+      catch(IOException ex)
+      {
+        throw new UsageException("Could not create directory '" + dest + "': "
+	  + ex.getMessage());
+      }
+    }
+  }
+
+  
+  private void prepareFutures(
+    List<S3File> potentialFiles, File dest, String bucket, String srcKey, boolean overwrite,
+    OverallProgressListenerFactory progressFactory)
+      throws IOException
+  {
+    _futures.clear();
+    _filesToCleanup.clear();
+    _dirsToCleanup.clear();
+    File destAbs = dest.getAbsoluteFile();
+    for(S3File src : potentialFiles)
+    {
+      String relFile = src.getKey().substring(srcKey.length());
+      File outputFile = new File(destAbs, relFile);
+      File outputPath = new File(outputFile.getParent());
+
+      if(!outputPath.exists())
+      {
+        try
+	{
+	  _dirsToCleanup.addAll(Utils.mkdirs(outputPath));
+	}
+	catch(IOException ex)
+	{
+	  throw new UsageException("Could not create directory '" + outputPath + "': "
+	    + ex.getMessage());
+	}
+      }
+
+      if(!src.getKey().endsWith("/"))
+      {
+        if(outputFile.exists())
+        {
+          if(overwrite)
+          {
+            if(!outputFile.delete())
+              throw new UsageException("Could not overwrite existing file '" + outputFile
+	        + "'");
+          }
+          else
+	  {
+            throw new UsageException(
+              "File '" + outputFile + "' already exists. Please delete or use --overwrite");
+	  }
+        }
+	_filesToCleanup.add(outputFile);
+
+        DownloadOptions options = new DownloadOptionsBuilder()
+            .setFile(outputFile)
+            .setBucket(bucket)
+            .setObjectKey(src.getKey())
+            .setOverallProgressListenerFactory(progressFactory)
+            .createDownloadOptions();
+
+        _futures.add(_client.download(options));
+      }
+    }
+  }
+  
+
+  private void cleanup()
+  {
+    // cancel any futures that may still be trying to run
+    for(ListenableFuture<S3File> f : _futures)
+      f.cancel(true);
+    _futures.clear();
+
+    // delete any files we created
+    for(File f : _filesToCleanup)
+    {
+      if(f.exists())
+        f.delete();
+    }
+    _filesToCleanup.clear();
+
+    // delete any directories we created
+    //   - assume these were created topdown, so we can unravel them bottom up
+    for(int i = _dirsToCleanup.size() - 1; i >= 0; --i)
+    {
+      _dirsToCleanup.get(i).delete();
+    }
+    _dirsToCleanup.clear();
   }
 
 }

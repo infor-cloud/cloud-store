@@ -404,6 +404,106 @@ public class UploadDownloadTests
     Assert.assertTrue(TestUtils.compareFiles(toUpload, dlTemp));
   }
 
+  
+  @Test
+  public void testDirectoryOverwrite()
+    throws Throwable
+  {
+// directory copy/upload tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
+int retryCount = 5;
+int count = 0;
+while(count < retryCount)
+{
+try
+{
+    // create simple directory structure and upload
+    File top = TestUtils.createTmpDir(true);
+    File a = TestUtils.createTextFile(top, 100);
+    File b = TestUtils.createTextFile(top, 100);
+    String rootPrefix = TestUtils.addPrefix("dir-overwrite/");
+    URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
+    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    Assert.assertEquals(2, uploaded.size());
+
+    // should fail if source doesn't exist
+    File dlDir = TestUtils.createTmpDir(true);
+    String badPrefix = TestUtils.addPrefix("dir-overwrite-bad"
+      + System.currentTimeMillis() + "/");
+    URI src = TestUtils.getUri(_testBucket, top, badPrefix);
+    String msg = null;
+    try
+    {
+      TestUtils.downloadDir(src, dlDir, false);
+      msg = "expected exception (no object found)";
+    }
+    catch(Throwable t)
+    {
+      // expected
+      Assert.assertTrue(t.getMessage().contains("No objects found"));
+    }
+    Assert.assertNull(msg);
+
+    // should fail if dest is existing file with no overwrite
+    File existingFile = TestUtils.createTextFile(top, 1);
+    src = dest;
+    try
+    {
+      TestUtils.downloadDir(src, existingFile, true, false);
+      msg = "expected exception (can't overwrite file)";
+    }
+    catch(Throwable t)
+    {
+      // expected
+      Assert.assertTrue(t.getMessage().contains("must be a directory"));
+    }
+    Assert.assertNull(msg);
+    
+    // should succeed if dest is existing file with overwrite
+    List<S3File> downloaded = TestUtils.downloadDir(src, existingFile, true, true);
+    Assert.assertEquals(2, downloaded.size());
+    Assert.assertTrue(existingFile.isDirectory());
+    
+    // should fail if dest is existing directory and one file exists with no overwrite
+    File destDir = TestUtils.createTmpDir(true);
+    existingFile = new File(destDir, a.getName());
+    Assert.assertTrue(existingFile.createNewFile());
+    Assert.assertTrue(existingFile.exists());
+    try
+    {
+      TestUtils.downloadDir(src, destDir, true, false);
+      msg = "expected exception (can't overwrite file)";
+    }
+    catch(Throwable t)
+    {
+      // expected
+      Assert.assertTrue(t.getMessage().contains("already exists"));
+    }
+    Assert.assertNull(msg);
+    Assert.assertEquals(1, destDir.list().length);
+         // should just have the original file.  everything else should be cleaned up
+    
+    // should succeed if dest is existing directory and one file exists with overwrite
+    downloaded = TestUtils.downloadDir(src, destDir, true, true);
+    Assert.assertEquals(2, downloaded.size());
+    
+    // should succeed if dest doesn't exist
+    destDir = new File(destDir.getAbsolutePath() + "-missing-" + System.currentTimeMillis());
+    Assert.assertFalse(destDir.exists());
+    downloaded = TestUtils.downloadDir(src, destDir, true, true);
+    Assert.assertEquals(2, downloaded.size());
+    
+    return;
+}
+catch(Throwable t)
+{
+  ++count;
+  if(count >= retryCount)
+    throw t;
+//  System.out.println(" ++++++++++++++++ RETRYING: " + t.getMessage());
+}
+}
+  }
+
 
   @Test
   public void testDirectoryUploadDownload()

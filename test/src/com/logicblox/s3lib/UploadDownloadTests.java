@@ -67,6 +67,37 @@ public class UploadDownloadTests
 
 
   @Test
+  public void testExists()
+    throws Throwable
+  {
+    // NOTE - Not testing object keys that look like folders (i.e.
+    // s3://my-bucket/a/b/).  minio reports a bad request with these
+    // keys.  Plus whether a folder "exists" or not in AWS or GCS depends
+    // on whether it was created from the console or implicitly through
+    // some upload.
+    
+    // upload a file and verify it exists
+    String rootPrefix = TestUtils.addPrefix("a/b/");
+    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    File toUpload = TestUtils.createTextFile(100);
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    S3File f = TestUtils.uploadFile(toUpload, dest);
+    Assert.assertNotNull(f);
+    Assert.assertNotNull(_client.exists(dest).get());
+
+    // check for missing file key
+    URI src = TestUtils.getUri(
+      _testBucket, toUpload, rootPrefix + "-missing-" + System.currentTimeMillis());
+    Assert.assertNull(_client.exists(src).get());
+    
+    // bad bucket should fail
+    src = TestUtils.getUri(
+    _testBucket + "-missing-" + System.currentTimeMillis(), toUpload, rootPrefix);
+    Assert.assertNull(_client.exists(src).get());
+  }
+
+
+  @Test
   public void testSimpleUploadDownload()
     throws Throwable
   {

@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ExecutionException;
 
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.BadPaddingException;
@@ -38,6 +39,7 @@ import com.google.common.util.concurrent.FutureFallback;
 
 public class DownloadCommand extends Command
 {
+  private CloudStoreClient _client;
   private ListeningExecutorService _downloadExecutor;
   private ListeningScheduledExecutorService _executor;
   private KeyProvider _encKeyProvider;
@@ -45,6 +47,7 @@ public class DownloadCommand extends Command
   private Optional<OverallProgressListenerFactory> progressListenerFactory;
 
   public DownloadCommand(
+    CloudStoreClient client,
     ListeningExecutorService downloadExecutor,
     ListeningScheduledExecutorService internalExecutor,
     File file,
@@ -53,6 +56,7 @@ public class DownloadCommand extends Command
     OverallProgressListenerFactory progressListenerFactory)
   throws IOException
   {
+    _client = client;
     _downloadExecutor = downloadExecutor;
     _executor = internalExecutor;
     _encKeyProvider = encKeyProvider;
@@ -91,8 +95,25 @@ public class DownloadCommand extends Command
       throw new IOException("File '" + file + "' already exists");
   }
 
-  public ListenableFuture<S3File> run(final String bucket, final String key, final String version)
+  public ListenableFuture<S3File> run(
+    final String bucket, final String key, final String version)
   {
+    try
+    {
+      if(_client.exists(bucket, key).get() == null)
+        throw new UsageException("Object not found at " + getUri(bucket, key));
+    }
+    catch(InterruptedException ex)
+    {
+      throw new UsageException(
+        "Error checking object existance: " + ex.getMessage(), ex);
+    }
+    catch(ExecutionException ex)
+    {
+      throw new UsageException(
+        "Error checking object existance: " + ex.getMessage(), ex);
+    }
+
     ListenableFuture<AmazonDownload> download = startDownload(bucket, key, version);
     download = Futures.transform(download, startPartsAsyncFunction());
     download = Futures.transform(download, validate());

@@ -418,7 +418,7 @@ public class S3Client implements CloudStoreClient {
     OverallProgressListenerFactory progressListenerFactory = options
         .getOverallProgressListenerFactory().orNull();
 
-    DownloadCommand cmd = new DownloadCommand(_s3Executor, _executor, file,
+    DownloadCommand cmd = new DownloadCommand(this, _s3Executor, _executor, file,
         overwrite, _keyProvider, progressListenerFactory);
     configure(cmd);
     String bucket = options.getBucket();

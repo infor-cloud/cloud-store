@@ -926,10 +926,6 @@ class Main
       if(getObjectKey().endsWith("/") || getObjectKey().equals("")) {
         result = client.downloadDirectory(dob.createDownloadOptions());
       } else {
-        // Test if storage service url exists.
-        if(client.exists(getBucket(), getObjectKey()).get() == null) {
-          throw new UsageException("Object not found at "+getURI());
-        }
         if (output.isDirectory())
           output = new File(output,
               getObjectKey().substring(getObjectKey().lastIndexOf("/")+1));

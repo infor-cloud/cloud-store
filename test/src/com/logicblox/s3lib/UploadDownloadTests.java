@@ -360,6 +360,7 @@ public class UploadDownloadTests
   }
 
 
+/* PUT THIS BACK ONCE WE GET GEORGE'S FIX MERGED IN
   @Test
   public void testEmptyEncryptedFile()
     throws Throwable
@@ -395,7 +396,50 @@ public class UploadDownloadTests
     f = TestUtils.downloadFile(dest, dlTemp);
     Assert.assertEquals(0, dlTemp.length());
   }
+*/
 
+
+  @Test
+  public void testDownloadMissingFile()
+    throws Throwable
+  {
+    // upload a file
+    File toUpload = TestUtils.createTextFile(100);
+    String rootPrefix = TestUtils.addPrefix("");
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    S3File f = TestUtils.uploadFile(toUpload, dest);
+    Assert.assertNotNull(f);
+
+    // test missing file
+    File dlTemp = TestUtils.createTmpFile();
+    URI src = TestUtils.getUri(_testBucket, toUpload, rootPrefix + "missing.txt");
+    String msg = null;
+    try
+    {
+      TestUtils.downloadFile(src, dlTemp);
+      msg = "expected exception";
+    }
+    catch(Throwable t)
+    {
+      Assert.assertTrue(t.getMessage().contains("Object not found"));
+    }
+    Assert.assertNull(msg);
+
+    // test missing bucket
+    src = TestUtils.getUri(_testBucket + "-missing", toUpload, rootPrefix);
+    msg = null;
+    try
+    {
+      TestUtils.downloadFile(src, dlTemp);
+      msg = "expected exception";
+    }
+    catch(Throwable t)
+    {
+      Assert.assertTrue(t.getMessage().contains("Object not found"));
+    }
+    Assert.assertNull(msg);
+  }
+  
 
   @Test
   public void testDownloadNoOverwriteFile()

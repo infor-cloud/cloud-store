@@ -700,50 +700,64 @@ public class TestUtils
   private static void setDest(String destPrefix)
     throws Throwable
   {
-     if((null == destPrefix) || destPrefix.isEmpty())
-     {
-       _destUri = null;
-       return;
-     }
+    _destUri = null;
+    if((null == destPrefix) || destPrefix.isEmpty())
+      return;
 
-      if(destPrefix.endsWith("/"))
-      {
-        destPrefix = destPrefix.substring(0, destPrefix.length() - 1);
-      }
+    // strip trailing slash, if exists, for consistency
+    if(destPrefix.endsWith("/"))
+      destPrefix = destPrefix.substring(0, destPrefix.length() - 1);
 
+    // make sure that the bucket exists but folder does not if --dest-prefix
+    // is passed in so we don't accidentally trash an existing folder
+    CloudStoreClient client = null;
+    try
+    {
+      URI destUri = null;
       try
       {
-        _destUri = Utils.getURI(destPrefix);
+        destUri = Utils.getURI(destPrefix);
       }
       catch(URISyntaxException ex)
       {
         throw new RuntimeException("could not parse --dest-prefix URL ["
-	   + ex.getMessage() + "]");
+          + ex.getMessage() + "]");
       }
-      
-      _service = _destUri.getScheme();
 
-     // make sure that the bucket exists but folder does not if --dest-prefix
-     // is passed in so we don't accidentally trash an existing folder
-     CloudStoreClient client = null;
-     try
-     {
-       // need to end with a / to check properly....
-       URI toCheck = Utils.getURI(destPrefix + "/");
-       
-       client = createClient(_defaultRetryCount);
-       if(null != client.exists(toCheck).get())
-       {
-	 destroyClient(client);
-	 client = null;
-         throw new RuntimeException(
-	   "Folder '" + _destUri + "' specified by --dest-prefix already exists.");
-       }
-     }
-     finally
-     {
-       destroyClient(client);
-     }
+      _service = destUri.getScheme();
+      client = createClient(_defaultRetryCount);
+
+      String key = Utils.getObjectKey(destUri) + "/";
+      String bucket = Utils.getBucket(destUri);
+      ListOptionsBuilder builder = new ListOptionsBuilder()
+        .setBucket(bucket)
+        .setRecursive(false)
+        .setIncludeVersions(false)
+        .setExcludeDirs(false)
+        .setObjectKey(key);
+      List<S3File> matches =
+        client.listObjects(builder.createListOptions()).get();
+      boolean found = false;
+      for(S3File f : matches)
+      {
+        if(f.getKey().equals(key))
+	{
+	  found = true;
+	  break;
+	}
+      }
+      if(found)
+        throw new RuntimeException(
+	   "Folder '" + destPrefix + "' specified by --dest-prefix already exists.");
+
+     // set the URI that will be used as a prefix by test functions
+     _destUri = destUri;
+
+    }
+    finally
+    {
+      destroyClient(client);
+    }
   }
 
 

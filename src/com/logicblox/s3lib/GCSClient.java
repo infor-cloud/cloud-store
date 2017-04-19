@@ -193,13 +193,36 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<S3File> delete(String bucket, String object) {
-        return s3Client.delete(bucket, object);
+    public ListenableFuture<List<S3File>> deleteDir(DeleteOptions opts)
+      throws InterruptedException, ExecutionException
+    {
+      return s3Client.deleteDir(opts);
+    }
+    
+    @Override
+    public ListenableFuture<S3File> delete(DeleteOptions opts)
+    {
+      return s3Client.delete(opts);
+    }
+    
+    @Override
+    public ListenableFuture<S3File> delete(String bucket, String object)
+    {
+      DeleteOptions opts = new DeleteOptionsBuilder()
+        .setBucket(bucket)
+	.setObjectKey(object)
+	.createDeleteOptions();
+      return delete(opts);
     }
 
     @Override
-    public ListenableFuture<S3File> delete(URI s3url) {
-        return s3Client.delete(s3url);
+    public ListenableFuture<S3File> delete(URI s3url)
+    {
+      DeleteOptions opts = new DeleteOptionsBuilder()
+        .setBucket(Utils.getBucket(s3url))
+	.setObjectKey(Utils.getObjectKey(s3url))
+	.createDeleteOptions();
+      return delete(opts);
     }
 
     @Override

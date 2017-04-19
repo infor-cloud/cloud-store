@@ -300,7 +300,27 @@ public class TestUtils
     ListOptions lsOpts = builder.createListOptions();
     List<S3File> objs = _client.listObjects(lsOpts).get();
     for(S3File f : objs)
-      _client.delete(bucket, f.getKey()).get();
+      deleteObject(bucket, f.getKey());
+  }
+
+  public static S3File deleteObject(String bucket, String key)
+    throws InterruptedException, ExecutionException
+  {
+    DeleteOptions opts = new DeleteOptionsBuilder()
+      .setBucket(bucket)
+      .setObjectKey(key)
+      .createDeleteOptions();
+    return _client.delete(opts).get();
+  }
+
+  public static S3File deleteObject(URI uri)
+    throws InterruptedException, ExecutionException
+  {
+    DeleteOptions opts = new DeleteOptionsBuilder()
+      .setBucket(Utils.getBucket(uri))
+      .setObjectKey(Utils.getObjectKey(uri))
+      .createDeleteOptions();
+    return _client.delete(opts).get();
   }
 
   
@@ -455,6 +475,18 @@ public class TestUtils
     if(src.isDirectory())
       end = "/";
     return new URI(TestUtils.getService() + "://" + bucket + prefix + src.getName() + end);
+  }
+
+
+  public static URI getUri(String bucket, String filePath, String prefix)
+    throws URISyntaxException
+  {
+    if(!prefix.startsWith("/"))
+      prefix = "/" + prefix;
+    if(!prefix.endsWith("/"))
+      prefix = prefix + "/";
+    String end = "";
+    return new URI(TestUtils.getService() + "://" + bucket + prefix + filePath + end);
   }
 
 

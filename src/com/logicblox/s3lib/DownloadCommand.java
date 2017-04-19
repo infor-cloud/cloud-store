@@ -121,16 +121,16 @@ public class DownloadCommand extends Command
       if(_client.exists(bucket, key).get() == null)
         throw new UsageException("Object not found at " + getUri(bucket, key));
     }
-    catch(InterruptedException ex)
+    catch(InterruptedException | ExecutionException ex)
     {
       throw new UsageException(
         "Error checking object existance: " + ex.getMessage(), ex);
     }
-    catch(ExecutionException ex)
-    {
-      throw new UsageException(
-        "Error checking object existance: " + ex.getMessage(), ex);
-    }
+//    catch(ExecutionException ex)
+//    {
+//      throw new UsageException(
+//        "Error checking object existance: " + ex.getMessage(), ex);
+//    }
 
     if(_dryRun)
     {

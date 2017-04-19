@@ -129,7 +129,7 @@ public class UploadDownloadTests
     Assert.assertEquals(
       dest.toString(), _client.getUri(_testBucket, key).toString());
 
-    Assert.assertNotNull(_client.delete(dest).get());
+    Assert.assertNotNull(TestUtils.deleteObject(dest));
     Assert.assertNull(_client.exists(dest).get());
   }
 

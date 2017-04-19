@@ -66,6 +66,7 @@ class Main
     _commander.addCommand("upload", new UploadCommandOptions());
     _commander.addCommand("download", new DownloadCommandOptions());
     _commander.addCommand("copy", new CopyCommandOptions());
+    _commander.addCommand("delete", new DeleteCommandOptions());
     _commander.addCommand("ls", new ListCommandOptions());
     _commander.addCommand("du", new DiskUsageCommandOptions());
     _commander.addCommand("list-pending-uploads", new
@@ -567,6 +568,42 @@ class Main
       } catch (ExecutionException exc) {
         rethrow(exc.getCause());
       }
+      client.shutdown();
+    }
+  }
+  
+  @Parameters(commandDescription = "Delete objects from a storage service")
+  class DeleteCommandOptions extends S3ObjectCommandOptions
+  {
+    @Parameter(names = {"-r", "--recursive"}, description = "Delete all objects" +
+        " that match the provided storage service URL prefix.")
+    boolean recursive = false;
+
+    @Parameter(names = {"-f", "--force"}, description = "Do not report an error if the object does not exist")
+    boolean forceDelete = false;
+
+    @Parameter(names = "--dry-run", description = "Display operations but do not execute them")
+    boolean dryRun = false;
+    
+    @Override
+    public void invoke()
+      throws Exception
+    {
+      if(recursive && !getObjectKey().endsWith("/"))
+        throw new UsageException("Object key should end with / to recursively delete a directory structure");
+
+      CloudStoreClient client = createCloudStoreClient();
+      DeleteOptions opts = new DeleteOptionsBuilder()
+          .setBucket(getBucket())
+          .setObjectKey(getObjectKey())
+          .setRecursive(recursive)
+          .setDryRun(dryRun)
+	  .setForceDelete(forceDelete)
+	  .createDeleteOptions();
+      if(getObjectKey().endsWith("/"))
+        client.deleteDir(opts).get();
+      else
+        client.delete(opts).get();
       client.shutdown();
     }
   }

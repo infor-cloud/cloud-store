@@ -211,23 +211,32 @@ public interface CloudStoreClient {
         uri, String encKey, CannedAccessControlList acl)
         throws IOException, ExecutionException, InterruptedException;
 
+
     /**
-     * Deletes the specified {@code object} under {@code bucket}.
-     * <p>
-     * No error is returned if the file doesn't exist. If you care, use the
-     * {@link CloudStoreClient#exists} methods to check.
+     * Deletes a single object from a cloud store service.
      *
-     * @param bucket Bucket to delete from
-     * @param object Object to be deleted from bucket
+     * @param opts DeleteOptions that specify what to delete
      */
+    ListenableFuture<S3File> delete(DeleteOptions opts);
+
+    /**
+     * Recursively delete objects from a cloud store service.
+     *
+     * @param opts DeleteOptions that specify what to delete
+     */
+    ListenableFuture<List<S3File>> deleteDir(DeleteOptions opts)
+      throws InterruptedException, ExecutionException;
+
+    /**
+     * Deprecated.  Use CloudStoreClient#delete(DeleteOptions)
+     */
+    @Deprecated
     ListenableFuture<S3File> delete(String bucket, String object);
 
     /**
-     * Deletes the specified {@code uri}.
-     *
-     * @param uri Object URI (e.g. s3://bucket/key)
-     * @see CloudStoreClient#delete(String, String)
+     * Deprecated.  Use CloudStoreClient#delete(DeleteOptions)
      */
+    @Deprecated
     ListenableFuture<S3File> delete(URI uri);
 
     /** Lists all buckets visible for this account. */

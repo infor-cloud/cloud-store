@@ -372,20 +372,42 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> delete(String bucket, String object)
+  public ListenableFuture<List<S3File>> deleteDir(DeleteOptions opts)
+    throws InterruptedException, ExecutionException
+  {
+    DeleteDirCommand cmd =
+      new DeleteDirCommand(_s3Executor, _executor, this, opts);
+    configure(cmd);
+    return cmd.run();
+  }
+
+  @Override
+  public ListenableFuture<S3File> delete(DeleteOptions opts)
   {
     DeleteCommand cmd =
-      new DeleteCommand(_s3Executor, _executor);
+      new DeleteCommand(_s3Executor, _executor, this, opts);
     configure(cmd);
-    return cmd.run(bucket, object);
+    return cmd.run();
+  }
+
+  @Override
+  public ListenableFuture<S3File> delete(String bucket, String object)
+  {
+    DeleteOptions opts = new DeleteOptionsBuilder()
+      .setBucket(bucket)
+      .setObjectKey(object)
+      .createDeleteOptions();
+    return delete(opts);
   }
 
   @Override
   public ListenableFuture<S3File> delete(URI s3url)
   {
-    String bucket = Utils.getBucket(s3url);
-    String object = Utils.getObjectKey(s3url);
-    return delete(bucket, object);
+    DeleteOptions opts = new DeleteOptionsBuilder()
+      .setBucket(Utils.getBucket(s3url))
+      .setObjectKey(Utils.getObjectKey(s3url))
+      .createDeleteOptions();
+    return delete(opts);
   }
 
   @Override

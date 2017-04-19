@@ -16,6 +16,7 @@ public class CopyOptionsBuilder {
     private String destinationKey;
     private Optional<String> cannedAcl = Optional.absent();
     private boolean recursive = false;
+    private boolean dryRun = false;
     private Optional<OverallProgressListenerFactory>
         overallProgressListenerFactory = Optional.absent();
 
@@ -50,7 +51,12 @@ public class CopyOptionsBuilder {
         return this;
     }
 
-    // Disabled progress listener since AWS S3 copy progress indicator doesn't
+    public CopyOptionsBuilder setDryRun(boolean dryRun) {
+        this.dryRun = dryRun;
+        return this;
+    }
+
+   // Disabled progress listener since AWS S3 copy progress indicator doesn't
     // notify about the copied bytes.
     //    public CopyOptionsBuilder setOverallProgressListenerFactory
     //        (OverallProgressListenerFactory overallProgressListenerFactory) {
@@ -62,6 +68,6 @@ public class CopyOptionsBuilder {
     public CopyOptions createCopyOptions() {
         return new CopyOptions(sourceBucketName, sourceKey,
             destinationBucketName, destinationKey, cannedAcl, recursive,
-            overallProgressListenerFactory);
+            dryRun, overallProgressListenerFactory);
     }
 }

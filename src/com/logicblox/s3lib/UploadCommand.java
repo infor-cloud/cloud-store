@@ -45,6 +45,7 @@ public class UploadCommand extends Command
 
   private ListeningExecutorService _uploadExecutor;
   private ListeningScheduledExecutorService _executor;
+  private boolean _dryRun;
 
 
   public UploadCommand(
@@ -55,6 +56,7 @@ public class UploadCommand extends Command
     String encKeyName,
     KeyProvider encKeyProvider,
     String acl,
+    boolean dryRun,
     Optional<OverallProgressListenerFactory> progressListenerFactory)
   throws IOException
   {
@@ -65,6 +67,7 @@ public class UploadCommand extends Command
 
     _uploadExecutor = uploadExecutor;
     _executor = internalExecutor;
+    _dryRun = dryRun;
 
     this.file = file;
     setChunkSize(chunkSize);
@@ -109,11 +112,27 @@ public class UploadCommand extends Command
   /**
    * Run ties Step 1, Step 2, and Step 3 together. The return result is the ETag of the upload.
    */
-  public ListenableFuture<S3File> run(final String bucket, final String key) throws FileNotFoundException
+  public ListenableFuture<S3File> run(String bucket, String key)
+    throws FileNotFoundException
   {
     if (!file.exists())
       throw new FileNotFoundException(file.getPath());
 
+    if(_dryRun)
+    {
+      System.out.println("<DRYRUN> uploading '" + this.file.getAbsolutePath()
+        + "' to '" + getUri(bucket, key) + "'");
+      return Futures.immediateFuture(new S3File());
+    }
+    else
+    {
+      return scheduleExecution(bucket, key);
+    }
+  }
+  
+
+  private ListenableFuture<S3File> scheduleExecution(final String bucket, final String key)
+  {
     final ListenableFuture<Upload> started = startUpload(bucket, key);
     ListenableFuture<Upload> uploaded = Futures.transform(started, startPartsAsyncFunction());
     ListenableFuture<String> completed = Futures.transform(uploaded, completeAsyncFunction());

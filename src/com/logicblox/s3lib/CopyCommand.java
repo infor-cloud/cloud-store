@@ -24,6 +24,7 @@ public class CopyCommand extends Command
 {
   private ListeningExecutorService _copyExecutor;
   private ListeningScheduledExecutorService _executor;
+  private boolean _dryRun;
   private String acl;
   private Optional<OverallProgressListenerFactory> progressListenerFactory;
 
@@ -31,11 +32,13 @@ public class CopyCommand extends Command
       ListeningExecutorService copyExecutor,
       ListeningScheduledExecutorService internalExecutor,
       String acl,
+      boolean dryRun,
       OverallProgressListenerFactory progressListenerFactory)
   throws IOException
   {
     _copyExecutor = copyExecutor;
     _executor = internalExecutor;
+    _dryRun = dryRun;
 
     this.acl = acl;
     this.progressListenerFactory = Optional.fromNullable
@@ -47,12 +50,20 @@ public class CopyCommand extends Command
                                       final String destinationBucketName,
                                       final String destinationKey)
   {
-    ListenableFuture<Copy> copy = startCopy(sourceBucketName, sourceKey,
+    if(_dryRun)
+    {
+      System.out.println("<DRYRUN> copying '" + getUri(sourceBucketName, sourceKey)
+        + "' to '" + getUri(destinationBucketName, destinationKey) + "'");
+      return Futures.immediateFuture(new S3File());
+    }
+    else
+    {
+      ListenableFuture<Copy> copy = startCopy(sourceBucketName, sourceKey,
         destinationBucketName, destinationKey);
-    copy = Futures.transform(copy, startPartsAsyncFunction());
-    ListenableFuture<String> result = Futures.transform(copy,
+      copy = Futures.transform(copy, startPartsAsyncFunction());
+      ListenableFuture<String> result = Futures.transform(copy,
         completeAsyncFunction());
-    return Futures.transform(
+      return Futures.transform(
         result,
         new Function<String, S3File>() {
           public S3File apply(String etag) {
@@ -64,7 +75,8 @@ public class CopyCommand extends Command
             return f;
           }
         }
-    );
+      );
+    }
   }
 
   /**

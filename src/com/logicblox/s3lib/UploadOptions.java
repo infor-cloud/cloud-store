@@ -37,6 +37,7 @@ public class UploadOptions {
     private long chunkSize = -1;
     private Optional<String> encKey;
     private Optional<String> acl;
+    private boolean dryRun;
     private Optional<OverallProgressListenerFactory>
         overallProgressListenerFactory;
 
@@ -51,6 +52,7 @@ public class UploadOptions {
                   long chunkSize,
                   Optional<String> encKey,
                   Optional<String> acl,
+		  boolean dryRun,
                   Optional<OverallProgressListenerFactory>
                       overallProgressListenerFactory) {
         this.file = file;
@@ -59,6 +61,7 @@ public class UploadOptions {
         this.chunkSize = chunkSize;
         this.encKey = encKey;
         this.acl = acl;
+	this.dryRun = dryRun;
         this.overallProgressListenerFactory = overallProgressListenerFactory;
     }
 
@@ -117,6 +120,10 @@ public class UploadOptions {
 
     public Optional<String> getAcl() {
         return acl;
+    }
+
+    public boolean isDryRun() {
+        return dryRun;
     }
 
     public Optional<OverallProgressListenerFactory>

@@ -327,12 +327,13 @@ public class GCSClient implements CloudStoreClient {
             long chunkSize = options.getChunkSize();
             String acl = options.getAcl().or("projectPrivate");
             String encKey = options.getEncKey().orNull();
+	    boolean dryRun = options.isDryRun();
             Optional<OverallProgressListenerFactory> progressListenerFactory =
                 options.getOverallProgressListenerFactory();
 
             GCSUploadCommand cmd =
                 new GCSUploadCommand(_s3Executor, _executor, file,
-                    chunkSize, encKey, _keyProvider, acl, progressListenerFactory);
+                    chunkSize, encKey, _keyProvider, acl, dryRun, progressListenerFactory);
             s3Client.configure(cmd);
             return cmd.run(options.getBucket(), options.getObjectKey());
         }
@@ -351,13 +352,14 @@ public class GCSClient implements CloudStoreClient {
             long chunkSize = options.getChunkSize();
             String encKey = options.getEncKey().orNull();
             String acl = options.getAcl().or("projectPrivate");
+	    boolean dryRun = options.isDryRun();
             OverallProgressListenerFactory progressListenerFactory = options
                 .getOverallProgressListenerFactory().orNull();
 
             UploadDirectoryCommand cmd = new UploadDirectoryCommand(_s3Executor,
                 _executor, this);
             s3Client.configure(cmd);
-            return cmd.run(directory, bucket, object, chunkSize, encKey, acl,
+            return cmd.run(directory, bucket, object, chunkSize, encKey, acl, dryRun,
                 progressListenerFactory);
         }
 

@@ -28,6 +28,7 @@ public class DownloadOptions {
     private boolean recursive;
     private String version;
     private boolean overwrite;
+    private boolean dryRun;
     private Optional<OverallProgressListenerFactory>
         overallProgressListenerFactory;
 
@@ -37,6 +38,7 @@ public class DownloadOptions {
                     String version,
                     boolean recursive,
                     boolean overwrite,
+                    boolean dryRun,
                     Optional<OverallProgressListenerFactory>
                         overallProgressListenerFactory) {
         this.file = file;
@@ -45,6 +47,7 @@ public class DownloadOptions {
         this.recursive = recursive;
         this.version = version;
         this.overwrite = overwrite;
+        this.dryRun = dryRun;
         this.overallProgressListenerFactory = overallProgressListenerFactory;
     }
 
@@ -70,6 +73,10 @@ public class DownloadOptions {
 
     public boolean doesOverwrite() {
         return overwrite;
+    }
+
+    public boolean isDryRun() {
+        return dryRun;
     }
 
     public Optional<OverallProgressListenerFactory>

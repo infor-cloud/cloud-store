@@ -21,6 +21,7 @@ public class UploadOptionsBuilder {
     private Optional<String> acl = Optional.absent();
     private Optional<OverallProgressListenerFactory>
         overallProgressListenerFactory = Optional.absent();
+    private boolean dryRun = false;
 
     public UploadOptionsBuilder setFile(File file) {
         this.file = file;
@@ -64,8 +65,13 @@ public class UploadOptionsBuilder {
         return this;
     }
 
+    public UploadOptionsBuilder setDryRun(boolean dryRun) {
+        this.dryRun = dryRun;
+        return this;
+    }
+
     public UploadOptions createUploadOptions() {
         return new UploadOptions(file, bucket, objectKey, chunkSize, encKey,
-            acl, overallProgressListenerFactory);
+            acl, dryRun, overallProgressListenerFactory);
     }
 }

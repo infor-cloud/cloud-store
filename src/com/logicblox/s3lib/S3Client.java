@@ -255,12 +255,13 @@ public class S3Client implements CloudStoreClient {
     long chunkSize = options.getChunkSize();
     String acl = options.getAcl().or("bucket-owner-full-control");
     String encKey = options.getEncKey().orNull();
+    boolean dryRun = options.isDryRun();
     Optional<OverallProgressListenerFactory> progressListenerFactory = options
         .getOverallProgressListenerFactory();
 
     UploadCommand cmd =
         new UploadCommand(_s3Executor, _executor, file, chunkSize, encKey,
-            _keyProvider, acl, progressListenerFactory);
+            _keyProvider, acl, dryRun, progressListenerFactory);
     configure(cmd);
 
     return cmd.run(options.getBucket(), options.getObjectKey());
@@ -331,6 +332,7 @@ public class S3Client implements CloudStoreClient {
     long chunkSize = options.getChunkSize();
     String encKey = options.getEncKey().orNull();
     String acl = options.getAcl().or("bucket-owner-full-control");
+    boolean dryRun = options.isDryRun();
     OverallProgressListenerFactory progressListenerFactory = options
         .getOverallProgressListenerFactory().orNull();
 
@@ -338,7 +340,7 @@ public class S3Client implements CloudStoreClient {
         _executor, this);
     configure(cmd);
     return cmd.run(directory, bucket, object, chunkSize,  encKey, acl,
-      progressListenerFactory);
+      dryRun, progressListenerFactory);
   }
 
   @Override
@@ -415,11 +417,12 @@ public class S3Client implements CloudStoreClient {
   {
     File file = options.getFile();
     boolean overwrite = options.doesOverwrite();
+    boolean dryRun = options.isDryRun();
     OverallProgressListenerFactory progressListenerFactory = options
         .getOverallProgressListenerFactory().orNull();
 
     DownloadCommand cmd = new DownloadCommand(this, _s3Executor, _executor, file,
-        overwrite, _keyProvider, progressListenerFactory);
+        overwrite, _keyProvider, dryRun, progressListenerFactory);
     configure(cmd);
     String bucket = options.getBucket();
     String key = options.getObjectKey();
@@ -464,10 +467,11 @@ public class S3Client implements CloudStoreClient {
     String object = options.getObjectKey();
     boolean recursive = options.isRecursive();
     boolean overwrite = options.doesOverwrite();
+    boolean dryRun = options.isDryRun();
     OverallProgressListenerFactory progressListenerFactory = options
         .getOverallProgressListenerFactory().orNull();
 
-    return cmd.run(directory, bucket, object, recursive, overwrite,
+    return cmd.run(directory, bucket, object, recursive, overwrite, dryRun,
         progressListenerFactory);
   }
 
@@ -491,11 +495,12 @@ public class S3Client implements CloudStoreClient {
   throws IOException
   {
     String cannedAcl = options.getCannedAcl().or("bucket-owner-full-control");
+    boolean dryRun = options.isDryRun();
     OverallProgressListenerFactory progressListenerFactory = options
         .getOverallProgressListenerFactory().orNull();
 
-    CopyCommand cmd = new CopyCommand(_s3Executor, _executor, cannedAcl,
-        progressListenerFactory);
+    CopyCommand cmd = new CopyCommand(_s3Executor, _executor, cannedAcl, 
+        dryRun, progressListenerFactory);
     configure(cmd);
     return cmd.run(options.getSourceBucketName(), options.getSourceKey(),
         options.getDestinationBucketName(), options.getDestinationKey());
@@ -505,7 +510,8 @@ public class S3Client implements CloudStoreClient {
   public ListenableFuture<List<S3File>> copyToDir(CopyOptions options) throws
       InterruptedException, ExecutionException, IOException,
       URISyntaxException {
-    CopyToDirCommand cmd = new CopyToDirCommand(_s3Executor, _executor, this);
+    boolean dryRun = options.isDryRun();
+    CopyToDirCommand cmd = new CopyToDirCommand(_s3Executor, _executor, dryRun, this);
     configure(cmd);
 
     return cmd.run(options);

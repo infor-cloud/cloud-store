@@ -23,6 +23,7 @@ public class CopyOptions {
     private final String destinationBucketName;
     private final String destinationKey;
     private final boolean recursive;
+    private final boolean dryRun;
     private final Optional<String> cannedAcl;
     private final Optional<OverallProgressListenerFactory>
         overallProgressListenerFactory;
@@ -33,6 +34,7 @@ public class CopyOptions {
                 String destinationKey,
                 Optional<String> cannedAcl,
                 boolean recursive,
+		boolean dryRun,
                 Optional<OverallProgressListenerFactory>
                     overallProgressListenerFactory) {
         this.sourceBucketName = sourceBucketName;
@@ -41,6 +43,7 @@ public class CopyOptions {
         this.destinationKey = destinationKey;
         this.recursive = recursive;
         this.cannedAcl = cannedAcl;
+	this.dryRun = dryRun;
         this.overallProgressListenerFactory = overallProgressListenerFactory;
     }
 
@@ -66,6 +69,10 @@ public class CopyOptions {
 
     public boolean isRecursive() {
         return recursive;
+    }
+
+    public boolean isDryRun() {
+        return dryRun;
     }
 
     public Optional<OverallProgressListenerFactory>

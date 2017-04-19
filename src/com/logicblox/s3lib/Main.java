@@ -366,6 +366,9 @@ class Main
     @Parameter(names = {"-r", "--recursive"}, description = "Copy recursively")
     boolean recursive = false;
 
+    @Parameter(names = "--dry-run", description = "Display operations but do not execute them")
+    boolean dryRun = false;
+
     public void invoke() throws Exception
     {
       if (cannedAcl == null)
@@ -387,6 +390,7 @@ class Main
           .setDestinationKey(getDestinationObjectKey())
           .setCannedAcl(cannedAcl)
           .setRecursive(recursive)
+	  .setDryRun(dryRun)
           .createCopyOptions();
 
       try
@@ -441,6 +445,9 @@ class Main
     @Parameter(names = "--progress", description = "Enable progress indicator")
     boolean progress = false;
 
+    @Parameter(names = "--dry-run", description = "Display operations but do not execute them")
+    boolean dryRun = false;
+
     @Parameter(names = "--canned-acl", description = "The canned ACL to use. "
         + S3Client.cannedACLsDescConst + " " + GCSClient.cannedACLsDescConst)
     String cannedAcl;
@@ -477,7 +484,8 @@ class Main
           .setObjectKey(getObjectKey())
           .setChunkSize(chunkSize)
           .setEncKey(encKeyName)
-          .setAcl(cannedAcl);
+          .setAcl(cannedAcl)
+	  .setDryRun(dryRun);
       if (progress) {
         OverallProgressListenerFactory cplf = new
             ConsoleProgressListenerFactory();
@@ -901,6 +909,9 @@ class Main
     @Parameter(names = "--progress", description = "Enable progress indication")
     boolean progress = false;
 
+    @Parameter(names = "--dry-run", description = "Display operations but do not execute them")
+    boolean dryRun = false;
+
     @Override
     public void invoke() throws Exception
     {
@@ -915,7 +926,8 @@ class Main
           .setObjectKey(getObjectKey())
           .setRecursive(recursive)
           .setVersion(version)
-          .setOverwrite(overwrite);
+          .setOverwrite(overwrite)
+	  .setDryRun(dryRun);
 
       if (progress) {
           OverallProgressListenerFactory cplf = new

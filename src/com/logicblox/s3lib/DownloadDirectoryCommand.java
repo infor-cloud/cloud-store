@@ -22,7 +22,8 @@ public class DownloadDirectoryCommand extends Command
   private List<ListenableFuture<S3File>> _futures;
   private java.util.Set<File> _filesToCleanup;
   private List<File> _dirsToCleanup;
-
+  private boolean _dryRun = false;
+  
 
   public DownloadDirectoryCommand(
           ListeningExecutorService httpExecutor,
@@ -43,9 +44,14 @@ public class DownloadDirectoryCommand extends Command
     String key,
     boolean recursive,
     boolean overwrite,
+    boolean dryRun,
     OverallProgressListenerFactory progressFactory)
       throws ExecutionException, InterruptedException, IOException
   {
+    _dryRun = dryRun;
+    _futures.clear();
+    _filesToCleanup.clear();
+    _dirsToCleanup.clear();
     try
     {
       checkDestination(destination, overwrite);
@@ -58,6 +64,18 @@ public class DownloadDirectoryCommand extends Command
       throw ex;
     }
 
+    if(dryRun)
+    {
+      List<S3File> dummy = new ArrayList<S3File>();
+      return Futures.immediateFuture(dummy);
+    }
+    else
+      return scheduleExecution();
+  }
+
+
+  private ListenableFuture<List<S3File>> scheduleExecution()
+  {
     // Don't see a way to have all peer futures in the list fail and clean up if any
     // one fails, even if explicitly cancelled.  This seems to be the only way
     // to clean up all the newly created files reliably.
@@ -102,16 +120,24 @@ public class DownloadDirectoryCommand extends Command
       if(!dest.isDirectory())
       {
         if(overwrite)
-	  dest.delete();
+	{
+	  if(_dryRun)
+	    System.out.println("<DRYRUN> overwriting existing file '" + dest.getAbsolutePath()
+	      + "' with new directory");
+	  else
+            dest.delete();
+	}
 	else
+	{
           throw new UsageException("Existing destination '" + dest + "' must be a directory");
+	}
       }
     }
     else
     {
       try
       {
-        _dirsToCleanup.addAll(Utils.mkdirs(dest));
+        updateDirsToCleanup(Utils.mkdirs(dest, _dryRun));
       }
       catch(IOException ex)
       {
@@ -121,15 +147,27 @@ public class DownloadDirectoryCommand extends Command
     }
   }
 
+
+  private void updateDirsToCleanup(List<File> newDirs)
+  {
+    if(_dryRun)
+    {
+      for(File f : newDirs)
+      {
+        if(!_dirsToCleanup.contains(f))
+          System.out.println("<DRYRUN> creating missing directory '"
+            + f.getAbsolutePath() + "'");
+      }
+    }
+    _dirsToCleanup.addAll(newDirs);
+  }
+  
   
   private void prepareFutures(
     List<S3File> potentialFiles, File dest, String bucket, String srcKey, boolean overwrite,
     OverallProgressListenerFactory progressFactory)
       throws IOException
   {
-    _futures.clear();
-    _filesToCleanup.clear();
-    _dirsToCleanup.clear();
     File destAbs = dest.getAbsoluteFile();
     for(S3File src : potentialFiles)
     {
@@ -141,7 +179,7 @@ public class DownloadDirectoryCommand extends Command
       {
         try
 	{
-	  _dirsToCleanup.addAll(Utils.mkdirs(outputPath));
+          updateDirsToCleanup(Utils.mkdirs(outputPath, _dryRun));
 	}
 	catch(IOException ex)
 	{
@@ -156,9 +194,16 @@ public class DownloadDirectoryCommand extends Command
         {
           if(overwrite)
           {
-            if(!outputFile.delete())
-              throw new UsageException("Could not overwrite existing file '" + outputFile
-	        + "'");
+	    if(_dryRun)
+	    {
+	      System.out.println("<DRYRUN> overwrite existing file '" + outputFile.getAbsolutePath() + "'");
+	    }
+	    else
+	    {
+              if(!outputFile.delete())
+                throw new UsageException("Could not overwrite existing file '" + outputFile
+                  + "'");
+	    }
           }
           else
 	  {
@@ -166,16 +211,24 @@ public class DownloadDirectoryCommand extends Command
               "File '" + outputFile + "' already exists. Please delete or use --overwrite");
 	  }
         }
-	_filesToCleanup.add(outputFile);
+        if(_dryRun)
+	{
+	  System.out.println("<DRYRUN> downloading '" + getUri(bucket, src.getKey())
+	    + "' to '" + outputFile.getAbsolutePath() + "'");
+	}
+	else
+	{
+          _filesToCleanup.add(outputFile);
 
-        DownloadOptions options = new DownloadOptionsBuilder()
+          DownloadOptions options = new DownloadOptionsBuilder()
             .setFile(outputFile)
             .setBucket(bucket)
             .setObjectKey(src.getKey())
             .setOverallProgressListenerFactory(progressFactory)
             .createDownloadOptions();
 
-        _futures.add(_client.download(options));
+          _futures.add(_client.download(options));
+	}
       }
     }
   }

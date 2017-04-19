@@ -21,6 +21,7 @@ public class UploadDirectoryCommand extends Command
   private ListeningExecutorService _httpExecutor;
   private ListeningScheduledExecutorService _executor;
   private CloudStoreClient _client;
+  private boolean _dryRun;
 
   public UploadDirectoryCommand(
           ListeningExecutorService httpExecutor,
@@ -38,10 +39,12 @@ public class UploadDirectoryCommand extends Command
                                             final long chunkSize,
                                             final String encKey,
                                             final String acl,
+					    boolean dryRun,
                                             OverallProgressListenerFactory
                                                 progressListenerFactory)
   throws ExecutionException, InterruptedException, IOException
   {
+    _dryRun = dryRun;
     final IOFileFilter noSymlinks = new IOFileFilter()
     {
       @Override
@@ -92,10 +95,26 @@ public class UploadDirectoryCommand extends Command
           .setOverallProgressListenerFactory(progressListenerFactory)
           .createUploadOptions();
 
-      files.add(_client.upload(options));
+      if(_dryRun)
+      {
+        System.out.println("<DRYRUN> uploading '" + file.getAbsolutePath()
+	    + "' to '" + getUri(bucket, key) + "'");
+      }
+      else
+      {
+        files.add(_client.upload(options));
+      }
     }
 
-    return Futures.allAsList(files);
+    if(_dryRun)
+    {
+      return Futures.allAsList(files);
+    }
+    else
+    {
+      List<S3File> dummy = new ArrayList<S3File>();
+      return Futures.immediateFuture(dummy);
+    }
   }
 
 }

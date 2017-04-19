@@ -43,6 +43,7 @@ public class DownloadCommand extends Command
   private ListeningExecutorService _downloadExecutor;
   private ListeningScheduledExecutorService _executor;
   private KeyProvider _encKeyProvider;
+  private boolean _dryRun;
   private ConcurrentMap<Integer, byte[]> etags = new ConcurrentSkipListMap<Integer, byte[]>();
   private Optional<OverallProgressListenerFactory> progressListenerFactory;
 
@@ -53,13 +54,15 @@ public class DownloadCommand extends Command
     File file,
     boolean overwrite,
     KeyProvider encKeyProvider,
+    boolean dryRun,
     OverallProgressListenerFactory progressListenerFactory)
-  throws IOException
+      throws IOException
   {
     _client = client;
     _downloadExecutor = downloadExecutor;
     _executor = internalExecutor;
     _encKeyProvider = encKeyProvider;
+    _dryRun = dryRun;
 
     this.file = file;
     createNewFile(overwrite);
@@ -73,16 +76,28 @@ public class DownloadCommand extends Command
     File dir = file.getParentFile();
     if(!dir.exists())
     {
-      if(!dir.mkdirs())
-        throw new IOException("Could not create directory '" + dir + "'");
+      List<File> newDirs = Utils.mkdirs(dir, _dryRun);
+      if(_dryRun)
+      {
+        for(File f : newDirs)
+          System.out.println("<DRYRUN> creating missing directory '"
+            + f.getAbsolutePath() + "'");
+      }
     }
 
     if(file.exists())
     {
       if(overwrite)
       {
-        if(!file.delete())
-          throw new IOException("Could not delete existing file '" + file + "'");
+        if(_dryRun)
+        {
+          System.out.println("<DRYRUN> overwrite existing file '" + file.getAbsolutePath() + "'");
+        }
+        else
+        {
+          if(!file.delete())
+            throw new UsageException("Could not delete existing file '" + file + "'");
+	}
       }
       else
       {
@@ -91,12 +106,15 @@ public class DownloadCommand extends Command
       }
     }
 
-    if(!file.createNewFile())
-      throw new IOException("File '" + file + "' already exists");
+    if(!_dryRun)
+    {
+      if(!file.createNewFile())
+        throw new IOException("File '" + file + "' already exists");
+    }
   }
 
-  public ListenableFuture<S3File> run(
-    final String bucket, final String key, final String version)
+  
+  public ListenableFuture<S3File> run(String bucket, String key, String version)
   {
     try
     {
@@ -114,6 +132,22 @@ public class DownloadCommand extends Command
         "Error checking object existance: " + ex.getMessage(), ex);
     }
 
+    if(_dryRun)
+    {
+      System.out.println("<DRYRUN> downloading '" + getUri(bucket, key)
+        + "' to '" + this.file.getAbsolutePath() + "'");
+      return Futures.immediateFuture(new S3File());
+    }
+    else
+    {
+      return scheduleExecution(bucket, key, version);
+    }
+  }
+
+
+  private ListenableFuture<S3File> scheduleExecution(
+    final String bucket, final String key, final String version)
+  {
     ListenableFuture<AmazonDownload> download = startDownload(bucket, key, version);
     download = Futures.transform(download, startPartsAsyncFunction());
     download = Futures.transform(download, validate());

@@ -359,9 +359,8 @@ public class UploadDownloadTests
     Assert.assertEquals(0, dlTemp.length());
   }
 
-
-/* PUT THIS BACK ONCE WE GET GEORGE'S FIX MERGED IN
-  @Test
+// PUT THIS BACK ONCE WE GET GEORGE'S FIX MERGED IN
+//  @Test
   public void testEmptyEncryptedFile()
     throws Throwable
   {
@@ -396,7 +395,6 @@ public class UploadDownloadTests
     f = TestUtils.downloadFile(dest, dlTemp);
     Assert.assertEquals(0, dlTemp.length());
   }
-*/
 
 
   @Test
@@ -772,9 +770,6 @@ catch(Throwable t)
   public void testSimpleCopy()
     throws Throwable
   {
-    if(!TestUtils.supportsCopy())
-      return;
-
     List<S3File> objs = TestUtils.listTestBucketObjects();
     int originalCount = objs.size();
 
@@ -799,12 +794,14 @@ catch(Throwable t)
        .setDestinationKey(f.getKey() + "-COPY")
        .createCopyOptions();
     S3File copy = _client.copy(copyOpts).get();
+    String expectedKey = TestUtils.addPrefix(toUpload.getName() + "-COPY");
+    Assert.assertEquals(expectedKey, copy.getKey());
 
     // check for the copy
     objs = TestUtils.listTestBucketObjects();
     Assert.assertEquals(originalCount + 2, objs.size());
     Assert.assertTrue(TestUtils.findObject(objs, TestUtils.addPrefix(toUpload.getName())));
-    Assert.assertTrue(TestUtils.findObject(objs, TestUtils.addPrefix(toUpload.getName() + "-COPY")));
+    Assert.assertTrue(TestUtils.findObject(objs, expectedKey));
 
     // download and compare copy
     File dlTemp = TestUtils.createTmpFile();
@@ -883,9 +880,6 @@ catch(Throwable t)
   public void testCopyDir()
     throws Throwable
   {
-    if(!TestUtils.supportsCopy())
-      return;
-
 // directory copy/upload tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
 int retryCount = 5;
 int count = 0;

@@ -108,12 +108,12 @@ public class UploadDirectoryCommand extends Command
 
     if(_dryRun)
     {
-      return Futures.allAsList(files);
+      List<S3File> dummy = new ArrayList<S3File>();
+      return Futures.immediateFuture(dummy);
     }
     else
     {
-      List<S3File> dummy = new ArrayList<S3File>();
-      return Futures.immediateFuture(dummy);
+      return Futures.allAsList(files);
     }
   }
 

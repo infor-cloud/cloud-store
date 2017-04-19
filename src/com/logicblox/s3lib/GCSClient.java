@@ -253,16 +253,17 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<S3File> copy(CopyOptions options) throws IOException {
-        throw new UnsupportedOperationException("Copy operation is not " +
-            "supported for Google Cloud Storage yet.");
+    public ListenableFuture<S3File> copy(CopyOptions options)
+      throws IOException
+    {
+        return s3Client.copy(options);
     }
 
     @Override
     public ListenableFuture<List<S3File>> copyToDir(CopyOptions options)
-        throws InterruptedException, ExecutionException, IOException {
-        throw new UnsupportedOperationException("Copy operation is not " +
-            "supported for Google Cloud Storage yet.");
+        throws InterruptedException, ExecutionException, IOException, URISyntaxException
+    {
+        return s3Client.copyToDir(options);
     }
 
     @Override
@@ -370,6 +371,23 @@ public class GCSClient implements CloudStoreClient {
           configure(cmd);
           return cmd.run(lsOptions);
         }
+	
+	@Override
+        public ListenableFuture<S3File> copy(CopyOptions options)
+	{
+          GCSCopyCommand cmd = new GCSCopyCommand(gcsClient, _s3Executor, _executor);
+          configure(cmd);
+          return cmd.run(options);
+	}
+
+	@Override
+        public ListenableFuture<List<S3File>> copyToDir(CopyOptions options)
+	  throws IOException
+	{
+          GCSCopyDirCommand cmd = new GCSCopyDirCommand(gcsClient, _s3Executor, _executor);
+          configure(cmd);
+          return cmd.run(options);
+	}
     }
 
     @Override

@@ -49,7 +49,7 @@ public class DeleteCommand extends Command
     catch(InterruptedException | ExecutionException ex)
     {
       throw new UsageException(
-        "Error checking object existance: " + ex.getMessage(), ex);
+        "Error checking object existence: " + ex.getMessage(), ex);
     }
     if(!exists)
     {
@@ -83,7 +83,7 @@ public class DeleteCommand extends Command
     if(_options.isDryRun())
     {
       System.out.println("<DRYRUN> deleting '"
-        + getUri(_options.getBucket(), _options.getObjectKey()));
+        + getUri(_options.getBucket(), _options.getObjectKey()) + "'");
       return Futures.immediateFuture(new S3File());
     }
     else

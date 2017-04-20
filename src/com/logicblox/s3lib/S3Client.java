@@ -540,6 +540,28 @@ public class S3Client implements CloudStoreClient {
   }
   
   @Override
+  public ListenableFuture<S3File> rename(RenameOptions options)
+    throws IOException
+  {
+    String cannedAcl = options.getCannedAcl().or("bucket-owner-full-control");
+    RenameCommand cmd = new RenameCommand(
+      _s3Executor, _executor, this, cannedAcl, options);
+    configure(cmd);
+    return cmd.run();
+  }
+
+  @Override
+  public ListenableFuture<List<S3File>> renameDirectory(RenameOptions options)
+    throws InterruptedException, ExecutionException, IOException
+  {
+    String acl = options.getCannedAcl().or("bucket-owner-full-control");
+    RenameDirectoryCommand cmd = new RenameDirectoryCommand(
+      _s3Executor, _executor, this, acl, options);
+    configure(cmd);
+    return cmd.run();
+  }
+  
+  @Override
   public ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions) {
     ListenableFuture<List<S3File>> results = null;
     if (lsOptions.versionsIncluded()) {

@@ -66,6 +66,7 @@ class Main
     _commander.addCommand("upload", new UploadCommandOptions());
     _commander.addCommand("download", new DownloadCommandOptions());
     _commander.addCommand("copy", new CopyCommandOptions());
+    _commander.addCommand("rename", new RenameCommandOptions());
     _commander.addCommand("delete", new DeleteCommandOptions());
     _commander.addCommand("ls", new ListCommandOptions());
     _commander.addCommand("du", new DiskUsageCommandOptions());
@@ -433,6 +434,70 @@ class Main
       }
     }
   }
+
+  
+  @Parameters(commandDescription = "Rename an object or object prefix. If the " +
+      "source URI ends with '/', then it acts as a prefix and " +
+      "this operation will rename all objects that would be returned by the list " +
+      "operation on the same prefix.")
+  class RenameCommandOptions extends TwoObjectsCommandOptions
+  {
+    @Parameter(names = "--canned-acl", description = "The canned ACL to use. "
+        + S3Client.cannedACLsDescConst)
+    String cannedAcl;
+
+    @Parameter(names = {"-r", "--recursive"}, description = "Rename recursively")
+    boolean recursive = false;
+
+    @Parameter(names = "--dry-run", description = "Display operations but do not execute them")
+    boolean dryRun = false;
+
+    public void invoke() throws Exception
+    {
+      if (cannedAcl == null)
+      {
+        cannedAcl = Utils.getDefaultCannedACLFor(detectStorageService());
+      }
+
+      if(!Utils.isValidCannedACLFor(detectStorageService(), cannedAcl))
+      {
+        throw new UsageException("Unknown canned ACL '" + cannedAcl + "'");
+      }
+
+      CloudStoreClient client = createCloudStoreClient();
+
+      RenameOptions options = new RenameOptionsBuilder()
+          .setSourceBucket(getSourceBucket())
+          .setSourceKey(getSourceObjectKey())
+          .setDestinationBucket(getDestinationBucket())
+          .setDestinationKey(getDestinationObjectKey())
+          .setCannedAcl(cannedAcl)
+          .setRecursive(recursive)
+	  .setDryRun(dryRun)
+          .createRenameOptions();
+
+      try
+      {
+        if(getSourceObjectKey().endsWith("/"))
+        {
+          client.renameDirectory(options).get();
+        }
+        else
+        {
+          client.rename(options).get();
+        }
+      }
+      catch(ExecutionException exc)
+      {
+        rethrow(exc.getCause());
+      }
+      finally
+      {
+        client.shutdown();
+      }
+    }
+  }
+
 
   @Parameters(commandDescription = "Upload a file or directory to the storage service")
   class UploadCommandOptions extends S3ObjectCommandOptions

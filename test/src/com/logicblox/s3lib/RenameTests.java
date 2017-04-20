@@ -1,0 +1,707 @@
+package com.logicblox.s3lib;
+
+import java.io.File;
+import java.net.URI;
+import java.util.List;
+import junit.framework.Assert;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+
+public class RenameTests
+{
+  private static CloudStoreClient _client = null;
+  private static String _testBucket = null;
+  
+
+  @BeforeClass
+  public static void setUp()
+    throws Throwable
+  {
+    TestUtils.setUp();
+    _testBucket = TestUtils.getTestBucket();
+    _client = TestUtils.getClient();
+  }
+
+
+  @AfterClass
+  public static void tearDown()
+    throws Throwable
+  {
+    TestUtils.tearDown();
+    _testBucket = null;
+    _client = null;
+  }
+
+
+  @Test
+  public void testSimpleObject()
+    throws Throwable
+  {
+// directory copy/upload/rename tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
+int retryCount = TestUtils.RETRY_COUNT;
+int count = 0;
+while(count < retryCount)
+{
+try
+{
+    // create a small file and upload it
+    String rootPrefix = TestUtils.addPrefix("rename-simple-" + count);
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    File toUpload = TestUtils.createTextFile(100);
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    S3File f = TestUtils.uploadFile(toUpload, dest);
+    Assert.assertNotNull(f);
+    Assert.assertEquals(
+      originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+    // rename the file
+    URI src = dest;
+    String newPrefix = TestUtils.addPrefix("rename-simple-dest-" + count + "/c/d/");
+    int newCount = TestUtils.listObjects(_testBucket, newPrefix).size();
+    dest = TestUtils.getUri(_testBucket, "new-file.txt", newPrefix);
+    RenameOptions opts = new RenameOptionsBuilder()
+      .setSourceBucket(Utils.getBucket(src))
+      .setSourceKey(Utils.getObjectKey(src))
+      .setDestinationBucket(Utils.getBucket(dest))
+      .setDestinationKey(Utils.getObjectKey(dest))
+      .createRenameOptions();
+    f = _client.rename(opts).get();
+    Assert.assertNotNull(f);
+    Assert.assertEquals(Utils.getObjectKey(dest), f.getKey());
+    Assert.assertEquals(Utils.getBucket(dest), f.getBucketName());
+
+    // verify that it moved
+    Assert.assertEquals(
+      originalCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
+    Assert.assertNull(
+      _client.exists(Utils.getBucket(src), Utils.getObjectKey(src)).get());
+    Assert.assertNotNull(
+      _client.exists(Utils.getBucket(dest), Utils.getObjectKey(dest)).get());
+    List<S3File> objs = TestUtils.listObjects(_testBucket, newPrefix);
+    Assert.assertEquals(newCount + 1, objs.size());
+    Assert.assertTrue(TestUtils.findObject(objs, newPrefix + "new-file.txt"));
+    return;
+}
+catch(Throwable t)
+{
+  ++count;
+  if(count >= retryCount)
+    throw t;
+}
+}
+  }
+
+
+  @Test
+  public void testDestExists()
+    throws Throwable
+  {
+// directory copy/upload/rename tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
+int retryCount = TestUtils.RETRY_COUNT;
+int count = 0;
+while(count < retryCount)
+{
+try
+{
+    // create two small files and upload
+    String rootPrefix = TestUtils.addPrefix("rename-dest-exists-" + count);
+    File file1 = TestUtils.createTextFile(100);
+    URI dest1 = TestUtils.getUri(_testBucket, file1, rootPrefix);
+    S3File f = TestUtils.uploadFile(file1, dest1);
+    Assert.assertNotNull(f);
+
+    File file2 = TestUtils.createTextFile(100);
+    URI dest2 = TestUtils.getUri(_testBucket, file2, rootPrefix);
+    f = TestUtils.uploadFile(file2, dest2);
+    Assert.assertNotNull(f);
+
+    // rename file1 to file2
+    URI src = dest1;
+    URI dest = dest2;
+    RenameOptions opts = new RenameOptionsBuilder()
+      .setSourceBucket(Utils.getBucket(src))
+      .setSourceKey(Utils.getObjectKey(src))
+      .setDestinationBucket(Utils.getBucket(dest))
+      .setDestinationKey(Utils.getObjectKey(dest))
+      .createRenameOptions();
+    String msg = null;
+    try
+    {
+      _client.rename(opts).get();
+      msg = "expected exception (dest exists)";
+    }
+    catch(UsageException ex)
+    {
+      // expected
+      Assert.assertTrue(ex.getMessage().contains("Cannot overwrite existing destination"));
+    }
+    Assert.assertNull(msg);
+    return;
+}
+catch(Throwable t)
+{
+  ++count;
+  if(count >= retryCount)
+    throw t;
+}
+}
+  }
+
+
+  @Test
+  public void testSameSourceAndDest()
+    throws Throwable
+  {
+// directory copy/upload/rename tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
+int retryCount = TestUtils.RETRY_COUNT;
+int count = 0;
+while(count < retryCount)
+{
+try
+{
+    // create a small files and upload
+    String rootPrefix = TestUtils.addPrefix("rename-same-src-dest-" + count);
+    File file = TestUtils.createTextFile(100);
+    URI dest = TestUtils.getUri(_testBucket, file, rootPrefix);
+    S3File f = TestUtils.uploadFile(file, dest);
+    Assert.assertNotNull(f);
+
+    // rename 
+    URI src = dest;
+    RenameOptions opts = new RenameOptionsBuilder()
+      .setSourceBucket(Utils.getBucket(src))
+      .setSourceKey(Utils.getObjectKey(src))
+      .setDestinationBucket(Utils.getBucket(dest))
+      .setDestinationKey(Utils.getObjectKey(dest))
+      .createRenameOptions();
+    String msg = null;
+    try
+    {
+      _client.rename(opts).get();
+      msg = "expected exception (dest exists)";
+    }
+    catch(UsageException ex)
+    {
+      // expected
+      Assert.assertTrue(ex.getMessage().contains("Cannot overwrite existing destination"));
+    }
+    Assert.assertNull(msg);
+    return;
+}
+catch(Throwable t)
+{
+  ++count;
+  if(count >= retryCount)
+    throw t;
+}
+}
+  }
+
+
+  @Test
+  public void testMissingSource()
+    throws Throwable
+  {
+// directory copy/upload/rename tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
+int retryCount = TestUtils.RETRY_COUNT;
+int count = 0;
+while(count < retryCount)
+{
+try
+{
+    String rootPrefix = TestUtils.addPrefix("rename-missing-source-" + count);
+    URI src = TestUtils.getUri(
+      _testBucket, "rename-missing-file" + System.currentTimeMillis(), rootPrefix);
+    URI dest = TestUtils.getUri(_testBucket, "dummy.txt", rootPrefix);
+    RenameOptions opts = new RenameOptionsBuilder()
+      .setSourceBucket(Utils.getBucket(src))
+      .setSourceKey(Utils.getObjectKey(src))
+      .setDestinationBucket(Utils.getBucket(dest))
+      .setDestinationKey(Utils.getObjectKey(dest))
+      .createRenameOptions();
+    String msg = null;
+    try
+    {
+      _client.rename(opts).get();
+      msg = "expected exception (source missing)";
+    }
+    catch(UsageException ex)
+    {
+      // expected
+      Assert.assertTrue(ex.getMessage().contains("does not exist"));
+    }
+    Assert.assertNull(msg);
+    return;
+}
+catch(Throwable t)
+{
+  ++count;
+  if(count >= retryCount)
+    throw t;
+}
+}
+  }
+
+
+  @Test
+  public void testMoveObjectAcrossBuckets()
+    throws Throwable
+  {
+// directory copy/upload/rename tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
+int retryCount = TestUtils.RETRY_COUNT;
+int count = 0;
+while(count < retryCount)
+{
+try
+{
+    // skip this if we're using a pre-exising test bucket, assuming we're
+    // running against a server that we don't want to (or can't) create
+    // buckets in...
+    if(null != TestUtils.getPrefix())
+       return;
+
+    // create a small file and upload it
+    String rootPrefix = TestUtils.addPrefix("rename-move-obj-across-buckets-" + count);
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    File toUpload = TestUtils.createTextFile(100);
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    S3File f = TestUtils.uploadFile(toUpload, dest);
+    Assert.assertNotNull(f);
+    Assert.assertEquals(
+      originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+    // rename the file
+    String bucket2 = TestUtils.createTestBucket();
+    URI src = dest;
+    String newPrefix = TestUtils.addPrefix("rename-move-obj-across-buckets-dest-" + count + "/c/d/");
+    int newCount = TestUtils.listObjects(bucket2, newPrefix).size();
+    dest = TestUtils.getUri(bucket2, "new-file.txt", newPrefix);
+    RenameOptions opts = new RenameOptionsBuilder()
+      .setSourceBucket(Utils.getBucket(src))
+      .setSourceKey(Utils.getObjectKey(src))
+      .setDestinationBucket(Utils.getBucket(dest))
+      .setDestinationKey(Utils.getObjectKey(dest))
+      .createRenameOptions();
+    f = _client.rename(opts).get();
+    Assert.assertEquals(Utils.getObjectKey(dest), f.getKey());
+    Assert.assertEquals(Utils.getBucket(dest), f.getBucketName());
+
+    // verify that it moved
+    Assert.assertNotNull(f);
+    Assert.assertEquals(
+      originalCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
+    Assert.assertNull(
+      _client.exists(Utils.getBucket(src), Utils.getObjectKey(src)).get());
+    Assert.assertNotNull(
+      _client.exists(Utils.getBucket(dest), Utils.getObjectKey(dest)).get());
+    List<S3File> objs = TestUtils.listObjects(bucket2, newPrefix);
+    Assert.assertEquals(newCount + 1, objs.size());
+    Assert.assertTrue(TestUtils.findObject(objs, newPrefix + "new-file.txt"));
+    return;
+}
+catch(Throwable t)
+{
+  ++count;
+  if(count >= retryCount)
+    throw t;
+}
+}
+  }
+
+
+  @Test
+  public void testNonRecursiveDirectory()
+    throws Throwable
+  {
+// directory copy/upload/rename tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
+int retryCount = TestUtils.RETRY_COUNT;
+int count = 0;
+while(count < retryCount)
+{
+try
+{
+    // create simple directory structure and upload
+    File top = TestUtils.createTmpDir(true);
+    File a = TestUtils.createTextFile(top, 100);
+    File b = TestUtils.createTextFile(top, 100);
+    File sub = TestUtils.createTmpDir(top);
+    File c = TestUtils.createTextFile(sub, 100);
+    File d = TestUtils.createTextFile(sub, 100);
+    File sub2 = TestUtils.createTmpDir(sub);
+    File e = TestUtils.createTextFile(sub2, 100);
+
+    String rootPrefix = TestUtils.addPrefix("rename-directory-" + count + "/");
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
+    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    Assert.assertEquals(5, uploaded.size());
+    int uploadCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    Assert.assertEquals(uploaded.size(), uploadCount);
+
+    // rename the directory
+    URI src = dest;
+    String newPrefix = TestUtils.addPrefix("rename-dir-dest-" + count + "/subdir/");
+    int newCount = TestUtils.listObjects(_testBucket, newPrefix).size();
+    dest = TestUtils.getUri(_testBucket, "subdir2", newPrefix);
+    RenameOptions opts = new RenameOptionsBuilder()
+      .setSourceBucket(Utils.getBucket(src))
+      .setSourceKey(Utils.getObjectKey(src))
+      .setDestinationBucket(Utils.getBucket(dest))
+      .setDestinationKey(Utils.getObjectKey(dest))
+      .setRecursive(false)
+      .createRenameOptions();
+    List<S3File> renamedFiles = _client.renameDirectory(opts).get();
+
+    // verify that top level objects moved (a and b), but others stayed
+    Assert.assertEquals(2, renamedFiles.size());
+    for(S3File f : renamedFiles)
+      Assert.assertEquals(Utils.getBucket(dest), f.getBucketName());
+    List<S3File> newObjs = TestUtils.listObjects(_testBucket, newPrefix);
+    Assert.assertEquals(newCount + renamedFiles.size(), newObjs.size());
+    Assert.assertEquals(
+      uploadCount - renamedFiles.size(),
+      TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+    // verify that the structure was replicated correctly
+    String topN = newPrefix + "subdir2/";
+    Assert.assertTrue(TestUtils.findObject(newObjs, topN + a.getName()));
+    Assert.assertTrue(TestUtils.findObject(newObjs, topN + b.getName()));
+    return;
+}
+catch(Throwable t)
+{
+  ++count;
+  if(count >= retryCount)
+    throw t;
+}
+}
+  }
+
+
+  @Test
+  public void testRecursiveDirectory()
+    throws Throwable
+  {
+// directory copy/upload/rename tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
+int retryCount = TestUtils.RETRY_COUNT;
+int count = 0;
+while(count < retryCount)
+{
+try
+{
+    // create simple directory structure and upload
+    File top = TestUtils.createTmpDir(true);
+    File a = TestUtils.createTextFile(top, 100);
+    File b = TestUtils.createTextFile(top, 100);
+    File sub = TestUtils.createTmpDir(top);
+    File c = TestUtils.createTextFile(sub, 100);
+    File d = TestUtils.createTextFile(sub, 100);
+    File sub2 = TestUtils.createTmpDir(sub);
+    File e = TestUtils.createTextFile(sub2, 100);
+
+    String rootPrefix = TestUtils.addPrefix("rename-dir-recursive-" + count + "/");
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
+    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    Assert.assertEquals(5, uploaded.size());
+    int uploadCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    Assert.assertEquals(uploaded.size(), uploadCount);
+
+    // rename the directory
+    URI src = dest;
+    String newPrefix = TestUtils.addPrefix("rename-dir-recursive-dest-" + count + "/subdir/");
+    int newCount = TestUtils.listObjects(_testBucket, newPrefix).size();
+    dest = TestUtils.getUri(_testBucket, "subdir2", newPrefix);
+    RenameOptions opts = new RenameOptionsBuilder()
+      .setSourceBucket(Utils.getBucket(src))
+      .setSourceKey(Utils.getObjectKey(src))
+      .setDestinationBucket(Utils.getBucket(dest))
+      .setDestinationKey(Utils.getObjectKey(dest))
+      .setRecursive(true)
+      .createRenameOptions();
+    List<S3File> renamedFiles = _client.renameDirectory(opts).get();
+
+    // verify that everything moved
+    Assert.assertEquals(uploadCount, renamedFiles.size());
+    for(S3File f : renamedFiles)
+      Assert.assertEquals(Utils.getBucket(dest), f.getBucketName());
+    List<S3File> newObjs = TestUtils.listObjects(_testBucket, newPrefix);
+    Assert.assertEquals(newCount + renamedFiles.size(), newObjs.size());
+    Assert.assertEquals(
+      uploadCount - renamedFiles.size(),
+      TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+    // verify that the structure was replicated correctly
+    String topN = newPrefix + "subdir2/";
+    String subN = topN + sub.getName() + "/";
+    String sub2N = subN + sub2.getName() + "/";
+    Assert.assertTrue(TestUtils.findObject(newObjs, topN + a.getName()));
+    Assert.assertTrue(TestUtils.findObject(newObjs, topN + b.getName()));
+    Assert.assertTrue(TestUtils.findObject(newObjs, subN + c.getName()));
+    Assert.assertTrue(TestUtils.findObject(newObjs, subN + d.getName()));
+    Assert.assertTrue(TestUtils.findObject(newObjs, sub2N + e.getName()));
+    return;
+}
+catch(Throwable t)
+{
+  ++count;
+  if(count >= retryCount)
+    throw t;
+}
+}
+  }
+  
+
+  @Test
+  public void testMoveDirectoryAcrossBuckets()
+    throws Throwable
+  {
+// directory copy/upload/rename tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
+int retryCount = TestUtils.RETRY_COUNT;
+int count = 0;
+while(count < retryCount)
+{
+try
+{
+    // skip this if we're using a pre-exising test bucket, assuming we're
+    // running against a server that we don't want to (or can't) create
+    // buckets in...
+    if(null != TestUtils.getPrefix())
+       return;
+
+    // create simple directory structure and upload
+    File top = TestUtils.createTmpDir(true);
+    File a = TestUtils.createTextFile(top, 100);
+    File b = TestUtils.createTextFile(top, 100);
+    File sub = TestUtils.createTmpDir(top);
+    File c = TestUtils.createTextFile(sub, 100);
+    File d = TestUtils.createTextFile(sub, 100);
+    File sub2 = TestUtils.createTmpDir(sub);
+    File e = TestUtils.createTextFile(sub2, 100);
+
+    String rootPrefix = TestUtils.addPrefix("rename-dir-across-buckets-" + count + "/");
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
+    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    Assert.assertEquals(5, uploaded.size());
+    int uploadCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    Assert.assertEquals(uploaded.size(), uploadCount);
+
+    // rename the directory
+    String bucket2 = TestUtils.createTestBucket();
+    URI src = dest;
+    String newPrefix = TestUtils.addPrefix("rename-dir-across-buckets-dest-" + count + "/subdir/");
+    int newCount = TestUtils.listObjects(bucket2, newPrefix).size();
+    dest = TestUtils.getUri(bucket2, "subdir2", newPrefix);
+    RenameOptions opts = new RenameOptionsBuilder()
+      .setSourceBucket(Utils.getBucket(src))
+      .setSourceKey(Utils.getObjectKey(src))
+      .setDestinationBucket(Utils.getBucket(dest))
+      .setDestinationKey(Utils.getObjectKey(dest))
+      .setRecursive(true)
+      .createRenameOptions();
+    List<S3File> renamedFiles = _client.renameDirectory(opts).get();
+
+    // verify that everything moved
+    Assert.assertEquals(uploadCount, renamedFiles.size());
+    for(S3File f : renamedFiles)
+      Assert.assertEquals(Utils.getBucket(dest), f.getBucketName());
+    List<S3File> newObjs = TestUtils.listObjects(bucket2, newPrefix);
+    Assert.assertEquals(newCount + renamedFiles.size(), newObjs.size());
+    Assert.assertEquals(
+      uploadCount - renamedFiles.size(),
+      TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+    // verify that the structure was replicated correctly
+    String topN = newPrefix + "subdir2/";
+    String subN = topN + sub.getName() + "/";
+    String sub2N = subN + sub2.getName() + "/";
+    Assert.assertTrue(TestUtils.findObject(newObjs, topN + a.getName()));
+    Assert.assertTrue(TestUtils.findObject(newObjs, topN + b.getName()));
+    Assert.assertTrue(TestUtils.findObject(newObjs, subN + c.getName()));
+    Assert.assertTrue(TestUtils.findObject(newObjs, subN + d.getName()));
+    Assert.assertTrue(TestUtils.findObject(newObjs, sub2N + e.getName()));
+    return;
+}
+catch(Throwable t)
+{
+  ++count;
+  if(count >= retryCount)
+    throw t;
+}
+}
+  }
+  
+
+  @Test
+  public void testMissingSourceDir()
+    throws Throwable
+  {
+// directory copy/upload/rename tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
+int retryCount = TestUtils.RETRY_COUNT;
+int count = 0;
+while(count < retryCount)
+{
+try
+{
+    String rootPrefix = TestUtils.addPrefix("rename-missing-src-dir-" + count);
+    URI src = TestUtils.getUri(
+      _testBucket, "rename-missing-dir" + System.currentTimeMillis(), rootPrefix);
+    URI dest = TestUtils.getUri(_testBucket, "subdir", rootPrefix);
+    RenameOptions opts = new RenameOptionsBuilder()
+      .setSourceBucket(Utils.getBucket(src))
+      .setSourceKey(Utils.getObjectKey(src))
+      .setDestinationBucket(Utils.getBucket(dest))
+      .setDestinationKey(Utils.getObjectKey(dest))
+      .createRenameOptions();
+    String msg = null;
+    try
+    {
+      _client.renameDirectory(opts).get();
+      msg = "expected exception (source missing)";
+    }
+    catch(UsageException ex)
+    {
+      // expected
+      Assert.assertTrue(ex.getMessage().contains("No objects found"));
+    }
+    Assert.assertNull(msg);
+    return;
+}
+catch(Throwable t)
+{
+  ++count;
+  if(count >= retryCount)
+    throw t;
+}
+}
+  }
+
+
+  @Test
+  public void testDirOverwriteFile()
+    throws Throwable
+  {
+// directory copy/upload/rename tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
+int retryCount = TestUtils.RETRY_COUNT;
+int count = 0;
+while(count < retryCount)
+{
+try
+{
+    // create a small file and upload it
+    String rootPrefix = TestUtils.addPrefix("rename-dir-overwrite-file-" + count);
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    File toUpload = TestUtils.createTextFile(100);
+    URI destFile = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    S3File f = TestUtils.uploadFile(toUpload, destFile);
+    Assert.assertNotNull(f);
+    Assert.assertEquals(
+      originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+    // create simple directory structure and upload
+    File top = TestUtils.createTmpDir(true);
+    File a = TestUtils.createTextFile(top, 100);
+    File b = TestUtils.createTextFile(top, 100);
+    URI destDir = TestUtils.getUri(_testBucket, top, rootPrefix);
+    List<S3File> uploaded = TestUtils.uploadDir(top, destDir);
+    Assert.assertEquals(2, uploaded.size());
+    int uploadCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    Assert.assertEquals(uploaded.size() + 1, uploadCount);
+
+    // attempt the rename -- should fail
+    URI src = destDir;
+    URI dest = destFile;
+    RenameOptions opts = new RenameOptionsBuilder()
+      .setSourceBucket(Utils.getBucket(src))
+      .setSourceKey(Utils.getObjectKey(src))
+      .setDestinationBucket(Utils.getBucket(dest))
+      .setDestinationKey(Utils.getObjectKey(dest))
+      .createRenameOptions();
+    String msg = null;
+    try
+    {
+      _client.renameDirectory(opts).get();
+      msg = "expected exception (source missing)";
+    }
+    catch(UsageException ex)
+    {
+      // expected
+      Assert.assertTrue(ex.getMessage().contains("Cannot overwrite existing destination"));
+    }
+    Assert.assertNull(msg);
+    return;
+}
+catch(Throwable t)
+{
+  ++count;
+  if(count >= retryCount)
+    throw t;
+}
+}
+  }
+
+
+  @Test
+  public void testMoveFileIntoExistingDir()
+    throws Throwable
+  {
+// directory copy/upload/rename tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
+int retryCount = TestUtils.RETRY_COUNT;
+int count = 0;
+while(count < retryCount)
+{
+try
+{
+    // create a small file and upload it
+    String rootPrefix = TestUtils.addPrefix("move-file-into-dir-" + count);
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    File toRename = TestUtils.createTextFile(100);
+    URI destFile = TestUtils.getUri(_testBucket, toRename, rootPrefix);
+    S3File f = TestUtils.uploadFile(toRename, destFile);
+    Assert.assertNotNull(f);
+    Assert.assertEquals(
+      originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+    // create simple directory structure and upload
+    File top = TestUtils.createTmpDir(true);
+    File a = TestUtils.createTextFile(top, 100);
+    File b = TestUtils.createTextFile(top, 100);
+    URI destDir = TestUtils.getUri(_testBucket, top, rootPrefix);
+    List<S3File> uploaded = TestUtils.uploadDir(top, destDir);
+    Assert.assertEquals(2, uploaded.size());
+    int uploadCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    Assert.assertEquals(uploaded.size() + 1, uploadCount);
+
+    // attempt the rename -- should move the file but leave previous files alone
+    URI src = destFile;
+    URI dest = destDir;
+    RenameOptions opts = new RenameOptionsBuilder()
+      .setSourceBucket(Utils.getBucket(src))
+      .setSourceKey(Utils.getObjectKey(src))
+      .setDestinationBucket(Utils.getBucket(dest))
+      .setDestinationKey(Utils.getObjectKey(dest))
+      .createRenameOptions();
+    f = _client.rename(opts).get();
+    Assert.assertNotNull(f);
+    List<S3File> newObjs = TestUtils.listObjects(_testBucket, rootPrefix);
+    Assert.assertEquals(uploadCount, newObjs.size());
+    String topN = rootPrefix + "/" + top.getName() + "/";
+    Assert.assertTrue(TestUtils.findObject(newObjs, topN + a.getName()));
+    Assert.assertTrue(TestUtils.findObject(newObjs, topN + b.getName()));
+    Assert.assertTrue(TestUtils.findObject(newObjs, topN + toRename.getName()));
+    
+    return;
+}
+catch(Throwable t)
+{
+  ++count;
+  if(count >= retryCount)
+    throw t;
+}
+}
+  }
+
+}

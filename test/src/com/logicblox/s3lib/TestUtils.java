@@ -39,7 +39,9 @@ public class TestUtils
   private static Random _rand = null;
   private static Set<File> _autoDeleteDirs = new HashSet<File>();
   private static Set<String> _bucketsToDestroy = new HashSet<String>();
+
   static boolean SKIP_CLEANUP = false;
+  static final int RETRY_COUNT = 5;
 
 
   // handle all input parameters

@@ -372,7 +372,7 @@ public interface CloudStoreClient {
      * @see CopyOptions
      */
     ListenableFuture<S3File> copy(CopyOptions options)
-    throws IOException;
+      throws IOException;
 
     /**
      * Copies all keys that would be returned by the list operation on the
@@ -391,6 +391,12 @@ public interface CloudStoreClient {
     ListenableFuture<List<S3File>> copyToDir(CopyOptions options) throws
         InterruptedException, ExecutionException, IOException,
         URISyntaxException;
+
+    ListenableFuture<S3File> rename(RenameOptions options)
+      throws IOException;
+
+    ListenableFuture<List<S3File>> renameDirectory(RenameOptions options)
+      throws InterruptedException, ExecutionException, IOException;
 
     /**
      * Returns a list of summary information about the objects whose keys start

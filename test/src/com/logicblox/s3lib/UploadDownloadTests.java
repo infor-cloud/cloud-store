@@ -483,7 +483,7 @@ public class UploadDownloadTests
     throws Throwable
   {
 // directory copy/upload tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
-int retryCount = 5;
+int retryCount = TestUtils.RETRY_COUNT;
 int count = 0;
 while(count < retryCount)
 {
@@ -583,7 +583,7 @@ catch(Throwable t)
     throws Throwable
   {
 // directory copy/upload tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
-int retryCount = 5;
+int retryCount = TestUtils.RETRY_COUNT;
 int count = 0;
 while(count < retryCount)
 {
@@ -881,7 +881,7 @@ catch(Throwable t)
     throws Throwable
   {
 // directory copy/upload tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
-int retryCount = 5;
+int retryCount = TestUtils.RETRY_COUNT;
 int count = 0;
 while(count < retryCount)
 {
@@ -969,7 +969,7 @@ catch(Throwable t)
     throws Throwable
   {
 // directory copy/upload tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
-int retryCount = 5;
+int retryCount = TestUtils.RETRY_COUNT;
 int count = 0;
 while(count < retryCount)
 {
@@ -1032,7 +1032,7 @@ catch(Throwable t)
     throws Throwable
   {
 // directory copy/upload tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
-int retryCount = 5;
+int retryCount = TestUtils.RETRY_COUNT;
 int count = 0;
 while(count < retryCount)
 {

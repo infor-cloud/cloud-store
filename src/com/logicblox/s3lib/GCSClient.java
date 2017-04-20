@@ -290,6 +290,20 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
+    public ListenableFuture<S3File> rename(RenameOptions options)
+      throws IOException
+    {
+        return s3Client.rename(options);
+    }
+
+    @Override
+    public ListenableFuture<List<S3File>> renameDirectory(RenameOptions options)
+      throws InterruptedException, ExecutionException, IOException
+    {
+        return s3Client.renameDirectory(options);
+    }
+
+    @Override
     public ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions) {
         return s3Client.listObjects(lsOptions);
     }

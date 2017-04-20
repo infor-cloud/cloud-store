@@ -62,7 +62,8 @@ public class DeleteDirCommand extends Command
     {
       if(_options.isDryRun())
       {
-	System.out.println("<DRYRUN> deleting '" + getUri(src.getBucketName(), src.getKey()));
+	System.out.println("<DRYRUN> deleting '"
+	  + getUri(src.getBucketName(), src.getKey()) + "'");
       }
       else
       {

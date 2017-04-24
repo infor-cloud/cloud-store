@@ -40,8 +40,13 @@ public class DeleteTests
   public void testBasicOperations()
     throws Throwable
   {
-//TestUtils.SKIP_CLEANUP = true;
-
+// directory copy/upload tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
+int retryCount = TestUtils.RETRY_COUNT;
+int count = 0;
+while(count < retryCount)
+{
+try
+{
     // create simple directory structure with a few files
     File top = TestUtils.createTmpDir(true);
     File a = TestUtils.createTextFile(top, 100);
@@ -52,7 +57,7 @@ public class DeleteTests
     File sub2 = TestUtils.createTmpDir(sub);
     File e = TestUtils.createTextFile(sub2, 100);
 
-    String rootPrefix = TestUtils.addPrefix("delete-basics/");
+    String rootPrefix = TestUtils.addPrefix("delete-basics-" + count + "/");
     List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
     int originalCount = objs.size();
 
@@ -163,6 +168,15 @@ public class DeleteTests
     Assert.assertEquals(2, files.size());
     Assert.assertEquals(0, TestUtils.listObjects(_testBucket, rootPrefix).size());
 
+    return;
+}
+catch(Throwable t)
+{
+  ++count;
+  if(count >= retryCount)
+    throw t;
+}
+}
   }
 
 }

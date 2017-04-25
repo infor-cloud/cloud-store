@@ -3,17 +3,27 @@ package com.logicblox.s3lib;
 import java.io.File;
 import java.net.URI;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import junit.framework.Assert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-
 public class RenameTests
+  implements RetryListener
 {
   private static CloudStoreClient _client = null;
   private static String _testBucket = null;
+  private int _retryCount = 0;
   
+
+  // RetryListener
+  @Override
+  public synchronized void retryTriggered(RetryEvent e)
+  {
+    ++_retryCount;
+  }
+
 
   @BeforeClass
   public static void setUp()
@@ -32,6 +42,557 @@ public class RenameTests
     TestUtils.tearDown();
     _testBucket = null;
     _client = null;
+  }
+
+
+  @Test
+  public void testRenameDirAbortOneDuringCopy()
+    throws Throwable
+  {
+    // directory copy/upload/rename tests intermittently fail when using minio.
+    // trying to minimize false failure reports by repeating and only failing
+    // the test if it consistently reports an error.
+    int retryCount = TestUtils.RETRY_COUNT;
+    int count = 0;
+while(count < retryCount)
+{
+    boolean oldGlobalFlag = false;
+    try
+    {
+      // create simple directory structure and upload
+      File top = TestUtils.createTmpDir(true);
+      File a = TestUtils.createTextFile(top, 100);
+      File b = TestUtils.createTextFile(top, 100);
+      File c = TestUtils.createTextFile(top, 100);
+
+      String rootPrefix = TestUtils.addPrefix("rename-dir-abort-one-on-copy-" + count + "/");
+      int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+      URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
+      List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+      Assert.assertEquals(3, uploaded.size());
+      int uploadCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+      Assert.assertEquals(uploaded.size(), uploadCount);
+
+      // rename the directory
+      URI src = dest;
+      String destPrefix = TestUtils.addPrefix("rename-dir-abort-one-on-copy-dest-"
+        + count + "/subdir/");
+      int newCount = TestUtils.listObjects(_testBucket, destPrefix).size();
+      dest = TestUtils.getUri(_testBucket, "subdir2", destPrefix);
+      RenameOptions opts = new RenameOptionsBuilder()
+        .setSourceBucket(Utils.getBucket(src))
+        .setSourceKey(Utils.getObjectKey(src))
+        .setDestinationBucket(Utils.getBucket(dest))
+        .setDestinationKey(Utils.getObjectKey(dest))
+        .setRecursive(true)
+        .createRenameOptions();
+      oldGlobalFlag = CopyOptions.useGlobalAbortCounter(true);
+      CopyOptions.setAbortInjectionCounter(1);
+         // abort first rename during copy phase
+      try
+      {
+        _client.renameDirectory(opts).get();
+      }
+      catch(ExecutionException ex)
+      {
+        // expected for one of the rename jobs
+        Assert.assertTrue(ex.getMessage().contains("forcing copy abort"));
+      }
+      
+      // verify that nothing moved
+      List<S3File> destObjs = TestUtils.listObjects(_testBucket, destPrefix);
+      String topDestN = destPrefix + "subdir2/";
+      Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + a.getName()));
+      Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + b.getName()));
+      Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + c.getName()));
+
+      List<S3File> srcObjs = TestUtils.listObjects(_testBucket, rootPrefix);
+      String topN = rootPrefix + top.getName() + "/";
+      Assert.assertTrue(TestUtils.findObject(srcObjs, topN + a.getName()));
+      Assert.assertTrue(TestUtils.findObject(srcObjs, topN + b.getName()));
+      Assert.assertTrue(TestUtils.findObject(srcObjs, topN + c.getName()));
+
+      return;
+    }
+    catch(Throwable t)
+    {
+      ++count;
+      if(count >= retryCount)
+        throw t;
+    }
+    finally
+    {
+      // reset abort injection so other tests aren't affected
+      CopyOptions.useGlobalAbortCounter(oldGlobalFlag);
+      CopyOptions.setAbortInjectionCounter(0);
+    }
+}
+  }
+
+
+  @Test
+  public void testRenameDirAbortOneDuringDelete()
+    throws Throwable
+  {
+    // directory copy/upload/rename tests intermittently fail when using minio.
+    // trying to minimize false failure reports by repeating and only failing
+    // the test if it consistently reports an error.
+    int retryCount = TestUtils.RETRY_COUNT;
+    int count = 0;
+while(count < retryCount)
+{
+    boolean oldGlobalFlag = false;
+    try
+    {
+      // create simple directory structure and upload
+      File top = TestUtils.createTmpDir(true);
+      File a = TestUtils.createTextFile(top, 100);
+      File b = TestUtils.createTextFile(top, 100);
+      File c = TestUtils.createTextFile(top, 100);
+
+      String rootPrefix = TestUtils.addPrefix("rename-dir-abort-one-on-delete-" + count + "/");
+      int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+      URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
+      List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+      Assert.assertEquals(3, uploaded.size());
+      int uploadCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+      Assert.assertEquals(uploaded.size(), uploadCount);
+
+      // rename the directory
+      URI src = dest;
+      String destPrefix = TestUtils.addPrefix("rename-dir-abort-one-on-delete-dest-"
+        + count + "/subdir/");
+      int newCount = TestUtils.listObjects(_testBucket, destPrefix).size();
+      dest = TestUtils.getUri(_testBucket, "subdir2", destPrefix);
+      RenameOptions opts = new RenameOptionsBuilder()
+        .setSourceBucket(Utils.getBucket(src))
+        .setSourceKey(Utils.getObjectKey(src))
+        .setDestinationBucket(Utils.getBucket(dest))
+        .setDestinationKey(Utils.getObjectKey(dest))
+        .setRecursive(true)
+        .createRenameOptions();
+      oldGlobalFlag = DeleteOptions.useGlobalAbortCounter(true);
+      DeleteOptions.setAbortInjectionCounter(1);
+         // abort first rename during delete phase
+      try
+      {
+        _client.renameDirectory(opts).get();
+      }
+      catch(ExecutionException ex)
+      {
+        // expected for one of the rename jobs
+        Assert.assertTrue(ex.getMessage().contains("forcing delete abort"));
+      }
+      
+      // verify that nothing moved
+      List<S3File> destObjs = TestUtils.listObjects(_testBucket, destPrefix);
+      String topDestN = destPrefix + "subdir2/";
+      Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + a.getName()));
+      Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + b.getName()));
+      Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + c.getName()));
+
+      List<S3File> srcObjs = TestUtils.listObjects(_testBucket, rootPrefix);
+      String topN = rootPrefix + top.getName() + "/";
+      Assert.assertTrue(TestUtils.findObject(srcObjs, topN + a.getName()));
+      Assert.assertTrue(TestUtils.findObject(srcObjs, topN + b.getName()));
+      Assert.assertTrue(TestUtils.findObject(srcObjs, topN + c.getName()));
+
+      return;
+    }
+    catch(Throwable t)
+    {
+      ++count;
+      if(count >= retryCount)
+        throw t;
+    }
+    finally
+    {
+      // reset abort injection so other tests aren't affected
+      DeleteOptions.useGlobalAbortCounter(oldGlobalFlag);
+      DeleteOptions.setAbortInjectionCounter(0);
+    }
+}
+  }
+
+
+  @Test
+  public void testRenameDirAllAbortDuringDelete()
+    throws Throwable
+  {
+    // NOTE: this test dumps a stack trace that can be ignored
+    
+    // directory copy/upload/rename tests intermittently fail when using minio.
+    // trying to minimize false failure reports by repeating and only failing
+    // the test if it consistently reports an error.
+    int retryCount = TestUtils.RETRY_COUNT;
+    int count = 0;
+while(count < retryCount)
+{
+    try
+    {
+      // create simple directory structure and upload
+      File top = TestUtils.createTmpDir(true);
+      File a = TestUtils.createTextFile(top, 100);
+      File b = TestUtils.createTextFile(top, 100);
+
+      String rootPrefix = TestUtils.addPrefix("rename-dir-all-abort-on-delete-" + count + "/");
+      int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+      URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
+      List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+      Assert.assertEquals(2, uploaded.size());
+      int uploadCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+      Assert.assertEquals(uploaded.size(), uploadCount);
+
+      // rename the directory
+      URI src = dest;
+      String destPrefix = TestUtils.addPrefix("rename-dir-all-abort-on-delete-dest-"
+        + count + "/subdir/");
+      int newCount = TestUtils.listObjects(_testBucket, destPrefix).size();
+      dest = TestUtils.getUri(_testBucket, "subdir2", destPrefix);
+      RenameOptions opts = new RenameOptionsBuilder()
+        .setSourceBucket(Utils.getBucket(src))
+        .setSourceKey(Utils.getObjectKey(src))
+        .setDestinationBucket(Utils.getBucket(dest))
+        .setDestinationKey(Utils.getObjectKey(dest))
+        .setRecursive(true)
+        .createRenameOptions();
+      DeleteOptions.setAbortInjectionCounter(1);
+        // should be one more than retry count.  retries disabled by default
+      String msg = null;
+      try
+      {
+        _client.renameDirectory(opts).get();
+        msg = "expected exception (forcing abort on delete)";
+      }
+      catch(ExecutionException ex)
+      {
+        // expected
+        Assert.assertEquals(AbortInjection.class, ex.getCause().getCause().getCause().getClass());
+        Assert.assertTrue(ex.getMessage().contains("forcing delete abort"));
+      }
+      Assert.assertNull(msg);
+      
+      // verify that nothing moved
+      List<S3File> destObjs = TestUtils.listObjects(_testBucket, destPrefix);
+      String topDestN = destPrefix + "subdir2/";
+      Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + a.getName()));
+      Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + b.getName()));
+
+      List<S3File> srcObjs = TestUtils.listObjects(_testBucket, rootPrefix);
+      String topN = rootPrefix + top.getName();
+      Assert.assertTrue(TestUtils.findObject(srcObjs, topN + "/" + a.getName()));
+      Assert.assertTrue(TestUtils.findObject(srcObjs, topN + "/" + b.getName()));
+
+      return;
+    }
+    catch(Throwable t)
+    {
+      ++count;
+      if(count >= retryCount)
+        throw t;
+    }
+    finally
+    {
+      // reset abort injection so other tests aren't affected
+      DeleteOptions.setAbortInjectionCounter(0);
+    }
+}
+  }
+
+
+  @Test
+  public void testRenameDirAllAbortDuringCopy()
+    throws Throwable
+  {
+    // NOTE: this test dumps a stack trace that can be ignored
+    
+    // directory copy/upload/rename tests intermittently fail when using minio.
+    // trying to minimize false failure reports by repeating and only failing
+    // the test if it consistently reports an error.
+    int retryCount = TestUtils.RETRY_COUNT;
+    int count = 0;
+while(count < retryCount)
+{
+    try
+    {
+      // create simple directory structure and upload
+      File top = TestUtils.createTmpDir(true);
+      File a = TestUtils.createTextFile(top, 100);
+      File b = TestUtils.createTextFile(top, 100);
+
+      String rootPrefix = TestUtils.addPrefix("rename-dir-all-abort-on-copy-" + count + "/");
+      int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+      URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
+      List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+      Assert.assertEquals(2, uploaded.size());
+      int uploadCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+      Assert.assertEquals(uploaded.size(), uploadCount);
+
+      // rename the directory
+      URI src = dest;
+      String destPrefix = TestUtils.addPrefix("rename-dir-all-abort-on-copy-dest-"
+        + count + "/subdir/");
+      int newCount = TestUtils.listObjects(_testBucket, destPrefix).size();
+      dest = TestUtils.getUri(_testBucket, "subdir2", destPrefix);
+      RenameOptions opts = new RenameOptionsBuilder()
+        .setSourceBucket(Utils.getBucket(src))
+        .setSourceKey(Utils.getObjectKey(src))
+        .setDestinationBucket(Utils.getBucket(dest))
+        .setDestinationKey(Utils.getObjectKey(dest))
+        .setRecursive(true)
+        .createRenameOptions();
+      CopyOptions.setAbortInjectionCounter(1);
+        // should be one more than retry count.  retries disabled by default
+      String msg = null;
+      try
+      {
+        _client.renameDirectory(opts).get();
+        msg = "expected exception (forcing abort on copy)";
+      }
+      catch(ExecutionException ex)
+      {
+        // expected
+        Assert.assertEquals(AbortInjection.class, ex.getCause().getCause().getCause().getClass());
+        Assert.assertTrue(ex.getMessage().contains("forcing copy abort"));
+      }
+      Assert.assertNull(msg);
+      
+      // verify that nothing moved
+      List<S3File> destObjs = TestUtils.listObjects(_testBucket, destPrefix);
+      String topDestN = destPrefix + "subdir2/";
+      Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + a.getName()));
+      Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + b.getName()));
+
+      List<S3File> srcObjs = TestUtils.listObjects(_testBucket, rootPrefix);
+      String topN = rootPrefix + top.getName();
+      Assert.assertTrue(TestUtils.findObject(srcObjs, topN + "/" + a.getName()));
+      Assert.assertTrue(TestUtils.findObject(srcObjs, topN + "/" + b.getName()));
+
+      return;
+    }
+    catch(Throwable t)
+    {
+      ++count;
+      if(count >= retryCount)
+        throw t;
+    }
+    finally
+    {
+      // reset abort injection so other tests aren't affected
+      CopyOptions.setAbortInjectionCounter(0);
+    }
+}
+  }
+
+  
+  @Test
+  public void testRetryOnCopy()
+    throws Throwable
+  {
+    try
+    {
+      // create a small file and upload it
+      String rootPrefix = TestUtils.addPrefix("rename-retry-during-copy-");
+      int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+      File toUpload = TestUtils.createTextFile(100);
+      URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+      S3File f = TestUtils.uploadFile(toUpload, dest);
+      Assert.assertNotNull(f);
+      Assert.assertEquals(
+        originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+      // set retry options and aborts during copy phase of rename
+      ThrowableRetriableTask.addRetryListener(this);
+      clearRetryCount();
+      int retryCount = 10;
+      int abortCount = 3;
+      _client.setRetryCount(retryCount);
+      CopyOptions.setAbortInjectionCounter(abortCount);
+
+      // rename the file
+      URI src = dest;
+      dest = TestUtils.getUri(_testBucket, toUpload.getName() + "-RENAMED", rootPrefix);
+      RenameOptions opts = new RenameOptionsBuilder()
+        .setSourceBucket(Utils.getBucket(src))
+        .setSourceKey(Utils.getObjectKey(src))
+        .setDestinationBucket(Utils.getBucket(dest))
+        .setDestinationKey(Utils.getObjectKey(dest))
+        .createRenameOptions();
+      f = _client.rename(opts).get();
+
+      // verify that the rename succeeded and we triggered the right number of retries
+      Assert.assertEquals(abortCount, getRetryCount());
+      Assert.assertNotNull(f);
+      Assert.assertEquals(Utils.getObjectKey(dest), f.getKey());
+      List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+      Assert.assertTrue(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
+      Assert.assertFalse(TestUtils.findObject(objs, Utils.getObjectKey(src)));
+    }
+    finally
+    {
+      // reset retry and abort injection state so we don't affect other tests
+      TestUtils.resetRetryCount();
+      CopyOptions.setAbortInjectionCounter(0);
+    }
+  }
+
+  @Test
+  public void testRetryOnDelete()
+    throws Throwable
+  {
+    try
+    {
+      // create a small file and upload it
+      String rootPrefix = TestUtils.addPrefix("rename-retry-during-delete-");
+      int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+      File toUpload = TestUtils.createTextFile(100);
+      URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+      S3File f = TestUtils.uploadFile(toUpload, dest);
+      Assert.assertNotNull(f);
+      Assert.assertEquals(
+        originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+      // set retry options and aborts during copy phase of rename
+      ThrowableRetriableTask.addRetryListener(this);
+      clearRetryCount();
+      int retryCount = 10;
+      int abortCount = 3;
+      _client.setRetryCount(retryCount);
+      DeleteOptions.setAbortInjectionCounter(abortCount);
+
+      // rename the file
+      URI src = dest;
+      dest = TestUtils.getUri(_testBucket, toUpload.getName() + "-RENAMED", rootPrefix);
+      RenameOptions opts = new RenameOptionsBuilder()
+        .setSourceBucket(Utils.getBucket(src))
+        .setSourceKey(Utils.getObjectKey(src))
+        .setDestinationBucket(Utils.getBucket(dest))
+        .setDestinationKey(Utils.getObjectKey(dest))
+        .createRenameOptions();
+      f = _client.rename(opts).get();
+
+      // verify that the rename succeeded and we triggered the right number of retries
+      Assert.assertEquals(abortCount, getRetryCount());
+      Assert.assertNotNull(f);
+      Assert.assertEquals(Utils.getObjectKey(dest), f.getKey());
+      List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+      Assert.assertTrue(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
+      Assert.assertFalse(TestUtils.findObject(objs, Utils.getObjectKey(src)));
+    }
+    finally
+    {
+      // reset retry and abort injection state so we don't affect other tests
+      TestUtils.resetRetryCount();
+      DeleteOptions.setAbortInjectionCounter(0);
+    }
+  }
+
+
+  @Test
+  public void testAbortDuringCopy()
+    throws Throwable
+  {
+    try
+    {
+      // create a small file and upload it
+      String rootPrefix = TestUtils.addPrefix("rename-abort-during-copy-");
+      int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+      File toUpload = TestUtils.createTextFile(100);
+      URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+      S3File f = TestUtils.uploadFile(toUpload, dest);
+      Assert.assertNotNull(f);
+      Assert.assertEquals(
+        originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+      // rename the file
+      URI src = dest;
+      dest = TestUtils.getUri(_testBucket, toUpload.getName() + "-RENAMED", rootPrefix);
+      RenameOptions opts = new RenameOptionsBuilder()
+        .setSourceBucket(Utils.getBucket(src))
+        .setSourceKey(Utils.getObjectKey(src))
+        .setDestinationBucket(Utils.getBucket(dest))
+        .setDestinationKey(Utils.getObjectKey(dest))
+        .createRenameOptions();
+      CopyOptions.setAbortInjectionCounter(1);
+        // should be one more than retry count.  retries disabled by default
+      String msg = null;
+      try
+      {
+        _client.rename(opts).get();
+        msg = "expected exception (forcing abort on copy)";
+      }
+      catch(ExecutionException ex)
+      {
+        // expected
+        Assert.assertEquals(AbortInjection.class, ex.getCause().getCause().getClass());
+        Assert.assertTrue(ex.getMessage().contains("forcing copy abort"));
+      }
+      Assert.assertNull(msg);
+
+      // file should not be renamed since we aborted
+      List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+      Assert.assertFalse(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
+      Assert.assertTrue(TestUtils.findObject(objs, Utils.getObjectKey(src)));
+    }
+    finally
+    {
+      // reset abort injection so other tests aren't affected
+      CopyOptions.setAbortInjectionCounter(0);
+    }
+  }
+
+  
+  @Test
+  public void testAbortDuringDelete()
+    throws Throwable
+  {
+    try
+    {
+      // create a small file and upload it
+      String rootPrefix = TestUtils.addPrefix("rename-abort-during-delete-");
+      int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+      File toUpload = TestUtils.createTextFile(100);
+      URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+      S3File f = TestUtils.uploadFile(toUpload, dest);
+      Assert.assertNotNull(f);
+      Assert.assertEquals(
+        originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+      // rename the file
+      URI src = dest;
+      dest = TestUtils.getUri(_testBucket, toUpload.getName() + "-RENAMED", rootPrefix);
+      RenameOptions opts = new RenameOptionsBuilder()
+        .setSourceBucket(Utils.getBucket(src))
+        .setSourceKey(Utils.getObjectKey(src))
+        .setDestinationBucket(Utils.getBucket(dest))
+        .setDestinationKey(Utils.getObjectKey(dest))
+        .createRenameOptions();
+      DeleteOptions.setAbortInjectionCounter(1);
+         // should be one more than retry count.  retries disabled by default
+      String msg = null;
+      try
+      {
+        _client.rename(opts).get();
+        msg = "expected exception (forcing abort on copy)";
+      }
+      catch(ExecutionException ex)
+      {
+        // expected
+        Assert.assertEquals(AbortInjection.class, ex.getCause().getCause().getClass());
+        Assert.assertTrue(ex.getMessage().contains("forcing delete abort"));
+      }
+      Assert.assertNull(msg);
+
+      // file should not be renamed since we aborted
+      List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+      Assert.assertFalse(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
+      Assert.assertTrue(TestUtils.findObject(objs, Utils.getObjectKey(src)));
+    }
+    finally
+    {
+      // reset abort injection so other tests aren't affected
+      DeleteOptions.setAbortInjectionCounter(0);
+    }
   }
 
 
@@ -704,4 +1265,14 @@ catch(Throwable t)
 }
   }
 
+
+  private synchronized void clearRetryCount()
+  {
+    _retryCount = 0;
+  }
+
+  private synchronized int getRetryCount()
+  {
+    return _retryCount;
+  }
 }

@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.model.DeleteObjectRequest;
 
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -50,10 +51,13 @@ public class RenameCommand extends Command
     checkDestExists();
 
     final String destKey = getDestKey();
+    final String srcUri =
+      getUri(_options.getSourceBucket(), _options.getSourceKey());
+
     if(_options.isDryRun())
     {
       System.out.println("<DRYRUN> renaming '"
-        + getUri(_options.getSourceBucket(), _options.getSourceKey())
+        + srcUri
 	+ "' to '"
         + getUri(_options.getDestinationBucket(), destKey)
 	+ "'");
@@ -61,19 +65,12 @@ public class RenameCommand extends Command
     }
     else
     {
-      CopyOptions copyOpts = new CopyOptionsBuilder()
-        .setSourceBucketName(_options.getSourceBucket())
-	.setSourceKey(_options.getSourceKey())
-	.setDestinationBucketName(_options.getDestinationBucket())
-	.setDestinationKey(destKey)
-	.setCannedAcl(_acl)
-        .createCopyOptions();
       final DeleteOptions deleteOpts = new DeleteOptionsBuilder()
         .setBucket(_options.getSourceBucket())
 	.setObjectKey(_options.getSourceKey())
         .createDeleteOptions();
       ListenableFuture<S3File> copyAndDelete = Futures.transform(
-        _client.copy(copyOpts),
+        getCopyOp(),
 	new AsyncFunction<S3File,S3File>()
 	{
 	  public ListenableFuture<S3File> apply(S3File srcFile)
@@ -84,7 +81,7 @@ public class RenameCommand extends Command
       );
 
       // return S3File with the dest
-      return Futures.transform(
+      ListenableFuture<S3File> result = Futures.transform(
         copyAndDelete,
 	new Function<S3File, S3File>()
 	{
@@ -95,7 +92,71 @@ public class RenameCommand extends Command
 	  }
 	}
       );
+
+      // try to clean up if a failure occurs.  just have to worry
+      // about failure during a delete phase and remove the copied
+      // file
+      return Futures.withFallback(
+        result,
+	new FutureFallback<S3File>()
+	{
+	  public ListenableFuture<S3File> create(Throwable t)
+	  {
+            DeleteOptions deleteOpts = new DeleteOptionsBuilder()
+              .setBucket(_options.getDestinationBucket())
+              .setObjectKey(_options.getDestinationKey())
+	      .setForceDelete(true)
+	      .setIgnoreAbortInjection(true)
+              .createDeleteOptions();
+	    try
+	    {
+              _client.delete(deleteOpts).get();
+	    }
+	    catch(InterruptedException | ExecutionException ex)
+	    {
+	      return Futures.immediateFailedFuture(new Exception(
+	        "Error cleaning up after rename failure:  " + ex.getMessage(), ex));
+	    }
+	    
+            if (t instanceof UsageException)
+              return Futures.immediateFailedFuture(t);
+
+            return Futures.immediateFailedFuture(new Exception("Error " +
+              "renaming " + srcUri + ":  " + t.getMessage(), t));
+          }
+        });
     }
+  }
+
+
+  private ListenableFuture<S3File> getCopyOp()
+    throws IOException
+  {
+    final CopyOptions copyOpts = new CopyOptionsBuilder()
+      .setSourceBucketName(_options.getSourceBucket())
+      .setSourceKey(_options.getSourceKey())
+      .setDestinationBucketName(_options.getDestinationBucket())
+      .setDestinationKey(getDestKey())
+      .setCannedAcl(_acl)
+      .createCopyOptions();
+
+//    return _client.copy(copyOpts);
+    return executeWithRetry(_executor,
+      new Callable<ListenableFuture<S3File>>()
+      {
+        public ListenableFuture<S3File> call()
+	  throws IOException
+        {
+          return _client.copy(copyOpts);
+        }
+
+        public String toString()
+        {
+          String bucket = _options.getSourceBucket();
+          String key = _options.getSourceKey();
+          return "copy phase renaming " + bucket + "/" + key;
+        }
+      });
   }
 
 

@@ -80,10 +80,10 @@ public class DeleteCommand extends Command
 
   private ListenableFuture<S3File> runActual()
   {
+    final String srcUri = getUri(_options.getBucket(), _options.getObjectKey());
     if(_options.isDryRun())
     {
-      System.out.println("<DRYRUN> deleting '"
-        + getUri(_options.getBucket(), _options.getObjectKey()) + "'");
+      System.out.println("<DRYRUN> deleting '" + srcUri + "'");
       return Futures.immediateFuture(new S3File());
     }
     else
@@ -93,6 +93,13 @@ public class DeleteCommand extends Command
         {
           public S3File call()
           {
+            // support for testing failures
+            if(!_options.ignoreAbortInjection()
+	        && (DeleteOptions.decrementAbortInjectionCounter(srcUri) > 0))
+	    {
+              throw new AbortInjection("forcing delete abort");
+	    }
+
 	    String bucket = _options.getBucket();
 	    String key = _options.getObjectKey();
             DeleteObjectRequest req = new DeleteObjectRequest(bucket, key);

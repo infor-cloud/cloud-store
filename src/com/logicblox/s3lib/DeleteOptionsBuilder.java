@@ -8,6 +8,7 @@ public class DeleteOptionsBuilder
   private boolean _recursive = false;
   private boolean _dryRun = false;
   private boolean _forceDelete = false;
+  private boolean _ignoreAbortInjection = false;
   
   public DeleteOptionsBuilder setBucket(String bucket)
   {
@@ -39,9 +40,16 @@ public class DeleteOptionsBuilder
     return this;
   }
   
+  public DeleteOptionsBuilder setIgnoreAbortInjection(boolean ignore)
+  {
+    _ignoreAbortInjection = ignore;
+    return this;
+  }
+  
   public DeleteOptions createDeleteOptions()
   {
-    return new DeleteOptions(_bucket, _objectKey, _recursive, _dryRun, _forceDelete);
+    return new DeleteOptions(_bucket, _objectKey, _recursive, _dryRun,
+      _forceDelete, _ignoreAbortInjection);
   }
   
 }

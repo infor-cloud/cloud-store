@@ -68,6 +68,14 @@ public class GCSCopyCommand extends Command
     {
       public S3File call() throws IOException
       {
+        // support for testing failures
+        String srcUri = getUri(options.getSourceBucketName(), options.getSourceKey());
+        if(!options.ignoreAbortInjection()
+             && (CopyOptions.decrementAbortInjectionCounter(srcUri) > 0))
+        {
+          throw new AbortInjection("forcing copy abort");
+        }
+	
         Storage.Objects.Copy cmd = _storage.objects().copy(
           options.getSourceBucketName(), options.getSourceKey(),
           options.getDestinationBucketName(), options.getDestinationKey(),

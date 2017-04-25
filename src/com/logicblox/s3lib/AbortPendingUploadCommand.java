@@ -48,7 +48,8 @@ public class AbortPendingUploadCommand extends Command
                 key,
                 uploadId,
                 null,
-                _httpExecutor);
+                _httpExecutor,
+                (new UploadOptionsBuilder()).createUploadOptions());
             return u.abort();
           }
 

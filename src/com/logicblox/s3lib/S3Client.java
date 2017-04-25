@@ -251,17 +251,12 @@ public class S3Client implements CloudStoreClient {
   public ListenableFuture<S3File> upload(UploadOptions options)
       throws IOException
   {
-    File file = options.getFile();
-    long chunkSize = options.getChunkSize();
-    String acl = options.getAcl().or("bucket-owner-full-control");
-    String encKey = options.getEncKey().orNull();
-    boolean dryRun = options.isDryRun();
     Optional<OverallProgressListenerFactory> progressListenerFactory = options
         .getOverallProgressListenerFactory();
 
     UploadCommand cmd =
-        new UploadCommand(_s3Executor, _executor, file, chunkSize, encKey,
-            _keyProvider, acl, dryRun, progressListenerFactory);
+        new UploadCommand(_s3Executor, _executor, _keyProvider, options,
+	progressListenerFactory);
     configure(cmd);
 
     return cmd.run(options.getBucket(), options.getObjectKey());
@@ -516,13 +511,7 @@ public class S3Client implements CloudStoreClient {
   public ListenableFuture<S3File> copy(CopyOptions options)
   throws IOException
   {
-    String cannedAcl = options.getCannedAcl().or("bucket-owner-full-control");
-    boolean dryRun = options.isDryRun();
-    OverallProgressListenerFactory progressListenerFactory = options
-        .getOverallProgressListenerFactory().orNull();
-
-    CopyCommand cmd = new CopyCommand(_s3Executor, _executor, cannedAcl, 
-        dryRun, progressListenerFactory);
+    CopyCommand cmd = new CopyCommand(_s3Executor, _executor, options);
     configure(cmd);
     return cmd.run(options.getSourceBucketName(), options.getSourceKey(),
         options.getDestinationBucketName(), options.getDestinationKey());

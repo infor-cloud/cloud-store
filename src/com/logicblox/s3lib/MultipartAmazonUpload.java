@@ -34,10 +34,12 @@ class MultipartAmazonUpload implements Upload
   private String uploadId;
   private Date initiated;
   private ListeningExecutorService executor;
+  private UploadOptions options;
 
 
-  public MultipartAmazonUpload(AmazonS3 client, String bucketName, String key, String uploadId,
-                               Date initiated, ListeningExecutorService executor)
+  public MultipartAmazonUpload(AmazonS3 client, String bucketName, String key,
+    String uploadId, Date initiated, ListeningExecutorService executor,
+    UploadOptions options)
   {
     this.bucketName = bucketName;
     this.key = key;
@@ -45,6 +47,7 @@ class MultipartAmazonUpload implements Upload
     this.uploadId = uploadId;
     this.initiated = initiated;
     this.executor = executor;
+    this.options = options;
   }
 
   public ListenableFuture<Void> uploadPart(int partNumber,
@@ -54,8 +57,11 @@ class MultipartAmazonUpload implements Upload
                                                progressListener)
   {
     // added to support retry testing
-    if(UploadOptions.decrementAbortInjectionCounter(uploadId) > 0)
+    if(!this.options.ignoreAbortInjection()
+        && (UploadOptions.decrementAbortInjectionCounter(uploadId) > 0))
+    {
       throw new RuntimeException("forcing upload abort");
+    }
 
     return executor.submit(new UploadCallable(partNumber, partSize, stream,
         progressListener));

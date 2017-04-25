@@ -361,17 +361,12 @@ public class GCSClient implements CloudStoreClient {
 	@Override
         public ListenableFuture<S3File> upload(UploadOptions options)
             throws IOException {
-            File file = options.getFile();
-            long chunkSize = options.getChunkSize();
-            String acl = options.getAcl().or("projectPrivate");
-            String encKey = options.getEncKey().orNull();
-	    boolean dryRun = options.isDryRun();
             Optional<OverallProgressListenerFactory> progressListenerFactory =
                 options.getOverallProgressListenerFactory();
 
             GCSUploadCommand cmd =
-                new GCSUploadCommand(_s3Executor, _executor, file,
-                    chunkSize, encKey, _keyProvider, acl, dryRun, progressListenerFactory);
+                new GCSUploadCommand(_s3Executor, _executor, _keyProvider, options,
+		    progressListenerFactory);
             s3Client.configure(cmd);
             return cmd.run(options.getBucket(), options.getObjectKey());
         }

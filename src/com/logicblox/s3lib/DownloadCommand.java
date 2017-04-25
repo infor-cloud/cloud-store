@@ -180,7 +180,7 @@ public class DownloadCommand extends Command
             return Futures.immediateFailedFuture(t);
           }
           return Futures.immediateFailedFuture(new Exception("Error " +
-              "downloading " + getUri(bucket, key)+ ".", t));
+              "downloading " + getUri(bucket, key) + ".", t));
         }
       });
   }

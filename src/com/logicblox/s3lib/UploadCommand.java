@@ -45,21 +45,18 @@ public class UploadCommand extends Command
 
   private ListeningExecutorService _uploadExecutor;
   private ListeningScheduledExecutorService _executor;
-  private boolean _dryRun;
+  private UploadOptions _options;
 
 
   public UploadCommand(
     ListeningExecutorService uploadExecutor,
     ListeningScheduledExecutorService internalExecutor,
-    File file,
-    long chunkSize,
-    String encKeyName,
     KeyProvider encKeyProvider,
-    String acl,
-    boolean dryRun,
+    UploadOptions options,
     Optional<OverallProgressListenerFactory> progressListenerFactory)
   throws IOException
   {
+    _options = options;
     if(uploadExecutor == null)
       throw new IllegalArgumentException("non-null upload executor is required");
     if(internalExecutor == null)
@@ -67,12 +64,11 @@ public class UploadCommand extends Command
 
     _uploadExecutor = uploadExecutor;
     _executor = internalExecutor;
-    _dryRun = dryRun;
 
-    this.file = file;
-    setChunkSize(chunkSize);
-    setFileLength(file.length());
-    this.encKeyName = encKeyName;
+    this.file = _options.getFile();
+    setChunkSize(_options.getChunkSize());
+    setFileLength(this.file.length());
+    this.encKeyName = _options.getEncKey().orNull();
 
     if (this.encKeyName != null) {
       byte[] encKeyBytes = new byte[32];
@@ -105,7 +101,7 @@ public class UploadCommand extends Command
       }
     }
 
-    this.acl = acl;
+    this.acl = _options.getAcl().or("bucket-owner-full-control");
     this.progressListenerFactory = progressListenerFactory;
   }
 
@@ -118,7 +114,7 @@ public class UploadCommand extends Command
     if (!file.exists())
       throw new FileNotFoundException(file.getPath());
 
-    if(_dryRun)
+    if(_options.isDryRun())
     {
       System.out.println("<DRYRUN> uploading '" + this.file.getAbsolutePath()
         + "' to '" + getUri(bucket, key) + "'");
@@ -207,7 +203,7 @@ public class UploadCommand extends Command
     meta.put("s3tool-chunk-size", Long.toString(chunkSize));
     meta.put("s3tool-file-length", Long.toString(fileLength));
 
-    return factory.startUpload(bucket, key, meta, acl);
+    return factory.startUpload(bucket, key, meta, acl, _options);
   }
 
   /**

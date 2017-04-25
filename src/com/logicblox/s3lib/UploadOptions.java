@@ -38,6 +38,7 @@ public class UploadOptions {
     private Optional<String> encKey;
     private Optional<String> acl;
     private boolean dryRun;
+    private boolean ignoreAbortInjection;
     private Optional<OverallProgressListenerFactory>
         overallProgressListenerFactory;
 
@@ -53,6 +54,7 @@ public class UploadOptions {
                   Optional<String> encKey,
                   Optional<String> acl,
 		  boolean dryRun,
+		  boolean ignoreAbortInjection,
                   Optional<OverallProgressListenerFactory>
                       overallProgressListenerFactory) {
         this.file = file;
@@ -62,6 +64,7 @@ public class UploadOptions {
         this.encKey = encKey;
         this.acl = acl;
 	this.dryRun = dryRun;
+	this.ignoreAbortInjection = ignoreAbortInjection;
         this.overallProgressListenerFactory = overallProgressListenerFactory;
     }
 
@@ -90,7 +93,11 @@ public class UploadOptions {
         return current;
       }
     }
-    
+
+    public boolean ignoreAbortInjection()
+    {
+      return this.ignoreAbortInjection;
+    }
 
     public File getFile() {
         return file;

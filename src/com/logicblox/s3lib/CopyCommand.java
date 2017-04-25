@@ -24,25 +24,23 @@ public class CopyCommand extends Command
 {
   private ListeningExecutorService _copyExecutor;
   private ListeningScheduledExecutorService _executor;
-  private boolean _dryRun;
+  private CopyOptions _options;
   private String acl;
   private Optional<OverallProgressListenerFactory> progressListenerFactory;
 
   public CopyCommand(
       ListeningExecutorService copyExecutor,
       ListeningScheduledExecutorService internalExecutor,
-      String acl,
-      boolean dryRun,
-      OverallProgressListenerFactory progressListenerFactory)
+      CopyOptions options)
   throws IOException
   {
     _copyExecutor = copyExecutor;
     _executor = internalExecutor;
-    _dryRun = dryRun;
+    _options = options;
 
-    this.acl = acl;
-    this.progressListenerFactory = Optional.fromNullable
-        (progressListenerFactory);
+    this.acl = _options.getCannedAcl().or("bucket-owner-full-control");
+    this.progressListenerFactory = Optional.fromNullable(
+      options.getOverallProgressListenerFactory().orNull());
   }
 
   public ListenableFuture<S3File> run(final String sourceBucketName,
@@ -50,7 +48,7 @@ public class CopyCommand extends Command
                                       final String destinationBucketName,
                                       final String destinationKey)
   {
-    if(_dryRun)
+    if(_options.isDryRun())
     {
       System.out.println("<DRYRUN> copying '" + getUri(sourceBucketName, sourceKey)
         + "' to '" + getUri(destinationBucketName, destinationKey) + "'");
@@ -133,11 +131,18 @@ public class CopyCommand extends Command
   private ListenableFuture<Copy> startParts(Copy copy)
   throws IOException, UsageException
   {
+    String srcUri = getUri(copy.getSourceBucket(), copy.getSourceKey());
+    String destUri = getUri(copy.getDestinationBucket(), copy.getDestinationKey());
+	
+    // support for testing failures
+    if(!_options.ignoreAbortInjection()
+         && (CopyOptions.decrementAbortInjectionCounter(srcUri) > 0))
+    {
+      throw new AbortInjection("forcing copy abort");
+    }
+    
     Map<String,String> meta = copy.getMeta();
-
-    String errPrefix = "Copy of " + getUri(copy.getSourceBucket(),
-        copy.getSourceKey()) + " to " + getUri(copy.getDestinationBucket(),
-        copy.getDestinationKey()) + ": ";
+    String errPrefix = "Copy of " + srcUri + " to " + destUri + ": ";
 
     // s3lib-specific metadata should already be set by factory.startCopy
     String objectVersion = meta.get("s3tool-version");

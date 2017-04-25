@@ -1,6 +1,7 @@
 package com.logicblox.s3lib;
 
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -8,7 +9,9 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
@@ -19,6 +22,10 @@ public class RenameDirectoryCommand extends Command
   private ListeningScheduledExecutorService _executor;
   private RenameOptions _options;
   private CloudStoreClient _client;
+  private List<ListenableFuture<S3File>> _futures = new ArrayList<ListenableFuture<S3File>>();
+  private Map<String,String> _cleanupTable = new HashMap<String,String>();
+     // maps src to dest keys.  used to clean up if something fails
+
 
   public RenameDirectoryCommand(
     ListeningExecutorService httpExecutor,
@@ -41,19 +48,9 @@ public class RenameDirectoryCommand extends Command
   public ListenableFuture<List<S3File>> run()
     throws InterruptedException, ExecutionException, IOException
   {
-// FIXME - This could be a little problemmatic since we don't have an atomic rename
-// function in the store interfaces.  The way this is currently written, we do copy/delete
-// in pairs for each object to be renamed.  If some failure happens somewhere, we could
-// end up with objects that have been copied and deleted, copied but not deleted, or not
-// copied at all.  It could be better here to do all the copies first, followed by all the
-// deletes, with fallbacks so that if any one copy failed we would delete any copied files
-// that succeeded.  We could still end up in an inconsistent state if we made it to the
-// delete phase and some deletes succeeded and others failed, leaving original files laying
-// around.  Backing out problems in the phase would put us back into more copy/delete pairs....
-
     checkDestExists();
     List<S3File> toRename = queryFiles();
-    List<ListenableFuture<S3File>> futures = prepareFutures(toRename);
+    prepareFutures(toRename);
 
     if(_options.isDryRun())
     {
@@ -62,11 +59,86 @@ public class RenameDirectoryCommand extends Command
     }
     else
     {
-      return Futures.allAsList(futures);
+      return Futures.withFallback(
+        Futures.allAsList(_futures),
+	new FutureFallback<List<S3File>>()
+	{
+	  public ListenableFuture<List<S3File>> create(Throwable t)
+	  {
+            try
+	    {
+	      cleanup();
+	    }
+	    catch(Exception ex)
+	    {
+	      return Futures.immediateFailedFuture(new Exception(
+	        "Error cleaning up after rename failure:  " + ex.getMessage(), ex));
+	    }
+
+            return Futures.immediateFailedFuture(new Exception(
+	      "Error renaming '"
+	        + getUri(_options.getSourceBucket(), _options.getSourceKey())
+		+ "'" + ":  " + t.getMessage(), t));
+          }
+	});
     }
   }
 
 
+  private void cleanup()
+    throws InterruptedException, ExecutionException, IOException
+  {
+    // stop any rename futures that are still running
+    for(ListenableFuture<S3File> f : _futures)
+      f.cancel(true);
+    _futures.clear();
+
+    // move back any files that completed the rename
+    for(Map.Entry<String,String> e : _cleanupTable.entrySet())
+    {
+      String srcKey = e.getKey();
+      String destKey = e.getValue();
+      replaceFile(srcKey, destKey);
+      deleteFile(_options.getDestinationBucket(), destKey);
+    }
+  }
+
+
+  private void replaceFile(String srcKey, String destKey)
+    throws InterruptedException, ExecutionException, IOException
+  {
+    String srcBucket = _options.getSourceBucket();
+    String destBucket = _options.getDestinationBucket();
+
+    // if dest exists (copy succeeded) and src doesn't (delete succeeded too)
+    if((null != _client.exists(destBucket, destKey).get())
+        && (null == _client.exists(srcBucket, srcKey).get()))
+    {
+      CopyOptions copyOpts = new CopyOptionsBuilder()
+          .setSourceBucketName(destBucket)
+          .setSourceKey(destKey)
+          .setDestinationBucketName(srcBucket)
+          .setDestinationKey(srcKey)
+          .setIgnoreAbortInjection(true)
+          .createCopyOptions();
+      _client.copy(copyOpts).get();
+    }
+  }
+
+
+  private void deleteFile(String bucket, String key)
+    throws InterruptedException, ExecutionException, IOException
+  {
+    DeleteOptions deleteOpts = new DeleteOptionsBuilder()
+        .setBucket(bucket)
+        .setObjectKey(key)
+        .setForceDelete(true)
+        .setIgnoreAbortInjection(true)
+        .createDeleteOptions();
+    _client.delete(deleteOpts).get();
+  }
+
+  
   private void checkDestExists()
   {
     String bucket = _options.getDestinationBucket();
@@ -86,14 +158,13 @@ public class RenameDirectoryCommand extends Command
   }
 
 
-  private List<ListenableFuture<S3File>> prepareFutures(List<S3File> toRename)
+  private void prepareFutures(List<S3File> toRename)
     throws IOException
   {
     String destDir = _options.getDestinationKey();
     if(!destDir.endsWith("/"))
       destDir = destDir + "/";
     int srcIdx = _options.getSourceKey().length();
-    List<ListenableFuture<S3File>> futures = new ArrayList<ListenableFuture<S3File>>();
     for(S3File src : toRename)
     {
       String destKey = destDir + src.getKey().substring(srcIdx);
@@ -107,6 +178,7 @@ public class RenameDirectoryCommand extends Command
       }
       else
       {
+        _cleanupTable.put(src.getKey(), destKey);
         RenameOptions opts = new RenameOptionsBuilder()
           .setSourceBucket(src.getBucketName())
           .setSourceKey(src.getKey())
@@ -114,10 +186,9 @@ public class RenameDirectoryCommand extends Command
 	  .setDestinationKey(destKey)
 	  .setRecursive(false)
           .createRenameOptions();
-        futures.add(_client.rename(opts));
+        _futures.add(_client.rename(opts));
       }
     }
-    return futures;
   }
 
 

@@ -22,6 +22,7 @@ public class UploadOptionsBuilder {
     private Optional<OverallProgressListenerFactory>
         overallProgressListenerFactory = Optional.absent();
     private boolean dryRun = false;
+    private boolean ignoreAbortInjection = false;
 
     public UploadOptionsBuilder setFile(File file) {
         this.file = file;
@@ -70,8 +71,13 @@ public class UploadOptionsBuilder {
         return this;
     }
 
+    public UploadOptionsBuilder setIgnoreAbortInjection(boolean ignore) {
+        this.ignoreAbortInjection = ignore;
+        return this;
+    }
+
     public UploadOptions createUploadOptions() {
         return new UploadOptions(file, bucket, objectKey, chunkSize, encKey,
-            acl, dryRun, overallProgressListenerFactory);
+            acl, dryRun, ignoreAbortInjection, overallProgressListenerFactory);
     }
 }

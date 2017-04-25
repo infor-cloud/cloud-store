@@ -1,6 +1,9 @@
 package com.logicblox.s3lib;
 
 import com.google.common.base.Optional;
+import java.util.HashMap;
+import java.util.Map;
+
 
 /**
  * {@code CopyOptions} contains all the details needed by the copy operation.
@@ -24,9 +27,17 @@ public class CopyOptions {
     private final String destinationKey;
     private final boolean recursive;
     private final boolean dryRun;
+    private final boolean ignoreAbortInjection;
     private final Optional<String> cannedAcl;
     private final Optional<OverallProgressListenerFactory>
         overallProgressListenerFactory;
+
+    // for testing injecion of aborts during a copy
+    private static int _abortInjectionCounter = 0;
+    private static boolean _globalAbortCounter = false;
+    private static Object _abortSync = new Object();
+    private static Map<String,Integer> _injectionCounters = new HashMap<String,Integer>();
+
 
     CopyOptions(String sourceBucketName,
                 String sourceKey,
@@ -35,6 +46,7 @@ public class CopyOptions {
                 Optional<String> cannedAcl,
                 boolean recursive,
 		boolean dryRun,
+		boolean ignoreAbortInjection,
                 Optional<OverallProgressListenerFactory>
                     overallProgressListenerFactory) {
         this.sourceBucketName = sourceBucketName;
@@ -44,7 +56,55 @@ public class CopyOptions {
         this.recursive = recursive;
         this.cannedAcl = cannedAcl;
 	this.dryRun = dryRun;
+	this.ignoreAbortInjection = ignoreAbortInjection;
         this.overallProgressListenerFactory = overallProgressListenerFactory;
+    }
+
+    // for testing injection of aborts during a copy
+    static void setAbortInjectionCounter(int counter)
+    {
+      synchronized(_abortSync)
+      {
+        _abortInjectionCounter = counter;
+      }
+    }
+
+    // for testing injection of aborts during a copy
+    static int decrementAbortInjectionCounter(String id)
+    {
+      synchronized(_abortSync)
+      {
+        if(_abortInjectionCounter <= 0)
+          return 0;
+
+        if(_globalAbortCounter)
+          id = "";
+
+        if(!_injectionCounters.containsKey(id))
+          _injectionCounters.put(id, _abortInjectionCounter);
+        int current = _injectionCounters.get(id);
+        _injectionCounters.put(id, current - 1);
+        return current;
+      }
+    }
+
+
+    // if true, use a single abort counter for all delete operations.
+    // otherwise (default), use a separate counter for each delete
+    static boolean useGlobalAbortCounter(boolean b)
+    {
+      synchronized(_abortSync)
+      {
+        boolean old = _globalAbortCounter;
+        _globalAbortCounter = b;
+        return old;
+      }
+    }
+
+    
+    public boolean ignoreAbortInjection()
+    {
+      return this.ignoreAbortInjection;
     }
 
     public String getSourceBucketName() {

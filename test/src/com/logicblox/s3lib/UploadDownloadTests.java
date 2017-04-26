@@ -6,6 +6,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.concurrent.ExecutionException;
 import junit.framework.Assert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -169,8 +170,9 @@ public class UploadDownloadTests
         _client.upload(upOpts).get();
         Assert.fail("expected exception");
       }
-      catch(Throwable t)
+      catch(ExecutionException ex)
       {
+        Assert.assertTrue(TestUtils.findCause(ex, AbortInjection.class));
         // expected
       }
 
@@ -417,9 +419,9 @@ public class UploadDownloadTests
       TestUtils.downloadFile(src, dlTemp);
       msg = "expected exception";
     }
-    catch(Throwable t)
+    catch(UsageException ex)
     {
-      Assert.assertTrue(t.getMessage().contains("Object not found"));
+      Assert.assertTrue(ex.getMessage().contains("Object not found"));
     }
     Assert.assertNull(msg);
 
@@ -431,9 +433,9 @@ public class UploadDownloadTests
       TestUtils.downloadFile(src, dlTemp);
       msg = "expected exception";
     }
-    catch(Throwable t)
+    catch(UsageException ex)
     {
-      Assert.assertTrue(t.getMessage().contains("Object not found"));
+      Assert.assertTrue(ex.getMessage().contains("Object not found"));
     }
     Assert.assertNull(msg);
   }
@@ -467,7 +469,7 @@ public class UploadDownloadTests
       f = TestUtils.downloadFile(dest, dlTemp, false);
       Assert.fail("Expected download exception");
     }
-    catch(Throwable t)
+    catch(UsageException ex)
     {
       // expected
     }
@@ -509,10 +511,10 @@ try
       TestUtils.downloadDir(src, dlDir, false);
       msg = "expected exception (no object found)";
     }
-    catch(Throwable t)
+    catch(UsageException ex)
     {
       // expected
-      Assert.assertTrue(t.getMessage().contains("No objects found"));
+      Assert.assertTrue(ex.getMessage().contains("No objects found"));
     }
     Assert.assertNull(msg);
 
@@ -524,10 +526,10 @@ try
       TestUtils.downloadDir(src, existingFile, true, false);
       msg = "expected exception (can't overwrite file)";
     }
-    catch(Throwable t)
+    catch(UsageException ex)
     {
       // expected
-      Assert.assertTrue(t.getMessage().contains("must be a directory"));
+      Assert.assertTrue(ex.getMessage().contains("must be a directory"));
     }
     Assert.assertNull(msg);
     
@@ -546,10 +548,10 @@ try
       TestUtils.downloadDir(src, destDir, true, false);
       msg = "expected exception (can't overwrite file)";
     }
-    catch(Throwable t)
+    catch(UsageException ex)
     {
       // expected
-      Assert.assertTrue(t.getMessage().contains("already exists"));
+      Assert.assertTrue(ex.getMessage().contains("already exists"));
     }
     Assert.assertNull(msg);
     Assert.assertEquals(1, destDir.list().length);
@@ -792,7 +794,7 @@ catch(Throwable t)
       TestUtils.uploadEncryptedFile(toUpload, dest, keyName);
       Assert.fail("Expected upload error (key not found)");
     }
-    catch(Throwable t)
+    catch(UsageException ex)
     {
       // expected
     }
@@ -823,7 +825,7 @@ catch(Throwable t)
       f = TestUtils.downloadFile(dest, dlTemp);
       Assert.fail("Expected download error (key not found)");
     }
-    catch(Throwable t)
+    catch(ExecutionException ex)
     {
       // expected
     }
@@ -844,7 +846,7 @@ catch(Throwable t)
       TestUtils.uploadEncryptedFile(toUpload, dest, keyName);
       Assert.fail("Expected upload error (key not found)");
     }
-    catch(Throwable t)
+    catch(UsageException ex)
     {
       // expected
     }

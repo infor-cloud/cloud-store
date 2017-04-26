@@ -6,6 +6,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.concurrent.ExecutionException;
 import junit.framework.Assert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -467,18 +468,18 @@ try
        .setDestinationKey(topN)
        .setRecursive(true)
        .createCopyOptions();
+    String msg = null;
     try
     {
       _client.copyToDir(copyOpts).get();
-      Assert.fail("Exception expected");
+      msg = "Exception expected";
     }
-    catch(Exception ex)
+    catch(ExecutionException ex)
     {
-      if(-1 == ex.getMessage().indexOf("specified bucket is not valid"))
-         Assert.fail("Unexpected exception: " + ex.getMessage());
-      else
-         return;
+      Assert.assertTrue(ex.getMessage().contains("specified bucket is not valid"));
     }
+    Assert.assertNull(msg);
+    return;
 }
 catch(Throwable t)
 {

@@ -267,7 +267,7 @@ while(count < retryCount)
       catch(ExecutionException ex)
       {
         // expected
-        Assert.assertEquals(AbortInjection.class, ex.getCause().getCause().getCause().getClass());
+        Assert.assertTrue(TestUtils.findCause(ex, AbortInjection.class));
         Assert.assertTrue(ex.getMessage().contains("forcing delete abort"));
       }
       Assert.assertNull(msg);
@@ -352,7 +352,7 @@ while(count < retryCount)
       catch(ExecutionException ex)
       {
         // expected
-        Assert.assertEquals(AbortInjection.class, ex.getCause().getCause().getCause().getClass());
+        Assert.assertTrue(TestUtils.findCause(ex, AbortInjection.class));
         Assert.assertTrue(ex.getMessage().contains("forcing copy abort"));
       }
       Assert.assertNull(msg);
@@ -524,7 +524,7 @@ while(count < retryCount)
       catch(ExecutionException ex)
       {
         // expected
-        Assert.assertEquals(AbortInjection.class, ex.getCause().getCause().getClass());
+        Assert.assertTrue(TestUtils.findCause(ex, AbortInjection.class));
         Assert.assertTrue(ex.getMessage().contains("forcing copy abort"));
       }
       Assert.assertNull(msg);
@@ -578,7 +578,7 @@ while(count < retryCount)
       catch(ExecutionException ex)
       {
         // expected
-        Assert.assertEquals(AbortInjection.class, ex.getCause().getCause().getClass());
+        Assert.assertTrue(TestUtils.findCause(ex, AbortInjection.class));
         Assert.assertTrue(ex.getMessage().contains("forcing delete abort"));
       }
       Assert.assertNull(msg);

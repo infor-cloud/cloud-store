@@ -59,7 +59,7 @@ class GCSUpload implements Upload {
         if(!this.options.ignoreAbortInjection()
 	     && (UploadOptions.decrementAbortInjectionCounter(uploadId) > 0))
 	{
-            throw new RuntimeException("forcing upload abort");
+            throw new AbortInjection("forcing upload abort");
 	}
 
 	return executor.submit(new UploadCallable(partNumber, partSize, stream,

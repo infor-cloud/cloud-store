@@ -723,6 +723,18 @@ public class TestUtils
     return keys;
   }
 
+
+  public static boolean findCause(Throwable t, Class cls)
+  {
+    while(t.getCause() != null)
+    {
+      if(t.getCause().getClass().equals(cls))
+        return true;
+      t = t.getCause();
+    }
+    return false;
+  }
+
   
   private static void setDest(String destPrefix)
     throws Throwable

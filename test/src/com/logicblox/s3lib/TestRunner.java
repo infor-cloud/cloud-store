@@ -12,6 +12,7 @@ import org.junit.runners.Suite;
 //  BucketTests.class,
         // these only work with minio and with AWS if you have the right creds
   UploadDownloadTests.class,
+  CopyTests.class,
   DeleteTests.class,
   RenameTests.class
  })

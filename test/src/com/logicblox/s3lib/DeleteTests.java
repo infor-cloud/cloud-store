@@ -35,6 +35,84 @@ public class DeleteTests
   }
 
 
+  @Test
+  public void testDryRunFile()
+    throws Throwable
+  {
+    // create test file and upload it
+    String rootPrefix = TestUtils.addPrefix("delete-dryrun");
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    File toUpload = TestUtils.createTextFile(100);
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    S3File f = TestUtils.uploadFile(toUpload, dest);
+    Assert.assertNotNull(f);
+    Assert.assertEquals(
+      originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+    // dryrun the delete and make sure file still exists
+    DeleteOptions opts = new DeleteOptionsBuilder()
+        .setBucket(Utils.getBucket(dest))
+        .setObjectKey(Utils.getObjectKey(dest))
+	.setDryRun(true)
+        .createDeleteOptions();
+    f = _client.delete(opts).get();
+    Assert.assertNull(f);
+    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    Assert.assertEquals(originalCount + 1, objs.size());
+    Assert.assertTrue(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
+  }
+
+
+  @Test
+  public void testDryRunDir()
+    throws Throwable
+  {
+// directory copy/upload tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
+int retryCount = TestUtils.RETRY_COUNT;
+int count = 0;
+while(count < retryCount)
+{
+try
+{
+    // create simple directory structure with a few files and upload
+    File top = TestUtils.createTmpDir(true);
+    File a = TestUtils.createTextFile(top, 100);
+    File b = TestUtils.createTextFile(top, 100);
+    String rootPrefix = TestUtils.addPrefix("delete-dryrun-dir/");
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
+    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    Assert.assertEquals(2, uploaded.size());
+    Assert.assertEquals(
+      originalCount + 2, TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+    // dryrun the delete and make sure the files still exist
+    DeleteOptions opts = new DeleteOptionsBuilder()
+        .setBucket(Utils.getBucket(dest))
+        .setObjectKey(Utils.getObjectKey(dest))
+	.setRecursive(true)
+	.setDryRun(true)
+        .createDeleteOptions();
+    List<S3File> files = _client.deleteDir(opts).get();
+    Assert.assertNull(files);
+    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    Assert.assertEquals(originalCount + 2, objs.size());
+
+    String topN = rootPrefix + top.getName() + "/";
+    Assert.assertTrue(TestUtils.findObject(objs, topN + a.getName()));
+    Assert.assertTrue(TestUtils.findObject(objs, topN + b.getName()));
+    return;
+}
+catch(Throwable t)
+{
+  ++count;
+  if(count >= retryCount)
+    throw t;
+}
+}
+  }
+
+  
   // FIXME - break this into multiple functions for test isolation
   @Test
   public void testBasicOperations()

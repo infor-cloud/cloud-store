@@ -66,7 +66,136 @@ public class UploadDownloadTests
     _client = null;
   }
 
+  
+  @Test
+  public void testUploadDryRun()
+    throws Throwable
+  {
+    // create a file
+    String rootPrefix = TestUtils.addPrefix("upload-dryrun");
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    File toUpload = TestUtils.createTextFile(100);
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
 
+    // dryrun the upload and make sure the dest doesn't change
+    UploadOptions opts = new UploadOptionsBuilder()
+      .setFile(toUpload)
+      .setBucket(Utils.getBucket(dest))
+      .setObjectKey(Utils.getObjectKey(dest))
+      .setDryRun(true)
+      .createUploadOptions();
+    S3File f = _client.upload(opts).get();
+    Assert.assertNull(f);
+    Assert.assertEquals(
+      originalCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
+  }
+
+  
+  @Test
+  public void testUploadDirectoryDryRun()
+    throws Throwable
+  {
+// directory copy/upload tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
+int retryCount = TestUtils.RETRY_COUNT;
+int count = 0;
+while(count < retryCount)
+{
+try
+{
+    // create simple directory structure
+    File top = TestUtils.createTmpDir(true);
+    File a = TestUtils.createTextFile(top, 100);
+    File b = TestUtils.createTextFile(top, 100);
+    String rootPrefix = TestUtils.addPrefix("upload-dir-dryrun");
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
+
+    // dryrun the upload and verify the dest didn't change
+    UploadOptions opts = new UploadOptionsBuilder()
+      .setFile(top)
+      .setBucket(Utils.getBucket(dest))
+      .setObjectKey(Utils.getObjectKey(dest))
+      .setDryRun(true)
+      .createUploadOptions();
+    List<S3File> files = _client.uploadDirectory(opts).get();
+    Assert.assertNull(files);
+    Assert.assertEquals(
+      originalCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
+    return;
+}
+catch(Throwable t)
+{
+  ++count;
+  if(count >= retryCount)
+    throw t;
+}
+}
+  }
+
+  
+  @Test
+  public void testDownloadDryRun()
+    throws Throwable
+  {
+    // create a small file and upload it
+    String rootPrefix = TestUtils.addPrefix("download-dryrun");
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    File toUpload = TestUtils.createTextFile(100);
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    S3File f = TestUtils.uploadFile(toUpload, dest);
+    Assert.assertNotNull(f);
+    Assert.assertEquals(
+      originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+    // dryrun the download and make sure the file isn't created locally
+    URI src = dest;
+    File dlTemp = TestUtils.createTmpFile();
+    dlTemp.delete();
+    DownloadOptions opts = new DownloadOptionsBuilder()
+      .setFile(dlTemp)
+      .setUri(src)
+      .setRecursive(false)
+      .setOverwrite(true)
+      .setDryRun(true)
+      .createDownloadOptions();
+    f = _client.download(opts).get();
+    Assert.assertNull(f);
+    Assert.assertFalse(dlTemp.exists());
+  }
+
+  
+  @Test
+  public void testDownloadDirectoryDryRun()
+    throws Throwable
+  {
+    // create simple directory structure and upload
+    String rootPrefix = TestUtils.addPrefix("download-dir-dryrun");
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    File top = TestUtils.createTmpDir(true);
+    File a = TestUtils.createTextFile(top, 100);
+    File b = TestUtils.createTextFile(top, 100);
+    URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
+    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    Assert.assertEquals(2, uploaded.size());
+    Assert.assertEquals(
+      originalCount + uploaded.size(), TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+    // dryrun the download and make sure nothing changes locally
+    File dlDir = TestUtils.createTmpDir(true);
+    URI src = dest;
+    DownloadOptions opts = new DownloadOptionsBuilder()
+      .setFile(dlDir)
+      .setUri(src)
+      .setRecursive(true)
+      .setOverwrite(true)
+      .setDryRun(true)
+      .createDownloadOptions();
+    List<S3File> files = _client.downloadDirectory(opts).get();
+    Assert.assertNull(files);
+    Assert.assertEquals(0, dlDir.list().length);
+  }
+
+  
   @Test
   public void testExists()
     throws Throwable

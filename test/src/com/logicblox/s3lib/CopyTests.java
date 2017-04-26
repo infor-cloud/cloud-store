@@ -39,6 +39,85 @@ public class CopyTests
 
 
   @Test
+  public void testDryRunFile()
+    throws Throwable
+  {
+    // create test file and upload it
+    String rootPrefix = TestUtils.addPrefix("copy-dryrun");
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    File toUpload = TestUtils.createTextFile(100);
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    S3File f = TestUtils.uploadFile(toUpload, dest);
+    Assert.assertNotNull(f);
+    Assert.assertEquals(
+      originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+    // dryrun the copy and make sure dest stays the same
+    CopyOptions opts = new CopyOptionsBuilder()
+       .setSourceBucketName(_testBucket)
+       .setSourceKey(f.getKey())
+       .setDestinationBucketName(_testBucket)
+       .setDestinationKey(f.getKey() + "-COPY")
+       .setDryRun(true)
+       .createCopyOptions();
+    S3File copy = _client.copy(opts).get();
+    Assert.assertNull(copy);
+    Assert.assertEquals(
+      originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
+  }
+
+  
+  @Test
+  public void testDryRunDir()
+    throws Throwable
+  {
+// directory copy/upload tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
+int retryCount = TestUtils.RETRY_COUNT;
+int count = 0;
+while(count < retryCount)
+{
+try
+{
+    // create simple directory structure with a few files and upload
+    File top = TestUtils.createTmpDir(true);
+    File a = TestUtils.createTextFile(top, 100);
+    File b = TestUtils.createTextFile(top, 100);
+    String rootPrefix = TestUtils.addPrefix("copy-dryrun-dir/");
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
+    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    Assert.assertEquals(2, uploaded.size());
+    Assert.assertEquals(
+      originalCount + 2, TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+    // dryrun the copy and make sure the dest doesn't change
+    String topN = rootPrefix + top.getName() + "/";
+    String copyTopN = rootPrefix + top.getName() + "-COPY/";
+    CopyOptions copyOpts = new CopyOptionsBuilder()
+       .setSourceBucketName(_testBucket)
+       .setSourceKey(topN)
+       .setDestinationBucketName(_testBucket)
+       .setDestinationKey(copyTopN)
+       .setRecursive(false)
+       .setDryRun(true)
+       .createCopyOptions();
+    List<S3File> copy = _client.copyToDir(copyOpts).get();
+    Assert.assertNull(copy);
+    Assert.assertEquals(
+      originalCount + 2, TestUtils.listObjects(_testBucket, rootPrefix).size());
+    return;
+}
+catch(Throwable t)
+{
+  ++count;
+  if(count >= retryCount)
+    throw t;
+}
+}
+  }
+
+  
+  @Test
   public void testSimpleCopy()
     throws Throwable
   {

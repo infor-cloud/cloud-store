@@ -118,7 +118,7 @@ public class UploadCommand extends Command
     {
       System.out.println("<DRYRUN> uploading '" + this.file.getAbsolutePath()
         + "' to '" + getUri(bucket, key) + "'");
-      return Futures.immediateFuture(new S3File());
+      return Futures.immediateFuture(null);
     }
     else
     {

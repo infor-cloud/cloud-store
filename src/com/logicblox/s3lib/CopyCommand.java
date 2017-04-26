@@ -52,7 +52,7 @@ public class CopyCommand extends Command
     {
       System.out.println("<DRYRUN> copying '" + getUri(sourceBucketName, sourceKey)
         + "' to '" + getUri(destinationBucketName, destinationKey) + "'");
-      return Futures.immediateFuture(new S3File());
+      return Futures.immediateFuture(null);
     }
     else
     {

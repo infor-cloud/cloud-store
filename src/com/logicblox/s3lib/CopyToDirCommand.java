@@ -65,8 +65,7 @@ public class CopyToDirCommand extends Command
 
     if(_dryRun)
     {
-      List<S3File> dummy = new ArrayList<S3File>();
-      return Futures.immediateFuture(dummy);
+      return Futures.immediateFuture(null);
     }
     else
     {

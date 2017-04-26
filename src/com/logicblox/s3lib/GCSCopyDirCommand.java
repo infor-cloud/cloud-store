@@ -56,8 +56,7 @@ public class GCSCopyDirCommand extends Command
 
     if(options.isDryRun())
     {
-      List<S3File> dummy = new ArrayList<S3File>();
-      return Futures.immediateFuture(dummy);
+      return Futures.immediateFuture(null);
     }
     else
     {

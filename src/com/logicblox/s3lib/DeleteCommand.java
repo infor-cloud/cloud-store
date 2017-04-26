@@ -84,7 +84,7 @@ public class DeleteCommand extends Command
     if(_options.isDryRun())
     {
       System.out.println("<DRYRUN> deleting '" + srcUri + "'");
-      return Futures.immediateFuture(new S3File());
+      return Futures.immediateFuture(null);
     }
     else
     {

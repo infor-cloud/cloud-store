@@ -126,17 +126,12 @@ public class DownloadCommand extends Command
       throw new UsageException(
         "Error checking object existance: " + ex.getMessage(), ex);
     }
-//    catch(ExecutionException ex)
-//    {
-//      throw new UsageException(
-//        "Error checking object existance: " + ex.getMessage(), ex);
-//    }
 
     if(_dryRun)
     {
       System.out.println("<DRYRUN> downloading '" + getUri(bucket, key)
         + "' to '" + this.file.getAbsolutePath() + "'");
-      return Futures.immediateFuture(new S3File());
+      return Futures.immediateFuture(null);
     }
     else
     {

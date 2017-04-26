@@ -46,6 +46,98 @@ public class RenameTests
 
 
   @Test
+  public void testDryRunFile()
+    throws Throwable
+  {
+    // create test file and upload it
+    String rootPrefix = TestUtils.addPrefix("rename-dryrun");
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    File toUpload = TestUtils.createTextFile(100);
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    S3File f = TestUtils.uploadFile(toUpload, dest);
+    Assert.assertNotNull(f);
+    Assert.assertEquals(
+      originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+    // dryrun the rename and make sure dest stays the same
+    URI src = dest;
+    dest = TestUtils.getUri(_testBucket, toUpload.getName() + "-RENAME", rootPrefix);
+    RenameOptions opts = new RenameOptionsBuilder()
+      .setSourceBucket(Utils.getBucket(src))
+      .setSourceKey(Utils.getObjectKey(src))
+      .setDestinationBucket(Utils.getBucket(dest))
+      .setDestinationKey(Utils.getObjectKey(dest))
+      .setDryRun(true)
+      .createRenameOptions();
+    f = _client.rename(opts).get();
+    Assert.assertNull(f);
+    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    Assert.assertEquals(originalCount + 1, objs.size());
+    Assert.assertTrue(TestUtils.findObject(objs, Utils.getObjectKey(src)));
+    Assert.assertFalse(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
+  }
+
+  
+  @Test
+  public void testDryRunDir()
+    throws Throwable
+  {
+// directory copy/upload tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
+int retryCount = TestUtils.RETRY_COUNT;
+int count = 0;
+while(count < retryCount)
+{
+try
+{
+    // create simple directory structure with a few files and upload
+    File top = TestUtils.createTmpDir(true);
+    File a = TestUtils.createTextFile(top, 100);
+    File b = TestUtils.createTextFile(top, 100);
+    String rootPrefix = TestUtils.addPrefix("rename-dryrun-dir/");
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
+    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    Assert.assertEquals(2, uploaded.size());
+    Assert.assertEquals(
+      originalCount + 2, TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+    // dryrun the rename and make sure the dest doesn't change
+    URI src = dest;
+    dest = TestUtils.getUri(_testBucket, top.getName() + "-RENAME", rootPrefix);
+    RenameOptions opts = new RenameOptionsBuilder()
+      .setSourceBucket(Utils.getBucket(src))
+      .setSourceKey(Utils.getObjectKey(src))
+      .setDestinationBucket(Utils.getBucket(dest))
+      .setDestinationKey(Utils.getObjectKey(dest))
+      .setRecursive(false)
+      .setDryRun(true)
+      .createRenameOptions();
+    List<S3File> files = _client.renameDirectory(opts).get();
+    Assert.assertNull(files);
+    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    Assert.assertEquals(originalCount + 2, objs.size());
+
+    String topN = rootPrefix + top.getName() + "/";
+    Assert.assertTrue(TestUtils.findObject(objs, topN + a.getName()));
+    Assert.assertTrue(TestUtils.findObject(objs, topN + b.getName()));
+
+    String renameN = rootPrefix + top.getName() + "-RENAME" + "/";
+    Assert.assertFalse(TestUtils.findObject(objs, renameN + a.getName()));
+    Assert.assertFalse(TestUtils.findObject(objs, renameN + b.getName()));
+
+    return;
+}
+catch(Throwable t)
+{
+  ++count;
+  if(count >= retryCount)
+    throw t;
+}
+}
+  }
+  
+
+  @Test
   public void testRenameDirAbortOneDuringCopy()
     throws Throwable
   {

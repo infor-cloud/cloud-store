@@ -54,8 +54,7 @@ public class RenameDirectoryCommand extends Command
 
     if(_options.isDryRun())
     {
-      List<S3File> dummy = new ArrayList<S3File>();
-      return Futures.immediateFuture(dummy);
+      return Futures.immediateFuture(null);
     }
     else
     {

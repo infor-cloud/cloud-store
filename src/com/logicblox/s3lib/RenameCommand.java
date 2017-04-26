@@ -61,7 +61,7 @@ public class RenameCommand extends Command
 	+ "' to '"
         + getUri(_options.getDestinationBucket(), destKey)
 	+ "'");
-      return Futures.immediateFuture(new S3File());
+      return Futures.immediateFuture(null);
     }
     else
     {

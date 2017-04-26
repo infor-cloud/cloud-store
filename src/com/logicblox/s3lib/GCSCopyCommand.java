@@ -37,7 +37,7 @@ public class GCSCopyCommand extends Command
         + getUri(options.getSourceBucketName(), options.getSourceKey())
         + "' to '"
 	+ getUri(options.getDestinationBucketName(), options.getDestinationKey()) + "'");
-      return Futures.immediateFuture(new S3File());
+      return Futures.immediateFuture(null);
     }
     else
     {

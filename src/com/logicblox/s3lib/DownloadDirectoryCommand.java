@@ -66,8 +66,7 @@ public class DownloadDirectoryCommand extends Command
 
     if(dryRun)
     {
-      List<S3File> dummy = new ArrayList<S3File>();
-      return Futures.immediateFuture(dummy);
+      return Futures.immediateFuture(null);
     }
     else
       return scheduleExecution();

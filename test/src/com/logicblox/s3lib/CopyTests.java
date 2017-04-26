@@ -50,6 +50,98 @@ public class CopyTests
 
 
   @Test
+  public void testRetryDir()
+    throws Throwable
+  {
+// directory copy/upload tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
+int testLoop = TestUtils.RETRY_COUNT;
+int count = 0;
+while(count < testLoop)
+{
+try
+{
+    // create simple directory structure with a few files
+    File top = TestUtils.createTmpDir(true);
+    File a = TestUtils.createTextFile(top, 100);
+    File b = TestUtils.createTextFile(top, 100);
+    File sub = TestUtils.createTmpDir(top);
+    File c = TestUtils.createTextFile(sub, 100);
+    File d = TestUtils.createTextFile(sub, 100);
+    File sub2 = TestUtils.createTmpDir(sub);
+    File e = TestUtils.createTextFile(sub2, 100);
+
+    String rootPrefix = TestUtils.addPrefix("copy-dir-retry/");
+    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    int originalCount = objs.size();
+
+    // upload the directory
+    URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
+    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    int uploadedSize = uploaded.size();
+    Assert.assertEquals(5, uploadedSize);
+    int currentSize = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    Assert.assertEquals(originalCount + uploadedSize, currentSize);
+
+    // non-recursive copy
+    String topN = rootPrefix + top.getName() + "/";
+    String copyTopN = rootPrefix + top.getName() + "-COPY/";
+    CopyOptions copyOpts = new CopyOptionsBuilder()
+       .setSourceBucketName(_testBucket)
+       .setSourceKey(topN)
+       .setDestinationBucketName(_testBucket)
+       .setDestinationKey(copyTopN)
+       .setRecursive(true)
+       .createCopyOptions();
+    boolean oldGlobalFlag = false;
+    try
+    {
+      // set retry and abort options
+      oldGlobalFlag = CopyOptions.useGlobalAbortCounter(true);
+      ThrowableRetriableTask.addRetryListener(this);
+      clearRetryCount();
+      int retryCount = 10;
+      int abortCount = 3;
+      _client.setRetryCount(retryCount);
+      CopyOptions.setAbortInjectionCounter(abortCount);
+
+      List<S3File> copy = _client.copyToDir(copyOpts).get();
+      Assert.assertEquals(5, copy.size());
+      Assert.assertEquals(abortCount, getRetryCount());
+    }
+    finally
+    {
+      // reset retry and abort injection state so we don't affect other tests
+      TestUtils.resetRetryCount();
+      CopyOptions.setAbortInjectionCounter(0);
+      CopyOptions.useGlobalAbortCounter(oldGlobalFlag);
+    }
+
+    // verify the recursive copy
+    String subN = copyTopN + sub.getName() + "/";
+    String sub2N = subN + sub2.getName() + "/";
+    List<S3File> copyObjs = TestUtils.listObjects(_testBucket, rootPrefix);
+    int lastSize = copyObjs.size();
+    Assert.assertEquals(currentSize + 5, lastSize);
+       // previous size plus 5 copies
+    Assert.assertTrue(TestUtils.findObject(copyObjs, copyTopN + a.getName()));
+    Assert.assertTrue(TestUtils.findObject(copyObjs, copyTopN + b.getName()));
+    Assert.assertTrue(TestUtils.findObject(copyObjs, subN + c.getName()));
+    Assert.assertTrue(TestUtils.findObject(copyObjs, subN + d.getName()));
+    Assert.assertTrue(TestUtils.findObject(copyObjs, sub2N + e.getName()));
+
+    return;
+}
+catch(Throwable t)
+{
+  ++count;
+  if(count >= testLoop)
+    throw t;
+}
+}
+  }
+
+
+  @Test
   public void testRetry()
     throws Throwable
   {

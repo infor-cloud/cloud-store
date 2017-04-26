@@ -93,6 +93,13 @@ public class RenameDirectoryCommand extends Command
       f.cancel(true);
     _futures.clear();
 
+    // HACK - Occassionally when we're renaming a directory and a failure
+    // happens with GCS, one file will be copied but it doesn't appear to
+    // exist yet when we try to detect and delete it to clean up.  Inserting
+    // a small delay here seems to correct this, but is obviously far less
+    // than ideal and may not always work.
+    Thread.currentThread().sleep(1000);
+
     // move back any files that completed the rename
     for(Map.Entry<String,String> e : _cleanupTable.entrySet())
     {
@@ -129,13 +136,16 @@ public class RenameDirectoryCommand extends Command
   private void deleteFile(String bucket, String key)
     throws InterruptedException, ExecutionException, IOException
   {
-    DeleteOptions deleteOpts = new DeleteOptionsBuilder()
+    if(null != _client.exists(bucket, key).get())
+    {
+      DeleteOptions deleteOpts = new DeleteOptionsBuilder()
         .setBucket(bucket)
         .setObjectKey(key)
         .setForceDelete(true)
         .setIgnoreAbortInjection(true)
         .createDeleteOptions();
-    _client.delete(deleteOpts).get();
+      _client.delete(deleteOpts).get();
+    }
   }
 
   

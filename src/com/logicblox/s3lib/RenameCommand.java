@@ -140,23 +140,7 @@ public class RenameCommand extends Command
       .setCannedAcl(_acl)
       .createCopyOptions();
 
-//    return _client.copy(copyOpts);
-    return executeWithRetry(_executor,
-      new Callable<ListenableFuture<S3File>>()
-      {
-        public ListenableFuture<S3File> call()
-	  throws IOException
-        {
-          return _client.copy(copyOpts);
-        }
-
-        public String toString()
-        {
-          String bucket = _options.getSourceBucket();
-          String key = _options.getSourceKey();
-          return "copy phase renaming " + bucket + "/" + key;
-        }
-      });
+    return _client.copy(copyOpts);
   }
 
 

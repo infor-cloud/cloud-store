@@ -121,9 +121,18 @@ public class CopyCommand extends Command
   {
     return new AsyncFunction<Copy, Copy>()
     {
-      public ListenableFuture<Copy> apply(Copy copy) throws Exception
+      public ListenableFuture<Copy> apply(final Copy copy) throws Exception
       {
-        return startParts(copy);
+        return executeWithRetry(
+          _executor,
+          new Callable<ListenableFuture<Copy>>()
+          {
+            public ListenableFuture<Copy> call()
+	      throws IOException
+            {
+              return startParts(copy);
+            }
+	  });
       }
     };
   }

@@ -14,10 +14,21 @@ import org.junit.Test;
 
 
 public class CopyTests
+  implements RetryListener
 {
   private static CloudStoreClient _client = null;
   private static String _testBucket = null;
+  private int _retryCount = 0;
+  
 
+  // RetryListener
+  @Override
+  public synchronized void retryTriggered(RetryEvent e)
+  {
+    ++_retryCount;
+  }
+
+  
   @BeforeClass
   public static void setUp()
     throws Throwable
@@ -38,6 +49,60 @@ public class CopyTests
   }
 
 
+  @Test
+  public void testRetry()
+    throws Throwable
+  {
+    try
+    {
+      // create test file and upload it
+      String rootPrefix = TestUtils.addPrefix("copy-retry");
+      int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+      File toUpload = TestUtils.createTextFile(100);
+      URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+      S3File f = TestUtils.uploadFile(toUpload, dest);
+      Assert.assertNotNull(f);
+      List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+      Assert.assertEquals(originalCount + 1, objs.size());
+      Assert.assertTrue(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
+
+      // set retry and abort options
+      ThrowableRetriableTask.addRetryListener(this);
+      clearRetryCount();
+      int retryCount = 10;
+      int abortCount = 3;
+      _client.setRetryCount(retryCount);
+      CopyOptions.setAbortInjectionCounter(abortCount);
+      
+      // copy file
+      CopyOptions copyOpts = new CopyOptionsBuilder()
+       .setSourceBucketName(_testBucket)
+       .setSourceKey(f.getKey())
+       .setDestinationBucketName(_testBucket)
+       .setDestinationKey(f.getKey() + "-COPY")
+       .createCopyOptions();
+      S3File copy = _client.copy(copyOpts).get();
+      Assert.assertEquals(abortCount, getRetryCount());
+
+      // check for the copy
+      String expectedKey = f.getKey() + "-COPY";
+      Assert.assertEquals(expectedKey, copy.getKey());
+      objs = TestUtils.listObjects(_testBucket, rootPrefix);
+      Assert.assertEquals(originalCount + 2, objs.size());
+      Assert.assertTrue(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
+      Assert.assertTrue(TestUtils.findObject(objs, expectedKey));
+    }
+    finally
+    {
+      // reset retry and abort injection state so we don't affect other tests
+      TestUtils.resetRetryCount();
+      CopyOptions.setAbortInjectionCounter(0);
+    }
+
+  }
+
+
+  
   @Test
   public void testDryRunFile()
     throws Throwable
@@ -670,5 +735,15 @@ catch(Throwable t)
 }
   }
 
+
+  private synchronized void clearRetryCount()
+  {
+    _retryCount = 0;
+  }
+
+  private synchronized int getRetryCount()
+  {
+    return _retryCount;
+  }
 }
 

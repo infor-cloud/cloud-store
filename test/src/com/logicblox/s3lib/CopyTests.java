@@ -114,6 +114,7 @@ try
       TestUtils.resetRetryCount();
       CopyOptions.setAbortInjectionCounter(0);
       CopyOptions.useGlobalAbortCounter(oldGlobalFlag);
+      CopyOptions.clearAbortInjectionCounters();
     }
 
     // verify the recursive copy
@@ -189,6 +190,7 @@ catch(Throwable t)
       // reset retry and abort injection state so we don't affect other tests
       TestUtils.resetRetryCount();
       CopyOptions.setAbortInjectionCounter(0);
+      CopyOptions.clearAbortInjectionCounters();
     }
 
   }

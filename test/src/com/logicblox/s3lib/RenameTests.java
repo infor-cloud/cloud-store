@@ -135,7 +135,7 @@ catch(Throwable t)
 }
 }
   }
-  
+
 
   @Test
   public void testRenameDirAbortOneDuringCopy()
@@ -217,6 +217,7 @@ while(count < retryCount)
       // reset abort injection so other tests aren't affected
       CopyOptions.useGlobalAbortCounter(oldGlobalFlag);
       CopyOptions.setAbortInjectionCounter(0);
+      CopyOptions.clearAbortInjectionCounters();
     }
 }
   }
@@ -233,7 +234,6 @@ while(count < retryCount)
     int count = 0;
 while(count < retryCount)
 {
-    boolean oldGlobalFlag = false;
     try
     {
       // create simple directory structure and upload
@@ -263,11 +263,12 @@ while(count < retryCount)
         .setDestinationKey(Utils.getObjectKey(dest))
         .setRecursive(true)
         .createRenameOptions();
-      oldGlobalFlag = DeleteOptions.useGlobalAbortCounter(true);
-      DeleteOptions.setAbortInjectionCounter(1);
-         // abort first rename during delete phase
+      boolean oldGlobalFlag = false;
       try
       {
+        oldGlobalFlag = DeleteOptions.useGlobalAbortCounter(true);
+        DeleteOptions.setAbortInjectionCounter(1);
+           // abort first rename during delete phase
         _client.renameDirectory(opts).get();
       }
       catch(ExecutionException ex)
@@ -275,15 +276,23 @@ while(count < retryCount)
         // expected for one of the rename jobs
         Assert.assertTrue(ex.getMessage().contains("forcing delete abort"));
       }
+      finally
+      {
+        // reset abort injection so other tests aren't affected
+        DeleteOptions.useGlobalAbortCounter(oldGlobalFlag);
+        DeleteOptions.setAbortInjectionCounter(0);
+	DeleteOptions.clearAbortInjectionCounters();
+      }
       
       // verify that nothing moved
       List<S3File> destObjs = TestUtils.listObjects(_testBucket, destPrefix);
+      List<S3File> srcObjs = TestUtils.listObjects(_testBucket, rootPrefix);
+
       String topDestN = destPrefix + "subdir2/";
       Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + a.getName()));
       Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + b.getName()));
       Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + c.getName()));
 
-      List<S3File> srcObjs = TestUtils.listObjects(_testBucket, rootPrefix);
       String topN = rootPrefix + top.getName() + "/";
       Assert.assertTrue(TestUtils.findObject(srcObjs, topN + a.getName()));
       Assert.assertTrue(TestUtils.findObject(srcObjs, topN + b.getName()));
@@ -296,12 +305,6 @@ while(count < retryCount)
       ++count;
       if(count >= retryCount)
         throw t;
-    }
-    finally
-    {
-      // reset abort injection so other tests aren't affected
-      DeleteOptions.useGlobalAbortCounter(oldGlobalFlag);
-      DeleteOptions.setAbortInjectionCounter(0);
     }
 }
   }
@@ -387,6 +390,7 @@ while(count < retryCount)
     {
       // reset abort injection so other tests aren't affected
       DeleteOptions.setAbortInjectionCounter(0);
+      DeleteOptions.clearAbortInjectionCounters();
     }
 }
   }
@@ -472,6 +476,7 @@ while(count < retryCount)
     {
       // reset abort injection so other tests aren't affected
       CopyOptions.setAbortInjectionCounter(0);
+      CopyOptions.clearAbortInjectionCounters();
     }
 }
   }
@@ -525,6 +530,7 @@ while(count < retryCount)
       // reset retry and abort injection state so we don't affect other tests
       TestUtils.resetRetryCount();
       CopyOptions.setAbortInjectionCounter(0);
+      CopyOptions.clearAbortInjectionCounters();
     }
   }
 
@@ -576,6 +582,7 @@ while(count < retryCount)
       // reset retry and abort injection state so we don't affect other tests
       TestUtils.resetRetryCount();
       DeleteOptions.setAbortInjectionCounter(0);
+      DeleteOptions.clearAbortInjectionCounters();
     }
   }
 
@@ -630,6 +637,7 @@ while(count < retryCount)
     {
       // reset abort injection so other tests aren't affected
       CopyOptions.setAbortInjectionCounter(0);
+      CopyOptions.clearAbortInjectionCounters();
     }
   }
 
@@ -684,6 +692,7 @@ while(count < retryCount)
     {
       // reset abort injection so other tests aren't affected
       DeleteOptions.setAbortInjectionCounter(0);
+      DeleteOptions.clearAbortInjectionCounters();
     }
   }
 

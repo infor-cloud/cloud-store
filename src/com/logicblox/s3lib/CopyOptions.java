@@ -89,6 +89,15 @@ public class CopyOptions {
     }
 
 
+    static void clearAbortInjectionCounters()
+    {
+      synchronized(_abortSync)
+      {
+        _injectionCounters.clear();
+      }
+    }
+
+
     // if true, use a single abort counter for all delete operations.
     // otherwise (default), use a separate counter for each delete
     static boolean useGlobalAbortCounter(boolean b)

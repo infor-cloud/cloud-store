@@ -10,10 +10,20 @@ import org.junit.Test;
 
 
 public class DeleteTests
+  implements RetryListener
 {
   private static CloudStoreClient _client = null;
   private static String _testBucket = null;
+  private int _retryCount = 0;
   
+
+  // RetryListener
+  @Override
+  public synchronized void retryTriggered(RetryEvent e)
+  {
+    ++_retryCount;
+  }
+
 
   @BeforeClass
   public static void setUp()
@@ -32,6 +42,128 @@ public class DeleteTests
     TestUtils.tearDown();
     _testBucket = null;
     _client = null;
+  }
+
+
+  @Test
+  public void testRetry()
+    throws Throwable
+  {
+    // create test file and upload it
+    String rootPrefix = TestUtils.addPrefix("delete-retry");
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    File toUpload = TestUtils.createTextFile(100);
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    S3File f = TestUtils.uploadFile(toUpload, dest);
+    Assert.assertNotNull(f);
+    Assert.assertEquals(
+      originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+    // delete the file
+    DeleteOptions opts = new DeleteOptionsBuilder()
+        .setBucket(Utils.getBucket(dest))
+        .setObjectKey(Utils.getObjectKey(dest))
+        .createDeleteOptions();
+    try
+    {
+      // set retry and abort options
+      ThrowableRetriableTask.addRetryListener(this);
+      clearRetryCount();
+      int retryCount = 10;
+      int abortCount = 3;
+      _client.setRetryCount(retryCount);
+      DeleteOptions.setAbortInjectionCounter(abortCount);
+
+      f = _client.delete(opts).get();
+      Assert.assertNotNull(f);
+      Assert.assertEquals(abortCount, getRetryCount());
+    }
+    finally
+    {
+      // reset retry and abort injection state so we don't affect other tests
+      TestUtils.resetRetryCount();
+      DeleteOptions.setAbortInjectionCounter(0);
+      DeleteOptions.clearAbortInjectionCounters();
+    }
+
+    // verify the deletion
+    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    Assert.assertEquals(originalCount, objs.size());
+    Assert.assertFalse(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
+  }
+  
+
+  @Test
+  public void testRetryDir()
+    throws Throwable
+  {
+// directory copy/upload tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
+int testLoops = TestUtils.RETRY_COUNT;
+int count = 0;
+while(count < testLoops)
+{
+try
+{
+    // create simple directory structure with a few files and upload
+    File top = TestUtils.createTmpDir(true);
+    File a = TestUtils.createTextFile(top, 100);
+    File b = TestUtils.createTextFile(top, 100);
+    File sub = TestUtils.createTmpDir(top);
+    File c = TestUtils.createTextFile(sub, 100);
+    File d = TestUtils.createTextFile(sub, 100);
+    File sub2 = TestUtils.createTmpDir(sub);
+    File e = TestUtils.createTextFile(sub2, 100);
+
+    String rootPrefix = TestUtils.addPrefix("delete-retry-dir/");
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
+    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    Assert.assertEquals(5, uploaded.size());
+    Assert.assertEquals(
+      originalCount + uploaded.size(), TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+    // dryrun the delete and make sure the files still exist
+    DeleteOptions opts = new DeleteOptionsBuilder()
+        .setBucket(Utils.getBucket(dest))
+        .setObjectKey(Utils.getObjectKey(dest))
+	.setRecursive(true)
+        .createDeleteOptions();
+    boolean oldGlobalFlag = false;
+    try
+    {
+      // set retry and abort options
+      oldGlobalFlag = DeleteOptions.useGlobalAbortCounter(true);
+      ThrowableRetriableTask.addRetryListener(this);
+      clearRetryCount();
+      int retryCount = 10;
+      int abortCount = 3;
+      _client.setRetryCount(retryCount);
+      DeleteOptions.setAbortInjectionCounter(abortCount);
+
+      List<S3File> files = _client.deleteDir(opts).get();
+      Assert.assertEquals(5, files.size());
+      Assert.assertEquals(abortCount, getRetryCount());
+    }
+    finally
+    {
+      // reset retry and abort injection state so we don't affect other tests
+      TestUtils.resetRetryCount();
+      DeleteOptions.setAbortInjectionCounter(0);
+      DeleteOptions.useGlobalAbortCounter(oldGlobalFlag);
+      DeleteOptions.clearAbortInjectionCounters();
+    }
+
+    // verify the deletions
+    Assert.assertEquals(0, TestUtils.listObjects(_testBucket, rootPrefix).size());
+    return;
+}
+catch(Throwable t)
+{
+  ++count;
+  if(count >= testLoops)
+    throw t;
+}
+}
   }
 
 
@@ -257,4 +389,14 @@ catch(Throwable t)
 }
   }
 
+
+  private synchronized void clearRetryCount()
+  {
+    _retryCount = 0;
+  }
+
+  private synchronized int getRetryCount()
+  {
+    return _retryCount;
+  }
 }

@@ -320,6 +320,7 @@ catch(Throwable t)
       // reset retry and abort injection state so we don't affect other tests
       TestUtils.resetRetryCount();
       UploadOptions.setAbortInjectionCounter(0);
+      UploadOptions.clearAbortInjectionCounters();
     }
   }
 
@@ -379,6 +380,7 @@ catch(Throwable t)
       // reset retry and abort injection state so we don't affect other tests
       TestUtils.resetRetryCount();
       UploadOptions.setAbortInjectionCounter(0);
+      UploadOptions.clearAbortInjectionCounters();
     }
   }
 

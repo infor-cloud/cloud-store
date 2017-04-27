@@ -94,6 +94,16 @@ public class UploadOptions {
       }
     }
 
+
+    static void clearAbortInjectionCounters()
+    {
+      synchronized(_abortSync)
+      {
+        _injectionCounters.clear();
+      }
+    }
+    
+
     public boolean ignoreAbortInjection()
     {
       return this.ignoreAbortInjection;

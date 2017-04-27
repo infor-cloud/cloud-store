@@ -97,7 +97,7 @@ public class RenameDirectoryCommand extends Command
     // exist yet when we try to detect and delete it to clean up.  Inserting
     // a small delay here seems to correct this, but is obviously far less
     // than ideal and may not always work.
-    Thread.currentThread().sleep(1000);
+//    Thread.currentThread().sleep(1000);
 
     // move back any files that completed the rename
     for(Map.Entry<String,String> e : _cleanupTable.entrySet())

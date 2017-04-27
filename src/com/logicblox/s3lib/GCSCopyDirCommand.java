@@ -82,20 +82,47 @@ public class GCSCopyDirCommand extends Command
       }
       else
       {
-        futures.add(_s3Executor.submit(new Callable<S3File>()
+        futures.add(wrapCopyWithRetry(options, src, destKey));
+      }
+    }
+  }
+
+  private ListenableFuture<S3File> wrapCopyWithRetry(
+    final CopyOptions options, final S3File src, final String destKey)
+  {
+    return executeWithRetry(_executor, new Callable<ListenableFuture<S3File>>()
+    {
+      public ListenableFuture<S3File> call()
+      {
+        return _s3Executor.submit(new Callable<S3File>()
         {
           public S3File call() throws IOException
           {
-            Storage.Objects.Copy cmd = _storage.objects().copy(
-	      options.getSourceBucketName(), src.getKey(),
-              options.getDestinationBucketName(), destKey,
-	      null);
-            StorageObject resp = cmd.execute();
-            return createS3File(resp, false);
+            return performCopy(options, src, destKey);
           }
-        }));
+	});
       }
+    });
+  }
+
+  
+  private S3File performCopy(CopyOptions options, S3File src, String destKey)
+    throws IOException
+  {
+    // support for testing failures
+    String srcUri = getUri(options.getSourceBucketName(), src.getKey());
+    if(!options.ignoreAbortInjection()
+         && (CopyOptions.decrementAbortInjectionCounter(srcUri) > 0))
+    {
+      throw new AbortInjection("forcing copy abort");
     }
+
+    Storage.Objects.Copy cmd = _storage.objects().copy(
+      options.getSourceBucketName(), src.getKey(),
+      options.getDestinationBucketName(), destKey,
+      null);
+    StorageObject resp = cmd.execute();
+    return createS3File(resp, false);
   }
   
 

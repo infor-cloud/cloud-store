@@ -45,6 +45,7 @@ public class RenameTests
   }
 
 
+/*
   @Test
   public void testDryRunFile()
     throws Throwable
@@ -135,6 +136,7 @@ catch(Throwable t)
 }
 }
   }
+*/
 
 
   @Test
@@ -146,8 +148,8 @@ catch(Throwable t)
     // the test if it consistently reports an error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-while(count < retryCount)
-{
+//while(count < retryCount)
+//{
     boolean oldGlobalFlag = false;
     try
     {
@@ -188,30 +190,37 @@ while(count < retryCount)
       catch(ExecutionException ex)
       {
         // expected for one of the rename jobs
+System.out.println("!!!!!! EX: " + ex.getMessage());
         Assert.assertTrue(ex.getMessage().contains("forcing copy abort"));
       }
       
       // verify that nothing moved
       List<S3File> destObjs = TestUtils.listObjects(_testBucket, destPrefix);
       String topDestN = destPrefix + "subdir2/";
+System.out.println("----------- CHECKING DEST " + a.getName());
       Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + a.getName()));
+System.out.println("----------- CHECKING DEST " + b.getName());
       Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + b.getName()));
+System.out.println("----------- CHECKING DEST " + c.getName());
       Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + c.getName()));
 
       List<S3File> srcObjs = TestUtils.listObjects(_testBucket, rootPrefix);
       String topN = rootPrefix + top.getName() + "/";
+System.out.println("----------- CHECKING SRC " + a.getName());
       Assert.assertTrue(TestUtils.findObject(srcObjs, topN + a.getName()));
+System.out.println("----------- CHECKING SRC " + b.getName());
       Assert.assertTrue(TestUtils.findObject(srcObjs, topN + b.getName()));
+System.out.println("----------- CHECKING SRC " + c.getName());
       Assert.assertTrue(TestUtils.findObject(srcObjs, topN + c.getName()));
 
       return;
     }
-    catch(Throwable t)
-    {
-      ++count;
-      if(count >= retryCount)
-        throw t;
-    }
+//    catch(Throwable t)
+//    {
+//      ++count;
+//      if(count >= retryCount)
+//        throw t;
+//    }
     finally
     {
       // reset abort injection so other tests aren't affected
@@ -219,10 +228,11 @@ while(count < retryCount)
       CopyOptions.setAbortInjectionCounter(0);
       CopyOptions.clearAbortInjectionCounters();
     }
-}
+//}
   }
 
 
+/*
   @Test
   public void testRenameDirAbortOneDuringDelete()
     throws Throwable
@@ -1365,6 +1375,7 @@ catch(Throwable t)
 }
 }
   }
+*/
 
 
   private synchronized void clearRetryCount()

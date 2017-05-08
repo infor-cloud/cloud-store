@@ -56,6 +56,7 @@ public class CopyCommand extends Command
     }
     else
     {
+System.out.println("************************* S3 COPY");
       ListenableFuture<Copy> copy = startCopy(sourceBucketName, sourceKey,
         destinationBucketName, destinationKey);
       copy = Futures.transform(copy, startPartsAsyncFunction());

@@ -117,9 +117,12 @@ public class RenameDirectoryCommand extends Command
     String destBucket = _options.getDestinationBucket();
 
     // if dest exists (copy succeeded) and src doesn't (delete succeeded too)
-    if((null != _client.exists(destBucket, destKey).get())
-        && (null == _client.exists(srcBucket, srcKey).get()))
+//    if((null != _client.exists(destBucket, destKey).get())
+//        && (null == _client.exists(srcBucket, srcKey).get()))
+    if((null != _client.existsNew(destBucket, destKey).get())
+        && (null == _client.existsNew(srcBucket, srcKey).get()))
     {
+System.out.println("++++++ CLEANUP REPLACING " + srcKey);
       CopyOptions copyOpts = new CopyOptionsBuilder()
           .setSourceBucketName(destBucket)
           .setSourceKey(destKey)
@@ -135,8 +138,15 @@ public class RenameDirectoryCommand extends Command
   private void deleteFile(String bucket, String key)
     throws InterruptedException, ExecutionException, IOException
   {
-    if(null != _client.exists(bucket, key).get())
+//    if(null != _client.exists(bucket, key).get())
+    System.out.println("+++++ CHECKING FOR DELETE " + bucket + ":" + key);
+    boolean oldExists = (null != _client.exists(bucket, key).get());
+    boolean newExists = (null != _client.existsNew(bucket, key).get());
+    System.out.println("    oldExists=" + oldExists);
+    System.out.println("    newExists=" + newExists);
+    if(newExists)
     {
+System.out.println("           --> CLEANUP DELETING " + key);
       DeleteOptions deleteOpts = new DeleteOptionsBuilder()
         .setBucket(bucket)
         .setObjectKey(key)

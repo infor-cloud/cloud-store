@@ -75,7 +75,7 @@ public class GCSCopyCommand extends Command
         {
           throw new AbortInjection("forcing copy abort");
         }
-	
+
         Storage.Objects.Copy cmd = _storage.objects().copy(
           options.getSourceBucketName(), options.getSourceKey(),
           options.getDestinationBucketName(), options.getDestinationKey(),

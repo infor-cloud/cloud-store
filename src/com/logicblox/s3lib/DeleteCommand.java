@@ -37,6 +37,7 @@ public class DeleteCommand extends Command
 
   public ListenableFuture<S3File> run()
   {
+System.out.println("************************* S3 DELETE");
     final String bucket = _options.getBucket();
     final String key = _options.getObjectKey();
 

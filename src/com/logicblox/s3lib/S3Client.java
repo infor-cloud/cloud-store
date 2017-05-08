@@ -429,6 +429,12 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
+  public ListenableFuture<ObjectMetadata> existsNew(String bucket, String object)
+  {
+    return exists(bucket, object);
+  }
+  
+  @Override
   public ListenableFuture<S3File> download(DownloadOptions options)
   throws IOException
   {

@@ -263,6 +263,8 @@ public interface CloudStoreClient {
      */
     ListenableFuture<ObjectMetadata> exists(URI uri);
 
+    ListenableFuture<ObjectMetadata> existsNew(String bucket, String object);
+    
     /**
      * Downloads a file according to {@code options}. For more details
      * check {@link com.logicblox.s3lib.DownloadOptions}.

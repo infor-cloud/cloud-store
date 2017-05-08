@@ -93,6 +93,8 @@ public class RenameCommand extends Command
 	}
       );
 
+return result;
+/*
       // try to clean up if a failure occurs.  just have to worry
       // about failure during a delete phase and remove the copied
       // file
@@ -117,7 +119,6 @@ public class RenameCommand extends Command
 	      return Futures.immediateFailedFuture(new Exception(
 	        "Error cleaning up after rename failure:  " + ex.getMessage(), ex));
 	    }
-	    
             if (t instanceof UsageException)
               return Futures.immediateFailedFuture(t);
 
@@ -125,6 +126,7 @@ public class RenameCommand extends Command
               "renaming " + srcUri + ":  " + t.getMessage(), t));
           }
         });
+*/
     }
   }
 

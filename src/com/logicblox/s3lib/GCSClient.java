@@ -231,6 +231,12 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
+    public ListenableFuture<ObjectMetadata> existsNew(String bucket, String object)
+    {
+        return s3Client.existsNew(bucket, object);
+    }
+
+    @Override
     public ListenableFuture<ObjectMetadata> exists(String bucket, String
         object) {
         return s3Client.exists(bucket, object);
@@ -402,6 +408,24 @@ public class GCSClient implements CloudStoreClient {
           GCSListCommand cmd = new GCSListCommand(gcsClient, _s3Executor, _executor);
           configure(cmd);
           return cmd.run(lsOptions);
+        }
+	
+	@Override
+        public ListenableFuture<ObjectMetadata> existsNew(String bucket, String object)
+	{
+          GCSGetCommand cmd = new GCSGetCommand(
+	    gcsClient, _s3Executor, _executor, bucket, object);
+          configure(cmd);
+          return cmd.run();
+	}
+
+        @Override
+        public ListenableFuture<S3File> delete(DeleteOptions opts)
+        {
+          GCSDeleteCommand cmd = new GCSDeleteCommand(
+	    gcsClient, _s3Executor, _executor, opts);
+          configure(cmd);
+          return cmd.run();
         }
 	
 	@Override

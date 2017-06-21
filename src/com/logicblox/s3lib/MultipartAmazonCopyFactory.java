@@ -74,16 +74,16 @@ class MultipartAmazonCopyFactory
         metadata.addUserMetadata("s3tool-file-length",
             Long.toString(metadata.getContentLength()));
       }
-
-      InitiateMultipartUploadRequest req = new InitiateMultipartUploadRequest
-          (destinationBucketName, destinationKey, metadata);
-      req.setCannedACL(getCannedAcl(cannedAcl));
       if (storageClass != null)
       {
         // It seems setting the STORAGE_CLASS metadata header is sufficient
         metadata.setHeader(Headers.STORAGE_CLASS, storageClass);
-        // req.setStorageClass(StorageClass.fromValue(storageClass));
       }
+
+      InitiateMultipartUploadRequest req = new InitiateMultipartUploadRequest
+          (destinationBucketName, destinationKey, metadata);
+      req.setCannedACL(getCannedAcl(cannedAcl));
+      // req.setStorageClass(StorageClass.fromValue(storageClass));
 
       InitiateMultipartUploadResult res = client.initiateMultipartUpload(req);
       return new MultipartAmazonCopy(client, sourceBucketName, sourceKey,

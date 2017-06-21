@@ -1,11 +1,11 @@
 package com.logicblox.s3lib;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.Headers;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.StorageClass;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
@@ -80,7 +80,9 @@ class MultipartAmazonCopyFactory
       req.setCannedACL(getCannedAcl(cannedAcl));
       if (storageClass != null)
       {
-        req.setStorageClass(StorageClass.fromValue(storageClass));
+        // It seems setting the STORAGE_CLASS metadata header is sufficient
+        metadata.setHeader(Headers.STORAGE_CLASS, storageClass);
+        // req.setStorageClass(StorageClass.fromValue(storageClass));
       }
 
       InitiateMultipartUploadResult res = client.initiateMultipartUpload(req);

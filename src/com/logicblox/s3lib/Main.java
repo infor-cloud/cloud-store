@@ -27,6 +27,7 @@ import com.amazonaws.services.s3.internal.Constants;
 
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.StorageClass;
 import com.beust.jcommander.IValueValidator;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -144,6 +145,31 @@ class Main
       return Utils.createCloudStoreClient(
         getScheme(), endpoint, maxConcurrentConnections, 
         encKeyDirectory, credentialProvidersS3, _stubborn, _retryCount);
+    }
+
+    protected void validateStorageClass(String storageClass) throws URISyntaxException
+    {
+      if (storageClass != null)
+      {
+        // TODO(geo): GCS does support something similar. Add support.
+        if (detectStorageService() == Utils.StorageService.GCS)
+        {
+          throw new UsageException("Storage classes are not supported " +
+                                   "on GCS currently.");
+        }
+        if (detectStorageService() == Utils.StorageService.S3)
+        {
+          try
+          {
+            StorageClass.fromValue(storageClass);
+          }
+          catch (IllegalArgumentException exc)
+          {
+            throw new UsageException(
+              "Unknown storage class '" + storageClass + "'");
+          }
+        }
+      }
     }
   }
 
@@ -363,6 +389,11 @@ class Main
         + S3Client.cannedACLsDescConst)
     String cannedAcl;
 
+    @Parameter(names = "--storage-class", description = "The storage class to" +
+        " use. Source object's storage class will be used by default. " +
+        S3Client.storageClassesDescConst)
+    String storageClass;
+
     @Parameter(names = {"-r", "--recursive"}, description = "Copy recursively")
     boolean recursive = false;
 
@@ -378,6 +409,9 @@ class Main
         throw new UsageException("Unknown canned ACL '" + cannedAcl + "'");
       }
 
+      // Catch erroneous storage class early
+      validateStorageClass(storageClass);
+
       CloudStoreClient client = createCloudStoreClient();
 
       CopyOptions options = new CopyOptionsBuilder()
@@ -386,6 +420,7 @@ class Main
           .setDestinationBucketName(getDestinationBucket())
           .setDestinationKey(getDestinationObjectKey())
           .setCannedAcl(cannedAcl)
+          .setStorageClass(storageClass)
           .setRecursive(recursive)
           .createCopyOptions();
 
@@ -663,18 +698,14 @@ class Main
       }
     }
   }
-  
-  public String findParent(String current) {
-    if (current.lastIndexOf('/') != - 1) {
-      if (current.endsWith("/")) {
-        current = current.substring(0, current.length() - 1);
-        return current.substring(0, current.lastIndexOf('/'));
-      } else {
-        return current.substring(0, current.lastIndexOf('/'));
-      }
-    } else {
-      return "";
+
+  public String findParent(String current)
+  {
+    if (current.endsWith("/")) {
+      current = current.substring(0, current.length() - 1);
     }
+    int endIndex = current.lastIndexOf('/');
+    return current.substring(0, endIndex == -1 ? 0 : endIndex);
   }
   
   public void printTree( Map<String, DirectoryNode> map, boolean humanReadble,

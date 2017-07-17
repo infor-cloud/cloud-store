@@ -14,7 +14,10 @@ public class CopyOptionsBuilder {
     private String sourceKey;
     private String destinationBucketName;
     private String destinationKey;
+    // TODO(geo): Revise use of Optionals. E.g. it's not a good idea to use them
+    // as fields.
     private Optional<String> cannedAcl = Optional.absent();
+    private String storageClass;
     private boolean recursive = false;
     private Optional<OverallProgressListenerFactory>
         overallProgressListenerFactory = Optional.absent();
@@ -45,6 +48,11 @@ public class CopyOptionsBuilder {
         return this;
     }
 
+    public CopyOptionsBuilder setStorageClass(String storageClass) {
+        this.storageClass = storageClass;
+        return this;
+    }
+
     public CopyOptionsBuilder setRecursive(boolean recursive) {
         this.recursive = recursive;
         return this;
@@ -61,7 +69,7 @@ public class CopyOptionsBuilder {
 
     public CopyOptions createCopyOptions() {
         return new CopyOptions(sourceBucketName, sourceKey,
-            destinationBucketName, destinationKey, cannedAcl, recursive,
-            overallProgressListenerFactory);
+            destinationBucketName, destinationKey, cannedAcl, storageClass,
+            recursive, overallProgressListenerFactory);
     }
 }

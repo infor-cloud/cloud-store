@@ -82,6 +82,7 @@ public class CopyToDirCommand extends Command
             .setDestinationBucketName(options.getDestinationBucketName())
             .setDestinationKey(destKey)
             .setCannedAcl(options.getCannedAcl().orNull())
+            .setStorageClass(options.getStorageClass().orNull())
             .createCopyOptions();
 
         batch.add(_client.copy(options0));

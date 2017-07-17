@@ -1,6 +1,7 @@
 package com.logicblox.s3lib;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.Headers;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
@@ -31,10 +32,11 @@ class MultipartAmazonCopyFactory
                                           String sourceKey,
                                           String destinationBucketName,
                                           String destinationKey,
-                                          String cannedAcl)
+                                          String cannedAcl,
+                                          String storageClass)
   {
     return executor.submit(new StartCallable(sourceBucketName, sourceKey,
-        destinationBucketName, destinationKey, cannedAcl));
+        destinationBucketName, destinationKey, cannedAcl, storageClass));
   }
 
   private class StartCallable implements Callable<Copy>
@@ -44,15 +46,18 @@ class MultipartAmazonCopyFactory
     private String destinationBucketName;
     private String destinationKey;
     private String cannedAcl;
+    private String storageClass;
 
     public StartCallable(String sourceBucketName, String sourceKey, String
-        destinationBucketName, String destinationKey, String cannedAcl)
+        destinationBucketName, String destinationKey, String cannedAcl,
+        String storageClass)
     {
       this.sourceBucketName = sourceBucketName;
       this.sourceKey = sourceKey;
       this.destinationBucketName = destinationBucketName;
       this.destinationKey = destinationKey;
       this.cannedAcl = cannedAcl;
+      this.storageClass = storageClass;
     }
 
     public Copy call() throws Exception
@@ -69,10 +74,16 @@ class MultipartAmazonCopyFactory
         metadata.addUserMetadata("s3tool-file-length",
             Long.toString(metadata.getContentLength()));
       }
+      if (storageClass != null)
+      {
+        // It seems setting the STORAGE_CLASS metadata header is sufficient
+        metadata.setHeader(Headers.STORAGE_CLASS, storageClass);
+      }
 
       InitiateMultipartUploadRequest req = new InitiateMultipartUploadRequest
           (destinationBucketName, destinationKey, metadata);
       req.setCannedACL(getCannedAcl(cannedAcl));
+      // req.setStorageClass(StorageClass.fromValue(storageClass));
 
       InitiateMultipartUploadResult res = client.initiateMultipartUpload(req);
       return new MultipartAmazonCopy(client, sourceBucketName, sourceKey,

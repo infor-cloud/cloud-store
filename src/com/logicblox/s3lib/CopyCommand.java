@@ -25,12 +25,14 @@ public class CopyCommand extends Command
   private ListeningExecutorService _copyExecutor;
   private ListeningScheduledExecutorService _executor;
   private String acl;
+  private String storageClass;
   private Optional<OverallProgressListenerFactory> progressListenerFactory;
 
   public CopyCommand(
       ListeningExecutorService copyExecutor,
       ListeningScheduledExecutorService internalExecutor,
       String acl,
+      String storageClass,
       OverallProgressListenerFactory progressListenerFactory)
   throws IOException
   {
@@ -38,6 +40,7 @@ public class CopyCommand extends Command
     _executor = internalExecutor;
 
     this.acl = acl;
+    this.storageClass = storageClass;
     this.progressListenerFactory = Optional.fromNullable
         (progressListenerFactory);
   }
@@ -101,7 +104,7 @@ public class CopyCommand extends Command
     MultipartAmazonCopyFactory factory = new MultipartAmazonCopyFactory
         (getAmazonS3Client(), _copyExecutor);
     return factory.startCopy(sourceBucketName, sourceKey,
-        destinationBucketName, destinationKey, acl);
+        destinationBucketName, destinationKey, acl, storageClass);
   }
 
   /**

@@ -34,14 +34,14 @@ public class GCSListCommand extends Command
   {
     ListenableFuture<List<S3File>> future =
         executeWithRetry(_executor, new Callable<ListenableFuture<List<S3File>>>()
-	{
+        {
           public ListenableFuture<List<S3File>> call()
-	  {
+          {
             return runActual(lsOptions);
           }
           
           public String toString()
-	  {
+          {
             return "listing objects and directories for "
                 + getUri(lsOptions.getBucket(), lsOptions.getObjectKey());
           }
@@ -59,25 +59,25 @@ public class GCSListCommand extends Command
         throws IOException
       {
         List<S3File> s3files = new ArrayList<S3File>();
-	List<StorageObject> allObjs = new ArrayList<StorageObject>();
+        List<StorageObject> allObjs = new ArrayList<StorageObject>();
         Storage.Objects.List cmd = _storage.objects().list(lsOptions.getBucket());
-	cmd.setPrefix(lsOptions.getObjectKey());
+        cmd.setPrefix(lsOptions.getObjectKey());
         if(!lsOptions.isRecursive())
           cmd.setDelimiter("/");
-	boolean ver = lsOptions.versionsIncluded();
-	cmd.setVersions(ver);
+        boolean ver = lsOptions.versionsIncluded();
+        cmd.setVersions(ver);
         Objects objs;
         do
-	{
+        {
           objs = cmd.execute();
           List<StorageObject> items = objs.getItems();
           if(items != null)
-	    allObjs.addAll(items);
+            allObjs.addAll(items);
           cmd.setPageToken(objs.getNextPageToken());
         } while (objs.getNextPageToken() != null);
 
-	for(StorageObject s : allObjs)
-	  s3files.add(createS3File(s, ver));
+        for(StorageObject s : allObjs)
+          s3files.add(createS3File(s, ver));
         return s3files;
       }
     });

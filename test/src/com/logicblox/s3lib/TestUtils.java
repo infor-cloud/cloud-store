@@ -76,7 +76,7 @@ public class TestUtils
       else
       {
         System.out.println("Error:  '" + args[i] + "' unexpected");
-	usage();
+        usage();
         System.exit(1);
       }
     }
@@ -91,8 +91,8 @@ public class TestUtils
       catch(Throwable t)
       {
         System.out.println("Error: could not parse --dest-prefix URL ["
-	   + t.getMessage() + "]");
-	System.exit(1);
+           + t.getMessage() + "]");
+        System.exit(1);
       }
     }
 

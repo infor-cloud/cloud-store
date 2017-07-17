@@ -43,7 +43,7 @@ class GCSUpload implements Upload {
         this.meta = meta;
         this.initiated = initiated;
         this.executor = executor;
-	this.uploadId = bucketName + "/" + key;
+        this.uploadId = bucketName + "/" + key;
     }
 
     public ListenableFuture<Void> uploadPart(int partNumber,
@@ -55,7 +55,7 @@ class GCSUpload implements Upload {
         if(UploadOptions.decrementAbortInjectionCounter(uploadId) > 0)
             throw new RuntimeException("forcing upload abort");
 
-	return executor.submit(new UploadCallable(partNumber, partSize, stream,
+        return executor.submit(new UploadCallable(partNumber, partSize, stream,
             progressListener));
     }
 

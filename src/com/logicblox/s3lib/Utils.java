@@ -515,9 +515,9 @@ public class Utils
        if(null == current)
        {
          if(s.isEmpty())
-	   current = new File("/");
-	 else
-	   current = new File(s);
+           current = new File("/");
+         else
+           current = new File(s);
        }
        else
        {
@@ -526,7 +526,7 @@ public class Utils
        if(!current.exists())
        {
          current.mkdir();
-	 created.add(current);
+         created.add(current);
        }
      }
      return created;

@@ -52,13 +52,13 @@ public class DownloadDirectoryCommand extends Command
       if(!file.exists())
       {
         try
-	{
-	  dirsToCleanup.addAll(Utils.mkdirs(file));
+        {
+          dirsToCleanup.addAll(Utils.mkdirs(file));
         }
-	catch(IOException ex)
-	{
-	  throw new UsageException("Could not create directory '" + file + "': " + ex.getMessage());
-	}
+        catch(IOException ex)
+        {
+          throw new UsageException("Could not create directory '" + file + "': " + ex.getMessage());
+        }
       }
     }
 
@@ -74,13 +74,13 @@ public class DownloadDirectoryCommand extends Command
       if(!outputPath.exists())
       {
         try
-	{
-	  dirsToCleanup.addAll(Utils.mkdirs(outputPath));
-	}
-	catch(IOException ex)
-	{
-	  throw new UsageException("Could not create directory '" + file + "': " + ex.getMessage());
-	}
+        {
+          dirsToCleanup.addAll(Utils.mkdirs(outputPath));
+        }
+        catch(IOException ex)
+        {
+          throw new UsageException("Could not create directory '" + file + "': " + ex.getMessage());
+        }
       }
 
       if (!obj.getKey().endsWith("/"))
@@ -96,7 +96,7 @@ public class DownloadDirectoryCommand extends Command
             throw new UsageException(
               "File '" + outputFile + "' already exists. Please delete or use --overwrite");
         }
-	filesToCleanup.add(outputFile);
+        filesToCleanup.add(outputFile);
 
         DownloadOptions options = new DownloadOptionsBuilder()
             .setFile(outputFile)
@@ -121,24 +121,24 @@ public class DownloadDirectoryCommand extends Command
       new FutureFallback<List<S3File>>()
       {
         public ListenableFuture<List<S3File>> create(Throwable t)
-	{
-	   // cancel any futures that may still be trying to run
-	   for(ListenableFuture<S3File> f : files)
-	     f.cancel(true);
+        {
+           // cancel any futures that may still be trying to run
+           for(ListenableFuture<S3File> f : files)
+             f.cancel(true);
 
-	   // delete any files we created
+           // delete any files we created
            for(File f : filesToCleanup)
-	   {
-	     if(f.exists())
-	       f.delete();
+           {
+             if(f.exists())
+               f.delete();
            }
 
-	   // delete any directories we created
-	   for(int i = dirsToCleanup.size() - 1; i >= 0; --i)
-	   {
-	     dirsToCleanup.get(i).delete();
-	   }
-	   
+           // delete any directories we created
+           for(int i = dirsToCleanup.size() - 1; i >= 0; --i)
+           {
+             dirsToCleanup.get(i).delete();
+           }
+           
            return Futures.immediateFailedFuture(t);
         }
       });

@@ -49,8 +49,6 @@ def open_makefile():
             dep = k[len('with_'):]
             emit(dep + ' = ' + v)
 
-    emit('protoc = $(logicblox)/bin/protoc')
-    emit('proto2datalog = $(logicblox)/bin/proto2datalog')
     emit('rt_version = 3.9')
     emit('bloxcompiler_flags = -runtimeVersion $(rt_version) -progress -explain')
 
@@ -186,7 +184,7 @@ def jar(name,
 
     if manifest is not None:
         manifest_file = '%s/Manifest.txt' % classes_dir
-	
+
         # clear out previous file
         emit("\tcat /dev/null > %s" % manifest_file)
 

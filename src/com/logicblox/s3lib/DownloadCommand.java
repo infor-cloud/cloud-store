@@ -166,6 +166,8 @@ public class DownloadCommand extends Command
         Map<String, String> meta = download.getMeta();
 
         String errPrefix = getUri(download.getBucket(), download.getKey()) + ": ";
+        long len = download.getLength();
+        long cs = chunkSize;
         if (meta.containsKey("s3tool-version"))
         {
           String objectVersion = meta.get("s3tool-version");
@@ -176,7 +178,6 @@ public class DownloadCommand extends Command
                 errPrefix + "file uploaded with unsupported version: " +
                     objectVersion + ", should be " + Version.CURRENT);
           }
-
           if (meta.containsKey("s3tool-key-name"))
           {
             String keyName = meta.get("s3tool-key-name");
@@ -241,22 +242,14 @@ public class DownloadCommand extends Command
             encKey = new SecretKeySpec(encKeyBytes, "AES");
           }
 
-	  long cs = Long.valueOf(meta.get("s3tool-chunk-size"));
-	  long len = Long.valueOf(meta.get("s3tool-file-length"));
-	  if(cs == 0)
-	    cs = Utils.getDefaultChunkSize(len);
-          setChunkSize(cs);
-          setFileLength(len);
-        }
-        else
-        {
-          setFileLength(download.getLength());
-          if (chunkSize == 0)
-          {
-            setChunkSize(Utils.getDefaultChunkSize(download.getLength()));
-          }
+          cs = Long.valueOf(meta.get("s3tool-chunk-size"));
+          len = Long.valueOf(meta.get("s3tool-file-length"));
         }
 
+        setFileLength(len);
+        if (cs == 0)
+          cs = Utils.getDefaultChunkSize(len);
+        setChunkSize(cs);
         return Futures.immediateFuture(download);
       }
     };
@@ -407,7 +400,8 @@ public class DownloadCommand extends Command
     int bufSize = 8192;
     int offset = 0;
     byte[] buf = new byte[bufSize];
-    while (offset < postCryptSize)
+    boolean encryptedEmpty = (encKey != null) && (postCryptSize == 0);
+    while (offset < postCryptSize || encryptedEmpty)
     {
       int result;
 
@@ -435,6 +429,10 @@ public class DownloadCommand extends Command
         }
         catch (IOException e) {}
 
+        if (encryptedEmpty)
+        {
+          break;
+        }
         throw new IOException("unexpected EOF");
       }
 

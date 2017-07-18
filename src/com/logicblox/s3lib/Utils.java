@@ -441,15 +441,6 @@ public class Utils
       false, getDefaultRetryCount());
   }
 
-  public static CloudStoreClient createCloudStoreClient()
-      throws URISyntaxException, GeneralSecurityException, IOException
-  {
-    return createCloudStoreClient(
-      null, null, getDefaultMaxConcurrentConnections(),
-      getDefaultKeyDirectory(), new ArrayList<String>(),
-      false, getDefaultRetryCount());
-  }
-
   public static CloudStoreClient createCloudStoreClient(
     String scheme, String endpoint, int maxConcurrentConnections,
     String encKeyDirectory, List<String> credentialProvidersS3,

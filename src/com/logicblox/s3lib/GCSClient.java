@@ -364,7 +364,7 @@ public class GCSClient implements CloudStoreClient {
         @Override
         public ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions)
         {
-          GCSListCommand cmd = new GCSListCommand(gcsClient, _s3Executor, _executor);
+          GCSListCommand cmd = new GCSListCommand(_s3Executor, _executor);
           configure(cmd);
           return cmd.run(lsOptions);
         }
@@ -373,19 +373,19 @@ public class GCSClient implements CloudStoreClient {
     @Override
     public boolean hasBucket(String bucketName)
     {
-      throw new RuntimeException("FIXME - not yet implemented");
+      throw new UnsupportedOperationException("FIXME - not yet implemented");
     }
 
     @Override
     public void createBucket(String bucketName)
     {
-      throw new RuntimeException("FIXME - not yet implemented");
+      throw new UnsupportedOperationException("FIXME - not yet implemented");
     }
 
     @Override
     public void destroyBucket(String bucketName)
     {
-      throw new RuntimeException("FIXME - not yet implemented");
+      throw new UnsupportedOperationException("FIXME - not yet implemented");
     }
 
     // needed for testing

@@ -273,17 +273,12 @@ class Main
     {
       return Utils.getObjectKey(getDestinationURI());
     }
-
-    protected Utils.StorageService detectStorageService() throws URISyntaxException
-    {
-      return Utils.detectStorageService(endpoint, getScheme());
-    }
   }
 
   @Parameters(commandDescription = "List storage service buckets")
   class ListBucketsCommandOptions extends S3CommandOptions
   {
-    @Parameter(description = "service", required = false)
+    @Parameter(description = "service", required = true)
     List<String> services;
 
     protected String getScheme()

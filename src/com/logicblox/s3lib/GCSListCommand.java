@@ -17,14 +17,11 @@ public class GCSListCommand extends Command
 
   private ListeningExecutorService _s3Executor;
   private ListeningScheduledExecutorService _executor;
-  private Storage _storage;
 
   public GCSListCommand(
-      Storage storage,
       ListeningExecutorService s3Executor,
       ListeningScheduledExecutorService internalExecutor)
   {
-    _storage = storage;
     _s3Executor = s3Executor;
     _executor = internalExecutor;
   }
@@ -60,7 +57,7 @@ public class GCSListCommand extends Command
       {
         List<S3File> s3files = new ArrayList<S3File>();
         List<StorageObject> allObjs = new ArrayList<StorageObject>();
-        Storage.Objects.List cmd = _storage.objects().list(lsOptions.getBucket());
+        Storage.Objects.List cmd = getGCSClient().objects().list(lsOptions.getBucket());
         cmd.setPrefix(lsOptions.getObjectKey());
         if(!lsOptions.isRecursive())
           cmd.setDelimiter("/");

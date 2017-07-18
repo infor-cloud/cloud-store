@@ -112,9 +112,7 @@ public class DownloadDirectoryCommand extends Command
 
     // don't see a way to have all peer futures in the list fail and clean up if any
     // one fails, even if i explicitly cancel them.  this seems to be the only way
-    // to clean up all the newly created files reliably.  note that this does not
-    // attempt to delete any directories that are created.  would have to explicitly
-    // figure out what to create instead of just using File.mkdirs().
+    // to clean up all the newly created files and directories reliably.
     ListenableFuture<List<S3File>> futureList = Futures.allAsList(files);
     return Futures.withFallback(
       futureList,

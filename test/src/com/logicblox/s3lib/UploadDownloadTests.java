@@ -492,6 +492,7 @@ catch(Throwable t)
     Assert.assertEquals(0, dlTemp.length());
   }
 
+
   @Test
   public void testEmptyEncryptedFile()
     throws Throwable
@@ -518,7 +519,7 @@ catch(Throwable t)
     // make sure file was uploaded
     objs = TestUtils.listTestBucketObjects();
     Assert.assertEquals(originalCount + 1, objs.size());
-    String key = TestUtils.addPrefix(toUpload.getName());
+    String key = Utils.getObjectKey(dest);
     Assert.assertTrue(TestUtils.findObject(objs, key));
 
     // download, overwriting a larger file

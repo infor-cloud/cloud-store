@@ -33,7 +33,6 @@ public class CopyCommand extends Command
       ListeningExecutorService copyExecutor,
       ListeningScheduledExecutorService internalExecutor,
       CopyOptions options)
-      String storageClass,
   throws IOException
   {
     _copyExecutor = copyExecutor;
@@ -41,7 +40,7 @@ public class CopyCommand extends Command
     _options = options;
 
     this.acl = _options.getCannedAcl().or("bucket-owner-full-control");
-    this.storageClass = storageClass;
+    this.storageClass = _options.getStorageClass().orNull();
     this.progressListenerFactory = Optional.fromNullable(
       options.getOverallProgressListenerFactory().orNull());
   }

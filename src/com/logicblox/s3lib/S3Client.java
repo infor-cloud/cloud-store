@@ -520,10 +520,6 @@ public class S3Client implements CloudStoreClient {
   throws IOException
   {
     CopyCommand cmd = new CopyCommand(_s3Executor, _executor, options);
-    String storageClass = options.getStorageClass().orNull();
-    // TODO(geo): Pass CopyOptions to CopyCommand directly
-    CopyCommand cmd = new CopyCommand(_s3Executor, _executor, cannedAcl,
-        storageClass, progressListenerFactory);
     configure(cmd);
     return cmd.run(options.getSourceBucketName(), options.getSourceKey(),
         options.getDestinationBucketName(), options.getDestinationKey());

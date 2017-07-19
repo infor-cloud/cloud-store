@@ -56,11 +56,6 @@ class MultipartAmazonUpload implements Upload
                                            Optional<OverallProgressListener>
                                                progressListener)
   {
-    if(!this.options.ignoreAbortInjection()
-        && (UploadOptions.decrementAbortInjectionCounter(uploadId) > 0))
-    {
-      throw new AbortInjection("forcing upload abort");
-    }
     return executor.submit(new UploadCallable(partNumber, partSize, stream,
         progressListener));
   }
@@ -163,7 +158,7 @@ class MultipartAmazonUpload implements Upload
     private Void upload(HashingInputStream stream) throws BadHashException {
 
       // added to support retry testing
-      if(!this.options.ignoreAbortInjection()
+      if(!options.ignoreAbortInjection()
           && (UploadOptions.decrementAbortInjectionCounter(uploadId) > 0))
       {
         throw new AbortInjection("forcing upload abort");

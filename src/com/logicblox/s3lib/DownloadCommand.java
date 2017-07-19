@@ -388,16 +388,8 @@ public class DownloadCommand extends Command
     int bufSize = 8192;
     int offset = 0;
     byte[] buf = new byte[bufSize];
-    boolean encryptedEmpty = (encKey != null) && (postCryptSize == 0);
-    while (offset < postCryptSize || encryptedEmpty)
-    {
-      int result;
 
-      try
-      {
-        result = in.read(buf, 0, Math.min(bufSize, postCryptSize - offset));
-      }
-      catch (IOException e)
+    Runnable cleanup = () ->
       {
         try
         {
@@ -405,54 +397,73 @@ public class DownloadCommand extends Command
           stream.close();
         }
         catch (IOException ignored) {}
-        throw e;
-      }
+      };
 
-      if (result == -1)
-      {
-        try
-        {
-          out.close();
-          stream.close();
-        }
-        catch (IOException e) {}
-
-        if (encryptedEmpty)
-        {
-          break;
-        }
-
-        throw new IOException("unexpected EOF");
-      }
-
-      try
-      {
-        out.write(buf, 0, result);
-      }
-      catch (IOException e)
-      {
-        try
-        {
-          out.close();
-          stream.close();
-        }
-        catch (IOException ignored) {}
-        throw e;
-      }
-
-      offset += result;
-    }
-
-    try
+    // Handle empty encrypted file, offset == postCryptSize is implied
+    if (encKey != null && postCryptSize == 0)
     {
-      out.close();
-      stream.close();
+      int result = readSafe(in, buf, 0, 0, cleanup);
+      if (result != -1)
+      {
+        // TODO: Check if the correct/expected result here should be 0 (instead
+        // of -1).
+        cleanup.run();
+        throw new IOException("EOF was expected");
+      }
     }
-    catch (IOException e) {}
+    else // Not necessary, just for easier reading
+    {
+      while (offset < postCryptSize)
+      {
+        int len = Math.min(bufSize, postCryptSize - offset);
+        int result = readSafe(in, buf, 0, len, cleanup);
+        if (result == -1)
+        {
+          cleanup.run();
+          throw new IOException("unexpected EOF");
+        }
 
+        writeSafe(out, buf, 0, result, cleanup);
+        offset += result;
+      }
+    }
+
+    cleanup.run();
     etags.put(partNumber, stream.getDigest());
   }
-  
+
+  private int readSafe(InputStream in, byte[] buf, int offset, int len,
+                       Runnable cleanup)
+  throws IOException
+  {
+    int result;
+    try
+    {
+      result = in.read(buf, offset, len);
+    }
+    catch (IOException e)
+    {
+      cleanup.run();
+      throw e;
+    }
+    return result;
+  }
+
+  private void writeSafe(RandomAccessFile out, byte[] buf, int offset, int len,
+                         Runnable cleanup)
+  throws IOException
+  {
+    try
+    {
+      out.write(buf, offset, len);
+    }
+    catch (IOException e)
+    {
+      cleanup.run();
+      throw e;
+    }
+  }
+
   private AsyncFunction<AmazonDownload, AmazonDownload> validate()
   {
     return new AsyncFunction<AmazonDownload, AmazonDownload>()

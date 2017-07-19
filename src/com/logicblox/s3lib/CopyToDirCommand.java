@@ -23,7 +23,7 @@ public class CopyToDirCommand extends Command
 
   public CopyToDirCommand(ListeningExecutorService httpExecutor,
                           ListeningScheduledExecutorService internalExecutor,
-			  boolean dryRun,
+                          boolean dryRun,
                           CloudStoreClient client)
   {
     _httpExecutor = httpExecutor;
@@ -92,17 +92,18 @@ public class CopyToDirCommand extends Command
             .setDestinationBucketName(options.getDestinationBucketName())
             .setDestinationKey(destKey)
             .setCannedAcl(options.getCannedAcl().orNull())
+            .setStorageClass(options.getStorageClass().orNull())
             .createCopyOptions();
 
-	if(_dryRun)
-	{
+        if(_dryRun)
+        {
           System.out.println("<DRYRUN> copying '" + getUri(options.getSourceBucketName(), obj.getKey())
             + "' to '" + getUri(options.getDestinationBucketName(), destKey) + "'");
-	}
-	else
-	{
+        }
+        else
+        {
           batch.add(_client.copy(options0));
-	}
+        }
       }
     }
 

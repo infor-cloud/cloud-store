@@ -84,7 +84,7 @@ public class DownloadDirectoryCommand extends Command
       new FutureFallback<List<S3File>>()
       {
         public ListenableFuture<List<S3File>> create(Throwable t)
-	{
+        {
            cleanup();
            return Futures.immediateFailedFuture(t);
         }
@@ -119,17 +119,17 @@ public class DownloadDirectoryCommand extends Command
       if(!dest.isDirectory())
       {
         if(overwrite)
-	{
-	  if(_dryRun)
-	    System.out.println("<DRYRUN> overwriting existing file '" + dest.getAbsolutePath()
-	      + "' with new directory");
-	  else
+        {
+          if(_dryRun)
+            System.out.println("<DRYRUN> overwriting existing file '" + dest.getAbsolutePath()
+              + "' with new directory");
+          else
             dest.delete();
-	}
-	else
-	{
+        }
+        else
+        {
           throw new UsageException("Existing destination '" + dest + "' must be a directory");
-	}
+        }
       }
     }
     else
@@ -141,7 +141,7 @@ public class DownloadDirectoryCommand extends Command
       catch(IOException ex)
       {
         throw new UsageException("Could not create directory '" + dest + "': "
-	  + ex.getMessage());
+          + ex.getMessage());
       }
     }
   }
@@ -177,14 +177,14 @@ public class DownloadDirectoryCommand extends Command
       if(!outputPath.exists())
       {
         try
-	{
+        {
           updateDirsToCleanup(Utils.mkdirs(outputPath, _dryRun));
-	}
-	catch(IOException ex)
-	{
-	  throw new UsageException("Could not create directory '" + outputPath + "': "
-	    + ex.getMessage());
-	}
+        }
+        catch(IOException ex)
+        {
+          throw new UsageException("Could not create directory '" + outputPath + "': "
+            + ex.getMessage());
+        }
       }
 
       if(!src.getKey().endsWith("/"))
@@ -193,30 +193,30 @@ public class DownloadDirectoryCommand extends Command
         {
           if(overwrite)
           {
-	    if(_dryRun)
-	    {
-	      System.out.println("<DRYRUN> overwrite existing file '" + outputFile.getAbsolutePath() + "'");
-	    }
-	    else
-	    {
+            if(_dryRun)
+            {
+              System.out.println("<DRYRUN> overwrite existing file '" + outputFile.getAbsolutePath() + "'");
+            }
+            else
+            {
               if(!outputFile.delete())
                 throw new UsageException("Could not overwrite existing file '" + outputFile
                   + "'");
-	    }
+            }
           }
           else
-	  {
+          {
             throw new UsageException(
               "File '" + outputFile + "' already exists. Please delete or use --overwrite");
-	  }
+          }
         }
         if(_dryRun)
-	{
-	  System.out.println("<DRYRUN> downloading '" + getUri(bucket, src.getKey())
-	    + "' to '" + outputFile.getAbsolutePath() + "'");
-	}
-	else
-	{
+        {
+          System.out.println("<DRYRUN> downloading '" + getUri(bucket, src.getKey())
+            + "' to '" + outputFile.getAbsolutePath() + "'");
+        }
+        else
+        {
           _filesToCleanup.add(outputFile);
 
           DownloadOptions options = new DownloadOptionsBuilder()
@@ -227,7 +227,7 @@ public class DownloadDirectoryCommand extends Command
             .createDownloadOptions();
 
           _futures.add(_client.download(options));
-	}
+        }
       }
     }
   }

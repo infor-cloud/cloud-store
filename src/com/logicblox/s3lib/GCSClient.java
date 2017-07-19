@@ -210,8 +210,8 @@ public class GCSClient implements CloudStoreClient {
     {
       DeleteOptions opts = new DeleteOptionsBuilder()
         .setBucket(bucket)
-	.setObjectKey(object)
-	.createDeleteOptions();
+        .setObjectKey(object)
+        .createDeleteOptions();
       return delete(opts);
     }
 
@@ -220,8 +220,8 @@ public class GCSClient implements CloudStoreClient {
     {
       DeleteOptions opts = new DeleteOptionsBuilder()
         .setBucket(Utils.getBucket(s3url))
-	.setObjectKey(Utils.getObjectKey(s3url))
-	.createDeleteOptions();
+        .setObjectKey(Utils.getObjectKey(s3url))
+        .createDeleteOptions();
       return delete(opts);
     }
 
@@ -358,7 +358,7 @@ public class GCSClient implements CloudStoreClient {
          *
          * @param options Upload options
          */
-	@Override
+        @Override
         public ListenableFuture<S3File> upload(UploadOptions options)
             throws IOException {
             Optional<OverallProgressListenerFactory> progressListenerFactory =
@@ -366,7 +366,7 @@ public class GCSClient implements CloudStoreClient {
 
             GCSUploadCommand cmd =
                 new GCSUploadCommand(_s3Executor, _executor, _keyProvider, options,
-		    progressListenerFactory);
+                    progressListenerFactory);
             s3Client.configure(cmd);
             return cmd.run(options.getBucket(), options.getObjectKey());
         }
@@ -376,7 +376,7 @@ public class GCSClient implements CloudStoreClient {
          *
          * @param options Upload options
          */
-	@Override
+        @Override
         public ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
             throws IOException, ExecutionException, InterruptedException {
             File directory = options.getFile();
@@ -385,7 +385,7 @@ public class GCSClient implements CloudStoreClient {
             long chunkSize = options.getChunkSize();
             String encKey = options.getEncKey().orNull();
             String acl = options.getAcl().or("projectPrivate");
-	    boolean dryRun = options.isDryRun();
+            boolean dryRun = options.isDryRun();
             OverallProgressListenerFactory progressListenerFactory = options
                 .getOverallProgressListenerFactory().orNull();
 
@@ -398,46 +398,46 @@ public class GCSClient implements CloudStoreClient {
 
         @Override
         public ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions)
-	{
-          GCSListCommand cmd = new GCSListCommand(gcsClient, _s3Executor, _executor);
+        {
+          GCSListCommand cmd = new GCSListCommand(_s3Executor, _executor);
           configure(cmd);
           return cmd.run(lsOptions);
         }
-	
-	@Override
+        
+        @Override
         public ListenableFuture<S3File> copy(CopyOptions options)
-	{
+        {
           GCSCopyCommand cmd = new GCSCopyCommand(gcsClient, _s3Executor, _executor);
           configure(cmd);
           return cmd.run(options);
-	}
+        }
 
-	@Override
+        @Override
         public ListenableFuture<List<S3File>> copyToDir(CopyOptions options)
-	  throws IOException
-	{
+          throws IOException
+        {
           GCSCopyDirCommand cmd = new GCSCopyDirCommand(gcsClient, _s3Executor, _executor);
           configure(cmd);
           return cmd.run(options);
-	}
+        }
     }
 
     @Override
     public boolean hasBucket(String bucketName)
     {
-      throw new RuntimeException("FIXME - not yet implemented");
+      throw new UnsupportedOperationException("FIXME - not yet implemented");
     }
 
     @Override
     public void createBucket(String bucketName)
     {
-      throw new RuntimeException("FIXME - not yet implemented");
+      throw new UnsupportedOperationException("FIXME - not yet implemented");
     }
 
     @Override
     public void destroyBucket(String bucketName)
     {
-      throw new RuntimeException("FIXME - not yet implemented");
+      throw new UnsupportedOperationException("FIXME - not yet implemented");
     }
 
     // needed for testing

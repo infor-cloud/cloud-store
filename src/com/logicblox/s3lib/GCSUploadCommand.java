@@ -50,7 +50,7 @@ public class GCSUploadCommand extends Command {
             ListeningExecutorService uploadExecutor,
             ListeningScheduledExecutorService internalExecutor,
             KeyProvider encKeyProvider,
-	    UploadOptions options,
+            UploadOptions options,
             Optional<OverallProgressListenerFactory> progressListenerFactory)
       throws IOException
     {
@@ -61,7 +61,7 @@ public class GCSUploadCommand extends Command {
 
         _uploadExecutor = uploadExecutor;
         _executor = internalExecutor;
-	_options = options;
+        _options = options;
 
         this.file = _options.getFile();
         setChunkSize(_options.getChunkSize());

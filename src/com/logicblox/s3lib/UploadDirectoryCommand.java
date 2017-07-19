@@ -39,7 +39,7 @@ public class UploadDirectoryCommand extends Command
                                             final long chunkSize,
                                             final String encKey,
                                             final String acl,
-					    boolean dryRun,
+                                            boolean dryRun,
                                             OverallProgressListenerFactory
                                                 progressListenerFactory)
   throws ExecutionException, InterruptedException, IOException
@@ -98,7 +98,7 @@ public class UploadDirectoryCommand extends Command
       if(_dryRun)
       {
         System.out.println("<DRYRUN> uploading '" + file.getAbsolutePath()
-	    + "' to '" + getUri(bucket, key) + "'");
+            + "' to '" + getUri(bucket, key) + "'");
       }
       else
       {

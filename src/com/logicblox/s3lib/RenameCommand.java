@@ -58,39 +58,39 @@ public class RenameCommand extends Command
     {
       System.out.println("<DRYRUN> renaming '"
         + srcUri
-	+ "' to '"
+        + "' to '"
         + getUri(_options.getDestinationBucket(), destKey)
-	+ "'");
+        + "'");
       return Futures.immediateFuture(null);
     }
     else
     {
       final DeleteOptions deleteOpts = new DeleteOptionsBuilder()
         .setBucket(_options.getSourceBucket())
-	.setObjectKey(_options.getSourceKey())
+        .setObjectKey(_options.getSourceKey())
         .createDeleteOptions();
       ListenableFuture<S3File> copyAndDelete = Futures.transform(
         getCopyOp(),
-	new AsyncFunction<S3File,S3File>()
-	{
-	  public ListenableFuture<S3File> apply(S3File srcFile)
-	  {
-	    return _client.delete(deleteOpts);
-	  }
-	}
+        new AsyncFunction<S3File,S3File>()
+        {
+          public ListenableFuture<S3File> apply(S3File srcFile)
+          {
+            return _client.delete(deleteOpts);
+          }
+        }
       );
 
       // return S3File with the dest
       ListenableFuture<S3File> result = Futures.transform(
         copyAndDelete,
-	new Function<S3File, S3File>()
-	{
-	  public S3File apply(S3File deletedFile)
-	  {
-	    return new S3File(
-	      _options.getDestinationBucket(), destKey);
-	  }
-	}
+        new Function<S3File, S3File>()
+        {
+          public S3File apply(S3File deletedFile)
+          {
+            return new S3File(
+              _options.getDestinationBucket(), destKey);
+          }
+        }
       );
 
       // try to clean up if a failure occurs.  just have to worry
@@ -98,26 +98,26 @@ public class RenameCommand extends Command
       // file
       return Futures.withFallback(
         result,
-	new FutureFallback<S3File>()
-	{
-	  public ListenableFuture<S3File> create(Throwable t)
-	  {
+        new FutureFallback<S3File>()
+        {
+          public ListenableFuture<S3File> create(Throwable t)
+          {
             DeleteOptions deleteOpts = new DeleteOptionsBuilder()
               .setBucket(_options.getDestinationBucket())
               .setObjectKey(_options.getDestinationKey())
-	      .setForceDelete(true)
-	      .setIgnoreAbortInjection(true)
+              .setForceDelete(true)
+              .setIgnoreAbortInjection(true)
               .createDeleteOptions();
-	    try
-	    {
+            try
+            {
               _client.delete(deleteOpts).get();
-	    }
-	    catch(InterruptedException | ExecutionException ex)
-	    {
-	      return Futures.immediateFailedFuture(new Exception(
-	        "Error cleaning up after rename failure:  " + ex.getMessage(), ex));
-	    }
-	    
+            }
+            catch(InterruptedException | ExecutionException ex)
+            {
+              return Futures.immediateFailedFuture(new Exception(
+                "Error cleaning up after rename failure:  " + ex.getMessage(), ex));
+            }
+            
             if (t instanceof UsageException)
               return Futures.immediateFailedFuture(t);
 
@@ -185,7 +185,7 @@ public class RenameCommand extends Command
     {
       if(_client.exists(bucket, key).get() != null)
         throw new UsageException("Cannot overwrite existing destination object '"
-	  + getUri(bucket, key));
+          + getUri(bucket, key));
     }
     catch(InterruptedException | ExecutionException ex)
     {

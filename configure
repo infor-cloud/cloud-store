@@ -4,12 +4,10 @@ from buildlib import *
 from time import gmtime, strftime
 
 depdir = os.getenv('LB_UNIVERSE_DEPS', '/opt/logicblox/lb-universe-deps')
-home_dir = os.getenv('LOGICBLOX_HOME', '/opt/logicblox')
 
 parse_arguments(
   prefix='/opt/logicblox/s3lib',
   deps = { 
-           'logicblox' : home_dir,
            'guava' : depdir,
            'jcommander' : depdir,
            'commons-io' : depdir,
@@ -17,7 +15,7 @@ parse_arguments(
            'log4j' : depdir,
            'aws-java-sdk' : depdir,
            'gcs-java-sdk' : depdir,
-           'junit' : home_dir
+           'junit' : depdir
          })
 
 open_makefile()

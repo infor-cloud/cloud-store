@@ -78,7 +78,7 @@ public class TestUtils
       else
       {
         System.out.println("Error:  '" + args[i] + "' unexpected");
-	usage();
+        usage();
         System.exit(1);
       }
     }
@@ -92,7 +92,7 @@ public class TestUtils
       catch(Throwable t)
       {
         System.out.println("Error: " + t.getMessage());
-	System.exit(1);
+        System.exit(1);
       }
     }
 
@@ -713,6 +713,12 @@ public class TestUtils
   }
 
 
+  /**
+   * Create a new .pem key file in the specified directory that contains a new
+   * RSA public/private key pair.  Returns a String array of length two, the
+   * first string containing the private key and the second holding the public
+   * key.
+   */
   public static String[] createEncryptionKey(File keydir, String keyName)
     throws Throwable
   {
@@ -780,14 +786,14 @@ public class TestUtils
       for(S3File f : matches)
       {
         if(f.getKey().equals(key))
-	{
-	  found = true;
-	  break;
-	}
+        {
+          found = true;
+          break;
+        }
       }
       if(found)
         throw new RuntimeException(
-	   "Folder '" + destPrefix + "' specified by --dest-prefix already exists.");
+           "Folder '" + destPrefix + "' specified by --dest-prefix already exists.");
 
      // set the URI that will be used as a prefix by test functions
      _destUri = destUri;

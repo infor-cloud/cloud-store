@@ -215,6 +215,14 @@ public class S3Client implements CloudStoreClient {
     return l;
   }
 
+  /**
+   * {@code storageClassesDescConst} has to be a compile-time String constant
+   * expression. That's why e.g. we cannot re-use {@code StorageClass.values()}
+   * to construct it.
+   */
+  static final String storageClassesDescConst = "For Amazon S3, choose one of: " +
+      "STANDARD, REDUCED_REDUNDANCY, GLACIER, STANDARD_IA.";
+
   @Override
   public void setRetryCount(int retryCount)
   {
@@ -256,7 +264,7 @@ public class S3Client implements CloudStoreClient {
 
     UploadCommand cmd =
         new UploadCommand(_s3Executor, _executor, _keyProvider, options,
-	progressListenerFactory);
+        progressListenerFactory);
     configure(cmd);
 
     return cmd.run(options.getBucket(), options.getObjectKey());
@@ -512,6 +520,10 @@ public class S3Client implements CloudStoreClient {
   throws IOException
   {
     CopyCommand cmd = new CopyCommand(_s3Executor, _executor, options);
+    String storageClass = options.getStorageClass().orNull();
+    // TODO(geo): Pass CopyOptions to CopyCommand directly
+    CopyCommand cmd = new CopyCommand(_s3Executor, _executor, cannedAcl,
+        storageClass, progressListenerFactory);
     configure(cmd);
     return cmd.run(options.getSourceBucketName(), options.getSourceKey(),
         options.getDestinationBucketName(), options.getDestinationKey());

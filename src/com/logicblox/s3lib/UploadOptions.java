@@ -53,8 +53,8 @@ public class UploadOptions {
                   long chunkSize,
                   Optional<String> encKey,
                   Optional<String> acl,
-		  boolean dryRun,
-		  boolean ignoreAbortInjection,
+                  boolean dryRun,
+                  boolean ignoreAbortInjection,
                   Optional<OverallProgressListenerFactory>
                       overallProgressListenerFactory) {
         this.file = file;
@@ -63,8 +63,8 @@ public class UploadOptions {
         this.chunkSize = chunkSize;
         this.encKey = encKey;
         this.acl = acl;
-	this.dryRun = dryRun;
-	this.ignoreAbortInjection = ignoreAbortInjection;
+        this.dryRun = dryRun;
+        this.ignoreAbortInjection = ignoreAbortInjection;
         this.overallProgressListenerFactory = overallProgressListenerFactory;
     }
 

@@ -36,24 +36,24 @@ public class GCSCopyCommand extends Command
       System.out.println("<DRYRUN> copying '"
         + getUri(options.getSourceBucketName(), options.getSourceKey())
         + "' to '"
-	+ getUri(options.getDestinationBucketName(), options.getDestinationKey()) + "'");
+        + getUri(options.getDestinationBucketName(), options.getDestinationKey()) + "'");
       return Futures.immediateFuture(null);
     }
     else
     {
       ListenableFuture<S3File> future =
         executeWithRetry(_executor, new Callable<ListenableFuture<S3File>>()
-	{
+        {
           public ListenableFuture<S3File> call()
-	  {
+          {
             return runActual(options);
           }
           
           public String toString()
-	  {
+          {
             return "copying object from "
                 + getUri(options.getSourceBucketName(), options.getSourceKey()) + " to "
-		+ getUri(options.getDestinationBucketName(), options.getDestinationKey());
+                + getUri(options.getDestinationBucketName(), options.getDestinationKey());
           }
         });
     
@@ -75,7 +75,7 @@ public class GCSCopyCommand extends Command
         {
           throw new AbortInjection("forcing copy abort");
         }
-	
+        
         Storage.Objects.Copy cmd = _storage.objects().copy(
           options.getSourceBucketName(), options.getSourceKey(),
           options.getDestinationBucketName(), options.getDestinationKey(),

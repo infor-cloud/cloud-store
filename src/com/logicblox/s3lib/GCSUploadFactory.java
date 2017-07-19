@@ -27,7 +27,7 @@ class GCSUploadFactory implements UploadFactory {
       Map<String, String> meta, String cannedAcl, UploadOptions options)
     {
         return executor.submit(new StartCallable(
-	  bucketName, key, meta, cannedAcl, options));
+          bucketName, key, meta, cannedAcl, options));
     }
 
     private class StartCallable implements Callable<Upload> {
@@ -35,22 +35,22 @@ class GCSUploadFactory implements UploadFactory {
         private String bucketName;
         private Map<String, String> meta;
         private String cannedAcl;
-	private UploadOptions options;
+        private UploadOptions options;
 
         public StartCallable(String bucketName, String key, Map<String, String> meta,
-	  String cannedAcl, UploadOptions options)
-	{
+          String cannedAcl, UploadOptions options)
+        {
             this.bucketName = bucketName;
             this.key = key;
             this.meta = meta;
             this.cannedAcl = cannedAcl;
-	    this.options = options;
+            this.options = options;
         }
 
         public Upload call() throws Exception
-	{
+        {
             return new GCSUpload(client, bucketName, key, cannedAcl, this.meta,
-	      new Date(), executor, options);
+              new Date(), executor, options);
         }
     }
 }

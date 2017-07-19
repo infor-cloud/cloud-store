@@ -28,7 +28,10 @@ public class CopyOptions {
     private final boolean recursive;
     private final boolean dryRun;
     private final boolean ignoreAbortInjection;
+    // TODO(geo): Revise use of Optionals. E.g. it's not a good idea to use them
+    // as fields.
     private final Optional<String> cannedAcl;
+    private final String storageClass;
     private final Optional<OverallProgressListenerFactory>
         overallProgressListenerFactory;
 
@@ -44,9 +47,10 @@ public class CopyOptions {
                 String destinationBucketName,
                 String destinationKey,
                 Optional<String> cannedAcl,
+                String storageClass,
                 boolean recursive,
-		boolean dryRun,
-		boolean ignoreAbortInjection,
+                boolean dryRun,
+                boolean ignoreAbortInjection,
                 Optional<OverallProgressListenerFactory>
                     overallProgressListenerFactory) {
         this.sourceBucketName = sourceBucketName;
@@ -55,8 +59,9 @@ public class CopyOptions {
         this.destinationKey = destinationKey;
         this.recursive = recursive;
         this.cannedAcl = cannedAcl;
-	this.dryRun = dryRun;
-	this.ignoreAbortInjection = ignoreAbortInjection;
+        this.storageClass = storageClass;
+        this.dryRun = dryRun;
+        this.ignoreAbortInjection = ignoreAbortInjection;
         this.overallProgressListenerFactory = overallProgressListenerFactory;
     }
 
@@ -134,6 +139,10 @@ public class CopyOptions {
 
     public Optional<String> getCannedAcl() {
         return cannedAcl;
+    }
+
+    public Optional<String> getStorageClass() {
+        return Optional.fromNullable(storageClass);
     }
 
     public boolean isRecursive() {

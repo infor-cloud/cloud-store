@@ -281,7 +281,7 @@ while(count < retryCount)
         // reset abort injection so other tests aren't affected
         DeleteOptions.useGlobalAbortCounter(oldGlobalFlag);
         DeleteOptions.setAbortInjectionCounter(0);
-	DeleteOptions.clearAbortInjectionCounters();
+        DeleteOptions.clearAbortInjectionCounters();
       }
       
       // verify that nothing moved

@@ -76,9 +76,9 @@ public class GCSCopyDirCommand extends Command
       if(options.isDryRun())
       {
         System.out.println("<DRYRUN> copying '"
-	  + getUri(options.getSourceBucketName(), src.getKey())
+          + getUri(options.getSourceBucketName(), src.getKey())
           + "' to '"
-	  + getUri(options.getDestinationBucketName(), destKey) + "'");
+          + getUri(options.getDestinationBucketName(), destKey) + "'");
       }
       else
       {
@@ -100,7 +100,7 @@ public class GCSCopyDirCommand extends Command
           {
             return performCopy(options, src, destKey);
           }
-	});
+        });
       }
     });
   }

@@ -126,7 +126,7 @@ try
     DeleteOptions opts = new DeleteOptionsBuilder()
         .setBucket(Utils.getBucket(dest))
         .setObjectKey(Utils.getObjectKey(dest))
-	.setRecursive(true)
+        .setRecursive(true)
         .createDeleteOptions();
     boolean oldGlobalFlag = false;
     try
@@ -185,7 +185,7 @@ catch(Throwable t)
     DeleteOptions opts = new DeleteOptionsBuilder()
         .setBucket(Utils.getBucket(dest))
         .setObjectKey(Utils.getObjectKey(dest))
-	.setDryRun(true)
+        .setDryRun(true)
         .createDeleteOptions();
     f = _client.delete(opts).get();
     Assert.assertNull(f);
@@ -222,8 +222,8 @@ try
     DeleteOptions opts = new DeleteOptionsBuilder()
         .setBucket(Utils.getBucket(dest))
         .setObjectKey(Utils.getObjectKey(dest))
-	.setRecursive(true)
-	.setDryRun(true)
+        .setRecursive(true)
+        .setDryRun(true)
         .createDeleteOptions();
     List<S3File> files = _client.deleteDir(opts).get();
     Assert.assertNull(files);
@@ -304,7 +304,7 @@ try
     opts = new DeleteOptionsBuilder()
         .setBucket(Utils.getBucket(uri))
         .setObjectKey(Utils.getObjectKey(uri))
-	.setForceDelete(true)
+        .setForceDelete(true)
         .createDeleteOptions();
     S3File f = _client.delete(opts).get();
     Assert.assertNotNull(f);
@@ -318,7 +318,7 @@ try
     opts = new DeleteOptionsBuilder()
         .setBucket(Utils.getBucket(uri))
         .setObjectKey(Utils.getObjectKey(uri))
-	.setRecursive(true)
+        .setRecursive(true)
         .createDeleteOptions();
     try
     {
@@ -337,8 +337,8 @@ try
     opts = new DeleteOptionsBuilder()
         .setBucket(Utils.getBucket(uri))
         .setObjectKey(Utils.getObjectKey(uri))
-	.setRecursive(true)
-	.setForceDelete(true)
+        .setRecursive(true)
+        .setForceDelete(true)
         .createDeleteOptions();
     List<S3File> files = _client.deleteDir(opts).get();
     Assert.assertTrue(files.isEmpty());
@@ -349,7 +349,7 @@ try
     opts = new DeleteOptionsBuilder()
         .setBucket(Utils.getBucket(uri))
         .setObjectKey(Utils.getObjectKey(uri))
-	.setRecursive(false)
+        .setRecursive(false)
         .createDeleteOptions();
     files = _client.deleteDir(opts).get();
     Assert.assertEquals(2, files.size());
@@ -372,7 +372,7 @@ try
     opts = new DeleteOptionsBuilder()
         .setBucket(Utils.getBucket(uri))
         .setObjectKey(Utils.getObjectKey(uri))
-	.setRecursive(true)
+        .setRecursive(true)
         .createDeleteOptions();
     files = _client.deleteDir(opts).get();
     Assert.assertEquals(2, files.size());

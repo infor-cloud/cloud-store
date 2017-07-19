@@ -60,26 +60,26 @@ public class RenameDirectoryCommand extends Command
     {
       return Futures.withFallback(
         Futures.allAsList(_futures),
-	new FutureFallback<List<S3File>>()
-	{
-	  public ListenableFuture<List<S3File>> create(Throwable t)
-	  {
+        new FutureFallback<List<S3File>>()
+        {
+          public ListenableFuture<List<S3File>> create(Throwable t)
+          {
             try
-	    {
-	      cleanup();
-	    }
-	    catch(Exception ex)
-	    {
-	      return Futures.immediateFailedFuture(new Exception(
-	        "Error cleaning up after rename failure:  " + ex.getMessage(), ex));
-	    }
+            {
+              cleanup();
+            }
+            catch(Exception ex)
+            {
+              return Futures.immediateFailedFuture(new Exception(
+                "Error cleaning up after rename failure:  " + ex.getMessage(), ex));
+            }
 
             return Futures.immediateFailedFuture(new Exception(
-	      "Error renaming '"
-	        + getUri(_options.getSourceBucket(), _options.getSourceKey())
-		+ "'" + ":  " + t.getMessage(), t));
+              "Error renaming '"
+                + getUri(_options.getSourceBucket(), _options.getSourceKey())
+                + "'" + ":  " + t.getMessage(), t));
           }
-	});
+        });
     }
   }
 
@@ -157,7 +157,7 @@ public class RenameDirectoryCommand extends Command
     {
       if(_client.exists(bucket, key).get() != null)
         throw new UsageException("Cannot overwrite existing destination object '"
-	  + getUri(bucket, key));
+          + getUri(bucket, key));
     }
     catch(InterruptedException | ExecutionException ex)
     {
@@ -179,11 +179,11 @@ public class RenameDirectoryCommand extends Command
       String destKey = destDir + src.getKey().substring(srcIdx);
       if(_options.isDryRun())
       {
-	System.out.println("<DRYRUN> renaming '"
-	  + getUri(src.getBucketName(), src.getKey())
-	  + "' to '"
-	  + getUri(_options.getDestinationBucket(), destKey)
-	  + "'");
+        System.out.println("<DRYRUN> renaming '"
+          + getUri(src.getBucketName(), src.getKey())
+          + "' to '"
+          + getUri(_options.getDestinationBucket(), destKey)
+          + "'");
       }
       else
       {
@@ -191,9 +191,9 @@ public class RenameDirectoryCommand extends Command
         RenameOptions opts = new RenameOptionsBuilder()
           .setSourceBucket(src.getBucketName())
           .setSourceKey(src.getKey())
-	  .setDestinationBucket(_options.getDestinationBucket())
-	  .setDestinationKey(destKey)
-	  .setRecursive(false)
+          .setDestinationBucket(_options.getDestinationBucket())
+          .setDestinationKey(destKey)
+          .setRecursive(false)
           .createRenameOptions();
         _futures.add(_client.rename(opts));
       }

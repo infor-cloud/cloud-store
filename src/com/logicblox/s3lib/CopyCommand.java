@@ -26,12 +26,14 @@ public class CopyCommand extends Command
   private ListeningScheduledExecutorService _executor;
   private CopyOptions _options;
   private String acl;
+  private String storageClass;
   private Optional<OverallProgressListenerFactory> progressListenerFactory;
 
   public CopyCommand(
       ListeningExecutorService copyExecutor,
       ListeningScheduledExecutorService internalExecutor,
       CopyOptions options)
+      String storageClass,
   throws IOException
   {
     _copyExecutor = copyExecutor;
@@ -39,6 +41,7 @@ public class CopyCommand extends Command
     _options = options;
 
     this.acl = _options.getCannedAcl().or("bucket-owner-full-control");
+    this.storageClass = storageClass;
     this.progressListenerFactory = Optional.fromNullable(
       options.getOverallProgressListenerFactory().orNull());
   }
@@ -111,7 +114,7 @@ public class CopyCommand extends Command
     MultipartAmazonCopyFactory factory = new MultipartAmazonCopyFactory
         (getAmazonS3Client(), _copyExecutor);
     return factory.startCopy(sourceBucketName, sourceKey,
-        destinationBucketName, destinationKey, acl);
+        destinationBucketName, destinationKey, acl, storageClass);
   }
 
   /**
@@ -128,11 +131,11 @@ public class CopyCommand extends Command
           new Callable<ListenableFuture<Copy>>()
           {
             public ListenableFuture<Copy> call()
-	      throws IOException
+              throws IOException
             {
               return startParts(copy);
             }
-	  });
+          });
       }
     };
   }
@@ -142,7 +145,7 @@ public class CopyCommand extends Command
   {
     String srcUri = getUri(copy.getSourceBucket(), copy.getSourceKey());
     String destUri = getUri(copy.getDestinationBucket(), copy.getDestinationKey());
-	
+        
     // support for testing failures
     if(!_options.ignoreAbortInjection()
          && (CopyOptions.decrementAbortInjectionCounter(srcUri) > 0))

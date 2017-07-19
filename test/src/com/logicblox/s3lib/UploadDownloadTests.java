@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import java.io.File;
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.concurrent.ExecutionException;
@@ -413,7 +414,7 @@ catch(Throwable t)
     List<S3File> objs = TestUtils.listTestBucketObjects();
     for(S3File o : objs)
     {
-      if(o.getKey() == TestUtils.addPrefix(toUpload.getName()))
+      if(o.getKey().equals(TestUtils.addPrefix(toUpload.getName())))
       {
         Assert.assertNull(o.getLocalFile());
 //        Assert.asserTrue(o.getETag() != "");
@@ -898,6 +899,28 @@ catch(Throwable t)
   
 
   @Test
+    URI src = dest;
+
+    // compare metadata
+    ObjectMetadata srcMeta = _client.exists(src).get();
+    Assert.assertNotNull(srcMeta);
+    ObjectMetadata destMeta = _client.exists(dest).get();
+    Assert.assertNotNull(destMeta);
+
+    Assert.assertEquals(srcMeta.getContentLength(), destMeta.getContentLength());
+    Assert.assertEquals(srcMeta.getInstanceLength(), destMeta.getInstanceLength());
+    Assert.assertEquals(srcMeta.getETag(), destMeta.getETag());
+
+    Map<String,String> srcUserMeta = srcMeta.getUserMetadata();
+    Assert.assertNotNull(srcUserMeta);
+    Map<String,String> destUserMeta = destMeta.getUserMetadata();
+    Assert.assertNotNull(destUserMeta);
+    Assert.assertEquals(srcUserMeta.size(), destUserMeta.size());
+    for(Map.Entry<String,String> e : srcUserMeta.entrySet())
+    {
+      Assert.assertTrue(destUserMeta.containsKey(e.getKey()));
+      Assert.assertEquals(e.getValue(), destUserMeta.get(e.getKey()));
+    }
   public void testEncryptedUploadDownload()
     throws Throwable
   {

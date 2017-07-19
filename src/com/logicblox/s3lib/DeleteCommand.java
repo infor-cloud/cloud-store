@@ -95,13 +95,13 @@ public class DeleteCommand extends Command
           {
             // support for testing failures
             if(!_options.ignoreAbortInjection()
-	        && (DeleteOptions.decrementAbortInjectionCounter(srcUri) > 0))
-	    {
+                && (DeleteOptions.decrementAbortInjectionCounter(srcUri) > 0))
+            {
               throw new AbortInjection("forcing delete abort");
-	    }
+            }
 
-	    String bucket = _options.getBucket();
-	    String key = _options.getObjectKey();
+            String bucket = _options.getBucket();
+            String key = _options.getObjectKey();
             DeleteObjectRequest req = new DeleteObjectRequest(bucket, key);
             getAmazonS3Client().deleteObject(req);
             S3File file = new S3File();

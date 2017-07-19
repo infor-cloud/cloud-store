@@ -674,6 +674,12 @@ public class TestUtils
   }
 
 
+  /**
+   * Create a new .pem key file in the specified directory that contains a new
+   * RSA public/private key pair.  Returns a String array of length two, the
+   * first string containing the private key and the second holding the public
+   * key.
+   */
   public static String[] createEncryptionKey(File keydir, String keyName)
     throws Throwable
   {

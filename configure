@@ -99,7 +99,7 @@ jar(
                                    ('Implementation-Title', "com.logicblox.s3lib"),
                                    ('Implementation-Version', impl_version),
                                    ('Implementation-Vendor', "LogicBlox, Inc.")]},
-   java_version = "1.7")
+   java_version = "1.8")
 
 test_deps = [
   '$(junit)/lib/java/junit-4.8.2.jar',

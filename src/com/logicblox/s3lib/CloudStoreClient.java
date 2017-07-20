@@ -476,6 +476,4 @@ public interface CloudStoreClient {
      */
     void destroyBucket(String bucketName);
 
-    // needed for testing
-    void setKeyProvider(KeyProvider kp);
 }

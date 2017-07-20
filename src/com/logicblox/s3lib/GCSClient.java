@@ -389,8 +389,7 @@ public class GCSClient implements CloudStoreClient {
     }
 
     // needed for testing
-    @Override
-    public void setKeyProvider(KeyProvider kp)
+    void setKeyProvider(KeyProvider kp)
     {
       s3Client.setKeyProvider(kp);
     }

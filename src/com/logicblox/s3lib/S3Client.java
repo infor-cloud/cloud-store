@@ -631,8 +631,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   // needed for testing
-  @Override
-  public void setKeyProvider(KeyProvider kp)
+  void setKeyProvider(KeyProvider kp)
   {
     _keyProvider = kp;
   }

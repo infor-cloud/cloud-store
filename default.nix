@@ -62,7 +62,7 @@ let
       };
     };
 
-    test_cloud_store =
+    test =
       pkgs.stdenv.mkDerivation {
         name = "${name}-test";
         src = build.out;

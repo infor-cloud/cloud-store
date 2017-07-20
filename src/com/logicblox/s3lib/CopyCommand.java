@@ -26,6 +26,7 @@ public class CopyCommand extends Command
   private ListeningScheduledExecutorService _executor;
   private String _cannedAcl;
   private AccessControlList _acl;
+  private String storageClass;
   private Map<String, String> _userMetadata;
   private Optional<OverallProgressListenerFactory> progressListenerFactory;
 
@@ -34,6 +35,7 @@ public class CopyCommand extends Command
       ListeningScheduledExecutorService internalExecutor,
       String cannedAcl,
       Map<String, String> userMetadata,
+      String storageClass,
       OverallProgressListenerFactory progressListenerFactory)
   throws IOException
   {
@@ -42,6 +44,7 @@ public class CopyCommand extends Command
 
     this._cannedAcl = cannedAcl;
     this._userMetadata = userMetadata;
+    this.storageClass = storageClass;
     this.progressListenerFactory = Optional.fromNullable
         (progressListenerFactory);
   }
@@ -51,6 +54,7 @@ public class CopyCommand extends Command
     ListeningScheduledExecutorService internalExecutor,
     AccessControlList acl,
     Map<String, String> userMetadata,
+    String storageClass,
     OverallProgressListenerFactory progressListenerFactory)
   throws IOException
   {
@@ -59,6 +63,7 @@ public class CopyCommand extends Command
 
     _acl = acl;
     _userMetadata = userMetadata;
+    this.storageClass = storageClass;
     this.progressListenerFactory = Optional.fromNullable
       (progressListenerFactory);
   }
@@ -124,10 +129,10 @@ public class CopyCommand extends Command
     if (_acl != null)
     {
       return factory.startCopy(sourceBucketName, sourceKey,
-        destinationBucketName, destinationKey, _acl, _userMetadata);
+        destinationBucketName, destinationKey, _acl, _userMetadata, storageClass);
     }
     return factory.startCopy(sourceBucketName, sourceKey,
-      destinationBucketName, destinationKey, _cannedAcl, _userMetadata);
+      destinationBucketName, destinationKey, _cannedAcl, _userMetadata, storageClass);
   }
 
   /**

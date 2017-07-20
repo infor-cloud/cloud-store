@@ -76,7 +76,7 @@ public class TestUtils
       else
       {
         System.out.println("Error:  '" + args[i] + "' unexpected");
-	usage();
+        usage();
         System.exit(1);
       }
     }
@@ -91,8 +91,8 @@ public class TestUtils
       catch(Throwable t)
       {
         System.out.println("Error: could not parse --dest-prefix URL ["
-	   + t.getMessage() + "]");
-	System.exit(1);
+           + t.getMessage() + "]");
+        System.exit(1);
       }
     }
 
@@ -453,6 +453,13 @@ public class TestUtils
   }
 
 
+  // GCS implementation currently doesn't support copy functions
+  public static boolean supportsCopy()
+  {
+    return !getService().equalsIgnoreCase("gs");
+  }
+
+
   public static int getExpectedPartCount(int fileSize, int chunkSize)
   {
     if(supportsMultiPart())
@@ -667,6 +674,23 @@ public class TestUtils
   }
 
 
+  /**
+   * Create a new .pem key file in the specified directory that contains a new
+   * RSA public/private key pair.  Returns a String array of length two, the
+   * first string containing the private key and the second holding the public
+   * key.
+   */
+  public static String[] createEncryptionKey(File keydir, String keyName)
+    throws Throwable
+  {
+    KeyGenCommand kgc = new KeyGenCommand("RSA", 2048);
+    File keyfile = new File(keydir, keyName + ".pem");
+    kgc.savePemKeypair(keyfile);
+    String[] keys = parsePem(keyfile);
+    return keys;
+  }
+
+  
   public static void moveFile(String fname, File srcDir, File destDir)
   {
     File src = new File(srcDir, fname);
@@ -674,7 +698,7 @@ public class TestUtils
     src.renameTo(dest);
   }
 
-  
+
   private static Random getRand()
   {
     if(_rand == null)

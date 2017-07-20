@@ -42,7 +42,7 @@ let
           "--with-commons-codec=${deps.commonscodec}"
           "--with-aws-java-sdk=${deps.aws_java_sdk}"
           "--with-gcs-java-sdk=${deps.gcs_java_sdk}"
-	  "--with-junit=${deps.junit}"
+          "--with-junit=${deps.junit}"
         ];
         buildInputs = [ python jdk pkgs.makeWrapper ];
         postInstall = ''
@@ -66,17 +66,17 @@ let
       pkgs.stdenv.mkDerivation {
         name = "${name}-test";
         src = build.out;
-	jre = "${jdk.jre}";
+        jre = "${jdk.jre}";
         buildInputs =
           [
-	    # pkgs.minio
+            # pkgs.minio
             # pkgs.minio-client
             pkgs.awscli
             build
-	    build_minio
+            build_minio
           ];
         buildPhase = ''
-	  set -e
+          set -e
           minio_pid=""
 
           cleanup_minio()
@@ -96,15 +96,15 @@ let
           export AWS_SECRET_ACCESS_KEY=rvzui7pQS0PI1aAOhtTHWVmJvhMY+b9xSw7arAbC
 
           s3_addr="127.0.0.1:9000"
-	  s3_endpoint="http://$s3_addr/"
+          s3_endpoint="http://$s3_addr/"
           keydir="$(pwd)/cloud-store-ut-keys"
           mkdir -p $keydir
 
           #minio_bin="minio"
           #minio_bin="./bin/minio.latest"
-	  minio_bin="${build_minio}/bin/minio"
+          minio_bin="${build_minio}/bin/minio"
           $minio_bin -h
-	  $minio_bin version
+          $minio_bin version
 
           MINIO_ACCESS_KEY=$AWS_ACCESS_KEY_ID MINIO_SECRET_KEY=$AWS_SECRET_ACCESS_KEY \
             $minio_bin server $HOME/cloud-store-ut-buckets --address $s3_addr &
@@ -112,14 +112,14 @@ let
           minio_pid="$!"
           sleep 5
 
-	  $jre/bin/java -cp ./lib/java/s3lib-test.jar com.logicblox.s3lib.TestRunner --keydir $keydir --endpoint $s3_endpoint
+          $jre/bin/java -cp ./lib/java/s3lib-test.jar com.logicblox.s3lib.TestRunner --keydir $keydir --endpoint $s3_endpoint
         '';
 
         installPhase = ''
            # nothing to do here, but this job will fail if we don't produce
-	   # an output directory for some reason....
-	   mkdir -p $out
-	'';
+           # an output directory for some reason....
+           mkdir -p $out
+        '';
 
       };
 

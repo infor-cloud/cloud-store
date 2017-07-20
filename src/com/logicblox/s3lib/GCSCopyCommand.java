@@ -32,17 +32,17 @@ public class GCSCopyCommand extends Command
   {
     ListenableFuture<S3File> future =
         executeWithRetry(_executor, new Callable<ListenableFuture<S3File>>()
-	{
+        {
           public ListenableFuture<S3File> call()
-	  {
+          {
             return runActual(options);
           }
           
           public String toString()
-	  {
+          {
             return "copying object from "
                 + getUri(options.getSourceBucketName(), options.getSourceKey()) + " to "
-		+ getUri(options.getDestinationBucketName(), options.getDestinationKey());
+                + getUri(options.getDestinationBucketName(), options.getDestinationKey());
           }
         });
     
@@ -57,11 +57,11 @@ public class GCSCopyCommand extends Command
       public S3File call() throws IOException
       {
         Storage.Objects.Copy cmd = _storage.objects().copy(
-	  options.getSourceBucketName(), options.getSourceKey(),
-	  options.getDestinationBucketName(), options.getDestinationKey(),
-	  null);
-	StorageObject resp = cmd.execute();
-	return createS3File(resp, false);
+          options.getSourceBucketName(), options.getSourceKey(),
+          options.getDestinationBucketName(), options.getDestinationKey(),
+          null);
+        StorageObject resp = cmd.execute();
+        return createS3File(resp, false);
       }
     });
   }

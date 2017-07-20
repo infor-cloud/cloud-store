@@ -335,7 +335,7 @@ public class GCSClient implements CloudStoreClient {
          *
          * @param options Upload options
          */
-	@Override
+        @Override
         public ListenableFuture<S3File> upload(UploadOptions options)
             throws IOException {
             File file = options.getFile();
@@ -357,7 +357,7 @@ public class GCSClient implements CloudStoreClient {
          *
          * @param options Upload options
          */
-	@Override
+        @Override
         public ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
             throws IOException, ExecutionException, InterruptedException {
             File directory = options.getFile();
@@ -378,46 +378,46 @@ public class GCSClient implements CloudStoreClient {
 
         @Override
         public ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions)
-	{
-          GCSListCommand cmd = new GCSListCommand(gcsClient, _s3Executor, _executor);
+        {
+          GCSListCommand cmd = new GCSListCommand(_s3Executor, _executor);
           configure(cmd);
           return cmd.run(lsOptions);
         }
 
-	@Override
+        @Override
         public ListenableFuture<S3File> copy(CopyOptions options)
-	{
+        {
           GCSCopyCommand cmd = new GCSCopyCommand(gcsClient, _s3Executor, _executor);
           configure(cmd);
           return cmd.run(options);
-	}
+        }
 
-	@Override
+        @Override
         public ListenableFuture<List<S3File>> copyToDir(CopyOptions options)
-	  throws IOException
-	{
+          throws IOException
+        {
           GCSCopyDirCommand cmd = new GCSCopyDirCommand(gcsClient, _s3Executor, _executor);
           configure(cmd);
           return cmd.run(options);
-	}
+        }
 
-	@Override
+        @Override
         protected AddEncryptionKeyCommand createAddKeyCommand(String key)
-	    throws IOException
+            throws IOException
         {
-	   AddEncryptionKeyCommand cmd = super.createAddKeyCommand(key);
-	   cmd.setGcsStorage(gcsClient);
-	   return cmd;
-	}
+           AddEncryptionKeyCommand cmd = super.createAddKeyCommand(key);
+           cmd.setGcsStorage(gcsClient);
+           return cmd;
+        }
 
-	@Override
+        @Override
         protected RemoveEncryptionKeyCommand createRemoveKeyCommand(String key)
-	    throws IOException
+            throws IOException
         {
-	   RemoveEncryptionKeyCommand cmd = super.createRemoveKeyCommand(key);
-	   cmd.setGcsStorage(gcsClient);
-	   return cmd;
-	}
+           RemoveEncryptionKeyCommand cmd = super.createRemoveKeyCommand(key);
+           cmd.setGcsStorage(gcsClient);
+           return cmd;
+        }
 
 
     }
@@ -425,19 +425,19 @@ public class GCSClient implements CloudStoreClient {
     @Override
     public boolean hasBucket(String bucketName)
     {
-      throw new RuntimeException("FIXME - not yet implemented");
+      throw new UnsupportedOperationException("FIXME - not yet implemented");
     }
 
     @Override
     public void createBucket(String bucketName)
     {
-      throw new RuntimeException("FIXME - not yet implemented");
+      throw new UnsupportedOperationException("FIXME - not yet implemented");
     }
 
     @Override
     public void destroyBucket(String bucketName)
     {
-      throw new RuntimeException("FIXME - not yet implemented");
+      throw new UnsupportedOperationException("FIXME - not yet implemented");
     }
 
     // needed for testing

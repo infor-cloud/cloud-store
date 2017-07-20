@@ -474,7 +474,7 @@ public interface CloudStoreClient {
 
 
     /**
-     * Query for the existance of a bucket.
+     * Query for the existence of a bucket.
      *
      * @param bucketName The name of the bucket
      */

@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-
 import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.text.DateFormat;
@@ -445,15 +444,6 @@ public class Utils
       false, getDefaultRetryCount());
   }
 
-  public static CloudStoreClient createCloudStoreClient()
-      throws URISyntaxException, GeneralSecurityException, IOException
-  {
-    return createCloudStoreClient(
-      null, null, getDefaultMaxConcurrentConnections(),
-      getDefaultKeyDirectory(), new ArrayList<String>(),
-      false, getDefaultRetryCount());
-  }
-
   public static CloudStoreClient createCloudStoreClient(
     String scheme, String endpoint, int maxConcurrentConnections,
     String encKeyDirectory, List<String> credentialProvidersS3,
@@ -506,6 +496,36 @@ public class Utils
     return client;
   }
 
+  // create all missing parent directories of the specified directory.
+  // return a list of the directories that had to be created, ordered top down
+  public static List<File> mkdirs(File dir)
+    throws IOException
+  {
+     String[] subdirs = dir.getAbsolutePath().split(File.separator);
+     List<File> created = new ArrayList<File>();
+     File current = null;
+     for(String s : subdirs)
+     {
+       if(null == current)
+       {
+         if(s.isEmpty())
+           current = new File("/");
+         else
+           current = new File(s);
+       }
+       else
+       {
+         current = new File(current, s);
+       }
+       if(!current.exists())
+       {
+         current.mkdir();
+         created.add(current);
+       }
+     }
+     return created;
+  }
+
   // returns null if the store does not support acl (like minio)
   public static AccessControlList getObjectAcl(
     AmazonS3Client client, String bucket, String key)
@@ -523,7 +543,6 @@ public class Utils
     }
     return acl;
   }
-
 
   public static void patchMetaData(
     Storage gcsStorage, String bucket, String key, Map<String,String> userMetadata)

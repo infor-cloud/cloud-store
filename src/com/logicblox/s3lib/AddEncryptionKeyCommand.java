@@ -336,8 +336,8 @@ public class AddEncryptionKeyCommand extends Command
                   {
                     public AccessControlList call()
                     {
-		      return Utils.getObjectAcl(
-		        getAmazonS3Client(), metadata.getBucket(), metadata.getKey());
+                      return Utils.getObjectAcl(
+                        getAmazonS3Client(), metadata.getBucket(), metadata.getKey());
                     }
                   });
               }
@@ -349,8 +349,8 @@ public class AddEncryptionKeyCommand extends Command
               public ListenableFuture<S3File> apply(
                 AccessControlList acl) throws IOException
               {
-	        if(null == _gcsStorage)
-		{
+                if(null == _gcsStorage)
+                {
                   // It seems for AWS there is no way to update an object's metadata
                   // without re-uploading/copying the whole object. Here, we
                   // copy the object to itself in order to add the new
@@ -365,20 +365,20 @@ public class AddEncryptionKeyCommand extends Command
                     .createCopyOptions();
 
                   return _client.copy(options);
-		}
-		else
-		{
-		   return _executor.submit(new Callable<S3File>()
-		   {
-		     public S3File call()
-		       throws IOException
-		     {
+                }
+                else
+                {
+                   return _executor.submit(new Callable<S3File>()
+                   {
+                     public S3File call()
+                       throws IOException
+                     {
                        Utils.patchMetaData(_gcsStorage, metadata.getBucket(), metadata.getKey(),
                                                     metadata.getUserMetadata());
-		       return new S3File(metadata.getBucket(), metadata.getKey());
-		     }
+                       return new S3File(metadata.getBucket(), metadata.getKey());
+                     }
                    });
-		}
+                }
               }
             };
 

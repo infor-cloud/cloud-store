@@ -70,9 +70,9 @@ public class GCSCopyDirCommand extends Command
           public S3File call() throws IOException
           {
             Storage.Objects.Copy cmd = _storage.objects().copy(
-	      options.getSourceBucketName(), src.getKey(),
+              options.getSourceBucketName(), src.getKey(),
               options.getDestinationBucketName(), destKey,
-	      null);
+              null);
             StorageObject resp = cmd.execute();
             return createS3File(resp, false);
           }

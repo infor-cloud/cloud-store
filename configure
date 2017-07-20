@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 
-import buildlib
 from buildlib import *
 from time import gmtime, strftime
 from os.path import abspath, dirname, join
@@ -9,21 +8,18 @@ from os.path import abspath, dirname, join
 moduledir = dirname(abspath(__file__))
 
 depdir = os.getenv('LB_UNIVERSE_DEPS', '/opt/logicblox/lb-universe-deps')
-home_dir = os.getenv('LOGICBLOX_HOME', '/opt/logicblox')
 
 parse_arguments(
   prefix='/opt/logicblox/s3lib',
   deps = { 
-           'logicblox' : home_dir,
            'guava' : depdir,
            'jcommander' : depdir,
            'commons-io' : depdir,
            'commons-codec' : depdir,
            'log4j' : depdir,
-           'slf4j' : depdir,
            'aws-java-sdk' : depdir,
            'gcs-java-sdk' : depdir,
-           'junit' : home_dir
+           'junit' : depdir
          })
 
 open_makefile()
@@ -82,8 +78,6 @@ deps = [
     '$(guava)/lib/java/guava-15.0.jar',
     '$(jcommander)/lib/java/jcommander-1.29.jar',
     '$(log4j)/lib/java/log4j-1.2.13.jar',
-    # '$(slf4j)/lib/java/slf4j-api-1.7.21.jar',
-    # '$(slf4j)/lib/java/slf4j-api-1.7.10.jar',
     '$(commons_io)/lib/java/commons-io-2.4.jar',
     '$(commons_codec)/lib/java/commons-codec-1.9.jar',
     '$(aws_java_sdk)/lib/java/commons-logging-1.1.3.jar',
@@ -91,18 +85,12 @@ deps = [
 
     '$(gcs_java_sdk)/lib/java/jsr305-1.3.9.jar']
 
-resources = []
-if buildlib.g_args.debug:
-    deps.append('$(slf4j)/lib/java/slf4j-simple-1.7.21.jar')
-    resources.append(join(moduledir, 'resources/simplelogger.properties')) 
-
 rev_info = os.getenv('name', 's3lib-1234-0pre').split('-')[1].replace('_', '-')
 impl_version = (rev_info + '_' + strftime("%Y%m%d%H%M", gmtime()))
 jar(
    name = 's3lib-$(version)',
    srcdirs = ['src'],
    classpath = deps,
-   resources = resources,
    javadoc =
      {'title' : "s3lib $(version) API Documentation"},
    manifest = {'add_classpath': True,
@@ -114,7 +102,7 @@ jar(
                                    ('Implementation-Title', "com.logicblox.s3lib"),
                                    ('Implementation-Version', impl_version),
                                    ('Implementation-Vendor', "LogicBlox, Inc.")]},
-   java_version = "1.7")
+   java_version = "1.8")
 
 test_deps = [
   '$(junit)/lib/java/junit-4.8.2.jar',

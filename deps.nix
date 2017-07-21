@@ -41,8 +41,8 @@ in {
 log4j =
     buildjar {
       name = "log4j-1.2.13";
-      url = http://mirrors.ibiblio.org/maven2/log4j/log4j/1.2.13/log4j-1.2.13.jar;
-      sha256 = "1yfcyjrhyxlcmklba911sh66145pvjbv63s6lw229s1vlv4z1my6";
+      url = http://repo1.maven.org/maven2/log4j/log4j/1.2.13/log4j-1.2.13.jar;
+      sha256 = "053zkljmfsaj4p1vmnlfr04g7fchsb8v0i7aqibpjbd6i5c63vf8";
     };
 
   commonsio =

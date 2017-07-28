@@ -68,7 +68,10 @@ log4j =
       };
       buildInputs = [unzip];
       buildCommand = ''
-        unzip $src
+        # o option is necessary because the archive contains two
+        # documentation files that have identical case-insensitive
+        # names.
+        unzip -o $src
 
         mkdir -p $out/lib/java
 

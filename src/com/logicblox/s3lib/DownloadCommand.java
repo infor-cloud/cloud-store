@@ -25,9 +25,10 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
 
-import com.google.common.base.Optional;
 import org.apache.commons.codec.digest.DigestUtils;
 
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.google.common.base.Optional;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.util.concurrent.AsyncFunction;
@@ -116,27 +117,33 @@ public class DownloadCommand extends Command
   
   public ListenableFuture<S3File> run(String bucket, String key, String version)
   {
-    try
-    {
-      if(_client.exists(bucket, key).get() == null)
-        throw new UsageException("Object not found at " + getUri(bucket, key));
-    }
-    catch(InterruptedException | ExecutionException ex)
-    {
-      throw new UsageException(
-        "Error checking object existance: " + ex.getMessage(), ex);
-    }
+    final File f = this.file;
 
-    if(_dryRun)
-    {
-      System.out.println("<DRYRUN> downloading '" + getUri(bucket, key)
-        + "' to '" + this.file.getAbsolutePath() + "'");
-      return Futures.immediateFuture(null);
-    }
-    else
-    {
-      return scheduleExecution(bucket, key, version);
-    }
+    ListenableFuture<ObjectMetadata> existsFuture = _client.exists(bucket, key);
+
+    ListenableFuture<S3File> result = Futures.transform(
+      existsFuture,
+      new AsyncFunction<ObjectMetadata,S3File>()
+      {
+        public ListenableFuture<S3File> apply(ObjectMetadata mdata)
+          throws UsageException
+        {
+          if(null == mdata)
+              throw new UsageException("Object not found at " + getUri(bucket, key));
+          if(_dryRun)
+          {
+            System.out.println("<DRYRUN> downloading '" + getUri(bucket, key)
+              + "' to '" + f.getAbsolutePath() + "'");
+            return Futures.immediateFuture(null);
+          }
+          else
+          {
+            return scheduleExecution(bucket, key, version);
+          }
+        }
+      });
+
+      return result;
   }
 
 

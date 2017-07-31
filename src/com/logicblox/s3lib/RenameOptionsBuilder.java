@@ -5,8 +5,8 @@ import com.google.common.base.Optional;
 /**
  * {@code RenameOptionsBuilder} is a builder for {@code RenameOptions} objects.
  * <p>
- * Setting {@code sourceBucketName}, {@code sourceKey}, {@code
- * destinationBucketName} and {@code destinationKey} is mandatory. All the
+ * Setting {@code sourceBucket}, {@code sourceKey}, {@code
+ * destinationBucket} and {@code destinationKey} is mandatory. All the
  * others are optional.
  */
 public class RenameOptionsBuilder

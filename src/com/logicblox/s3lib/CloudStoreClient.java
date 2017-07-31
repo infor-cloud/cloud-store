@@ -367,7 +367,7 @@ public interface CloudStoreClient {
      * permission to it. Respectively, the destination bucket must already
      * exist and the caller must have write permission to it.
      *
-     * @param options Copy options
+     * @param options CopyOptions
      * @see CloudStoreClient#copyToDir(CopyOptions)
      * @see CopyOptions
      */
@@ -384,7 +384,7 @@ public interface CloudStoreClient {
      * permission to it. Respectively, the destination bucket must already exist
      * and the caller must have write permission to it.
      *
-     * @param options Copy options
+     * @param options CopyOptions
      * @see CloudStoreClient#copy(CopyOptions)
      * @see CopyOptions
      */
@@ -392,9 +392,38 @@ public interface CloudStoreClient {
         InterruptedException, ExecutionException, IOException,
         URISyntaxException;
 
+    /**
+     * Renames an object according to {@code options}. For more details
+     * check {@link com.logicblox.s3lib.RenameOptions}.  Note that this is
+     * equivalent to a copy operation followed by a delete operation.
+     * <p>
+     * The source bucket must already exist and the caller must have read
+     * permission to it. Respectively, the destination bucket must already
+     * exist and the caller must have write permission to it.
+     *
+     * @param options RenameOptions - provides parameters for the rename operation
+     * @see CloudStoreClient#renameDirectory(RenameOptions)
+     * @see RenameOptions
+     */
     ListenableFuture<S3File> rename(RenameOptions options)
       throws IOException;
 
+    /**
+     * Renames all keys that share a prefix to have another prefix -- in other
+     * words, rename a folder.  All keys that would be returned by a list
+     * operation on the source key will be renamed. 
+     * <p>
+     * The source bucket must already exist and the caller must have read
+     * permission to it. Respectively, the destination bucket must already
+     * exist and the caller must have write permission to it.
+     * <p>
+     * Both the source and destination keys should be folders.  There must be some keys
+     * that match the source founder, but the destination folder does not need to exist.
+     *
+     * @param options RenameOptions
+     * @see CloudStoreClient#rename(RenameOptions)
+     * @see RenameOptions
+     */
     ListenableFuture<List<S3File>> renameDirectory(RenameOptions options)
       throws InterruptedException, ExecutionException, IOException;
 

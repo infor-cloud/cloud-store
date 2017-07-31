@@ -550,9 +550,16 @@ catch(Throwable t)
       TestUtils.downloadFile(src, dlTemp);
       msg = "expected exception";
     }
-    catch(UsageException ex)
+    catch(Exception ex)
     {
-      Assert.assertTrue(ex.getMessage().contains("Object not found"));
+      if((null != ex.getCause()) && (ex.getCause() instanceof UsageException))
+      {
+        Assert.assertTrue(ex.getCause().getMessage().contains("Object not found"));
+      }
+      else
+      {
+        throw ex;
+      }
     }
     Assert.assertNull(msg);
 
@@ -564,9 +571,16 @@ catch(Throwable t)
       TestUtils.downloadFile(src, dlTemp);
       msg = "expected exception";
     }
-    catch(UsageException ex)
+    catch(Exception ex)
     {
-      Assert.assertTrue(ex.getMessage().contains("Object not found"));
+      if((null != ex.getCause()) && (ex.getCause() instanceof UsageException))
+      {
+        Assert.assertTrue(ex.getMessage().contains("Object not found"));
+      }
+      else
+      {
+        throw ex;
+      }
     }
     Assert.assertNull(msg);
   }

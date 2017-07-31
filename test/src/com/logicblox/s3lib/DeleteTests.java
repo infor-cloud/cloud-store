@@ -292,10 +292,17 @@ try
       _client.delete(opts).get();
       msg = "expected exception (object not found)";
     }
-    catch(UsageException ex)
+    catch(Exception ex)
     {
-      // expected
-      Assert.assertTrue(ex.getMessage().contains("Object not found"));
+      if((null != ex.getCause()) && (ex.getCause() instanceof UsageException))
+      {
+        // expected
+        Assert.assertTrue(ex.getMessage().contains("Object not found"));
+      }
+      else
+      {
+        throw ex;
+      }
     }
     Assert.assertNull(msg);
     Assert.assertEquals(uploadCount, TestUtils.listObjects(_testBucket, rootPrefix).size());

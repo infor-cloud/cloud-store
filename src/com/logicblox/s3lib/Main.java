@@ -695,10 +695,23 @@ class Main
           .setDryRun(dryRun)
           .setForceDelete(forceDelete)
           .createDeleteOptions();
-      if(getObjectKey().endsWith("/"))
-        client.deleteDir(opts).get();
-      else
-        client.delete(opts).get();
+
+      try
+      {
+        if(getObjectKey().endsWith("/"))
+          client.deleteDir(opts).get();
+        else
+          client.delete(opts).get();
+      }
+      catch(Exception ex)
+      {
+        // if UsageException is thrown from the command, rethrow that instead of the
+        // wrapper exception to get cleaner error logging
+        if((null != ex.getCause()) && (ex.getCause() instanceof UsageException))
+          throw (UsageException) ex.getCause();
+        else
+          throw ex;
+      }
       client.shutdown();
     }
   }

@@ -1,6 +1,9 @@
 package com.logicblox.s3lib;
 
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -39,44 +42,54 @@ public class DeleteCommand extends Command
   {
     final String bucket = _options.getBucket();
     final String key = _options.getObjectKey();
+    final boolean forceDelete = _options.forceDelete();
 
-    boolean exists = false;
-    try
-    {
-      exists = (_client.exists(bucket, key).get() != null);
+    ListenableFuture<ObjectMetadata> existsFuture = _client.exists(bucket, key);
 
-    }
-    catch(InterruptedException | ExecutionException ex)
-    {
-      throw new UsageException(
-        "Error checking object existence: " + ex.getMessage(), ex);
-    }
-    if(!exists)
-    {
-      if(_options.forceDelete())
-        return Futures.immediateFuture(new S3File());
-      else
-        throw new UsageException("Object not found at " + getUri(bucket, key));
-    }
-
-    ListenableFuture<S3File> future =
-      executeWithRetry(
-        _executor,
-        new Callable<ListenableFuture<S3File>>()
+    ListenableFuture<S3File> result = Futures.transform(
+      existsFuture,
+      new AsyncFunction<ObjectMetadata,S3File>()
+      {
+        public ListenableFuture<S3File> apply(ObjectMetadata mdata)
+          throws UsageException
         {
-          public ListenableFuture<S3File> call()
+          if(null == mdata)
           {
-            return runActual();
+            if(forceDelete)
+              return Futures.immediateFuture(new S3File());
+            else
+              throw new UsageException("Object not found at " + getUri(bucket, key));
           }
+          return getDeleteFuture();
+        }
+      });
 
-          public String toString()
-          {
-            return "delete " + getUri(bucket, key);
-          }
-        });
-
-    return future;
+      return result;
   }
+
+
+  private ListenableFuture<S3File> getDeleteFuture()
+  {
+    final String bucket = _options.getBucket();
+    final String key = _options.getObjectKey();
+
+    ListenableFuture<S3File> deleteFuture = executeWithRetry(
+      _executor,
+      new Callable<ListenableFuture<S3File>>()
+      {
+        public ListenableFuture<S3File> call()
+        {
+          return runActual();
+        }
+
+        public String toString()
+        {
+          return "delete " + getUri(bucket, key);
+        }
+      });
+    return deleteFuture;
+  }
+
 
   private ListenableFuture<S3File> runActual()
   {

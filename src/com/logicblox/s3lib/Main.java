@@ -703,14 +703,11 @@ class Main
         else
           client.delete(opts).get();
       }
-      catch(Exception ex)
+      catch(ExecutionException exc)
       {
         // if UsageException is thrown from the command, rethrow that instead of the
         // wrapper exception to get cleaner error logging
-        if((null != ex.getCause()) && (ex.getCause() instanceof UsageException))
-          throw (UsageException) ex.getCause();
-        else
-          throw ex;
+        rethrow(exc.getCause());
       }
       client.shutdown();
     }

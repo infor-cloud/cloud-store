@@ -117,10 +117,14 @@ public class DownloadCommand extends Command
   
   public ListenableFuture<S3File> run(String bucket, String key, String version)
   {
-    final File f = this.file;
+    if(_dryRun)
+    {
+      System.out.println("<DRYRUN> downloading '" + getUri(bucket, key)
+        + "' to '" + this.file.getAbsolutePath() + "'");
+      return Futures.immediateFuture(null);
+    }
 
     ListenableFuture<ObjectMetadata> existsFuture = _client.exists(bucket, key);
-
     ListenableFuture<S3File> result = Futures.transform(
       existsFuture,
       new AsyncFunction<ObjectMetadata,S3File>()
@@ -130,16 +134,7 @@ public class DownloadCommand extends Command
         {
           if(null == mdata)
               throw new UsageException("Object not found at " + getUri(bucket, key));
-          if(_dryRun)
-          {
-            System.out.println("<DRYRUN> downloading '" + getUri(bucket, key)
-              + "' to '" + f.getAbsolutePath() + "'");
-            return Futures.immediateFuture(null);
-          }
-          else
-          {
-            return scheduleExecution(bucket, key, version);
-          }
+          return scheduleExecution(bucket, key, version);
         }
       });
 

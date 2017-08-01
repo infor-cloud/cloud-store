@@ -56,11 +56,7 @@ class GCSUpload implements Upload {
                                              Optional<OverallProgressListener>
                                                  progressListener) {
         // added to support retry testing
-        if(!this.options.ignoreAbortInjection()
-             && (UploadOptions.decrementAbortInjectionCounter(uploadId) > 0))
-        {
-            throw new AbortInjection("forcing upload abort");
-        }
+        options.injectAbort(uploadId);
 
         return executor.submit(new UploadCallable(partNumber, partSize, stream,
             progressListener));

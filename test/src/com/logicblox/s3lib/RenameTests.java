@@ -178,8 +178,8 @@ while(count < retryCount)
         .setDestinationKey(Utils.getObjectKey(dest))
         .setRecursive(true)
         .createRenameOptions();
-      oldGlobalFlag = CopyOptions.useGlobalAbortCounter(true);
-      CopyOptions.setAbortInjectionCounter(1);
+      oldGlobalFlag = CopyOptions.getAbortCounters().useGlobalCounter(true);
+      CopyOptions.getAbortCounters().setInjectionCounter(1);
          // abort first rename during copy phase
       try
       {
@@ -215,9 +215,9 @@ while(count < retryCount)
     finally
     {
       // reset abort injection so other tests aren't affected
-      CopyOptions.useGlobalAbortCounter(oldGlobalFlag);
-      CopyOptions.setAbortInjectionCounter(0);
-      CopyOptions.clearAbortInjectionCounters();
+      CopyOptions.getAbortCounters().useGlobalCounter(oldGlobalFlag);
+      CopyOptions.getAbortCounters().setInjectionCounter(0);
+      CopyOptions.getAbortCounters().clearInjectionCounters();
     }
 }
   }
@@ -266,8 +266,8 @@ while(count < retryCount)
       boolean oldGlobalFlag = false;
       try
       {
-        oldGlobalFlag = DeleteOptions.useGlobalAbortCounter(true);
-        DeleteOptions.setAbortInjectionCounter(1);
+        oldGlobalFlag = DeleteOptions.getAbortCounters().useGlobalCounter(true);
+        DeleteOptions.getAbortCounters().setInjectionCounter(1);
            // abort first rename during delete phase
         _client.renameDirectory(opts).get();
       }
@@ -279,9 +279,9 @@ while(count < retryCount)
       finally
       {
         // reset abort injection so other tests aren't affected
-        DeleteOptions.useGlobalAbortCounter(oldGlobalFlag);
-        DeleteOptions.setAbortInjectionCounter(0);
-        DeleteOptions.clearAbortInjectionCounters();
+        DeleteOptions.getAbortCounters().useGlobalCounter(oldGlobalFlag);
+        DeleteOptions.getAbortCounters().setInjectionCounter(0);
+        DeleteOptions.getAbortCounters().clearInjectionCounters();
       }
       
       // verify that nothing moved
@@ -351,7 +351,7 @@ while(count < retryCount)
         .setDestinationKey(Utils.getObjectKey(dest))
         .setRecursive(true)
         .createRenameOptions();
-      DeleteOptions.setAbortInjectionCounter(1);
+      DeleteOptions.getAbortCounters().setInjectionCounter(1);
         // should be one more than retry count.  retries disabled by default
       String msg = null;
       try
@@ -389,8 +389,8 @@ while(count < retryCount)
     finally
     {
       // reset abort injection so other tests aren't affected
-      DeleteOptions.setAbortInjectionCounter(0);
-      DeleteOptions.clearAbortInjectionCounters();
+      DeleteOptions.getAbortCounters().setInjectionCounter(0);
+      DeleteOptions.getAbortCounters().clearInjectionCounters();
     }
 }
   }
@@ -437,7 +437,7 @@ while(count < retryCount)
         .setDestinationKey(Utils.getObjectKey(dest))
         .setRecursive(true)
         .createRenameOptions();
-      CopyOptions.setAbortInjectionCounter(1);
+      CopyOptions.getAbortCounters().setInjectionCounter(1);
         // should be one more than retry count.  retries disabled by default
       String msg = null;
       try
@@ -475,8 +475,8 @@ while(count < retryCount)
     finally
     {
       // reset abort injection so other tests aren't affected
-      CopyOptions.setAbortInjectionCounter(0);
-      CopyOptions.clearAbortInjectionCounters();
+      CopyOptions.getAbortCounters().setInjectionCounter(0);
+      CopyOptions.getAbortCounters().clearInjectionCounters();
     }
 }
   }
@@ -504,7 +504,7 @@ while(count < retryCount)
       int retryCount = 10;
       int abortCount = 3;
       _client.setRetryCount(retryCount);
-      CopyOptions.setAbortInjectionCounter(abortCount);
+      CopyOptions.getAbortCounters().setInjectionCounter(abortCount);
 
       // rename the file
       URI src = dest;
@@ -529,8 +529,8 @@ while(count < retryCount)
     {
       // reset retry and abort injection state so we don't affect other tests
       TestUtils.resetRetryCount();
-      CopyOptions.setAbortInjectionCounter(0);
-      CopyOptions.clearAbortInjectionCounters();
+      CopyOptions.getAbortCounters().setInjectionCounter(0);
+      CopyOptions.getAbortCounters().clearInjectionCounters();
     }
   }
 
@@ -556,7 +556,7 @@ while(count < retryCount)
       int retryCount = 10;
       int abortCount = 3;
       _client.setRetryCount(retryCount);
-      DeleteOptions.setAbortInjectionCounter(abortCount);
+      DeleteOptions.getAbortCounters().setInjectionCounter(abortCount);
 
       // rename the file
       URI src = dest;
@@ -581,8 +581,8 @@ while(count < retryCount)
     {
       // reset retry and abort injection state so we don't affect other tests
       TestUtils.resetRetryCount();
-      DeleteOptions.setAbortInjectionCounter(0);
-      DeleteOptions.clearAbortInjectionCounters();
+      DeleteOptions.getAbortCounters().setInjectionCounter(0);
+      DeleteOptions.getAbortCounters().clearInjectionCounters();
     }
   }
 
@@ -612,7 +612,7 @@ while(count < retryCount)
         .setDestinationBucket(Utils.getBucket(dest))
         .setDestinationKey(Utils.getObjectKey(dest))
         .createRenameOptions();
-      CopyOptions.setAbortInjectionCounter(1);
+      CopyOptions.getAbortCounters().setInjectionCounter(1);
         // should be one more than retry count.  retries disabled by default
       String msg = null;
       try
@@ -636,8 +636,8 @@ while(count < retryCount)
     finally
     {
       // reset abort injection so other tests aren't affected
-      CopyOptions.setAbortInjectionCounter(0);
-      CopyOptions.clearAbortInjectionCounters();
+      CopyOptions.getAbortCounters().setInjectionCounter(0);
+      CopyOptions.getAbortCounters().clearInjectionCounters();
     }
   }
 
@@ -667,7 +667,7 @@ while(count < retryCount)
         .setDestinationBucket(Utils.getBucket(dest))
         .setDestinationKey(Utils.getObjectKey(dest))
         .createRenameOptions();
-      DeleteOptions.setAbortInjectionCounter(1);
+      DeleteOptions.getAbortCounters().setInjectionCounter(1);
          // should be one more than retry count.  retries disabled by default
       String msg = null;
       try
@@ -691,8 +691,8 @@ while(count < retryCount)
     finally
     {
       // reset abort injection so other tests aren't affected
-      DeleteOptions.setAbortInjectionCounter(0);
-      DeleteOptions.clearAbortInjectionCounters();
+      DeleteOptions.getAbortCounters().setInjectionCounter(0);
+      DeleteOptions.getAbortCounters().clearInjectionCounters();
     }
   }
 

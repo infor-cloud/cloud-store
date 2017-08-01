@@ -198,11 +198,7 @@ public class CopyCommand extends Command
   {
     // support for testing failures
     String srcUri = getUri(copy.getSourceBucket(), copy.getSourceKey());
-    if(!_options.ignoreAbortInjection()
-         && (CopyOptions.decrementAbortInjectionCounter(srcUri) > 0))
-    {
-      throw new AbortInjection("forcing copy abort");
-    }
+    _options.injectAbort(srcUri);
 
     Long start;
     Long end;

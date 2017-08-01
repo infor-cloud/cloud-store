@@ -13,10 +13,8 @@ public class DeleteOptions {
   private boolean _ignoreAbortInjection;
   
   // for testing injecion of aborts during a delete
-  private static int _abortInjectionCounter = 0;
-  private static boolean _globalAbortCounter = false;
-  private static Object _abortSync = new Object();
-  private static Map<String,Integer> _injectionCounters = new HashMap<String,Integer>();
+  private static AbortCounters _abortCounters = new AbortCounters();
+
 
   DeleteOptions(String bucket, String objectKey, boolean recursive, boolean dryRun,
     boolean forceDelete, boolean ignoreAbortInjection)
@@ -29,58 +27,21 @@ public class DeleteOptions {
     _ignoreAbortInjection = ignoreAbortInjection;
   }
   
-  // for testing injection of aborts during a delete
-  static void setAbortInjectionCounter(int counter)
+  // for testing injection of aborts during a copy
+  void injectAbort(String id)
   {
-    synchronized(_abortSync)
+    if(!_ignoreAbortInjection
+         && (_abortCounters.decrementInjectionCounter(id) > 0))
     {
-      _abortInjectionCounter = counter;
+      throw new AbortInjection("forcing delete abort");
     }
   }
 
-  // for testing injection of aborts during a delete
-  static int decrementAbortInjectionCounter(String id)
-  {
-    synchronized(_abortSync)
+    static AbortCounters getAbortCounters()
     {
-      if(_abortInjectionCounter <= 0)
-        return 0;
-
-      if(_globalAbortCounter)
-        id = "";
-
-      if(!_injectionCounters.containsKey(id))
-        _injectionCounters.put(id, _abortInjectionCounter);
-      int current = _injectionCounters.get(id);
-      _injectionCounters.put(id, current - 1);
-      return current;
+      return _abortCounters;
     }
-  }
 
-  static void clearAbortInjectionCounters()
-  {
-    synchronized(_abortSync)
-    {
-      _injectionCounters.clear();
-    }
-  }
-
-  // if true, use a single abort counter for all delete operations.
-  // otherwise (default), use a separate counter for each delete
-  static boolean useGlobalAbortCounter(boolean b)
-  {
-    synchronized(_abortSync)
-    {
-      boolean old = _globalAbortCounter;
-      _globalAbortCounter = b;
-      return old;
-    }
-  }
-
-  public boolean ignoreAbortInjection()
-  {
-    return _ignoreAbortInjection;
-  }
 
   public String getBucket()
   {

@@ -111,11 +111,7 @@ public class GCSCopyDirCommand extends Command
   {
     // support for testing failures
     String srcUri = getUri(options.getSourceBucketName(), src.getKey());
-    if(!options.ignoreAbortInjection()
-         && (CopyOptions.decrementAbortInjectionCounter(srcUri) > 0))
-    {
-      throw new AbortInjection("forcing copy abort");
-    }
+    options.injectAbort(srcUri);
 
     Storage.Objects.Copy cmd = _storage.objects().copy(
       options.getSourceBucketName(), src.getKey(),

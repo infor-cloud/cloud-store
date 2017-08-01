@@ -275,7 +275,7 @@ catch(Throwable t)
       clearRetryCount();
       int retryCount = 3;
       _client.setRetryCount(retryCount);
-      UploadOptions.setAbortInjectionCounter(10);
+      UploadOptions.getAbortCounters().setInjectionCounter(10);
       List<S3File> objs = TestUtils.listTestBucketObjects();
       int originalCount = objs.size();
 
@@ -319,8 +319,8 @@ catch(Throwable t)
     {
       // reset retry and abort injection state so we don't affect other tests
       TestUtils.resetRetryCount();
-      UploadOptions.setAbortInjectionCounter(0);
-      UploadOptions.clearAbortInjectionCounters();
+      UploadOptions.getAbortCounters().setInjectionCounter(0);
+      UploadOptions.getAbortCounters().clearInjectionCounters();
     }
   }
 
@@ -336,7 +336,7 @@ catch(Throwable t)
       int retryCount = 10;
       int abortCount = 3;
       _client.setRetryCount(retryCount);
-      UploadOptions.setAbortInjectionCounter(abortCount);
+      UploadOptions.getAbortCounters().setInjectionCounter(abortCount);
       List<S3File> objs = TestUtils.listTestBucketObjects();
       int originalCount = objs.size();
 
@@ -379,8 +379,8 @@ catch(Throwable t)
     {
       // reset retry and abort injection state so we don't affect other tests
       TestUtils.resetRetryCount();
-      UploadOptions.setAbortInjectionCounter(0);
-      UploadOptions.clearAbortInjectionCounters();
+      UploadOptions.getAbortCounters().setInjectionCounter(0);
+      UploadOptions.getAbortCounters().clearInjectionCounters();
     }
   }
 

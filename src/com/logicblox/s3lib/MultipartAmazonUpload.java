@@ -158,11 +158,7 @@ class MultipartAmazonUpload implements Upload
     private Void upload(HashingInputStream stream) throws BadHashException {
 
       // added to support retry testing
-      if(!options.ignoreAbortInjection()
-          && (UploadOptions.decrementAbortInjectionCounter(uploadId) > 0))
-      {
-        throw new AbortInjection("forcing upload abort");
-      }
+      options.injectAbort(uploadId);
 
       UploadPartRequest req = new UploadPartRequest();
       req.setBucketName(bucketName);

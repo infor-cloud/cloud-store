@@ -72,7 +72,7 @@ public class DeleteTests
       int retryCount = 10;
       int abortCount = 3;
       _client.setRetryCount(retryCount);
-      DeleteOptions.setAbortInjectionCounter(abortCount);
+      DeleteOptions.getAbortCounters().setInjectionCounter(abortCount);
 
       f = _client.delete(opts).get();
       Assert.assertNotNull(f);
@@ -82,8 +82,8 @@ public class DeleteTests
     {
       // reset retry and abort injection state so we don't affect other tests
       TestUtils.resetRetryCount();
-      DeleteOptions.setAbortInjectionCounter(0);
-      DeleteOptions.clearAbortInjectionCounters();
+      DeleteOptions.getAbortCounters().setInjectionCounter(0);
+      DeleteOptions.getAbortCounters().clearInjectionCounters();
     }
 
     // verify the deletion
@@ -132,13 +132,13 @@ try
     try
     {
       // set retry and abort options
-      oldGlobalFlag = DeleteOptions.useGlobalAbortCounter(true);
+      oldGlobalFlag = DeleteOptions.getAbortCounters().useGlobalCounter(true);
       ThrowableRetriableTask.addRetryListener(this);
       clearRetryCount();
       int retryCount = 10;
       int abortCount = 3;
       _client.setRetryCount(retryCount);
-      DeleteOptions.setAbortInjectionCounter(abortCount);
+      DeleteOptions.getAbortCounters().setInjectionCounter(abortCount);
 
       List<S3File> files = _client.deleteDir(opts).get();
       Assert.assertEquals(5, files.size());
@@ -148,9 +148,9 @@ try
     {
       // reset retry and abort injection state so we don't affect other tests
       TestUtils.resetRetryCount();
-      DeleteOptions.setAbortInjectionCounter(0);
-      DeleteOptions.useGlobalAbortCounter(oldGlobalFlag);
-      DeleteOptions.clearAbortInjectionCounters();
+      DeleteOptions.getAbortCounters().setInjectionCounter(0);
+      DeleteOptions.getAbortCounters().useGlobalCounter(oldGlobalFlag);
+      DeleteOptions.getAbortCounters().clearInjectionCounters();
     }
 
     // verify the deletions

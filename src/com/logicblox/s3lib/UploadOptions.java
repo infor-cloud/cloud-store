@@ -43,9 +43,8 @@ public class UploadOptions {
         overallProgressListenerFactory;
 
     // for testing
-    private static int _abortInjectionCounter = 0;
-    private static Object _abortSync = new Object();
-    private static Map<String,Integer> _injectionCounters = new HashMap<String,Integer>();
+    private static AbortCounters _abortCounters = new AbortCounters();
+
 
     UploadOptions(File file,
                   String bucket,
@@ -69,45 +68,21 @@ public class UploadOptions {
     }
 
 
-    // for testing
-    static void setAbortInjectionCounter(int counter)
+    // for testing injection of aborts during a copy
+    void injectAbort(String id)
     {
-      synchronized(_abortSync)
+      if(!this.ignoreAbortInjection
+           && (_abortCounters.decrementInjectionCounter(id) > 0))
       {
-        _abortInjectionCounter = counter;
+        throw new AbortInjection("forcing upload abort");
       }
     }
 
-    // for testing
-    static int decrementAbortInjectionCounter(String uploadId)
+    static AbortCounters getAbortCounters()
     {
-      synchronized(_abortSync)
-      {
-        if(_abortInjectionCounter <= 0)
-          return 0;
-
-        if(!_injectionCounters.containsKey(uploadId))
-          _injectionCounters.put(uploadId, _abortInjectionCounter);
-        int current = _injectionCounters.get(uploadId);
-        _injectionCounters.put(uploadId, current - 1);
-        return current;
-      }
+      return _abortCounters;
     }
 
-
-    static void clearAbortInjectionCounters()
-    {
-      synchronized(_abortSync)
-      {
-        _injectionCounters.clear();
-      }
-    }
-    
-
-    public boolean ignoreAbortInjection()
-    {
-      return this.ignoreAbortInjection;
-    }
 
     public File getFile() {
         return file;

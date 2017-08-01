@@ -97,13 +97,13 @@ try
     try
     {
       // set retry and abort options
-      oldGlobalFlag = CopyOptions.useGlobalAbortCounter(true);
+      oldGlobalFlag = CopyOptions.getAbortCounters().useGlobalCounter(true);
       ThrowableRetriableTask.addRetryListener(this);
       clearRetryCount();
       int retryCount = 10;
       int abortCount = 3;
       _client.setRetryCount(retryCount);
-      CopyOptions.setAbortInjectionCounter(abortCount);
+      CopyOptions.getAbortCounters().setInjectionCounter(abortCount);
 
       List<S3File> copy = _client.copyToDir(copyOpts).get();
       Assert.assertEquals(5, copy.size());
@@ -113,9 +113,9 @@ try
     {
       // reset retry and abort injection state so we don't affect other tests
       TestUtils.resetRetryCount();
-      CopyOptions.setAbortInjectionCounter(0);
-      CopyOptions.useGlobalAbortCounter(oldGlobalFlag);
-      CopyOptions.clearAbortInjectionCounters();
+      CopyOptions.getAbortCounters().setInjectionCounter(0);
+      CopyOptions.getAbortCounters().useGlobalCounter(oldGlobalFlag);
+      CopyOptions.getAbortCounters().clearInjectionCounters();
     }
 
     // verify the recursive copy
@@ -166,7 +166,7 @@ catch(Throwable t)
       int retryCount = 10;
       int abortCount = 3;
       _client.setRetryCount(retryCount);
-      CopyOptions.setAbortInjectionCounter(abortCount);
+      CopyOptions.getAbortCounters().setInjectionCounter(abortCount);
       
       // copy file
       CopyOptions copyOpts = new CopyOptionsBuilder()
@@ -190,8 +190,8 @@ catch(Throwable t)
     {
       // reset retry and abort injection state so we don't affect other tests
       TestUtils.resetRetryCount();
-      CopyOptions.setAbortInjectionCounter(0);
-      CopyOptions.clearAbortInjectionCounters();
+      CopyOptions.getAbortCounters().setInjectionCounter(0);
+      CopyOptions.getAbortCounters().clearInjectionCounters();
     }
 
   }

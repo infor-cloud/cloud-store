@@ -552,14 +552,8 @@ catch(Throwable t)
     }
     catch(Exception ex)
     {
-      if((null != ex.getCause()) && (ex.getCause() instanceof UsageException))
-      {
-        Assert.assertTrue(ex.getCause().getMessage().contains("Object not found"));
-      }
-      else
-      {
-        throw ex;
-      }
+      // expected
+      checkUsageException(ex, "Object not found");
     }
     Assert.assertNull(msg);
 
@@ -573,14 +567,8 @@ catch(Throwable t)
     }
     catch(Exception ex)
     {
-      if((null != ex.getCause()) && (ex.getCause() instanceof UsageException))
-      {
-        Assert.assertTrue(ex.getMessage().contains("Object not found"));
-      }
-      else
-      {
-        throw ex;
-      }
+      // expected
+      checkUsageException(ex, "Object not found");
     }
     Assert.assertNull(msg);
   }
@@ -614,9 +602,10 @@ catch(Throwable t)
       f = TestUtils.downloadFile(dest, dlTemp, false);
       Assert.fail("Expected download exception");
     }
-    catch(UsageException ex)
+    catch(Exception ex)
     {
       // expected
+      checkUsageException(ex, null);
     }
 
     // now download with overwite to make sure it replaces the file
@@ -656,10 +645,10 @@ try
       TestUtils.downloadDir(src, dlDir, false);
       msg = "expected exception (no object found)";
     }
-    catch(UsageException ex)
+    catch(Exception ex)
     {
       // expected
-      Assert.assertTrue(ex.getMessage().contains("No objects found"));
+      checkUsageException(ex, "No objects found");
     }
     Assert.assertNull(msg);
 
@@ -671,10 +660,10 @@ try
       TestUtils.downloadDir(src, existingFile, true, false);
       msg = "expected exception (can't overwrite file)";
     }
-    catch(UsageException ex)
+    catch(Exception ex)
     {
       // expected
-      Assert.assertTrue(ex.getMessage().contains("must be a directory"));
+      checkUsageException(ex, "must be a directory");
     }
     Assert.assertNull(msg);
     
@@ -693,10 +682,10 @@ try
       TestUtils.downloadDir(src, destDir, true, false);
       msg = "expected exception (can't overwrite file)";
     }
-    catch(UsageException ex)
+    catch(Exception ex)
     {
       // expected
-      Assert.assertTrue(ex.getMessage().contains("already exists"));
+      checkUsageException(ex, "already exists");
     }
     Assert.assertNull(msg);
     Assert.assertEquals(1, destDir.list().length);
@@ -939,9 +928,10 @@ catch(Throwable t)
       TestUtils.uploadEncryptedFile(toUpload, dest, keyName);
       Assert.fail("Expected upload error (key not found)");
     }
-    catch(UsageException ex)
+    catch(Exception ex)
     {
       // expected
+      checkUsageException(ex, null);
     }
 
     // upload should succeed now
@@ -991,9 +981,10 @@ catch(Throwable t)
       TestUtils.uploadEncryptedFile(toUpload, dest, keyName);
       Assert.fail("Expected upload error (key not found)");
     }
-    catch(UsageException ex)
+    catch(Exception ex)
     {
       // expected
+      checkUsageException(ex, null);
     }
 
     // upload with only public key in key dir.  should succeed
@@ -1020,9 +1011,31 @@ catch(Throwable t)
     _retryCount = 0;
   }
 
+
   private synchronized int getRetryCount()
   {
     return _retryCount;
   }
 
+
+  private void checkUsageException(Exception ex, String expectedMsg)
+    throws Exception
+  {
+    UsageException uex = null;
+    if(ex instanceof UsageException)
+    {
+      uex = (UsageException) ex;
+    }
+    else
+    {
+      if((null != ex.getCause()) && (ex.getCause() instanceof UsageException))
+        uex = (UsageException) ex.getCause();
+    }
+
+    if(null == uex)
+      throw ex;
+
+    if(null != expectedMsg)
+      Assert.assertTrue(uex.getMessage().contains(expectedMsg));
+  }
 }

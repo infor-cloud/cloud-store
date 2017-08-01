@@ -294,15 +294,8 @@ try
     }
     catch(Exception ex)
     {
-      if((null != ex.getCause()) && (ex.getCause() instanceof UsageException))
-      {
-        // expected
-        Assert.assertTrue(ex.getMessage().contains("Object not found"));
-      }
-      else
-      {
-        throw ex;
-      }
+      // expected
+      checkUsageException(ex, "Object not found");
     }
     Assert.assertNull(msg);
     Assert.assertEquals(uploadCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -332,10 +325,10 @@ try
       _client.deleteDir(opts).get();
       msg = "expected exception (object not found)";
     }
-    catch(UsageException ex)
+    catch(Exception ex)
     {
       // expected
-      Assert.assertTrue(ex.getMessage().contains("No objects found that match"));
+      checkUsageException(ex, "No objects found that match");
     }
     Assert.assertNull(msg);
     Assert.assertEquals(uploadCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -402,8 +395,30 @@ catch(Throwable t)
     _retryCount = 0;
   }
 
+
   private synchronized int getRetryCount()
   {
     return _retryCount;
+  }
+
+
+  private void checkUsageException(Exception ex, String expectedMsg)
+    throws Exception
+  {
+    UsageException uex = null;
+    if(ex instanceof UsageException)
+    {
+      uex = (UsageException) ex;
+    }
+    else
+    {
+      if((null != ex.getCause()) && (ex.getCause() instanceof UsageException))
+        uex = (UsageException) ex.getCause();
+    }
+
+    if(null == uex)
+      throw ex;
+    else
+      Assert.assertTrue(uex.getMessage().contains(expectedMsg));
   }
 }

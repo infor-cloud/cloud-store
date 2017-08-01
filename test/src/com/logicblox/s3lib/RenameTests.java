@@ -794,10 +794,10 @@ try
       _client.rename(opts).get();
       msg = "expected exception (dest exists)";
     }
-    catch(UsageException ex)
+    catch(Exception ex)
     {
       // expected
-      Assert.assertTrue(ex.getMessage().contains("Cannot overwrite existing destination"));
+      checkUsageException(ex, "Cannot overwrite existing destination");
     }
     Assert.assertNull(msg);
     return;
@@ -844,10 +844,10 @@ try
       _client.rename(opts).get();
       msg = "expected exception (dest exists)";
     }
-    catch(UsageException ex)
+    catch(Exception ex)
     {
       // expected
-      Assert.assertTrue(ex.getMessage().contains("Cannot overwrite existing destination"));
+      checkUsageException(ex, "Cannot overwrite existing destination");
     }
     Assert.assertNull(msg);
     return;
@@ -889,10 +889,10 @@ try
       _client.rename(opts).get();
       msg = "expected exception (source missing)";
     }
-    catch(UsageException ex)
+    catch(Exception ex)
     {
       // expected
-      Assert.assertTrue(ex.getMessage().contains("does not exist"));
+      checkUsageException(ex, "does not exist");
     }
     Assert.assertNull(msg);
     return;
@@ -1224,10 +1224,10 @@ try
       _client.renameDirectory(opts).get();
       msg = "expected exception (source missing)";
     }
-    catch(UsageException ex)
+    catch(Exception ex)
     {
       // expected
-      Assert.assertTrue(ex.getMessage().contains("No objects found"));
+      checkUsageException(ex, "No objects found");
     }
     Assert.assertNull(msg);
     return;
@@ -1288,10 +1288,10 @@ try
       _client.renameDirectory(opts).get();
       msg = "expected exception (source missing)";
     }
-    catch(UsageException ex)
+    catch(Exception ex)
     {
       // expected
-      Assert.assertTrue(ex.getMessage().contains("Cannot overwrite existing destination"));
+      checkUsageException(ex, "Cannot overwrite existing destination");
     }
     Assert.assertNull(msg);
     return;
@@ -1372,8 +1372,32 @@ catch(Throwable t)
     _retryCount = 0;
   }
 
+
   private synchronized int getRetryCount()
   {
     return _retryCount;
   }
+
+
+  private void checkUsageException(Exception ex, String expectedMsg)
+    throws Exception
+  {
+    UsageException uex = null;
+    if(ex instanceof UsageException)
+    {
+      uex = (UsageException) ex;
+    }
+    else
+    {
+      if((null != ex.getCause()) && (ex.getCause() instanceof UsageException))
+        uex = (UsageException) ex.getCause();
+    }
+
+    if(null == uex)
+      throw ex;
+    else
+      Assert.assertTrue(uex.getMessage().contains(expectedMsg));
+  }
+
+
 }

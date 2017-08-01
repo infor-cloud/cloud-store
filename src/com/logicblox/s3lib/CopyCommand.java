@@ -124,16 +124,7 @@ public class CopyCommand extends Command
     {
       public ListenableFuture<Copy> apply(final Copy copy) throws Exception
       {
-        return executeWithRetry(
-          _executor,
-          new Callable<ListenableFuture<Copy>>()
-          {
-            public ListenableFuture<Copy> call()
-              throws IOException
-            {
-              return startParts(copy);
-            }
-          });
+        return startParts(copy);
       }
     };
   }
@@ -143,13 +134,6 @@ public class CopyCommand extends Command
   {
     String srcUri = getUri(copy.getSourceBucket(), copy.getSourceKey());
     String destUri = getUri(copy.getDestinationBucket(), copy.getDestinationKey());
-        
-    // support for testing failures
-    if(!_options.ignoreAbortInjection()
-         && (CopyOptions.decrementAbortInjectionCounter(srcUri) > 0))
-    {
-      throw new AbortInjection("forcing copy abort");
-    }
     
     Map<String,String> meta = copy.getMeta();
     String errPrefix = "Copy of " + srcUri + " to " + destUri + ": ";
@@ -212,6 +196,14 @@ public class CopyCommand extends Command
                                                      final int partNumber,
                                                      OverallProgressListener opl)
   {
+    // support for testing failures
+    String srcUri = getUri(copy.getSourceBucket(), copy.getSourceKey());
+    if(!_options.ignoreAbortInjection()
+         && (CopyOptions.decrementAbortInjectionCounter(srcUri) > 0))
+    {
+      throw new AbortInjection("forcing copy abort");
+    }
+
     Long start;
     Long end;
     long partSize;

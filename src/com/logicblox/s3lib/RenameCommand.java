@@ -1,6 +1,7 @@
 package com.logicblox.s3lib;
 
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.AsyncFunction;
@@ -47,92 +48,144 @@ public class RenameCommand extends Command
   public ListenableFuture<S3File> run()
     throws IOException
   {
-    checkSourceExists();
-    checkDestExists();
-
-    final String destKey = getDestKey();
-    final String srcUri =
-      getUri(_options.getSourceBucket(), _options.getSourceKey());
-
     if(_options.isDryRun())
     {
       System.out.println("<DRYRUN> renaming '"
-        + srcUri
+        + getSourceUri()
         + "' to '"
-        + getUri(_options.getDestinationBucket(), destKey)
+        + getDestUri()
         + "'");
       return Futures.immediateFuture(null);
     }
-    else
+
+    return Futures.withFallback(buildFutureChain(), cleanupOnError());
+  }
+
+
+  // try to clean up if a failure occurs.  just have to worry
+  // about failure during a delete phase and remove the copied
+  // file
+  private FutureFallback<S3File> cleanupOnError()
+  {
+    return new FutureFallback<S3File>()
     {
-      final DeleteOptions deleteOpts = new DeleteOptionsBuilder()
-        .setBucket(_options.getSourceBucket())
-        .setObjectKey(_options.getSourceKey())
-        .createDeleteOptions();
-      ListenableFuture<S3File> copyAndDelete = Futures.transform(
-        getCopyOp(),
-        new AsyncFunction<S3File,S3File>()
-        {
-          public ListenableFuture<S3File> apply(S3File srcFile)
-          {
-            return _client.delete(deleteOpts);
-          }
-        }
-      );
+      public ListenableFuture<S3File> create(Throwable t)
+      {
+        DeleteOptions deleteOpts = new DeleteOptionsBuilder()
+          .setBucket(_options.getDestinationBucket())
+          .setObjectKey(_options.getDestinationKey())
+          .setForceDelete(true)
+          .setIgnoreAbortInjection(true)
+          .createDeleteOptions();
+        ListenableFuture<S3File> deleteFuture = _client.delete(deleteOpts);
 
-      // return S3File with the dest
-      ListenableFuture<S3File> result = Futures.transform(
-        copyAndDelete,
-        new Function<S3File, S3File>()
-        {
-          public S3File apply(S3File deletedFile)
-          {
-            return new S3File(
-              _options.getDestinationBucket(), destKey);
-          }
-        }
-      );
+        return Futures.transform(
+          deleteFuture,
 
-      // try to clean up if a failure occurs.  just have to worry
-      // about failure during a delete phase and remove the copied
-      // file
-      return Futures.withFallback(
-        result,
-        new FutureFallback<S3File>()
-        {
-          public ListenableFuture<S3File> create(Throwable t)
+          new AsyncFunction<S3File,S3File>()
           {
-            DeleteOptions deleteOpts = new DeleteOptionsBuilder()
-              .setBucket(_options.getDestinationBucket())
-              .setObjectKey(_options.getDestinationKey())
-              .setForceDelete(true)
-              .setIgnoreAbortInjection(true)
-              .createDeleteOptions();
-            try
+            public ListenableFuture<S3File> apply(S3File f)
             {
-              _client.delete(deleteOpts).get();
-            }
-            catch(InterruptedException | ExecutionException ex)
-            {
-              return Futures.immediateFailedFuture(new Exception(
-                "Error cleaning up after rename failure:  " + ex.getMessage(), ex));
-            }
-            
-            if (t instanceof UsageException)
               return Futures.immediateFailedFuture(t);
+            }
+          });
+      }
+    };
+  }
 
-            return Futures.immediateFailedFuture(new Exception("Error " +
-              "renaming " + srcUri + ":  " + t.getMessage(), t));
+
+  // start by checking that source exists, then follow with dest check
+  private ListenableFuture<S3File> buildFutureChain()
+  {
+    ListenableFuture<ObjectMetadata> sourceExists = 
+      _client.exists(_options.getSourceBucket(), _options.getSourceKey());
+
+    return Futures.transform(
+      sourceExists,
+      new AsyncFunction<ObjectMetadata,S3File>()
+      {
+        public ListenableFuture<S3File> apply(ObjectMetadata mdata)
+          throws UsageException
+        {
+          if(null == mdata)
+            throw new UsageException("Source object '" + getSourceUri() + "' does not exist");
+          return checkDestExists();
+        }
+      });
+  }
+  
+
+  // follow dest check with copy op
+  private ListenableFuture<S3File> checkDestExists()
+  {
+    ListenableFuture<ObjectMetadata> destExists = 
+      _client.exists(_options.getDestinationBucket(), getDestKey());
+    return Futures.transform(
+      destExists,
+      new AsyncFunction<ObjectMetadata,S3File>()
+      {
+        public ListenableFuture<S3File> apply(ObjectMetadata mdata)
+          throws UsageException
+        {
+          if(null != mdata)
+          {
+            throw new UsageException("Cannot overwrite existing destination object '"
+              + getDestUri());
           }
-        });
-    }
+          return copyObject();
+        }
+      });
+  }
+
+
+  // copy is followed by delete
+  private ListenableFuture<S3File> copyObject()
+  {
+    return Futures.transform(
+      getCopyOp(),
+      new AsyncFunction<S3File,S3File>()
+      {
+        public ListenableFuture<S3File> apply(S3File srcFile)
+        {
+          return deleteObject();
+        }
+      }
+    );
+
+  }
+
+
+  // delete is followed by return of the dest file
+  private ListenableFuture<S3File> deleteObject()
+  {
+    return Futures.transform(
+      getDeleteOp(),
+      new Function<S3File, S3File>()
+      {
+        public S3File apply(S3File deletedFile)
+        {
+          return new S3File(
+            _options.getDestinationBucket(), getDestKey());
+        }
+      }
+    );
+  }
+
+
+  private ListenableFuture<S3File> getDeleteOp()
+  {
+    DeleteOptions deleteOpts = new DeleteOptionsBuilder()
+      .setBucket(_options.getSourceBucket())
+      .setObjectKey(_options.getSourceKey())
+      .createDeleteOptions();
+
+    return _client.delete(deleteOpts);
   }
 
 
   private ListenableFuture<S3File> getCopyOp()
-    throws IOException
   {
-    final CopyOptions copyOpts = new CopyOptionsBuilder()
+    CopyOptions copyOpts = new CopyOptionsBuilder()
       .setSourceBucketName(_options.getSourceBucket())
       .setSourceKey(_options.getSourceKey())
       .setDestinationBucketName(_options.getDestinationBucket())
@@ -144,24 +197,6 @@ public class RenameCommand extends Command
   }
 
 
-  private void checkSourceExists()
-  {
-    String bucket = _options.getSourceBucket();
-    String key = _options.getSourceKey();
-
-    try
-    {
-      if(_client.exists(bucket, key).get() == null)
-        throw new UsageException("Source object '" + getUri(bucket, key) + "' does not exist");
-    }
-    catch(InterruptedException | ExecutionException ex)
-    {
-      throw new UsageException(
-        "Error checking object existence: " + ex.getMessage(), ex);
-    }
-  }
-
-  
   private String getDestKey()
   {
     String key = _options.getDestinationKey();
@@ -176,22 +211,16 @@ public class RenameCommand extends Command
     return key;
   }
 
-  
-  private void checkDestExists()
+
+  private String getSourceUri()
   {
-    String bucket = _options.getDestinationBucket();
-    String key = getDestKey();
-    try
-    {
-      if(_client.exists(bucket, key).get() != null)
-        throw new UsageException("Cannot overwrite existing destination object '"
-          + getUri(bucket, key));
-    }
-    catch(InterruptedException | ExecutionException ex)
-    {
-      throw new UsageException(
-        "Error checking object existence: " + ex.getMessage(), ex);
-    }
+    return getUri(_options.getSourceBucket(), _options.getSourceKey());
   }
-  
+
+
+  private String getDestUri()
+  {
+    return getUri(_options.getDestinationBucket(), getDestKey());
+  }
+
 }

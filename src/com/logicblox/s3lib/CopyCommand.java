@@ -130,7 +130,7 @@ public class CopyCommand extends Command
   }
 
   private ListenableFuture<Copy> startParts(Copy copy)
-  throws IOException, UsageException
+    throws UsageException
   {
     String srcUri = getUri(copy.getSourceBucket(), copy.getSourceKey());
     String destUri = getUri(copy.getDestinationBucket(), copy.getDestinationKey());

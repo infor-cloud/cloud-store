@@ -1,6 +1,7 @@
 package com.logicblox.s3lib;
 
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -40,17 +41,34 @@ public class DeleteDirCommand extends Command
   public ListenableFuture<List<S3File>> run()
     throws InterruptedException, ExecutionException
   {
-    List<S3File> toDelete = queryFiles();
-    List<ListenableFuture<S3File>> futures = prepareFutures(toDelete);
+    ListenableFuture<List<S3File>> listObjs = queryFiles();
+    ListenableFuture<List<S3File>> result = Futures.transform(
+      listObjs,
+      new AsyncFunction<List<S3File>, List<S3File>>()
+      {
+        public ListenableFuture<List<S3File>> apply(List<S3File> potential)
+        {
+          List<S3File> matches = new ArrayList<S3File>();
+          for(S3File f : potential)
+          {
+            if(!f.getKey().endsWith("/"))
+              matches.add(f);
+          }
+          if(!_options.forceDelete() && matches.isEmpty())
+          {
+            throw new UsageException("No objects found that match '"
+              + getUri(_options.getBucket(), _options.getObjectKey()) + "'");
+          }
 
-    if(_options.isDryRun())
-    {
-      return Futures.immediateFuture(null);
-    }
-    else
-    {
-      return Futures.allAsList(futures);
-    }
+          List<ListenableFuture<S3File>> futures = prepareFutures(matches);
+
+          if(_options.isDryRun())
+            return Futures.immediateFuture(null);
+          else
+            return Futures.allAsList(futures);
+        }
+      });
+    return result;
   }
 
 
@@ -77,8 +95,7 @@ public class DeleteDirCommand extends Command
   }
 
 
-  private List<S3File> queryFiles()
-    throws InterruptedException, ExecutionException
+  private ListenableFuture<List<S3File>> queryFiles()
   {
     // find all files that need to be deleted
     ListOptions opts = new ListOptionsBuilder()
@@ -86,18 +103,6 @@ public class DeleteDirCommand extends Command
         .setObjectKey(_options.getObjectKey())
         .setRecursive(_options.isRecursive())
         .createListOptions();
-    List<S3File> matches = new ArrayList<S3File>();
-    List<S3File> potential = _client.listObjects(opts).get();
-    for(S3File f : potential)
-    {
-      if(!f.getKey().endsWith("/"))
-        matches.add(f);
-    }
-    if(!_options.forceDelete() && matches.isEmpty())
-    {
-      throw new UsageException("No objects found that match '"
-        + getUri(_options.getBucket(), _options.getObjectKey()) + "'");
-    }
-    return matches;
+    return _client.listObjects(opts);
   }
 }

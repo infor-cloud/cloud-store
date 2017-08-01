@@ -107,7 +107,6 @@ public class DownloadDirectoryCommand extends Command
 
   private ListenableFuture<List<S3File>> querySourceFiles(
     String bucket, String key, boolean recursive)
-      throws InterruptedException, ExecutionException
   {
     // find all files that need to be downloaded
     ListOptionsBuilder lob = new ListOptionsBuilder()

@@ -3,6 +3,7 @@ package com.logicblox.s3lib;
 import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.model.Objects;
 import com.google.api.services.storage.model.StorageObject;
+import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -44,24 +45,28 @@ public class GCSCopyDirCommand extends Command
       if(endIndex != -1)
         baseDirPath = options.getSourceKey().substring(0, endIndex+1);
     }
+    final String baseDirPathF = baseDirPath;
 
-    List<ListenableFuture<S3File>> files = new ArrayList<>();
-
-    List<S3File> filesToCopy = listObjects(
+    ListenableFuture<List<S3File>> listFuture = wrapListWithRetry(
       options.getSourceBucketName(), options.getSourceKey(), options.isRecursive());
+    ListenableFuture<List<S3File>> result = Futures.transform(
+      listFuture,
+      new AsyncFunction<List<S3File>, List<S3File>>()
+      {
+        public ListenableFuture<List<S3File>> apply(List<S3File> filesToCopy)
+        {
+          List<ListenableFuture<S3File>> files = new ArrayList<>();
+          List<ListenableFuture<S3File>> futures = new ArrayList<>();
+          for(S3File src : filesToCopy)
+            createCopyOp(futures, src, options, baseDirPathF);
 
-    List<ListenableFuture<S3File>> futures = new ArrayList<>();
-    for(S3File src : filesToCopy)
-      createCopyOp(futures, src, options, baseDirPath);
-
-    if(options.isDryRun())
-    {
-      return Futures.immediateFuture(null);
-    }
-    else
-    {
-      return Futures.allAsList(futures);
-    }
+          if(options.isDryRun())
+            return Futures.immediateFuture(null);
+          else
+            return Futures.allAsList(futures);
+        }
+      });
+    return result;
   }
 
 
@@ -121,6 +126,25 @@ public class GCSCopyDirCommand extends Command
     return createS3File(resp, false);
   }
   
+
+  private ListenableFuture<List<S3File>> wrapListWithRetry(
+    final String bucket, final String prefix, final boolean isRecursive)
+  {
+    return executeWithRetry(_executor, new Callable<ListenableFuture<List<S3File>>>()
+    {
+      public ListenableFuture<List<S3File>> call()
+      {
+        return _s3Executor.submit(new Callable<List<S3File>>()
+        {
+          public List<S3File> call() throws IOException
+          {
+            return listObjects(bucket, prefix, isRecursive);
+          }
+        });
+      }
+    });
+  }
+
 
   private List<S3File> listObjects(String bucket, String prefix, boolean isRecursive)
     throws IOException

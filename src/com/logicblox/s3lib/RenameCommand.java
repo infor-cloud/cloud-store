@@ -29,7 +29,6 @@ public class RenameCommand extends Command
     ListeningExecutorService httpExecutor,
     ListeningScheduledExecutorService internalExecutor,
     CloudStoreClient client,
-    String acl,
     RenameOptions opts)
   {
     if(httpExecutor == null)
@@ -41,7 +40,7 @@ public class RenameCommand extends Command
     _executor = internalExecutor;
     _client = client;
     _options = opts;
-    _acl = acl;
+    _acl = opts.getCannedAcl().or("bucket-owner-full-control");
   }
 
 

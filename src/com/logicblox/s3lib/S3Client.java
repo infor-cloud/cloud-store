@@ -539,9 +539,8 @@ public class S3Client implements CloudStoreClient {
   public ListenableFuture<S3File> rename(RenameOptions options)
     throws IOException
   {
-    String cannedAcl = options.getCannedAcl().or("bucket-owner-full-control");
     RenameCommand cmd = new RenameCommand(
-      _s3Executor, _executor, this, cannedAcl, options);
+      _s3Executor, _executor, this, options);
     configure(cmd);
     return cmd.run();
   }

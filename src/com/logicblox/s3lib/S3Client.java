@@ -517,7 +517,6 @@ public class S3Client implements CloudStoreClient {
 
   @Override
   public ListenableFuture<S3File> copy(CopyOptions options)
-  throws IOException
   {
     CopyCommand cmd = new CopyCommand(_s3Executor, _executor, options);
     configure(cmd);

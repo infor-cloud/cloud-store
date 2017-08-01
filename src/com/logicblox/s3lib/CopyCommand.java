@@ -33,7 +33,6 @@ public class CopyCommand extends Command
       ListeningExecutorService copyExecutor,
       ListeningScheduledExecutorService internalExecutor,
       CopyOptions options)
-  throws IOException
   {
     _copyExecutor = copyExecutor;
     _executor = internalExecutor;

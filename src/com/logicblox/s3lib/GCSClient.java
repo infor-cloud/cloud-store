@@ -277,7 +277,6 @@ public class GCSClient implements CloudStoreClient {
 
     @Override
     public ListenableFuture<S3File> copy(CopyOptions options)
-      throws IOException
     {
         return s3Client.copy(options);
     }

@@ -371,8 +371,7 @@ public interface CloudStoreClient {
      * @see CloudStoreClient#copyToDir(CopyOptions)
      * @see CopyOptions
      */
-    ListenableFuture<S3File> copy(CopyOptions options)
-      throws IOException;
+    ListenableFuture<S3File> copy(CopyOptions options);
 
     /**
      * Copies all keys that would be returned by the list operation on the

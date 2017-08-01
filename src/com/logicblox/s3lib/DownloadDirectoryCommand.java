@@ -1,6 +1,7 @@
 package com.logicblox.s3lib;
 
 
+import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -52,11 +53,10 @@ public class DownloadDirectoryCommand extends Command
     _futures.clear();
     _filesToCleanup.clear();
     _dirsToCleanup.clear();
+
     try
     {
       checkDestination(destination, overwrite);
-      List<S3File> srcFiles = querySourceFiles(bucket, key, recursive);
-      prepareFutures(srcFiles, destination, bucket, key, overwrite, progressFactory);
     }
     catch(UsageException ex)
     {
@@ -64,12 +64,25 @@ public class DownloadDirectoryCommand extends Command
       throw ex;
     }
 
-    if(dryRun)
-    {
-      return Futures.immediateFuture(null);
-    }
-    else
-      return scheduleExecution();
+    ListenableFuture<List<S3File>> listObjs = querySourceFiles(bucket, key, recursive);
+    ListenableFuture<List<S3File>> result = Futures.transform(
+      listObjs,
+      new AsyncFunction<List<S3File>, List<S3File>>()
+      {
+        public ListenableFuture<List<S3File>> apply(List<S3File> srcFiles)
+          throws IOException
+        {
+          prepareFutures(srcFiles, destination, bucket, key, overwrite, progressFactory);
+          if(srcFiles.isEmpty())
+            throw new UsageException("No objects found for '" + getUri(bucket, key) + "'");
+
+          if(dryRun)
+            return Futures.immediateFuture(null);
+          else
+            return scheduleExecution();
+        }
+      });
+    return result;
   }
 
 
@@ -92,8 +105,9 @@ public class DownloadDirectoryCommand extends Command
   }
 
 
-  private List<S3File> querySourceFiles(String bucket, String key, boolean recursive)
-    throws InterruptedException, ExecutionException
+  private ListenableFuture<List<S3File>> querySourceFiles(
+    String bucket, String key, boolean recursive)
+      throws InterruptedException, ExecutionException
   {
     // find all files that need to be downloaded
     ListOptionsBuilder lob = new ListOptionsBuilder()
@@ -102,10 +116,7 @@ public class DownloadDirectoryCommand extends Command
         .setRecursive(recursive)
         .setIncludeVersions(false)
         .setExcludeDirs(false);
-    List<S3File> srcFiles = _client.listObjects(lob.createListOptions()).get();
-    if(srcFiles.isEmpty())
-      throw new UsageException("No objects found for '" + getUri(bucket, key) + "'");
-    return srcFiles;
+    return _client.listObjects(lob.createListOptions());
   }
 
 

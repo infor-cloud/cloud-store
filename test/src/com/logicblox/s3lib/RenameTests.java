@@ -108,7 +108,7 @@ try
       .setSourceBucket(Utils.getBucket(src))
       .setSourceKey(Utils.getObjectKey(src))
       .setDestinationBucket(Utils.getBucket(dest))
-      .setDestinationKey(Utils.getObjectKey(dest))
+      .setDestinationKey(Utils.getObjectKey(dest) + "/")
       .setRecursive(false)
       .setDryRun(true)
       .createRenameOptions();
@@ -175,7 +175,7 @@ while(count < retryCount)
         .setSourceBucket(Utils.getBucket(src))
         .setSourceKey(Utils.getObjectKey(src))
         .setDestinationBucket(Utils.getBucket(dest))
-        .setDestinationKey(Utils.getObjectKey(dest))
+        .setDestinationKey(Utils.getObjectKey(dest) + "/")
         .setRecursive(true)
         .createRenameOptions();
       oldGlobalFlag = CopyOptions.getAbortCounters().useGlobalCounter(true);
@@ -265,7 +265,7 @@ while(count < retryCount)
         .setSourceBucket(Utils.getBucket(src))
         .setSourceKey(Utils.getObjectKey(src))
         .setDestinationBucket(Utils.getBucket(dest))
-        .setDestinationKey(Utils.getObjectKey(dest))
+        .setDestinationKey(Utils.getObjectKey(dest) + "/" )
         .setRecursive(true)
         .createRenameOptions();
       boolean oldGlobalFlag = false;
@@ -355,7 +355,7 @@ while(count < retryCount)
         .setSourceBucket(Utils.getBucket(src))
         .setSourceKey(Utils.getObjectKey(src))
         .setDestinationBucket(Utils.getBucket(dest))
-        .setDestinationKey(Utils.getObjectKey(dest))
+        .setDestinationKey(Utils.getObjectKey(dest) + "/")
         .setRecursive(true)
         .createRenameOptions();
       DeleteOptions.getAbortCounters().setInjectionCounter(1);
@@ -441,7 +441,7 @@ while(count < retryCount)
         .setSourceBucket(Utils.getBucket(src))
         .setSourceKey(Utils.getObjectKey(src))
         .setDestinationBucket(Utils.getBucket(dest))
-        .setDestinationKey(Utils.getObjectKey(dest))
+        .setDestinationKey(Utils.getObjectKey(dest) + "/")
         .setRecursive(true)
         .createRenameOptions();
       CopyOptions.getAbortCounters().setInjectionCounter(1);
@@ -1019,7 +1019,7 @@ try
       .setSourceBucket(Utils.getBucket(src))
       .setSourceKey(Utils.getObjectKey(src))
       .setDestinationBucket(Utils.getBucket(dest))
-      .setDestinationKey(Utils.getObjectKey(dest))
+      .setDestinationKey(Utils.getObjectKey(dest) + "/")
       .setRecursive(false)
       .createRenameOptions();
     List<S3File> renamedFiles = _client.renameDirectory(opts).get();
@@ -1088,7 +1088,7 @@ try
       .setSourceBucket(Utils.getBucket(src))
       .setSourceKey(Utils.getObjectKey(src))
       .setDestinationBucket(Utils.getBucket(dest))
-      .setDestinationKey(Utils.getObjectKey(dest))
+      .setDestinationKey(Utils.getObjectKey(dest) + "/")
       .setRecursive(true)
       .createRenameOptions();
     List<S3File> renamedFiles = _client.renameDirectory(opts).get();
@@ -1169,7 +1169,7 @@ try
       .setSourceBucket(Utils.getBucket(src))
       .setSourceKey(Utils.getObjectKey(src))
       .setDestinationBucket(Utils.getBucket(dest))
-      .setDestinationKey(Utils.getObjectKey(dest))
+      .setDestinationKey(Utils.getObjectKey(dest) + "/")
       .setRecursive(true)
       .createRenameOptions();
     List<S3File> renamedFiles = _client.renameDirectory(opts).get();
@@ -1224,7 +1224,7 @@ try
       .setSourceBucket(Utils.getBucket(src))
       .setSourceKey(Utils.getObjectKey(src))
       .setDestinationBucket(Utils.getBucket(dest))
-      .setDestinationKey(Utils.getObjectKey(dest))
+      .setDestinationKey(Utils.getObjectKey(dest) + "/")
       .createRenameOptions();
     String msg = null;
     try
@@ -1288,7 +1288,7 @@ try
       .setSourceBucket(Utils.getBucket(src))
       .setSourceKey(Utils.getObjectKey(src))
       .setDestinationBucket(Utils.getBucket(dest))
-      .setDestinationKey(Utils.getObjectKey(dest))
+      .setDestinationKey(Utils.getObjectKey(dest) + "/")
       .createRenameOptions();
     String msg = null;
     try

@@ -53,21 +53,12 @@ public class RenameDirectoryCommand extends Command
   }
 
 
-  private String getDestKey()
-  {
-    String dest = _options.getDestinationKey();
-    if(dest.endsWith("/"))
-      return dest;
-    else
-      return dest + "/";
-  }
-
-
   private ListenableFuture<List<S3File>> startCopyThenDelete()
     throws InterruptedException, ExecutionException, IOException
   {
     final String bucket = _options.getDestinationBucket();
-    final String key = _options.getDestinationKey();
+    final String key = stripSlash(_options.getDestinationKey());
+       // exists command doesn't allow trailing slash
     ListenableFuture<ObjectMetadata> destExists = _client.exists(bucket, key);
     return Futures.transform(
       destExists,
@@ -87,6 +78,15 @@ public class RenameDirectoryCommand extends Command
   }
 
 
+  private String stripSlash(String s)
+  {
+    if(s.endsWith("/"))
+      return s.substring(0, s.length() - 1);
+    else
+      return s;
+  }
+
+
   private ListenableFuture<List<S3File>> copyThenDelete()
     throws InterruptedException, ExecutionException, IOException
   {
@@ -94,7 +94,7 @@ public class RenameDirectoryCommand extends Command
        .setSourceBucketName(_options.getSourceBucket())
        .setSourceKey(_options.getSourceKey())
        .setDestinationBucketName(_options.getDestinationBucket())
-       .setDestinationKey(getDestKey())
+       .setDestinationKey(_options.getDestinationKey())
        .setRecursive(_options.isRecursive())
        .setDryRun(_options.isDryRun())
        .setCannedAcl(_options.getCannedAcl().orNull())

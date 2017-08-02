@@ -537,7 +537,6 @@ public class S3Client implements CloudStoreClient {
   
   @Override
   public ListenableFuture<S3File> rename(RenameOptions options)
-    throws IOException
   {
     RenameCommand cmd = new RenameCommand(
       _s3Executor, _executor, this, options);
@@ -549,9 +548,8 @@ public class S3Client implements CloudStoreClient {
   public ListenableFuture<List<S3File>> renameDirectory(RenameOptions options)
     throws InterruptedException, ExecutionException, IOException
   {
-    String acl = options.getCannedAcl().or("bucket-owner-full-control");
     RenameDirectoryCommand cmd = new RenameDirectoryCommand(
-      _s3Executor, _executor, this, acl, options);
+      _s3Executor, _executor, this, options);
     configure(cmd);
     return cmd.run();
   }

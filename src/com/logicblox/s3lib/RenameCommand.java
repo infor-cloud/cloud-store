@@ -45,7 +45,6 @@ public class RenameCommand extends Command
 
 
   public ListenableFuture<S3File> run()
-    throws IOException
   {
     if(_options.isDryRun())
     {

@@ -404,8 +404,7 @@ public interface CloudStoreClient {
      * @see CloudStoreClient#renameDirectory(RenameOptions)
      * @see RenameOptions
      */
-    ListenableFuture<S3File> rename(RenameOptions options)
-      throws IOException;
+    ListenableFuture<S3File> rename(RenameOptions options);
 
     /**
      * Renames all keys that share a prefix to have another prefix -- in other

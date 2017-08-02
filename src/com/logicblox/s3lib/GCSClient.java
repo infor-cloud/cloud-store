@@ -290,7 +290,6 @@ public class GCSClient implements CloudStoreClient {
 
     @Override
     public ListenableFuture<S3File> rename(RenameOptions options)
-      throws IOException
     {
         return s3Client.rename(options);
     }

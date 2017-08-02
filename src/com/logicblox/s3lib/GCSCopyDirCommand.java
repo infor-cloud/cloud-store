@@ -19,14 +19,11 @@ public class GCSCopyDirCommand extends Command
 
   private ListeningExecutorService _s3Executor;
   private ListeningScheduledExecutorService _executor;
-  private Storage _storage;
 
   public GCSCopyDirCommand(
-      Storage storage,
       ListeningExecutorService s3Executor,
       ListeningScheduledExecutorService internalExecutor)
   {
-    _storage = storage;
     _s3Executor = s3Executor;
     _executor = internalExecutor;
   }
@@ -47,7 +44,7 @@ public class GCSCopyDirCommand extends Command
     }
     final String baseDirPathF = baseDirPath;
 
-    ListenableFuture<List<S3File>> listFuture = wrapListWithRetry(
+    ListenableFuture<List<S3File>> listFuture = getListFuture(
       options.getSourceBucketName(), options.getSourceKey(), options.isRecursive());
     ListenableFuture<List<S3File>> result = Futures.transform(
       listFuture,
@@ -118,7 +115,7 @@ public class GCSCopyDirCommand extends Command
     String srcUri = getUri(options.getSourceBucketName(), src.getKey());
     options.injectAbort(srcUri);
 
-    Storage.Objects.Copy cmd = _storage.objects().copy(
+    Storage.Objects.Copy cmd = getGCSClient().objects().copy(
       options.getSourceBucketName(), src.getKey(),
       options.getDestinationBucketName(), destKey,
       null);
@@ -127,47 +124,23 @@ public class GCSCopyDirCommand extends Command
   }
   
 
-  private ListenableFuture<List<S3File>> wrapListWithRetry(
-    final String bucket, final String prefix, final boolean isRecursive)
+  private ListenableFuture<List<S3File>> getListFuture(
+    String bucket, String prefix, boolean isRecursive)
   {
-    return executeWithRetry(_executor, new Callable<ListenableFuture<List<S3File>>>()
-    {
-      public ListenableFuture<List<S3File>> call()
-      {
-        return _s3Executor.submit(new Callable<List<S3File>>()
-        {
-          public List<S3File> call() throws IOException
-          {
-            return listObjects(bucket, prefix, isRecursive);
-          }
-        });
-      }
-    });
-  }
-
-
-  private List<S3File> listObjects(String bucket, String prefix, boolean isRecursive)
-    throws IOException
-  {
-    List<S3File> s3files = new ArrayList<S3File>();
-    List<StorageObject> allObjs = new ArrayList<StorageObject>();
-    Storage.Objects.List cmd = _storage.objects().list(bucket);
-    cmd.setPrefix(prefix);
-    if(!isRecursive)
-      cmd.setDelimiter("/");
-    Objects objs;
-    do
-    {
-      objs = cmd.execute();
-      List<StorageObject> items = objs.getItems();
-      if(items != null)
-        allObjs.addAll(items);
-      cmd.setPageToken(objs.getNextPageToken());
-    } while (objs.getNextPageToken() != null);
-
-    for(StorageObject s : allObjs)
-      s3files.add(createS3File(s, false));
-    return s3files;
+    // FIXME - if we gave commands a CloudStoreClient when they were created
+    //         we could then use client.listObjects() instead of all this....
+    ListOptions listOpts = (new ListOptionsBuilder())
+      .setBucket(bucket)
+      .setObjectKey(prefix)
+      .setRecursive(isRecursive)
+      .createListOptions();
+    GCSListCommand cmd = new GCSListCommand(_s3Executor, _executor);
+    cmd.setRetryClientException(_stubborn);
+    cmd.setRetryCount(_retryCount);
+    cmd.setAmazonS3Client(getAmazonS3Client());
+    cmd.setGCSClient(getGCSClient());
+    cmd.setScheme("gs://");
+    return cmd.run(listOpts);
   }
 
   

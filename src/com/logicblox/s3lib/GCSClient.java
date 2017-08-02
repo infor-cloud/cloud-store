@@ -405,7 +405,7 @@ public class GCSClient implements CloudStoreClient {
         @Override
         public ListenableFuture<S3File> copy(CopyOptions options)
         {
-          GCSCopyCommand cmd = new GCSCopyCommand(gcsClient, _s3Executor, _executor);
+          GCSCopyCommand cmd = new GCSCopyCommand(_s3Executor, _executor);
           configure(cmd);
           return cmd.run(options);
         }
@@ -414,7 +414,7 @@ public class GCSClient implements CloudStoreClient {
         public ListenableFuture<List<S3File>> copyToDir(CopyOptions options)
           throws IOException
         {
-          GCSCopyDirCommand cmd = new GCSCopyDirCommand(gcsClient, _s3Executor, _executor);
+          GCSCopyDirCommand cmd = new GCSCopyDirCommand(_s3Executor, _executor);
           configure(cmd);
           return cmd.run(options);
         }

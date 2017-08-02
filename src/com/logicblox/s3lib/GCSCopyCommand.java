@@ -16,14 +16,11 @@ public class GCSCopyCommand extends Command
 
   private ListeningExecutorService _s3Executor;
   private ListeningScheduledExecutorService _executor;
-  private Storage _storage;
 
   public GCSCopyCommand(
-      Storage storage,
       ListeningExecutorService s3Executor,
       ListeningScheduledExecutorService internalExecutor)
   {
-    _storage = storage;
     _s3Executor = s3Executor;
     _executor = internalExecutor;
   }
@@ -72,7 +69,7 @@ public class GCSCopyCommand extends Command
         String srcUri = getUri(options.getSourceBucketName(), options.getSourceKey());
         options.injectAbort(srcUri);
         
-        Storage.Objects.Copy cmd = _storage.objects().copy(
+        Storage.Objects.Copy cmd = getGCSClient().objects().copy(
           options.getSourceBucketName(), options.getSourceKey(),
           options.getDestinationBucketName(), options.getDestinationKey(),
           null);

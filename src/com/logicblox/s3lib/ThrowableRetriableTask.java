@@ -6,6 +6,8 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -15,6 +17,9 @@ public class ThrowableRetriableTask<V> implements Callable<ListenableFuture<V>>
   private final ListeningScheduledExecutorService _executor;
   private final ThrowableRetryPolicy _retryPolicy;
   private int _retryCount;
+
+  // for testing
+  private static Set<RetryListener> _retryListeners = new HashSet<RetryListener>();
 
   public ThrowableRetriableTask(Callable<ListenableFuture<V>> callable,
                                 ListeningScheduledExecutorService executor,
@@ -50,6 +55,7 @@ public class ThrowableRetriableTask<V> implements Callable<ListenableFuture<V>>
             String msg = "Info: Retriable exception: " + _callable.toString() +
               ": " + t.getMessage();
             System.err.println(msg);
+            sendRetryNotifications(_callable.toString(), t);
 
             long delay = _retryPolicy.getDelay(t, _retryCount);
             // TODO: actually use the scheduled executor once Guava 15 is out
@@ -64,6 +70,19 @@ public class ThrowableRetriableTask<V> implements Callable<ListenableFuture<V>>
           }
         }
       });
+  }
+
+  // for testing
+  private synchronized void sendRetryNotifications(String callableId, Throwable t)
+  {
+    for(RetryListener l : _retryListeners)
+      l.retryTriggered(new RetryEvent(callableId, t));
+  }
+
+  // for testing
+  synchronized static void addRetryListener(RetryListener l)
+  {
+    _retryListeners.add(l);
   }
 
   private void sleep(long delay)

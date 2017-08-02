@@ -14,7 +14,8 @@ parse_arguments(
            'commons-codec' : depdir,
            'log4j' : depdir,
            'aws-java-sdk' : depdir,
-           'gcs-java-sdk' : depdir
+           'gcs-java-sdk' : depdir,
+           'junit' : depdir
          })
 
 open_makefile()
@@ -25,6 +26,19 @@ emit('all : jars')
 
 
 deps = [
+    '$(aws_java_sdk)/lib/java/httpcore-4.4.4.jar',
+    '$(aws_java_sdk)/lib/java/httpclient-4.5.2.jar',
+    '$(aws_java_sdk)/lib/java/aws-java-sdk-1.11.102.jar',
+    '$(aws_java_sdk)/lib/java/jackson-annotations-2.6.0.jar',
+    '$(aws_java_sdk)/lib/java/jackson-core-2.6.6.jar',
+    '$(aws_java_sdk)/lib/java/jackson-databind-2.6.6.jar',
+
+    '$(gcs_java_sdk)/lib/java/google-api-services-storage-v1-rev26-1.19.1.jar',
+    '$(gcs_java_sdk)/lib/java/google-api-client-1.19.1.jar',
+    '$(gcs_java_sdk)/lib/java/google-oauth-client-1.19.0.jar',
+    '$(gcs_java_sdk)/lib/java/google-http-client-1.19.0.jar',
+    '$(gcs_java_sdk)/lib/java/google-http-client-jackson2-1.19.0.jar',
+    
     '$(guava)/lib/java/guava-15.0.jar',
     '$(jcommander)/lib/java/jcommander-1.29.jar',
     '$(log4j)/lib/java/log4j-1.2.13.jar',
@@ -32,18 +46,9 @@ deps = [
     '$(commons_codec)/lib/java/commons-codec-1.9.jar',
     '$(aws_java_sdk)/lib/java/commons-logging-1.1.3.jar',
     '$(aws_java_sdk)/lib/java/joda-time-2.8.1.jar',
-    '$(aws_java_sdk)/lib/java/httpcore-4.3.3.jar',
-    '$(aws_java_sdk)/lib/java/httpclient-4.3.6.jar',
-    '$(aws_java_sdk)/lib/java/jackson-annotations-2.5.3.jar',
-    '$(aws_java_sdk)/lib/java/jackson-core-2.5.3.jar',
-    '$(aws_java_sdk)/lib/java/jackson-databind-2.5.3.jar',
-    '$(aws_java_sdk)/lib/java/aws-java-sdk-1.10.20.jar',
-    '$(gcs_java_sdk)/lib/java/google-api-services-storage-v1-rev26-1.19.1.jar',
-    '$(gcs_java_sdk)/lib/java/google-api-client-1.19.1.jar',
-    '$(gcs_java_sdk)/lib/java/google-oauth-client-1.19.0.jar',
-    '$(gcs_java_sdk)/lib/java/google-http-client-1.19.0.jar',
-    '$(gcs_java_sdk)/lib/java/google-http-client-jackson2-1.19.0.jar',
+
     '$(gcs_java_sdk)/lib/java/jsr305-1.3.9.jar']
+
 
 rev_info = os.getenv('name', 's3lib-1234-0pre').split('-')[1].replace('_', '-')
 impl_version = (rev_info + '_' + strftime("%Y%m%d%H%M", gmtime()))
@@ -62,13 +67,23 @@ jar(
                                    ('Implementation-Title', "com.logicblox.s3lib"),
                                    ('Implementation-Version', impl_version),
                                    ('Implementation-Vendor', "LogicBlox, Inc.")]},
-   java_version = "1.7")
+   java_version = "1.8")
 
+test_deps = [
+  '$(junit)/lib/java/junit-4.8.2.jar',
+  '$(build)/jars/s3lib-$(version).jar']
+jar(
+   name = 's3lib-test',
+   srcdirs = ['test/src'],
+   classpath = deps + test_deps,
+   manifest = {'add_classpath': True,
+               'main_class': "com.logicblox.s3lib.TestRunner"},
+   java_version = "1.7")
 
 bin_program('cloud-store')
 bin_program('s3tool')
 
-install_files(deps, '$(prefix)/lib/java')
+install_files(deps + test_deps, '$(prefix)/lib/java')
 
 dist_files(['README'])
 

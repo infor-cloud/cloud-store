@@ -34,11 +34,6 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
@@ -50,7 +45,7 @@ class Main
 
   public static void main(String[] args)
   {
-    initLogging();
+    Utils.initLogging();
 
     try
     {
@@ -64,23 +59,6 @@ class Main
     }
   }
 
-  private static void initLogging() {
-    Logger root = Logger.getRootLogger();
-    root.setLevel(Level.INFO);
-
-    ConsoleAppender console = new ConsoleAppender();
-    String PATTERN = "%d [%p|%c|%C{1}] %m%n";
-    console.setLayout(new PatternLayout(PATTERN));
-    console.setThreshold(Level.ERROR);
-    console.activateOptions();
-
-    Logger s3libLogger = Logger.getLogger("com.logicblox.s3lib");
-    s3libLogger.addAppender(console);
-    Logger awsLogger = Logger.getLogger("com.amazonaws");
-    awsLogger.addAppender(console);
-    Logger apacheLogger = Logger.getLogger("org.apache.http");
-    apacheLogger.addAppender(console);
-  }
 
   public Main()
   {
@@ -123,7 +101,7 @@ class Main
   {
     @Parameter(names = {"--max-concurrent-connections"}, description = "The " +
         "maximum number of concurrent HTTP connections to the storage service")
-    int maxConcurrentConnections = 10;
+    int maxConcurrentConnections = Utils.getDefaultMaxConcurrentConnections();
 
     @Parameter(names = "--endpoint", description = "Endpoint")
     String endpoint = null;
@@ -135,7 +113,7 @@ class Main
     boolean _stubborn = false;
 
     @Parameter(names = "--retry", description = "Number of retries on failures")
-    int _retryCount = 10;
+    int _retryCount = Utils.getDefaultRetryCount();
 
     @Parameter(names = {"--credential-providers-s3"}, description = "The " +
         "order of the credential providers that should be checked for S3. The" +
@@ -148,50 +126,25 @@ class Main
 
     protected Utils.StorageService detectStorageService() throws URISyntaxException
     {
-      return Utils.detectStorageService(endpoint, null);
+      return Utils.detectStorageService(endpoint, getScheme());
+    }
+
+    protected URI getURI() throws URISyntaxException
+    {
+      return null;
+    }
+
+    protected String getScheme() throws URISyntaxException
+    {
+      return null;
     }
 
     protected CloudStoreClient createCloudStoreClient()
-        throws URISyntaxException, IOException, GeneralSecurityException {
-      ListeningExecutorService uploadExecutor = Utils.getHttpExecutor
-          (maxConcurrentConnections);
-
-      Utils.StorageService service = detectStorageService();
-
-      CloudStoreClient client;
-      if (service == Utils.StorageService.GCS) {
-        AWSCredentialsProvider gcsXMLProvider =
-            Utils.getGCSXMLEnvironmentVariableCredentialsProvider();
-        AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(gcsXMLProvider);
-
-        client = new GCSClientBuilder()
-            .setInternalS3Client(s3Client)
-            .setApiExecutor(uploadExecutor)
-            .setKeyProvider(Utils.getKeyProvider(encKeyDirectory))
-            .createGCSClient();
-      }
-      else {
-        ClientConfiguration clientCfg = new ClientConfiguration();
-        clientCfg = Utils.setProxy(clientCfg);
-        AWSCredentialsProvider credsProvider =
-            Utils.getCredentialsProviderS3(credentialProvidersS3);
-        AmazonS3Client s3Client = new AmazonS3Client(credsProvider, clientCfg);
-
-        client = new S3ClientBuilder()
-            .setInternalS3Client(s3Client)
-            .setApiExecutor(uploadExecutor)
-            .setKeyProvider(Utils.getKeyProvider(encKeyDirectory))
-            .createS3Client();
-      }
-
-      client.setRetryClientException(_stubborn);
-      client.setRetryCount(_retryCount);
-      if(endpoint != null)
-      {
-        client.setEndpoint(endpoint);
-      }
-
-      return client;
+        throws URISyntaxException, IOException, GeneralSecurityException
+    {
+      return Utils.createCloudStoreClient(
+        getScheme(), endpoint, maxConcurrentConnections, 
+        encKeyDirectory, credentialProvidersS3, _stubborn, _retryCount);
     }
 
     protected void validateStorageClass(String storageClass) throws URISyntaxException
@@ -259,9 +212,9 @@ class Main
       return Utils.getObjectKey(getURI());
     }
 
-    protected Utils.StorageService detectStorageService() throws URISyntaxException
+    protected String getScheme() throws URISyntaxException
     {
-      return Utils.detectStorageService(endpoint, getURI());
+      return getURI().getScheme();
     }
   }
 
@@ -301,6 +254,11 @@ class Main
       return Utils.getObjectKey(getSourceURI());
     }
 
+    protected String getScheme() throws URISyntaxException
+    {
+      return getSourceURI().getScheme();
+    }
+
     protected URI getDestinationURI() throws URISyntaxException
     {
       return Utils.getURI(urls.get(1));
@@ -315,16 +273,32 @@ class Main
     {
       return Utils.getObjectKey(getDestinationURI());
     }
-
-    protected Utils.StorageService detectStorageService() throws URISyntaxException
-    {
-      return Utils.detectStorageService(endpoint, getSourceURI());
-    }
   }
 
   @Parameters(commandDescription = "List storage service buckets")
   class ListBucketsCommandOptions extends S3CommandOptions
   {
+    @Parameter(description = "service", required = true)
+    List<String> services;
+
+    protected String getScheme()
+    {
+      if(null == services)
+      {
+        if(null == endpoint)
+          throw new UsageException("Either 's3' or 'gs' service is required");
+        return null;
+      }
+
+      if(services.size() != 1)
+        throw new UsageException("Only one service name may be specified");
+
+      String service = services.get(0);
+      if(!service.equals("s3") && !service.equals("gs"))
+        throw new UsageException("Either 's3' or 'gs' service is required");
+      return service;
+    }
+
     public void invoke() throws Exception
     {
       CloudStoreClient client = createCloudStoreClient();
@@ -588,7 +562,7 @@ class Main
           DateFormat df = Utils.getDefaultDateFormat();
           for (int i = 0; i < listCommandResults.size(); i++) {
             S3File obj = listCommandResults.get(i);
-            table[i][0] = client.getUri(obj.getBucketName(), obj.getKey()).toString();
+            table[i][0] = client.getUri(obj.getBucketName(), "") + obj.getKey();
             table[i][1] = obj.getVersionId().orElse("No Version Id");
             if (obj.getTimestamp().isPresent()) {
               table[i][2] = df.format(obj.getTimestamp().get());
@@ -609,7 +583,7 @@ class Main
           }
         } else {
           for (S3File obj : listCommandResults) {
-            System.out.println(client.getUri(obj.getBucketName(), obj.getKey()));
+            System.out.println(client.getUri(obj.getBucketName(), "") + obj.getKey());
           }
         }
       } catch (ExecutionException exc) {

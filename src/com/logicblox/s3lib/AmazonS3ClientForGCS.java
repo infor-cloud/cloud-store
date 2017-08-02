@@ -9,6 +9,7 @@ import com.amazonaws.metrics.RequestMetricCollector;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.internal.S3Signer;
 
+
 public class AmazonS3ClientForGCS extends AmazonS3Client {
     public AmazonS3ClientForGCS() {
     }
@@ -41,13 +42,15 @@ public class AmazonS3ClientForGCS extends AmazonS3Client {
         super(clientConfiguration);
     }
 
-    protected Signer createSigner(final Request<?> request,
-                                  final String bucketName,
-                                  final String key) {
+    protected Signer createSigner(
+      final Request<?> request,
+      final String bucketName,
+      final String key,
+      final boolean isAdditionalHeadRequestToFindRegion) 
+    {
         Signer signer = getSigner();
-
-        if (signer instanceof S3Signer) {
-
+        if (signer instanceof S3Signer)
+        {
             // The old S3Signer needs a method and path passed to its
             // constructor; if that's what we should use, getSigner()
             // will return a dummy instance and we need to create a
@@ -59,7 +62,7 @@ public class AmazonS3ClientForGCS extends AmazonS3Client {
                     ((key != null) ? key : "");
 
             return new S3Signer(request.getHttpMethod().toString(),
-                resourcePath);
+               resourcePath);
         }
 
         return signer;

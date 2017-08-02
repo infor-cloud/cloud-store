@@ -31,10 +31,17 @@ in {
       sha256 = "0b6gjgh028jb1fk39rb3yxs9f1ywdcdlvvhas81h6527p5sxhx8n";
     };
 
-  log4j =
+  junit =
+    buildjar {
+      name = "junit-4.8.2";
+      url = https://maven.atlassian.com/content/groups/public/org/junit/com.springsource.org.junit/4.8.2/com.springsource.org.junit-4.8.2.jar;
+      sha256 = "1l8v7bykvaqrswbg4jlwwb96v308020q2wiaq8w7lv1q748k7vdh";
+    };
+
+log4j =
     buildjar {
       name = "log4j-1.2.13";
-      url = http://mirrors.ibiblio.org/maven2/log4j/log4j/1.2.13/log4j-1.2.13.jar;
+      url = http://repo1.maven.org/maven2/log4j/log4j/1.2.13/log4j-1.2.13.jar;
       sha256 = "053zkljmfsaj4p1vmnlfr04g7fchsb8v0i7aqibpjbd6i5c63vf8";
     };
 
@@ -54,10 +61,10 @@ in {
 
   aws_java_sdk =
     pkgs.stdenv.mkDerivation rec {
-      name = "aws-java-sdk-1.10.20";
+      name = "aws-java-sdk-1.11.102";
       src = fetchurl {
-        url = http://sdk-for-java.amazonwebservices.com/aws-java-sdk-1.10.20.zip;
-        sha256 = "0b3cfc060bbf1166ead59a4892a7ee459cb1ed564d7c60baf337320d857a4d2a";
+        url = http://sdk-for-java.amazonwebservices.com/aws-java-sdk-1.11.102.zip;
+        sha256 = "c06a529b86c08d73b840adc6fe103d49d7ff3eea011977267f0f350a333c2fb3";
       };
       buildInputs = [unzip];
       buildCommand = ''

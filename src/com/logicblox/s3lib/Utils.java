@@ -1,11 +1,13 @@
 package com.logicblox.s3lib;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-
 import java.net.URL;
+
+import java.security.GeneralSecurityException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -28,14 +30,43 @@ import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.auth.SystemPropertiesCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
+
+
 public class Utils
 {
+  private static String _defaultKeyDir = null;
+  
+  static void initLogging()
+  {
+    Logger root = Logger.getRootLogger();
+    root.setLevel(Level.INFO);
+
+    ConsoleAppender console = new ConsoleAppender();
+    String PATTERN = "%d [%p|%c|%C{1}] %m%n";
+    console.setLayout(new PatternLayout(PATTERN));
+    console.setThreshold(Level.ERROR);
+    console.activateOptions();
+
+    Logger s3libLogger = Logger.getLogger("com.logicblox.s3lib");
+    s3libLogger.addAppender(console);
+    Logger awsLogger = Logger.getLogger("com.amazonaws");
+    awsLogger.addAppender(console);
+    Logger apacheLogger = Logger.getLogger("org.apache.http");
+    apacheLogger.addAppender(console);
+  }
+
+  
   public static DateFormat getDefaultDateFormat()
   {
     DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
@@ -47,7 +78,14 @@ public class Utils
 
   public static String getDefaultKeyDirectory()
   {
-    return System.getProperty("user.home") + File.separator + ".s3lib-keys";
+    if(null == _defaultKeyDir)
+      _defaultKeyDir = System.getProperty("user.home") + File.separator + ".s3lib-keys";
+    return _defaultKeyDir;
+  }
+
+  public static void setDefaultKeyDir(String keydir)
+  {
+    _defaultKeyDir = keydir;
   }
 
   public static long getDefaultChunkSize()
@@ -67,6 +105,16 @@ public class Utils
       partsNum = fileSize / chunkSize;
     }
     return chunkSize;
+  }
+
+  public static int getDefaultMaxConcurrentConnections()
+  {
+    return 10;
+  }
+
+  public static int getDefaultRetryCount()
+  {
+    return 10;
   }
 
   public static URI getURI(String s) throws URISyntaxException
@@ -159,7 +207,7 @@ public class Utils
     S3, GCS
   }
 
-  public static StorageService detectStorageService(String endpoint, URI uri)
+  public static StorageService detectStorageService(String endpoint, String scheme)
       throws URISyntaxException
   {
     // We consider endpoint (if exists) stronger evidence than URI
@@ -177,9 +225,9 @@ public class Utils
         return StorageService.GCS;
     }
 
-    if (uri != null)
+    if (scheme != null)
     {
-      switch (uri.getScheme())
+      switch (scheme)
       {
         case "s3":
           return StorageService.S3;
@@ -188,8 +236,8 @@ public class Utils
       }
     }
 
-    throw new UsageException("Cannot detect storage service: endpoint " +
-        endpoint +  ", URI " + uri);
+    throw new UsageException("Cannot detect storage service: (endpoint=" +
+        endpoint +  ", scheme=" + scheme + ")");
   }
 
   public static String getDefaultCannedACLFor(StorageService service)
@@ -382,6 +430,97 @@ public class Utils
     }
 
     return clientCfg;
+  }
+
+  public static CloudStoreClient createCloudStoreClient(String scheme, String endpoint)
+      throws URISyntaxException, GeneralSecurityException, IOException
+  {
+    return createCloudStoreClient(
+      scheme, endpoint, getDefaultMaxConcurrentConnections(), 
+      getDefaultKeyDirectory(), new ArrayList<String>(),
+      false, getDefaultRetryCount());
+  }
+
+  public static CloudStoreClient createCloudStoreClient(
+    String scheme, String endpoint, int maxConcurrentConnections,
+    String encKeyDirectory, List<String> credentialProvidersS3,
+    boolean stubborn, int retryCount)
+      throws URISyntaxException, GeneralSecurityException, IOException
+  {
+    ListeningExecutorService uploadExecutor = 
+      getHttpExecutor(maxConcurrentConnections);
+
+    StorageService service = detectStorageService(endpoint, scheme);
+
+    CloudStoreClient client;
+    if(service == StorageService.GCS)
+    {
+      AWSCredentialsProvider gcsXMLProvider =
+        getGCSXMLEnvironmentVariableCredentialsProvider();
+
+      // make the AWS interfaces use V2 signatures for authentication
+      ClientConfiguration config = new ClientConfiguration();
+      config.setSignerOverride("S3SignerType");
+
+      AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(gcsXMLProvider, config);
+
+      client = new GCSClientBuilder()
+          .setInternalS3Client(s3Client)
+          .setApiExecutor(uploadExecutor)
+          .setKeyProvider(getKeyProvider(encKeyDirectory))
+          .createGCSClient();
+    }
+    else
+    {
+      ClientConfiguration clientCfg = new ClientConfiguration();
+      clientCfg = setProxy(clientCfg);
+      AWSCredentialsProvider credsProvider =
+        getCredentialsProviderS3(credentialProvidersS3);
+      AmazonS3Client s3Client = new AmazonS3Client(credsProvider, clientCfg);
+
+      client = new S3ClientBuilder()
+          .setInternalS3Client(s3Client)
+          .setApiExecutor(uploadExecutor)
+          .setKeyProvider(getKeyProvider(encKeyDirectory))
+          .createS3Client();
+    }
+
+    client.setRetryClientException(stubborn);
+    client.setRetryCount(retryCount);
+    if(endpoint != null)
+      client.setEndpoint(endpoint);
+
+    return client;
+  }
+
+  // create all missing parent directories of the specified directory.
+  // return a list of the directories that had to be created, ordered top down
+  public static List<File> mkdirs(File dir)
+    throws IOException
+  {
+     String[] subdirs = dir.getAbsolutePath().split(File.separator);
+     List<File> created = new ArrayList<File>();
+     File current = null;
+     for(String s : subdirs)
+     {
+       if(null == current)
+       {
+         if(s.isEmpty())
+           current = new File("/");
+         else
+           current = new File(s);
+       }
+       else
+       {
+         current = new File(current, s);
+       }
+       if(!current.exists())
+       {
+         current.mkdir();
+         created.add(current);
+       }
+     }
+     return created;
   }
 
   protected static void print(ObjectMetadata m)

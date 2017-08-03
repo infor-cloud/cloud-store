@@ -314,6 +314,21 @@ public interface CloudStoreClient {
         throws IOException;
 
     /**
+     * Downloads the specified {@code object}, under {@code bucket}, to a local
+     * {@code file}.
+     *
+     * @param file   File to download
+     * @param bucket Bucket to download from
+     * @param object Path in bucket to download
+     * @param overwrite Boolean set to true if you want to replace an exiting file
+     * @see CloudStoreClient#download(DownloadOptions options)
+     */
+    @Deprecated
+    ListenableFuture<S3File> download(
+      File file, String bucket, String object, boolean overwrite)
+        throws IOException;
+
+    /**
      * Downloads the specified {@code uri} to a local {@code file}.
      *
      * @param file File to download
@@ -322,6 +337,19 @@ public interface CloudStoreClient {
      */
     @Deprecated
     ListenableFuture<S3File> download(File file, URI uri)
+        throws IOException;
+
+    /**
+     * Downloads the specified {@code uri} to a local {@code file}, optionally
+     * overwriting the destination file if it exists.
+     *
+     * @param file File to download
+     * @param uri  Object URL to download from
+     * @param overwrite Boolean set to true if you want to replace an exiting file
+     * @see CloudStoreClient#download(DownloadOptions options)
+     */
+    @Deprecated
+    ListenableFuture<S3File> download(File file, URI uri, boolean overwrite)
         throws IOException;
 
     /**
@@ -518,6 +546,4 @@ public interface CloudStoreClient {
      */
     void destroyBucket(String bucketName);
 
-    // needed for testing
-    void setKeyProvider(KeyProvider kp);
 }

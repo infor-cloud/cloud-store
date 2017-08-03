@@ -4,6 +4,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.lang.Class;
+import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.FileVisitResult;
 import java.nio.file.SimpleFileVisitor;
@@ -640,8 +643,11 @@ public class TestUtils
 
 
   public static void setKeyProvider(File keydir)
+    throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
   {
-    _client.setKeyProvider(Utils.getKeyProvider(keydir.getAbsolutePath()));
+    Class cls = _client.getClass();
+    Method meth = cls.getDeclaredMethod("setKeyProvider", KeyProvider.class);
+    meth.invoke(_client, Utils.getKeyProvider(keydir.getAbsolutePath()));
   }
 
 

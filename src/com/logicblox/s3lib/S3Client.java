@@ -470,12 +470,36 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
+  public ListenableFuture<S3File> download(
+    File file, String bucket, String object, boolean overwrite)
+      throws IOException
+  {
+    DownloadOptions options = new DownloadOptionsBuilder()
+        .setFile(file)
+        .setBucket(bucket)
+        .setObjectKey(object)
+        .setOverwrite(overwrite)
+        .createDownloadOptions();
+
+    return download(options);
+  }
+
+  @Override
   public ListenableFuture<S3File> download(File file, URI s3url)
           throws IOException
   {
     String bucket = Utils.getBucket(s3url);
     String object = Utils.getObjectKey(s3url);
     return download(file, bucket, object);
+  }
+
+  @Override
+  public ListenableFuture<S3File> download(File file, URI s3url, boolean overwrite)
+          throws IOException
+  {
+    String bucket = Utils.getBucket(s3url);
+    String object = Utils.getObjectKey(s3url);
+    return download(file, bucket, object, overwrite);
   }
 
   @Override
@@ -664,8 +688,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   // needed for testing
-  @Override
-  public void setKeyProvider(KeyProvider kp)
+  void setKeyProvider(KeyProvider kp)
   {
     _keyProvider = kp;
   }

@@ -44,10 +44,8 @@ let
           "--with-gcs-java-sdk=${deps.gcs_java_sdk}"
           "--with-junit=${deps.junit}"
         ];
-        buildInputs = [ python jdk pkgs.makeWrapper ];
-        postInstall = ''
-          wrapProgram $out/bin/cloud-store --prefix PATH : ${jdk.jre}/bin
-        '';
+        buildInputs = [ python pkgs.makeWrapper ];
+        propagatedBuildInputs = [ jdk ];
       };
 
     build_minio = pkgs.buildGoPackage rec {
@@ -62,7 +60,7 @@ let
       };
     };
 
-    test_cloud_store =
+    test =
       pkgs.stdenv.mkDerivation {
         name = "${name}-test";
         src = build.out;

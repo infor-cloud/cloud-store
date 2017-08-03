@@ -4,6 +4,7 @@ from buildlib import *
 from time import gmtime, strftime
 
 depdir = os.getenv('LB_UNIVERSE_DEPS', '/opt/logicblox/lb-universe-deps')
+logicblox_depdir = os.getenv('LOGICBLOX_HOME', '/opt/logicblox')
 
 parse_arguments(
   prefix='/opt/logicblox/s3lib',
@@ -15,7 +16,7 @@ parse_arguments(
            'log4j' : depdir,
            'aws-java-sdk' : depdir,
            'gcs-java-sdk' : depdir,
-           'junit' : depdir
+           'junit' : logicblox_depdir
          })
 
 open_makefile()
@@ -26,20 +27,6 @@ emit('all : jars')
 
 
 deps = [
-    # old
-    # '$(aws_java_sdk)/lib/java/httpcore-4.3.3.jar',
-    # '$(aws_java_sdk)/lib/java/httpclient-4.3.6.jar',
-    # '$(aws_java_sdk)/lib/java/aws-java-sdk-1.10.20.jar',
-    # '$(aws_java_sdk)/lib/java/jackson-annotations-2.5.3.jar',
-    # '$(aws_java_sdk)/lib/java/jackson-core-2.5.3.jar',
-    # '$(aws_java_sdk)/lib/java/jackson-databind-2.5.3.jar',
-    # '$(gcs_java_sdk)/lib/java/google-api-services-storage-v1-rev26-1.19.1.jar',
-    # '$(gcs_java_sdk)/lib/java/google-api-client-1.19.1.jar',
-    # '$(gcs_java_sdk)/lib/java/google-oauth-client-1.19.0.jar',
-    # '$(gcs_java_sdk)/lib/java/google-http-client-1.19.0.jar',
-    # '$(gcs_java_sdk)/lib/java/google-http-client-jackson2-1.19.0.jar',
-
-    # min update set required for the aws-java-sdk update
     '$(aws_java_sdk)/lib/java/httpcore-4.4.4.jar',
     '$(aws_java_sdk)/lib/java/httpclient-4.5.2.jar',
     '$(aws_java_sdk)/lib/java/aws-java-sdk-1.11.102.jar',
@@ -47,30 +34,12 @@ deps = [
     '$(aws_java_sdk)/lib/java/jackson-core-2.6.6.jar',
     '$(aws_java_sdk)/lib/java/jackson-databind-2.6.6.jar',
 
-    # these are originals
-    #'$(aws_java_sdk)/lib/java/jackson-annotations-2.5.3.jar',
-    #'$(aws_java_sdk)/lib/java/jackson-core-2.5.3.jar',
-    #'$(aws_java_sdk)/lib/java/jackson-databind-2.5.3.jar',
     '$(gcs_java_sdk)/lib/java/google-api-services-storage-v1-rev26-1.19.1.jar',
     '$(gcs_java_sdk)/lib/java/google-api-client-1.19.1.jar',
     '$(gcs_java_sdk)/lib/java/google-oauth-client-1.19.0.jar',
     '$(gcs_java_sdk)/lib/java/google-http-client-1.19.0.jar',
     '$(gcs_java_sdk)/lib/java/google-http-client-jackson2-1.19.0.jar',
     
-    # full update set if we want to update all the related jars
-    # '$(aws_java_sdk)/lib/java/httpcore-4.4.4.jar',
-    # '$(aws_java_sdk)/lib/java/httpclient-4.5.2.jar',
-    # '$(aws_java_sdk)/lib/java/aws-java-sdk-1.11.102.jar',
-    # '$(aws_java_sdk)/lib/java/jackson-annotations-2.6.0.jar',
-    # '$(aws_java_sdk)/lib/java/jackson-core-2.6.6.jar',
-    # '$(aws_java_sdk)/lib/java/jackson-databind-2.6.6.jar',
-    # '$(gcs_java_sdk)/lib/java/google-api-services-storage-v1-rev99-1.22.0.jar',
-    # '$(gcs_java_sdk)/lib/java/google-api-client-1.22.0.jar',
-    # '$(gcs_java_sdk)/lib/java/google-oauth-client-1.22.0.jar',
-    # '$(gcs_java_sdk)/lib/java/google-http-client-1.22.0.jar',
-    # '$(gcs_java_sdk)/lib/java/google-http-client-jackson2-1.22.0.jar',
-
-    # unchanged
     '$(guava)/lib/java/guava-15.0.jar',
     '$(jcommander)/lib/java/jcommander-1.29.jar',
     '$(log4j)/lib/java/log4j-1.2.13.jar',

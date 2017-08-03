@@ -231,9 +231,24 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
+    public ListenableFuture<S3File> download(
+      File file, String bucket, String object, boolean overwrite)
+         throws IOException
+    {
+        return s3Client.download(file, bucket, object, overwrite);
+    }
+
+    @Override
     public ListenableFuture<S3File> download(File file, URI s3url) throws
         IOException {
         return s3Client.download(file, s3url);
+    }
+
+    @Override
+    public ListenableFuture<S3File> download(File file, URI s3url, boolean overwrite)
+      throws IOException
+    {
+        return s3Client.download(file, s3url, overwrite);
     }
 
     @Override

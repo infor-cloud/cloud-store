@@ -31,9 +31,9 @@ class MultipartAmazonUploadFactory implements UploadFactory
   }
 
   public ListenableFuture<Upload> startUpload(String bucketName, String key,
-                                              Map<String,String> meta, String cannedAcl)
+                                              Map<String,String> meta, String cannedAcl, UploadOptions options)
   {
-    return executor.submit(new StartCallable(bucketName, key, meta, cannedAcl));
+    return executor.submit(new StartCallable(bucketName, key, meta, cannedAcl, options));
   }
 
   private class StartCallable implements Callable<Upload>
@@ -42,13 +42,15 @@ class MultipartAmazonUploadFactory implements UploadFactory
     private String bucketName;
     private Map<String,String> meta;
     private String cannedAcl;
+    private UploadOptions options;
 
-    public StartCallable(String bucketName, String key, Map<String,String> meta, String cannedAcl)
+    public StartCallable(String bucketName, String key, Map<String,String> meta, String cannedAcl, UploadOptions options)
     {
       this.bucketName = bucketName;
       this.key = key;
       this.meta = meta;
       this.cannedAcl = cannedAcl;
+      this.options = options;
     }
 
     public Upload call() throws Exception
@@ -59,7 +61,7 @@ class MultipartAmazonUploadFactory implements UploadFactory
       req.setCannedACL(getAcl(cannedAcl));
       InitiateMultipartUploadResult res = client.initiateMultipartUpload(req);
       return new MultipartAmazonUpload(client, bucketName, key,
-          res.getUploadId(), new Date(), executor);
+          res.getUploadId(), new Date(), executor, options);
     }
 
     private CannedAccessControlList getAcl(String value)

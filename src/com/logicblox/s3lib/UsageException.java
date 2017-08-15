@@ -11,4 +11,9 @@ public class UsageException extends RuntimeException
   {
     super(msg);
   }
+
+  public UsageException(String msg, Throwable cause)
+  {
+    super(msg, cause);
+  }
 }

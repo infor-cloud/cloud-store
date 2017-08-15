@@ -1,6 +1,9 @@
 package com.logicblox.s3lib;
 
 import com.google.common.base.Optional;
+import java.util.HashMap;
+import java.util.Map;
+
 
 /**
  * {@code CopyOptions} contains all the details needed by the copy operation.
@@ -23,12 +26,18 @@ public class CopyOptions {
     private final String destinationBucketName;
     private final String destinationKey;
     private final boolean recursive;
+    private final boolean dryRun;
+    private final boolean ignoreAbortInjection;
     // TODO(geo): Revise use of Optionals. E.g. it's not a good idea to use them
     // as fields.
     private final Optional<String> cannedAcl;
     private final String storageClass;
     private final Optional<OverallProgressListenerFactory>
         overallProgressListenerFactory;
+
+    // for testing injection of aborts during a copy
+    private static AbortCounters _abortCounters = new AbortCounters();
+
 
     CopyOptions(String sourceBucketName,
                 String sourceKey,
@@ -37,6 +46,8 @@ public class CopyOptions {
                 Optional<String> cannedAcl,
                 String storageClass,
                 boolean recursive,
+                boolean dryRun,
+                boolean ignoreAbortInjection,
                 Optional<OverallProgressListenerFactory>
                     overallProgressListenerFactory) {
         this.sourceBucketName = sourceBucketName;
@@ -46,8 +57,26 @@ public class CopyOptions {
         this.recursive = recursive;
         this.cannedAcl = cannedAcl;
         this.storageClass = storageClass;
+        this.dryRun = dryRun;
+        this.ignoreAbortInjection = ignoreAbortInjection;
         this.overallProgressListenerFactory = overallProgressListenerFactory;
     }
+
+    // for testing injection of aborts during a copy
+    void injectAbort(String id)
+    {
+      if(!this.ignoreAbortInjection
+           && (_abortCounters.decrementInjectionCounter(id) > 0))
+      {
+        throw new AbortInjection("forcing copy abort");
+      }
+    }
+
+    static AbortCounters getAbortCounters()
+    {
+      return _abortCounters;
+    }
+
 
     public String getSourceBucketName() {
         return sourceBucketName;
@@ -75,6 +104,10 @@ public class CopyOptions {
 
     public boolean isRecursive() {
         return recursive;
+    }
+
+    public boolean isDryRun() {
+        return dryRun;
     }
 
     public Optional<OverallProgressListenerFactory>

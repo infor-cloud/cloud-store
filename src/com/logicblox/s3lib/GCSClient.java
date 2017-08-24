@@ -193,13 +193,36 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<S3File> delete(String bucket, String object) {
-        return s3Client.delete(bucket, object);
+    public ListenableFuture<List<S3File>> deleteDir(DeleteOptions opts)
+      throws InterruptedException, ExecutionException
+    {
+      return s3Client.deleteDir(opts);
+    }
+    
+    @Override
+    public ListenableFuture<S3File> delete(DeleteOptions opts)
+    {
+      return s3Client.delete(opts);
+    }
+    
+    @Override
+    public ListenableFuture<S3File> delete(String bucket, String object)
+    {
+      DeleteOptions opts = new DeleteOptionsBuilder()
+        .setBucket(bucket)
+        .setObjectKey(object)
+        .createDeleteOptions();
+      return delete(opts);
     }
 
     @Override
-    public ListenableFuture<S3File> delete(URI s3url) {
-        return s3Client.delete(s3url);
+    public ListenableFuture<S3File> delete(URI s3url)
+    {
+      DeleteOptions opts = new DeleteOptionsBuilder()
+        .setBucket(Utils.getBucket(s3url))
+        .setObjectKey(Utils.getObjectKey(s3url))
+        .createDeleteOptions();
+      return delete(opts);
     }
 
     @Override
@@ -231,9 +254,24 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
+    public ListenableFuture<S3File> download(
+      File file, String bucket, String object, boolean overwrite)
+         throws IOException
+    {
+        return s3Client.download(file, bucket, object, overwrite);
+    }
+
+    @Override
     public ListenableFuture<S3File> download(File file, URI s3url) throws
         IOException {
         return s3Client.download(file, s3url);
+    }
+
+    @Override
+    public ListenableFuture<S3File> download(File file, URI s3url, boolean overwrite)
+      throws IOException
+    {
+        return s3Client.download(file, s3url, overwrite);
     }
 
     @Override
@@ -254,7 +292,6 @@ public class GCSClient implements CloudStoreClient {
 
     @Override
     public ListenableFuture<S3File> copy(CopyOptions options)
-        throws IOException
     {
         return s3Client.copy(options);
     }
@@ -264,6 +301,19 @@ public class GCSClient implements CloudStoreClient {
         throws InterruptedException, ExecutionException, IOException, URISyntaxException
     {
         return s3Client.copyToDir(options);
+    }
+
+    @Override
+    public ListenableFuture<S3File> rename(RenameOptions options)
+    {
+        return s3Client.rename(options);
+    }
+
+    @Override
+    public ListenableFuture<List<S3File>> renameDirectory(RenameOptions options)
+      throws InterruptedException, ExecutionException, IOException
+    {
+        return s3Client.renameDirectory(options);
     }
 
     @Override
@@ -338,16 +388,12 @@ public class GCSClient implements CloudStoreClient {
         @Override
         public ListenableFuture<S3File> upload(UploadOptions options)
             throws IOException {
-            File file = options.getFile();
-            long chunkSize = options.getChunkSize();
-            String acl = options.getAcl().or("projectPrivate");
-            String encKey = options.getEncKey().orNull();
             Optional<OverallProgressListenerFactory> progressListenerFactory =
                 options.getOverallProgressListenerFactory();
 
             GCSUploadCommand cmd =
-                new GCSUploadCommand(_s3Executor, _executor, file,
-                    chunkSize, encKey, _keyProvider, acl, progressListenerFactory);
+                new GCSUploadCommand(_s3Executor, _executor, _keyProvider, options,
+                    progressListenerFactory);
             s3Client.configure(cmd);
             return cmd.run(options.getBucket(), options.getObjectKey());
         }
@@ -366,13 +412,14 @@ public class GCSClient implements CloudStoreClient {
             long chunkSize = options.getChunkSize();
             String encKey = options.getEncKey().orNull();
             String acl = options.getAcl().or("projectPrivate");
+            boolean dryRun = options.isDryRun();
             OverallProgressListenerFactory progressListenerFactory = options
                 .getOverallProgressListenerFactory().orNull();
 
             UploadDirectoryCommand cmd = new UploadDirectoryCommand(_s3Executor,
                 _executor, this);
             s3Client.configure(cmd);
-            return cmd.run(directory, bucket, object, chunkSize, encKey, acl,
+            return cmd.run(directory, bucket, object, chunkSize, encKey, acl, dryRun,
                 progressListenerFactory);
         }
 
@@ -387,7 +434,7 @@ public class GCSClient implements CloudStoreClient {
         @Override
         public ListenableFuture<S3File> copy(CopyOptions options)
         {
-          GCSCopyCommand cmd = new GCSCopyCommand(gcsClient, _s3Executor, _executor);
+          GCSCopyCommand cmd = new GCSCopyCommand(_s3Executor, _executor);
           configure(cmd);
           return cmd.run(options);
         }
@@ -396,7 +443,7 @@ public class GCSClient implements CloudStoreClient {
         public ListenableFuture<List<S3File>> copyToDir(CopyOptions options)
           throws IOException
         {
-          GCSCopyDirCommand cmd = new GCSCopyDirCommand(gcsClient, _s3Executor, _executor);
+          GCSCopyDirCommand cmd = new GCSCopyDirCommand(_s3Executor, _executor);
           configure(cmd);
           return cmd.run(options);
         }
@@ -441,8 +488,7 @@ public class GCSClient implements CloudStoreClient {
     }
 
     // needed for testing
-    @Override
-    public void setKeyProvider(KeyProvider kp)
+    void setKeyProvider(KeyProvider kp)
     {
       s3Client.setKeyProvider(kp);
     }

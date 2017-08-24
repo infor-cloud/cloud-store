@@ -4,9 +4,9 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import java.io.File;
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.concurrent.ExecutionException;
 import junit.framework.Assert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -66,12 +66,172 @@ public class UploadDownloadTests
     _client = null;
   }
 
+  
+  @Test
+  public void testUploadDryRun()
+    throws Throwable
+  {
+    // create a file
+    String rootPrefix = TestUtils.addPrefix("upload-dryrun");
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    File toUpload = TestUtils.createTextFile(100);
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+
+    // dryrun the upload and make sure the dest doesn't change
+    UploadOptions opts = new UploadOptionsBuilder()
+      .setFile(toUpload)
+      .setBucket(Utils.getBucket(dest))
+      .setObjectKey(Utils.getObjectKey(dest))
+      .setDryRun(true)
+      .createUploadOptions();
+    S3File f = _client.upload(opts).get();
+    Assert.assertNull(f);
+    Assert.assertEquals(
+      originalCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
+  }
+
+  
+  @Test
+  public void testUploadDirectoryDryRun()
+    throws Throwable
+  {
+// directory copy/upload tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
+int retryCount = TestUtils.RETRY_COUNT;
+int count = 0;
+while(count < retryCount)
+{
+try
+{
+    // create simple directory structure
+    File top = TestUtils.createTmpDir(true);
+    File a = TestUtils.createTextFile(top, 100);
+    File b = TestUtils.createTextFile(top, 100);
+    String rootPrefix = TestUtils.addPrefix("upload-dir-dryrun");
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
+
+    // dryrun the upload and verify the dest didn't change
+    UploadOptions opts = new UploadOptionsBuilder()
+      .setFile(top)
+      .setBucket(Utils.getBucket(dest))
+      .setObjectKey(Utils.getObjectKey(dest))
+      .setDryRun(true)
+      .createUploadOptions();
+    List<S3File> files = _client.uploadDirectory(opts).get();
+    Assert.assertNull(files);
+    Assert.assertEquals(
+      originalCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
+    return;
+}
+catch(Throwable t)
+{
+  ++count;
+  if(count >= retryCount)
+    throw t;
+}
+}
+  }
+
+  
+  @Test
+  public void testDownloadDryRun()
+    throws Throwable
+  {
+    // create a small file and upload it
+    String rootPrefix = TestUtils.addPrefix("download-dryrun");
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    File toUpload = TestUtils.createTextFile(100);
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    S3File f = TestUtils.uploadFile(toUpload, dest);
+    Assert.assertNotNull(f);
+    Assert.assertEquals(
+      originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+    // dryrun the download and make sure the file isn't created locally
+    URI src = dest;
+    File dlTemp = TestUtils.createTmpFile();
+    dlTemp.delete();
+    DownloadOptions opts = new DownloadOptionsBuilder()
+      .setFile(dlTemp)
+      .setUri(src)
+      .setRecursive(false)
+      .setOverwrite(true)
+      .setDryRun(true)
+      .createDownloadOptions();
+    f = _client.download(opts).get();
+    Assert.assertNull(f);
+    Assert.assertFalse(dlTemp.exists());
+  }
+
+  
+  @Test
+  public void testDownloadDirectoryDryRun()
+    throws Throwable
+  {
+    // create simple directory structure and upload
+    String rootPrefix = TestUtils.addPrefix("download-dir-dryrun");
+    int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
+    File top = TestUtils.createTmpDir(true);
+    File a = TestUtils.createTextFile(top, 100);
+    File b = TestUtils.createTextFile(top, 100);
+    URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
+    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    Assert.assertEquals(2, uploaded.size());
+    Assert.assertEquals(
+      originalCount + uploaded.size(), TestUtils.listObjects(_testBucket, rootPrefix).size());
+
+    // dryrun the download and make sure nothing changes locally
+    File dlDir = TestUtils.createTmpDir(true);
+    URI src = dest;
+    DownloadOptions opts = new DownloadOptionsBuilder()
+      .setFile(dlDir)
+      .setUri(src)
+      .setRecursive(true)
+      .setOverwrite(true)
+      .setDryRun(true)
+      .createDownloadOptions();
+    List<S3File> files = _client.downloadDirectory(opts).get();
+    Assert.assertNull(files);
+    Assert.assertEquals(0, dlDir.list().length);
+  }
+
+  
+  @Test
+  public void testExists()
+    throws Throwable
+  {
+    // NOTE - Not testing object keys that look like folders (i.e.
+    // s3://my-bucket/a/b/).  minio reports a bad request with these
+    // keys.  Plus whether a folder "exists" or not in AWS or GCS depends
+    // on whether it was created from the console or implicitly through
+    // some upload.
+    
+    // upload a file and verify it exists
+    String rootPrefix = TestUtils.addPrefix("exists/a/b/");
+    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    File toUpload = TestUtils.createTextFile(100);
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    S3File f = TestUtils.uploadFile(toUpload, dest);
+    Assert.assertNotNull(f);
+    Assert.assertNotNull(_client.exists(dest).get());
+
+    // check for missing file key
+    URI src = TestUtils.getUri(
+      _testBucket, toUpload, rootPrefix + "-missing-" + System.currentTimeMillis());
+    Assert.assertNull(_client.exists(src).get());
+    
+    // bad bucket should fail
+    src = TestUtils.getUri(
+    _testBucket + "-missing-" + System.currentTimeMillis(), toUpload, rootPrefix);
+    Assert.assertNull(_client.exists(src).get());
+  }
+
 
   @Test
   public void testSimpleUploadDownload()
     throws Throwable
   {
-    String rootPrefix = TestUtils.addPrefix("a/b/");
+    String rootPrefix = TestUtils.addPrefix("simple-upload/a/b/");
     List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
     int originalCount = objs.size();
 
@@ -99,7 +259,7 @@ public class UploadDownloadTests
     Assert.assertEquals(
       dest.toString(), _client.getUri(_testBucket, key).toString());
 
-    Assert.assertNotNull(_client.delete(dest).get());
+    Assert.assertNotNull(TestUtils.deleteObject(dest));
     Assert.assertNull(_client.exists(dest).get());
   }
 
@@ -115,7 +275,7 @@ public class UploadDownloadTests
       clearRetryCount();
       int retryCount = 3;
       _client.setRetryCount(retryCount);
-      UploadOptions.setAbortInjectionCounter(10);
+      UploadOptions.getAbortCounters().setInjectionCounter(10);
       List<S3File> objs = TestUtils.listTestBucketObjects();
       int originalCount = objs.size();
 
@@ -123,7 +283,7 @@ public class UploadDownloadTests
       int chunkSize = 5 * 1024 * 1024;
       int fileSize = chunkSize + 1000000;
       File toUpload = TestUtils.createTextFile(fileSize);
-      String rootPrefix = TestUtils.addPrefix("");
+      String rootPrefix = TestUtils.addPrefix("failed-upload-retry");
       URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
 
       // upload file in multiple concurrent chunks
@@ -139,8 +299,9 @@ public class UploadDownloadTests
         _client.upload(upOpts).get();
         Assert.fail("expected exception");
       }
-      catch(Throwable t)
+      catch(ExecutionException ex)
       {
+        Assert.assertTrue(TestUtils.findCause(ex, AbortInjection.class));
         // expected
       }
 
@@ -158,7 +319,8 @@ public class UploadDownloadTests
     {
       // reset retry and abort injection state so we don't affect other tests
       TestUtils.resetRetryCount();
-      UploadOptions.setAbortInjectionCounter(0);
+      UploadOptions.getAbortCounters().setInjectionCounter(0);
+      UploadOptions.getAbortCounters().clearInjectionCounters();
     }
   }
 
@@ -174,7 +336,7 @@ public class UploadDownloadTests
       int retryCount = 10;
       int abortCount = 3;
       _client.setRetryCount(retryCount);
-      UploadOptions.setAbortInjectionCounter(abortCount);
+      UploadOptions.getAbortCounters().setInjectionCounter(abortCount);
       List<S3File> objs = TestUtils.listTestBucketObjects();
       int originalCount = objs.size();
 
@@ -182,7 +344,7 @@ public class UploadDownloadTests
       int chunkSize = 5 * 1024 * 1024;
       int fileSize = chunkSize + 1000000;
       File toUpload = TestUtils.createTextFile(fileSize);
-      String rootPrefix = TestUtils.addPrefix("");
+      String rootPrefix = TestUtils.addPrefix("ok-upload-retry");
       URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
 
       // upload file in multiple concurrent chunks
@@ -199,7 +361,7 @@ public class UploadDownloadTests
       // validate the upload
       objs = TestUtils.listTestBucketObjects();
       Assert.assertEquals(originalCount + 1, objs.size());
-      Assert.assertTrue(TestUtils.findObject(objs, TestUtils.addPrefix(toUpload.getName())));
+      Assert.assertTrue(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
 
       // download the file and compare it with the original
       File dlTemp = TestUtils.createTmpFile();
@@ -217,7 +379,8 @@ public class UploadDownloadTests
     {
       // reset retry and abort injection state so we don't affect other tests
       TestUtils.resetRetryCount();
-      UploadOptions.setAbortInjectionCounter(0);
+      UploadOptions.getAbortCounters().setInjectionCounter(0);
+      UploadOptions.getAbortCounters().clearInjectionCounters();
     }
   }
 
@@ -231,14 +394,14 @@ public class UploadDownloadTests
     File toUpload = TestUtils.createTextFile(fileSize);
 
     Assert.assertEquals(fileSize, toUpload.length());
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("upload-attrs");
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     S3File f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
     Assert.assertEquals(
       toUpload.getAbsolutePath(), f.getLocalFile().getAbsolutePath());
     Assert.assertNotNull(f.getETag());
-    Assert.assertEquals(TestUtils.addPrefix(toUpload.getName()), f.getKey());
+    Assert.assertEquals(Utils.getObjectKey(dest), f.getKey());
     Assert.assertEquals(_testBucket, f.getBucketName());
 //    Assert.assertTrue(f.getVersionId().isPresent());
       // FIXME - this info is not being populated right now
@@ -279,7 +442,7 @@ public class UploadDownloadTests
     // create a small file and upload it
     long fileSize = 100;
     File toUpload = TestUtils.createTextFile(fileSize);
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("download-attrs");
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     TestUtils.uploadFile(toUpload, dest);
 
@@ -290,7 +453,7 @@ public class UploadDownloadTests
     Assert.assertEquals(
       dlTemp.getAbsolutePath(), f.getLocalFile().getAbsolutePath());
     Assert.assertNotNull(f.getETag());
-    Assert.assertEquals(TestUtils.addPrefix(toUpload.getName()), f.getKey());
+    Assert.assertEquals(Utils.getObjectKey(dest), f.getKey());
     Assert.assertEquals(_testBucket, f.getBucketName());
 //    Assert.assertTrue(f.getVersionId().isPresent());
       // FIXME - this info is not being populated right now
@@ -311,7 +474,7 @@ public class UploadDownloadTests
     // upload a file
     File toUpload = TestUtils.createTextFile(0);
     Assert.assertEquals(0, toUpload.length());
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("upload-empty");
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     S3File f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
@@ -319,7 +482,7 @@ public class UploadDownloadTests
     // make sure file was uploaded
     objs = TestUtils.listTestBucketObjects();
     Assert.assertEquals(originalCount + 1, objs.size());
-    String key = TestUtils.addPrefix(toUpload.getName());
+    String key = Utils.getObjectKey(dest);
     Assert.assertTrue(TestUtils.findObject(objs, key));
 
     // download, overwriting a larger file
@@ -348,7 +511,7 @@ public class UploadDownloadTests
     // upload a file
     File toUpload = TestUtils.createTextFile(0);
     Assert.assertEquals(0, toUpload.length());
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("upload-empty-encrypted");
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     S3File f = TestUtils.uploadEncryptedFile(toUpload, dest, keyName);
     Assert.assertNotNull(f);
@@ -356,7 +519,7 @@ public class UploadDownloadTests
     // make sure file was uploaded
     objs = TestUtils.listTestBucketObjects();
     Assert.assertEquals(originalCount + 1, objs.size());
-    String key = TestUtils.addPrefix(toUpload.getName());
+    String key = Utils.getObjectKey(dest);
     Assert.assertTrue(TestUtils.findObject(objs, key));
 
     // download, overwriting a larger file
@@ -368,6 +531,50 @@ public class UploadDownloadTests
 
 
   @Test
+  public void testDownloadMissingFile()
+    throws Throwable
+  {
+    // upload a file
+    File toUpload = TestUtils.createTextFile(100);
+    String rootPrefix = TestUtils.addPrefix("download-missing");
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    S3File f = TestUtils.uploadFile(toUpload, dest);
+    Assert.assertNotNull(f);
+
+    // test missing file
+    File dlTemp = TestUtils.createTmpFile();
+    URI src = TestUtils.getUri(_testBucket, toUpload, rootPrefix + "missing.txt");
+    String msg = null;
+    try
+    {
+      TestUtils.downloadFile(src, dlTemp);
+      msg = "expected exception";
+    }
+    catch(Exception ex)
+    {
+      // expected
+      checkUsageException(ex, "Object not found");
+    }
+    Assert.assertNull(msg);
+
+    // test missing bucket
+    src = TestUtils.getUri(_testBucket + "-missing", toUpload, rootPrefix);
+    msg = null;
+    try
+    {
+      TestUtils.downloadFile(src, dlTemp);
+      msg = "expected exception";
+    }
+    catch(Exception ex)
+    {
+      // expected
+      checkUsageException(ex, "Object not found");
+    }
+    Assert.assertNull(msg);
+  }
+  
+
+  @Test
   public void testDownloadNoOverwriteFile()
     throws Throwable
   {
@@ -376,7 +583,7 @@ public class UploadDownloadTests
 
     // upload a file
     File toUpload = TestUtils.createTextFile(100);
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("download-no-overwrite");
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     S3File f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
@@ -384,7 +591,7 @@ public class UploadDownloadTests
     // make sure file was uploaded
     objs = TestUtils.listTestBucketObjects();
     Assert.assertEquals(originalCount + 1, objs.size());
-    String key = TestUtils.addPrefix(toUpload.getName());
+    String key = Utils.getObjectKey(dest);
     Assert.assertTrue(TestUtils.findObject(objs, key));
 
     // download without overwrite to make sure it fails
@@ -395,14 +602,114 @@ public class UploadDownloadTests
       f = TestUtils.downloadFile(dest, dlTemp, false);
       Assert.fail("Expected download exception");
     }
-    catch(Throwable t)
+    catch(Exception ex)
     {
       // expected
+      checkUsageException(ex, null);
     }
 
     // now download with overwite to make sure it replaces the file
     f = TestUtils.downloadFile(dest, dlTemp, true);
     Assert.assertTrue(TestUtils.compareFiles(toUpload, dlTemp));
+  }
+
+  
+  @Test
+  public void testDirectoryOverwrite()
+    throws Throwable
+  {
+// directory copy/upload tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
+int retryCount = TestUtils.RETRY_COUNT;
+int count = 0;
+while(count < retryCount)
+{
+try
+{
+    // create simple directory structure and upload
+    File top = TestUtils.createTmpDir(true);
+    File a = TestUtils.createTextFile(top, 100);
+    File b = TestUtils.createTextFile(top, 100);
+    String rootPrefix = TestUtils.addPrefix("dir-overwrite/");
+    URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
+    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    Assert.assertEquals(2, uploaded.size());
+
+    // should fail if source doesn't exist
+    File dlDir = TestUtils.createTmpDir(true);
+    String badPrefix = TestUtils.addPrefix("dir-overwrite-bad"
+      + System.currentTimeMillis() + "/");
+    URI src = TestUtils.getUri(_testBucket, top, badPrefix);
+    String msg = null;
+    try
+    {
+      TestUtils.downloadDir(src, dlDir, false);
+      msg = "expected exception (no object found)";
+    }
+    catch(Exception ex)
+    {
+      // expected
+      checkUsageException(ex, "No objects found");
+    }
+    Assert.assertNull(msg);
+
+    // should fail if dest is existing file with no overwrite
+    File existingFile = TestUtils.createTextFile(top, 1);
+    src = dest;
+    try
+    {
+      TestUtils.downloadDir(src, existingFile, true, false);
+      msg = "expected exception (can't overwrite file)";
+    }
+    catch(Exception ex)
+    {
+      // expected
+      checkUsageException(ex, "must be a directory");
+    }
+    Assert.assertNull(msg);
+    
+    // should succeed if dest is existing file with overwrite
+    List<S3File> downloaded = TestUtils.downloadDir(src, existingFile, true, true);
+    Assert.assertEquals(2, downloaded.size());
+    Assert.assertTrue(existingFile.isDirectory());
+    
+    // should fail if dest is existing directory and one file exists with no overwrite
+    File destDir = TestUtils.createTmpDir(true);
+    existingFile = new File(destDir, a.getName());
+    Assert.assertTrue(existingFile.createNewFile());
+    Assert.assertTrue(existingFile.exists());
+    try
+    {
+      TestUtils.downloadDir(src, destDir, true, false);
+      msg = "expected exception (can't overwrite file)";
+    }
+    catch(Exception ex)
+    {
+      // expected
+      checkUsageException(ex, "already exists");
+    }
+    Assert.assertNull(msg);
+    Assert.assertEquals(1, destDir.list().length);
+         // should just have the original file.  everything else should be cleaned up
+    
+    // should succeed if dest is existing directory and one file exists with overwrite
+    downloaded = TestUtils.downloadDir(src, destDir, true, true);
+    Assert.assertEquals(2, downloaded.size());
+    
+    // should succeed if dest doesn't exist
+    destDir = new File(destDir.getAbsolutePath() + "-missing-" + System.currentTimeMillis());
+    Assert.assertFalse(destDir.exists());
+    downloaded = TestUtils.downloadDir(src, destDir, true, true);
+    Assert.assertEquals(2, downloaded.size());
+    
+    return;
+}
+catch(Throwable t)
+{
+  ++count;
+  if(count >= retryCount)
+    throw t;
+}
+}
   }
 
 
@@ -411,7 +718,7 @@ public class UploadDownloadTests
     throws Throwable
   {
 // directory copy/upload tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
-int retryCount = 5;
+int retryCount = TestUtils.RETRY_COUNT;
 int count = 0;
 while(count < retryCount)
 {
@@ -481,7 +788,6 @@ catch(Throwable t)
   ++count;
   if(count >= retryCount)
     throw t;
-//  System.out.println(" ++++++++++++++++ RETRYING: " + t.getMessage());
 }
 }
   }
@@ -498,7 +804,7 @@ catch(Throwable t)
     int chunkSize = 5 * 1024 * 1024;
     int fileSize = chunkSize + 1000000;
     File toUpload = TestUtils.createTextFile(fileSize);
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("multipart-upload");
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
 
     // upload file in multiple concurrent chunks
@@ -519,7 +825,7 @@ catch(Throwable t)
     Assert.assertEquals(expectedCount, partCount);
     objs = TestUtils.listTestBucketObjects();
     Assert.assertEquals(originalCount + 1, objs.size());
-    Assert.assertTrue(TestUtils.findObject(objs, TestUtils.addPrefix(toUpload.getName())));
+    Assert.assertTrue(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
 
     // download the file and compare it with the original
     File dlTemp = TestUtils.createTmpFile();
@@ -553,7 +859,7 @@ catch(Throwable t)
     int chunkSize = 5 * 1024 * 1024;
     int fileSize = 100;
     File toUpload = TestUtils.createTextFile(fileSize);
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("small-multipart-upload");
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
 
     // upload file in multiple concurrent chunks
@@ -574,7 +880,7 @@ catch(Throwable t)
     Assert.assertEquals(expectedCount, partCount);
     objs = TestUtils.listTestBucketObjects();
     Assert.assertEquals(originalCount + 1, objs.size());
-    Assert.assertTrue(TestUtils.findObject(objs, TestUtils.addPrefix(toUpload.getName())));
+    Assert.assertTrue(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
 
     // download the file and compare it with the original
     File dlTemp = TestUtils.createTmpFile();
@@ -595,395 +901,6 @@ catch(Throwable t)
   
 
   @Test
-  public void testSimpleCopy()
-    throws Throwable
-  {
-    if(!TestUtils.supportsCopy())
-      return;
-
-    List<S3File> objs = TestUtils.listTestBucketObjects();
-    int originalCount = objs.size();
-
-    // create test file and upload it
-    int fileSize = 100;
-    File toUpload = TestUtils.createTextFile(fileSize);
-    String rootPrefix = TestUtils.addPrefix("");
-    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, dest);
-    Assert.assertNotNull(f);
-
-    // make sure file was uploaded
-    objs = TestUtils.listTestBucketObjects();
-    Assert.assertEquals(originalCount + 1, objs.size());
-    Assert.assertTrue(TestUtils.findObject(objs, TestUtils.addPrefix(toUpload.getName())));
-
-    // copy file
-    URI src = dest;
-    CopyOptions copyOpts = new CopyOptionsBuilder()
-       .setSourceBucketName(_testBucket)
-       .setSourceKey(f.getKey())
-       .setDestinationBucketName(_testBucket)
-       .setDestinationKey(f.getKey() + "-COPY")
-       .createCopyOptions();
-    S3File copy = _client.copy(copyOpts).get();
-
-    // check for the copy
-    objs = TestUtils.listTestBucketObjects();
-    Assert.assertEquals(originalCount + 2, objs.size());
-    Assert.assertTrue(TestUtils.findObject(objs, TestUtils.addPrefix(toUpload.getName())));
-    Assert.assertTrue(TestUtils.findObject(objs, TestUtils.addPrefix(toUpload.getName() + "-COPY")));
-
-    // download and compare copy
-    File dlTemp = TestUtils.createTmpFile();
-    dest = new URI(dest.toString() + "-COPY");
-    f = TestUtils.downloadFile(dest, dlTemp);
-    Assert.assertNotNull(f.getLocalFile());
-    Assert.assertTrue(TestUtils.compareFiles(toUpload, f.getLocalFile()));
-
-    // compare metadata
-    ObjectMetadata srcMeta = _client.exists(src).get();
-    Assert.assertNotNull(srcMeta);
-    ObjectMetadata destMeta = _client.exists(dest).get();
-    Assert.assertNotNull(destMeta);
-
-    Assert.assertEquals(srcMeta.getContentLength(), destMeta.getContentLength());
-    Assert.assertEquals(srcMeta.getInstanceLength(), destMeta.getInstanceLength());
-    Assert.assertEquals(srcMeta.getETag(), destMeta.getETag());
-
-    Map<String,String> srcUserMeta = srcMeta.getUserMetadata();
-    Assert.assertNotNull(srcUserMeta);
-    Map<String,String> destUserMeta = destMeta.getUserMetadata();
-    Assert.assertNotNull(destUserMeta);
-    Assert.assertEquals(srcUserMeta.size(), destUserMeta.size());
-    for(Map.Entry<String,String> e : srcUserMeta.entrySet())
-    {
-      Assert.assertTrue(destUserMeta.containsKey(e.getKey()));
-      Assert.assertEquals(e.getValue(), destUserMeta.get(e.getKey()));
-    }
-  }
-
-
-  @Test
-  public void testCrossBucketCopy()
-    throws Throwable
-  {
-    // skip this if we're using a pre-exising test bucket, assuming we're
-    // running against a server that we don't want to (or can't) create
-    // buckets in...
-    if(null != TestUtils.getPrefix())
-       return;
-    
-    List<S3File> objs = TestUtils.listTestBucketObjects();
-    int originalCount = objs.size();
-
-    // create test file and upload it
-    int fileSize = 100;
-    File toUpload = TestUtils.createTextFile(fileSize);
-    String rootPrefix = TestUtils.addPrefix("");
-    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, dest);
-    Assert.assertNotNull(f);
-
-    // make sure file was uploaded
-    objs = TestUtils.listTestBucketObjects();
-    Assert.assertEquals(originalCount + 1, objs.size());
-    Assert.assertTrue(TestUtils.findObject(objs, TestUtils.addPrefix(toUpload.getName())));
-
-    // copy file
-    String bucket2 = TestUtils.createTestBucket();
-    CopyOptions copyOpts = new CopyOptionsBuilder()
-       .setSourceBucketName(_testBucket)
-       .setSourceKey(f.getKey())
-       .setDestinationBucketName(bucket2)
-       .setDestinationKey(f.getKey())
-       .createCopyOptions();
-    S3File copy = _client.copy(copyOpts).get();
-
-    // check for the copy in 1st bucket, should be the same
-    List<S3File> copyObjs = TestUtils.listTestBucketObjects();
-    Assert.assertEquals(objs.size(), copyObjs.size());
-    for(S3File sf : copyObjs)
-      Assert.assertTrue(TestUtils.findObject(objs, sf.getKey()));
-
-    // check for the copy in 2nd bucket
-    copyObjs = TestUtils.listObjects(bucket2, rootPrefix);
-    Assert.assertEquals(1, copyObjs.size());
-    Assert.assertTrue(TestUtils.findObject(copyObjs, toUpload.getName()));
-
-    // download and compare copy
-    File dlTemp = TestUtils.createTmpFile();
-    URI src = new URI(TestUtils.getService() + "://" + bucket2 + "/"
-                      + toUpload.getName());
-    DownloadOptions dlOpts = new DownloadOptionsBuilder()
-      .setFile(dlTemp)
-      .setUri(src)
-      .setRecursive(false)
-      .setOverwrite(true)
-      .createDownloadOptions();
-    f = _client.download(dlOpts).get();
-
-    Assert.assertNotNull(f.getLocalFile());
-    Assert.assertTrue(TestUtils.compareFiles(toUpload, f.getLocalFile()));
-  }
-
-
-  @Test
-  public void testCopyDir()
-    throws Throwable
-  {
-    if(!TestUtils.supportsCopy())
-      return;
-
-// directory copy/upload tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
-int retryCount = 5;
-int count = 0;
-while(count < retryCount)
-{
-try
-{
-    // create simple directory structure with a few files
-    File top = TestUtils.createTmpDir(true);
-    File a = TestUtils.createTextFile(top, 100);
-    File b = TestUtils.createTextFile(top, 100);
-    File sub = TestUtils.createTmpDir(top);
-    File c = TestUtils.createTextFile(sub, 100);
-    File d = TestUtils.createTextFile(sub, 100);
-    File sub2 = TestUtils.createTmpDir(sub);
-    File e = TestUtils.createTextFile(sub2, 100);
-
-    String rootPrefix = TestUtils.addPrefix("copy-dir/");
-    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
-    int originalCount = objs.size();
-
-    // upload the directory
-    URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
-    Assert.assertEquals(5, uploaded.size());
-
-    // non-recursive copy
-    String topN = rootPrefix + top.getName() + "/";
-    String copyTopN = rootPrefix + top.getName() + "-COPY/";
-    CopyOptions copyOpts = new CopyOptionsBuilder()
-       .setSourceBucketName(_testBucket)
-       .setSourceKey(topN)
-       .setDestinationBucketName(_testBucket)
-       .setDestinationKey(copyTopN)
-       .setRecursive(false)
-       .createCopyOptions();
-    List<S3File> copy = _client.copyToDir(copyOpts).get();
-    Assert.assertEquals(2, copy.size());
-
-    // verify the non-recursive copy
-    List<S3File> copyObjs = TestUtils.listObjects(_testBucket, rootPrefix);
-    int currentSize = copyObjs.size();
-    Assert.assertEquals(originalCount + 5 + 2, currentSize);
-        // original files plus 5 uploaded plus 2 copied
-    Assert.assertTrue(TestUtils.findObject(copyObjs, copyTopN + a.getName()));
-    Assert.assertTrue(TestUtils.findObject(copyObjs, copyTopN + b.getName()));
-
-    // recursive copy
-    String copyTopN2 = topN + "COPY2/";
-    copyOpts = new CopyOptionsBuilder()
-       .setSourceBucketName(_testBucket)
-       .setSourceKey(topN)
-       .setDestinationBucketName(_testBucket)
-       .setDestinationKey(copyTopN2)
-       .setRecursive(true)
-       .createCopyOptions();
-    copy = _client.copyToDir(copyOpts).get();
-    Assert.assertEquals(5, copy.size());
-
-    // verify the recursive copy
-    String subN = copyTopN2 + sub.getName() + "/";
-    String sub2N = subN + sub2.getName() + "/";
-    copyObjs = TestUtils.listObjects(_testBucket, rootPrefix);
-    int lastSize = copyObjs.size();
-    Assert.assertEquals(currentSize + 5, lastSize);
-       // previous size plus 5 copies
-    Assert.assertTrue(TestUtils.findObject(copyObjs, copyTopN2 + a.getName()));
-    Assert.assertTrue(TestUtils.findObject(copyObjs, copyTopN2 + b.getName()));
-    Assert.assertTrue(TestUtils.findObject(copyObjs, subN + c.getName()));
-    Assert.assertTrue(TestUtils.findObject(copyObjs, subN + d.getName()));
-    Assert.assertTrue(TestUtils.findObject(copyObjs, sub2N + e.getName()));
-    return;
-}
-catch(Throwable t)
-{
-  ++count;
-  if(count >= retryCount)
-    throw t;
-//  System.out.println(" ++++++++++++++++ RETRYING: " + t.getMessage());
-}
-}
-  }
-
-
-  @Test
-  public void testCopyMissingDestBucket()
-    throws Throwable
-  {
-// directory copy/upload tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
-int retryCount = 5;
-int count = 0;
-while(count < retryCount)
-{
-try
-{
-    // skip this if we're using a pre-exising test bucket, assuming we're
-    // running against a server that we don't want to (or can't) create
-    // buckets in...
-    if(null != TestUtils.getPrefix())
-       return;
-    
-    // create simple directory structure with a few files
-    File top = TestUtils.createTmpDir(true);
-    File a = TestUtils.createTextFile(top, 100);
-
-    String rootPrefix = TestUtils.addPrefix("copy-missing-dest-bucket/");
-    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
-    int originalCount = objs.size();
-
-    // upload the directory
-    URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
-    Assert.assertEquals(1, uploaded.size());
-
-    String missingBucketName = "MISSING-cloud-store-ut-bucket-" + System.currentTimeMillis();
-    String topN = rootPrefix + top.getName() + "/";
-    CopyOptions copyOpts = new CopyOptionsBuilder()
-       .setSourceBucketName(_testBucket)
-       .setSourceKey(topN)
-       .setDestinationBucketName(missingBucketName)
-       .setDestinationKey(topN)
-       .setRecursive(true)
-       .createCopyOptions();
-    try
-    {
-      _client.copyToDir(copyOpts).get();
-      Assert.fail("Exception expected");
-    }
-    catch(Exception ex)
-    {
-      if(-1 == ex.getMessage().indexOf("specified bucket is not valid"))
-         Assert.fail("Unexpected exception: " + ex.getMessage());
-      else
-         return;
-    }
-}
-catch(Throwable t)
-{
-  ++count;
-  if(count >= retryCount)
-    throw t;
-//  System.out.println(" ++++++++++++++++ RETRYING: " + t.getMessage());
-}
-}
-  }
-
-
-  @Test
-  public void testCrossBucketCopyDir()
-    throws Throwable
-  {
-// directory copy/upload tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
-int retryCount = 5;
-int count = 0;
-while(count < retryCount)
-{
-try
-{
-    // skip this if we're using a pre-exising test bucket, assuming we're
-    // running against a server that we don't want to (or can't) create
-    // buckets in...
-    if(null != TestUtils.getPrefix())
-       return;
-    
-    // create simple directory structure with a few files
-    File top = TestUtils.createTmpDir(true);
-    File a = TestUtils.createTextFile(top, 100);
-    File b = TestUtils.createTextFile(top, 100);
-    File sub = TestUtils.createTmpDir(top);
-    File c = TestUtils.createTextFile(sub, 100);
-    File d = TestUtils.createTextFile(sub, 100);
-    File sub2 = TestUtils.createTmpDir(sub);
-    File e = TestUtils.createTextFile(sub2, 100);
-
-    String rootPrefix = TestUtils.addPrefix("copy-dir-bucket/");
-    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
-    int originalCount = objs.size();
-
-    // upload the directory
-    URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
-    Assert.assertEquals(5, uploaded.size());
-
-    // non-recursive copy
-    String bucket2 = TestUtils.createTestBucket();
-    List<S3File> objs2 = TestUtils.listObjects(bucket2, rootPrefix);
-    int originalCount2 = objs2.size();
-    String topN = rootPrefix + top.getName() + "/";
-    CopyOptions copyOpts = new CopyOptionsBuilder()
-       .setSourceBucketName(_testBucket)
-       .setSourceKey(topN)
-       .setDestinationBucketName(bucket2)
-       .setDestinationKey(topN)
-       .setRecursive(false)
-       .createCopyOptions();
-    List<S3File> copy = _client.copyToDir(copyOpts).get();
-    Assert.assertEquals(2, copy.size());
-
-    // verify the non-recursive copy
-    objs = TestUtils.listObjects(_testBucket, rootPrefix);
-    Assert.assertEquals(originalCount + 5, objs.size());
-       // original files plus 5 uploaded
-
-    List<S3File> copyObjs = TestUtils.listObjects(bucket2, rootPrefix);
-    Assert.assertEquals(originalCount2 + 2, copyObjs.size());
-       // original files plus 2 copied
-    Assert.assertTrue(TestUtils.findObject(copyObjs, topN + a.getName()));
-    Assert.assertTrue(TestUtils.findObject(copyObjs, topN + b.getName()));
-
-    // recursive copy
-    String copyTopN = rootPrefix + top.getName() + "-COPY/";
-    copyOpts = new CopyOptionsBuilder()
-       .setSourceBucketName(_testBucket)
-       .setSourceKey(topN)
-       .setDestinationBucketName(bucket2)
-       .setDestinationKey(copyTopN)
-       .setRecursive(true)
-       .createCopyOptions();
-    copy = _client.copyToDir(copyOpts).get();
-    Assert.assertEquals(5, copy.size());
-
-    // verify the recursive copy
-    String subN = copyTopN + sub.getName() + "/";
-    String sub2N = subN + sub2.getName() + "/";
-    objs = TestUtils.listObjects(_testBucket, rootPrefix);
-    Assert.assertEquals(originalCount + 5, objs.size());
-       // same original plus 5 uploaded
-    int lastSize = copyObjs.size();
-    copyObjs = TestUtils.listObjects(bucket2, rootPrefix);
-    Assert.assertEquals(lastSize + 5, copyObjs.size());
-       // previous size plus 5 copies
-    Assert.assertTrue(TestUtils.findObject(copyObjs, copyTopN + a.getName()));
-    Assert.assertTrue(TestUtils.findObject(copyObjs, copyTopN + b.getName()));
-    Assert.assertTrue(TestUtils.findObject(copyObjs, subN + c.getName()));
-    Assert.assertTrue(TestUtils.findObject(copyObjs, subN + d.getName()));
-    Assert.assertTrue(TestUtils.findObject(copyObjs, sub2N + e.getName()));
-    return;
-}
-catch(Throwable t)
-{
-  ++count;
-  if(count >= retryCount)
-    throw t;
-//  System.out.println(" ++++++++++++++++ RETRYING: " + t.getMessage());
-}
-}
-  }
-
-
-  @Test
   public void testEncryptedUploadDownload()
     throws Throwable
   {
@@ -996,7 +913,7 @@ catch(Throwable t)
     String publicKey = keys[1];
 
     // capture files currently in test bucket
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("encrypted-upload");
     List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
     int originalCount = objs.size();
 
@@ -1011,9 +928,10 @@ catch(Throwable t)
       TestUtils.uploadEncryptedFile(toUpload, dest, keyName);
       Assert.fail("Expected upload error (key not found)");
     }
-    catch(Throwable t)
+    catch(Exception ex)
     {
       // expected
+      checkUsageException(ex, null);
     }
 
     // upload should succeed now
@@ -1024,7 +942,7 @@ catch(Throwable t)
     // make sure file was uploaded
     objs = TestUtils.listObjects(_testBucket, rootPrefix);
     Assert.assertEquals(originalCount + 1, objs.size());
-    String key = rootPrefix + toUpload.getName();
+    String key = Utils.getObjectKey(dest);
     Assert.assertTrue(TestUtils.findObject(objs, key));
 
     // download the file and compare it with the original
@@ -1042,7 +960,7 @@ catch(Throwable t)
       f = TestUtils.downloadFile(dest, dlTemp);
       Assert.fail("Expected download error (key not found)");
     }
-    catch(Throwable t)
+    catch(ExecutionException ex)
     {
       // expected
     }
@@ -1063,9 +981,10 @@ catch(Throwable t)
       TestUtils.uploadEncryptedFile(toUpload, dest, keyName);
       Assert.fail("Expected upload error (key not found)");
     }
-    catch(Throwable t)
+    catch(Exception ex)
     {
       // expected
+      checkUsageException(ex, null);
     }
 
     // upload with only public key in key dir.  should succeed
@@ -1092,9 +1011,31 @@ catch(Throwable t)
     _retryCount = 0;
   }
 
+
   private synchronized int getRetryCount()
   {
     return _retryCount;
   }
 
+
+  private void checkUsageException(Exception ex, String expectedMsg)
+    throws Exception
+  {
+    UsageException uex = null;
+    if(ex instanceof UsageException)
+    {
+      uex = (UsageException) ex;
+    }
+    else
+    {
+      if((null != ex.getCause()) && (ex.getCause() instanceof UsageException))
+        uex = (UsageException) ex.getCause();
+    }
+
+    if(null == uex)
+      throw ex;
+
+    if(null != expectedMsg)
+      Assert.assertTrue(uex.getMessage().contains(expectedMsg));
+  }
 }

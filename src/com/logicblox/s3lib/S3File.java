@@ -17,12 +17,11 @@ public class S3File {
   public S3File()
   {
   }
-
-  // for internal convenience
-  S3File(String bucket, String key)
+  
+  public S3File(String bucket, String key)
   {
-     _bucket = bucket;
-     _key = key;
+    _bucket = bucket;
+    _key = key;
   }
   
   public File getLocalFile() {

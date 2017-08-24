@@ -19,14 +19,17 @@ public class CopyToDirCommand extends Command
   private ListeningExecutorService _httpExecutor;
   private ListeningScheduledExecutorService _executor;
   private CloudStoreClient _client;
+  private boolean _dryRun;
 
   public CopyToDirCommand(ListeningExecutorService httpExecutor,
                           ListeningScheduledExecutorService internalExecutor,
+                          boolean dryRun,
                           CloudStoreClient client)
   {
     _httpExecutor = httpExecutor;
     _executor = internalExecutor;
     _client = client;
+    _dryRun = dryRun;
   }
 
   public ListenableFuture<List<S3File>> run(final CopyOptions options)
@@ -60,7 +63,14 @@ public class CopyToDirCommand extends Command
     }
     files.addAll(copyBatch(current.getObjectSummaries(), options, baseDirPath));
 
-    return Futures.allAsList(files);
+    if(_dryRun)
+    {
+      return Futures.immediateFuture(null);
+    }
+    else
+    {
+      return Futures.allAsList(files);
+    }
   }
 
   private List<ListenableFuture<S3File>> copyBatch(List<S3ObjectSummary> lst,
@@ -85,7 +95,15 @@ public class CopyToDirCommand extends Command
             .setStorageClass(options.getStorageClass().orNull())
             .createCopyOptions();
 
-        batch.add(_client.copy(options0));
+        if(_dryRun)
+        {
+          System.out.println("<DRYRUN> copying '" + getUri(options.getSourceBucketName(), obj.getKey())
+            + "' to '" + getUri(options.getDestinationBucketName(), destKey) + "'");
+        }
+        else
+        {
+          batch.add(_client.copy(options0));
+        }
       }
     }
 

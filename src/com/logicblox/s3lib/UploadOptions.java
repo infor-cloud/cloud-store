@@ -37,13 +37,14 @@ public class UploadOptions {
     private long chunkSize = -1;
     private Optional<String> encKey;
     private Optional<String> acl;
+    private boolean dryRun;
+    private boolean ignoreAbortInjection;
     private Optional<OverallProgressListenerFactory>
         overallProgressListenerFactory;
 
     // for testing
-    private static int _abortInjectionCounter = 0;
-    private static Object _abortSync = new Object();
-    private static Map<String,Integer> _injectionCounters = new HashMap<String,Integer>();
+    private static AbortCounters _abortCounters = new AbortCounters();
+
 
     UploadOptions(File file,
                   String bucket,
@@ -51,6 +52,8 @@ public class UploadOptions {
                   long chunkSize,
                   Optional<String> encKey,
                   Optional<String> acl,
+                  boolean dryRun,
+                  boolean ignoreAbortInjection,
                   Optional<OverallProgressListenerFactory>
                       overallProgressListenerFactory) {
         this.file = file;
@@ -59,35 +62,27 @@ public class UploadOptions {
         this.chunkSize = chunkSize;
         this.encKey = encKey;
         this.acl = acl;
+        this.dryRun = dryRun;
+        this.ignoreAbortInjection = ignoreAbortInjection;
         this.overallProgressListenerFactory = overallProgressListenerFactory;
     }
 
 
-    // for testing
-    static void setAbortInjectionCounter(int counter)
+    // for testing injection of aborts during a copy
+    void injectAbort(String id)
     {
-      synchronized(_abortSync)
+      if(!this.ignoreAbortInjection
+           && (_abortCounters.decrementInjectionCounter(id) > 0))
       {
-        _abortInjectionCounter = counter;
+        throw new AbortInjection("forcing upload abort");
       }
     }
 
-    // for testing
-    static int decrementAbortInjectionCounter(String uploadId)
+    static AbortCounters getAbortCounters()
     {
-      synchronized(_abortSync)
-      {
-        if(_abortInjectionCounter <= 0)
-          return 0;
-
-        if(!_injectionCounters.containsKey(uploadId))
-          _injectionCounters.put(uploadId, _abortInjectionCounter);
-        int current = _injectionCounters.get(uploadId);
-        _injectionCounters.put(uploadId, current - 1);
-        return current;
-      }
+      return _abortCounters;
     }
-    
+
 
     public File getFile() {
         return file;
@@ -117,6 +112,10 @@ public class UploadOptions {
 
     public Optional<String> getAcl() {
         return acl;
+    }
+
+    public boolean isDryRun() {
+        return dryRun;
     }
 
     public Optional<OverallProgressListenerFactory>

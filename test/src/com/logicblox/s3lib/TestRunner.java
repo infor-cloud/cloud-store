@@ -10,7 +10,11 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses( { 
 //  BucketTests.class,
+        // these only work with minio and with AWS if you have the right creds
   UploadDownloadTests.class,
+  CopyTests.class,
+  DeleteTests.class,
+  RenameTests.class,
   MultiKeyTests.class
  })
 public class TestRunner

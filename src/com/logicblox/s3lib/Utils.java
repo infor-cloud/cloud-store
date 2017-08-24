@@ -496,9 +496,17 @@ public class Utils
     return client;
   }
 
-  // create all missing parent directories of the specified directory.
-  // return a list of the directories that had to be created, ordered top down
   public static List<File> mkdirs(File dir)
+    throws IOException
+  {
+    return mkdirs(dir, false);
+  }
+  
+  // create all missing parent directories of the specified directory.
+  // if dryRun is true, just return what would be created instead of doing
+  // the actual work.
+  // return a list of the directories that had to be created, ordered top down
+  public static List<File> mkdirs(File dir, boolean dryRun)
     throws IOException
   {
      String[] subdirs = dir.getAbsolutePath().split(File.separator);
@@ -519,7 +527,8 @@ public class Utils
        }
        if(!current.exists())
        {
-         current.mkdir();
+         if(!dryRun)
+           current.mkdir();
          created.add(current);
        }
      }

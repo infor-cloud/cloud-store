@@ -67,6 +67,8 @@ class Main
     _commander.addCommand("upload", new UploadCommandOptions());
     _commander.addCommand("download", new DownloadCommandOptions());
     _commander.addCommand("copy", new CopyCommandOptions());
+    _commander.addCommand("rename", new RenameCommandOptions());
+    _commander.addCommand("delete", new DeleteCommandOptions());
     _commander.addCommand("ls", new ListCommandOptions());
     _commander.addCommand("du", new DiskUsageCommandOptions());
     _commander.addCommand("list-pending-uploads", new
@@ -396,6 +398,9 @@ class Main
     @Parameter(names = {"-r", "--recursive"}, description = "Copy recursively")
     boolean recursive = false;
 
+    @Parameter(names = "--dry-run", description = "Display operations but do not execute them")
+    boolean dryRun = false;
+
     public void invoke() throws Exception
     {
       if (cannedAcl == null)
@@ -421,6 +426,7 @@ class Main
           .setCannedAcl(cannedAcl)
           .setStorageClass(storageClass)
           .setRecursive(recursive)
+          .setDryRun(dryRun)
           .createCopyOptions();
 
       try
@@ -463,6 +469,70 @@ class Main
     }
   }
 
+  
+  @Parameters(commandDescription = "Rename an object or object prefix. If the " +
+      "source URI ends with '/', then it acts as a prefix and " +
+      "this operation will rename all objects that would be returned by the list " +
+      "operation on the same prefix.")
+  class RenameCommandOptions extends TwoObjectsCommandOptions
+  {
+    @Parameter(names = "--canned-acl", description = "The canned ACL to use. "
+        + S3Client.cannedACLsDescConst)
+    String cannedAcl;
+
+    @Parameter(names = {"-r", "--recursive"}, description = "Rename recursively")
+    boolean recursive = false;
+
+    @Parameter(names = "--dry-run", description = "Display operations but do not execute them")
+    boolean dryRun = false;
+
+    public void invoke() throws Exception
+    {
+      if (cannedAcl == null)
+      {
+        cannedAcl = Utils.getDefaultCannedACLFor(detectStorageService());
+      }
+
+      if(!Utils.isValidCannedACLFor(detectStorageService(), cannedAcl))
+      {
+        throw new UsageException("Unknown canned ACL '" + cannedAcl + "'");
+      }
+
+      CloudStoreClient client = createCloudStoreClient();
+
+      RenameOptions options = new RenameOptionsBuilder()
+          .setSourceBucket(getSourceBucket())
+          .setSourceKey(getSourceObjectKey())
+          .setDestinationBucket(getDestinationBucket())
+          .setDestinationKey(getDestinationObjectKey())
+          .setCannedAcl(cannedAcl)
+          .setRecursive(recursive)
+          .setDryRun(dryRun)
+          .createRenameOptions();
+
+      try
+      {
+        if(getSourceObjectKey().endsWith("/"))
+        {
+          client.renameDirectory(options).get();
+        }
+        else
+        {
+          client.rename(options).get();
+        }
+      }
+      catch(ExecutionException exc)
+      {
+        rethrow(exc.getCause());
+      }
+      finally
+      {
+        client.shutdown();
+      }
+    }
+  }
+
+
   @Parameters(commandDescription = "Upload a file or directory to the storage service")
   class UploadCommandOptions extends S3ObjectCommandOptions
   {
@@ -474,6 +544,9 @@ class Main
 
     @Parameter(names = "--progress", description = "Enable progress indicator")
     boolean progress = false;
+
+    @Parameter(names = "--dry-run", description = "Display operations but do not execute them")
+    boolean dryRun = false;
 
     @Parameter(names = "--canned-acl", description = "The canned ACL to use. "
         + S3Client.cannedACLsDescConst + " " + GCSClient.cannedACLsDescConst)
@@ -511,7 +584,8 @@ class Main
           .setObjectKey(getObjectKey())
           .setChunkSize(chunkSize)
           .setEncKey(encKeyName)
-          .setAcl(cannedAcl);
+          .setAcl(cannedAcl)
+          .setDryRun(dryRun);
       if (progress) {
         OverallProgressListenerFactory cplf = new
             ConsoleProgressListenerFactory();
@@ -591,6 +665,52 @@ class Main
           }
         }
       } catch (ExecutionException exc) {
+        rethrow(exc.getCause());
+      }
+      client.shutdown();
+    }
+  }
+  
+  @Parameters(commandDescription = "Delete objects from a storage service")
+  class DeleteCommandOptions extends S3ObjectCommandOptions
+  {
+    @Parameter(names = {"-r", "--recursive"}, description = "Delete all objects" +
+        " that match the provided storage service URL prefix.")
+    boolean recursive = false;
+
+    @Parameter(names = {"-f", "--force"}, description = "Do not report an error if the object does not exist")
+    boolean forceDelete = false;
+
+    @Parameter(names = "--dry-run", description = "Display operations but do not execute them")
+    boolean dryRun = false;
+    
+    @Override
+    public void invoke()
+      throws Exception
+    {
+      if(recursive && !getObjectKey().endsWith("/"))
+        throw new UsageException("Object key should end with / to recursively delete a directory structure");
+
+      CloudStoreClient client = createCloudStoreClient();
+      DeleteOptions opts = new DeleteOptionsBuilder()
+          .setBucket(getBucket())
+          .setObjectKey(getObjectKey())
+          .setRecursive(recursive)
+          .setDryRun(dryRun)
+          .setForceDelete(forceDelete)
+          .createDeleteOptions();
+
+      try
+      {
+        if(getObjectKey().endsWith("/"))
+          client.deleteDir(opts).get();
+        else
+          client.delete(opts).get();
+      }
+      catch(ExecutionException exc)
+      {
+        // if UsageException is thrown from the command, rethrow that instead of the
+        // wrapper exception to get cleaner error logging
         rethrow(exc.getCause());
       }
       client.shutdown();
@@ -931,6 +1051,9 @@ class Main
     @Parameter(names = "--progress", description = "Enable progress indication")
     boolean progress = false;
 
+    @Parameter(names = "--dry-run", description = "Display operations but do not execute them")
+    boolean dryRun = false;
+
     @Override
     public void invoke() throws Exception
     {
@@ -945,7 +1068,8 @@ class Main
           .setObjectKey(getObjectKey())
           .setRecursive(recursive)
           .setVersion(version)
-          .setOverwrite(overwrite);
+          .setOverwrite(overwrite)
+          .setDryRun(dryRun);
 
       if (progress) {
           OverallProgressListenerFactory cplf = new
@@ -956,10 +1080,6 @@ class Main
       if(getObjectKey().endsWith("/") || getObjectKey().equals("")) {
         result = client.downloadDirectory(dob.createDownloadOptions());
       } else {
-        // Test if storage service url exists.
-        if(client.exists(getBucket(), getObjectKey()).get() == null) {
-          throw new UsageException("Object not found at "+getURI());
-        }
         if (output.isDirectory())
           output = new File(output,
               getObjectKey().substring(getObjectKey().lastIndexOf("/")+1));

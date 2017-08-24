@@ -3,6 +3,7 @@ package com.logicblox.s3lib;
 import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.model.Objects;
 import com.google.api.services.storage.model.StorageObject;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -15,14 +16,11 @@ public class GCSCopyCommand extends Command
 
   private ListeningExecutorService _s3Executor;
   private ListeningScheduledExecutorService _executor;
-  private Storage _storage;
 
   public GCSCopyCommand(
-      Storage storage,
       ListeningExecutorService s3Executor,
       ListeningScheduledExecutorService internalExecutor)
   {
-    _storage = storage;
     _s3Executor = s3Executor;
     _executor = internalExecutor;
   }
@@ -30,7 +28,17 @@ public class GCSCopyCommand extends Command
 
   public ListenableFuture<S3File> run(final CopyOptions options)
   {
-    ListenableFuture<S3File> future =
+    if(options.isDryRun())
+    {
+      System.out.println("<DRYRUN> copying '"
+        + getUri(options.getSourceBucketName(), options.getSourceKey())
+        + "' to '"
+        + getUri(options.getDestinationBucketName(), options.getDestinationKey()) + "'");
+      return Futures.immediateFuture(null);
+    }
+    else
+    {
+      ListenableFuture<S3File> future =
         executeWithRetry(_executor, new Callable<ListenableFuture<S3File>>()
         {
           public ListenableFuture<S3File> call()
@@ -46,7 +54,8 @@ public class GCSCopyCommand extends Command
           }
         });
     
-    return future;
+      return future;
+    }
   }
   
 
@@ -56,7 +65,11 @@ public class GCSCopyCommand extends Command
     {
       public S3File call() throws IOException
       {
-        Storage.Objects.Copy cmd = _storage.objects().copy(
+        // support for testing failures
+        String srcUri = getUri(options.getSourceBucketName(), options.getSourceKey());
+        options.injectAbort(srcUri);
+        
+        Storage.Objects.Copy cmd = getGCSClient().objects().copy(
           options.getSourceBucketName(), options.getSourceKey(),
           options.getDestinationBucketName(), options.getDestinationKey(),
           null);

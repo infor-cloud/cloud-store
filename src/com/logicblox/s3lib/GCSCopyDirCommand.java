@@ -3,6 +3,7 @@ package com.logicblox.s3lib;
 import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.model.Objects;
 import com.google.api.services.storage.model.StorageObject;
+import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -18,14 +19,11 @@ public class GCSCopyDirCommand extends Command
 
   private ListeningExecutorService _s3Executor;
   private ListeningScheduledExecutorService _executor;
-  private Storage _storage;
 
   public GCSCopyDirCommand(
-      Storage storage,
       ListeningExecutorService s3Executor,
       ListeningScheduledExecutorService internalExecutor)
   {
-    _storage = storage;
     _s3Executor = s3Executor;
     _executor = internalExecutor;
   }
@@ -44,16 +42,28 @@ public class GCSCopyDirCommand extends Command
       if(endIndex != -1)
         baseDirPath = options.getSourceKey().substring(0, endIndex+1);
     }
+    final String baseDirPathF = baseDirPath;
 
-    List<ListenableFuture<S3File>> files = new ArrayList<>();
-
-    List<S3File> filesToCopy = listObjects(
+    ListenableFuture<List<S3File>> listFuture = getListFuture(
       options.getSourceBucketName(), options.getSourceKey(), options.isRecursive());
+    ListenableFuture<List<S3File>> result = Futures.transform(
+      listFuture,
+      new AsyncFunction<List<S3File>, List<S3File>>()
+      {
+        public ListenableFuture<List<S3File>> apply(List<S3File> filesToCopy)
+        {
+          List<ListenableFuture<S3File>> files = new ArrayList<>();
+          List<ListenableFuture<S3File>> futures = new ArrayList<>();
+          for(S3File src : filesToCopy)
+            createCopyOp(futures, src, options, baseDirPathF);
 
-    List<ListenableFuture<S3File>> futures = new ArrayList<>();
-    for(S3File src : filesToCopy)
-      createCopyOp(futures, src, options, baseDirPath);
-    return Futures.allAsList(futures);
+          if(options.isDryRun())
+            return Futures.immediateFuture(null);
+          else
+            return Futures.allAsList(futures);
+        }
+      });
+    return result;
   }
 
 
@@ -65,44 +75,72 @@ public class GCSCopyDirCommand extends Command
     {
       String destKeyLastPart = src.getKey().substring(baseDirPath.length());
       final String destKey = options.getDestinationKey() + destKeyLastPart;
-      futures.add(_s3Executor.submit(new Callable<S3File>()
+      if(options.isDryRun())
+      {
+        System.out.println("<DRYRUN> copying '"
+          + getUri(options.getSourceBucketName(), src.getKey())
+          + "' to '"
+          + getUri(options.getDestinationBucketName(), destKey) + "'");
+      }
+      else
+      {
+        futures.add(wrapCopyWithRetry(options, src, destKey));
+      }
+    }
+  }
+
+  private ListenableFuture<S3File> wrapCopyWithRetry(
+    final CopyOptions options, final S3File src, final String destKey)
+  {
+    return executeWithRetry(_executor, new Callable<ListenableFuture<S3File>>()
+    {
+      public ListenableFuture<S3File> call()
+      {
+        return _s3Executor.submit(new Callable<S3File>()
         {
           public S3File call() throws IOException
           {
-            Storage.Objects.Copy cmd = _storage.objects().copy(
-              options.getSourceBucketName(), src.getKey(),
-              options.getDestinationBucketName(), destKey,
-              null);
-            StorageObject resp = cmd.execute();
-            return createS3File(resp, false);
+            return performCopy(options, src, destKey);
           }
-        }));
-    }
+        });
+      }
+    });
+  }
+
+  
+  private S3File performCopy(CopyOptions options, S3File src, String destKey)
+    throws IOException
+  {
+    // support for testing failures
+    String srcUri = getUri(options.getSourceBucketName(), src.getKey());
+    options.injectAbort(srcUri);
+
+    Storage.Objects.Copy cmd = getGCSClient().objects().copy(
+      options.getSourceBucketName(), src.getKey(),
+      options.getDestinationBucketName(), destKey,
+      null);
+    StorageObject resp = cmd.execute();
+    return createS3File(resp, false);
   }
   
 
-  private List<S3File> listObjects(String bucket, String prefix, boolean isRecursive)
-    throws IOException
+  private ListenableFuture<List<S3File>> getListFuture(
+    String bucket, String prefix, boolean isRecursive)
   {
-    List<S3File> s3files = new ArrayList<S3File>();
-    List<StorageObject> allObjs = new ArrayList<StorageObject>();
-    Storage.Objects.List cmd = _storage.objects().list(bucket);
-    cmd.setPrefix(prefix);
-    if(!isRecursive)
-      cmd.setDelimiter("/");
-    Objects objs;
-    do
-    {
-      objs = cmd.execute();
-      List<StorageObject> items = objs.getItems();
-      if(items != null)
-        allObjs.addAll(items);
-      cmd.setPageToken(objs.getNextPageToken());
-    } while (objs.getNextPageToken() != null);
-
-    for(StorageObject s : allObjs)
-      s3files.add(createS3File(s, false));
-    return s3files;
+    // FIXME - if we gave commands a CloudStoreClient when they were created
+    //         we could then use client.listObjects() instead of all this....
+    ListOptions listOpts = (new ListOptionsBuilder())
+      .setBucket(bucket)
+      .setObjectKey(prefix)
+      .setRecursive(isRecursive)
+      .createListOptions();
+    GCSListCommand cmd = new GCSListCommand(_s3Executor, _executor);
+    cmd.setRetryClientException(_stubborn);
+    cmd.setRetryCount(_retryCount);
+    cmd.setAmazonS3Client(getAmazonS3Client());
+    cmd.setGCSClient(getGCSClient());
+    cmd.setScheme("gs://");
+    return cmd.run(listOpts);
   }
 
   

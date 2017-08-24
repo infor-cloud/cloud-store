@@ -211,23 +211,32 @@ public interface CloudStoreClient {
         uri, String encKey, CannedAccessControlList acl)
         throws IOException, ExecutionException, InterruptedException;
 
+
     /**
-     * Deletes the specified {@code object} under {@code bucket}.
-     * <p>
-     * No error is returned if the file doesn't exist. If you care, use the
-     * {@link CloudStoreClient#exists} methods to check.
+     * Deletes a single object from a cloud store service.
      *
-     * @param bucket Bucket to delete from
-     * @param object Object to be deleted from bucket
+     * @param opts DeleteOptions that specify what to delete
      */
+    ListenableFuture<S3File> delete(DeleteOptions opts);
+
+    /**
+     * Recursively delete objects from a cloud store service.
+     *
+     * @param opts DeleteOptions that specify what to delete
+     */
+    ListenableFuture<List<S3File>> deleteDir(DeleteOptions opts)
+      throws InterruptedException, ExecutionException;
+
+    /**
+     * Deprecated.  Use CloudStoreClient#delete(DeleteOptions)
+     */
+    @Deprecated
     ListenableFuture<S3File> delete(String bucket, String object);
 
     /**
-     * Deletes the specified {@code uri}.
-     *
-     * @param uri Object URI (e.g. s3://bucket/key)
-     * @see CloudStoreClient#delete(String, String)
+     * Deprecated.  Use CloudStoreClient#delete(DeleteOptions)
      */
+    @Deprecated
     ListenableFuture<S3File> delete(URI uri);
 
     /** Lists all buckets visible for this account. */
@@ -305,6 +314,21 @@ public interface CloudStoreClient {
         throws IOException;
 
     /**
+     * Downloads the specified {@code object}, under {@code bucket}, to a local
+     * {@code file}.
+     *
+     * @param file   File to download
+     * @param bucket Bucket to download from
+     * @param object Path in bucket to download
+     * @param overwrite Boolean set to true if you want to replace an exiting file
+     * @see CloudStoreClient#download(DownloadOptions options)
+     */
+    @Deprecated
+    ListenableFuture<S3File> download(
+      File file, String bucket, String object, boolean overwrite)
+        throws IOException;
+
+    /**
      * Downloads the specified {@code uri} to a local {@code file}.
      *
      * @param file File to download
@@ -313,6 +337,19 @@ public interface CloudStoreClient {
      */
     @Deprecated
     ListenableFuture<S3File> download(File file, URI uri)
+        throws IOException;
+
+    /**
+     * Downloads the specified {@code uri} to a local {@code file}, optionally
+     * overwriting the destination file if it exists.
+     *
+     * @param file File to download
+     * @param uri  Object URL to download from
+     * @param overwrite Boolean set to true if you want to replace an exiting file
+     * @see CloudStoreClient#download(DownloadOptions options)
+     */
+    @Deprecated
+    ListenableFuture<S3File> download(File file, URI uri, boolean overwrite)
         throws IOException;
 
     /**
@@ -358,12 +395,11 @@ public interface CloudStoreClient {
      * permission to it. Respectively, the destination bucket must already
      * exist and the caller must have write permission to it.
      *
-     * @param options Copy options
+     * @param options CopyOptions
      * @see CloudStoreClient#copyToDir(CopyOptions)
      * @see CopyOptions
      */
-    ListenableFuture<S3File> copy(CopyOptions options)
-    throws IOException;
+    ListenableFuture<S3File> copy(CopyOptions options);
 
     /**
      * Copies all keys that would be returned by the list operation on the
@@ -375,13 +411,47 @@ public interface CloudStoreClient {
      * permission to it. Respectively, the destination bucket must already exist
      * and the caller must have write permission to it.
      *
-     * @param options Copy options
+     * @param options CopyOptions
      * @see CloudStoreClient#copy(CopyOptions)
      * @see CopyOptions
      */
     ListenableFuture<List<S3File>> copyToDir(CopyOptions options) throws
         InterruptedException, ExecutionException, IOException,
         URISyntaxException;
+
+    /**
+     * Renames an object according to {@code options}. For more details
+     * check {@link com.logicblox.s3lib.RenameOptions}.  Note that this is
+     * equivalent to a copy operation followed by a delete operation.
+     * <p>
+     * The source bucket must already exist and the caller must have read
+     * permission to it. Respectively, the destination bucket must already
+     * exist and the caller must have write permission to it.
+     *
+     * @param options RenameOptions - provides parameters for the rename operation
+     * @see CloudStoreClient#renameDirectory(RenameOptions)
+     * @see RenameOptions
+     */
+    ListenableFuture<S3File> rename(RenameOptions options);
+
+    /**
+     * Renames all keys that share a prefix to have another prefix -- in other
+     * words, rename a folder.  All keys that would be returned by a list
+     * operation on the source key will be renamed. 
+     * <p>
+     * The source bucket must already exist and the caller must have read
+     * permission to it. Respectively, the destination bucket must already
+     * exist and the caller must have write permission to it.
+     * <p>
+     * Both the source and destination keys should be folders.  There must be some keys
+     * that match the source founder, but the destination folder does not need to exist.
+     *
+     * @param options RenameOptions
+     * @see CloudStoreClient#rename(RenameOptions)
+     * @see RenameOptions
+     */
+    ListenableFuture<List<S3File>> renameDirectory(RenameOptions options)
+      throws InterruptedException, ExecutionException, IOException;
 
     /**
      * Returns a list of summary information about the objects whose keys start
@@ -498,6 +568,4 @@ public interface CloudStoreClient {
      */
     void destroyBucket(String bucketName);
 
-    // needed for testing
-    void setKeyProvider(KeyProvider kp);
 }

@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ExecutionException;
 
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.BadPaddingException;
@@ -25,9 +26,10 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
 
-import com.google.common.base.Optional;
 import org.apache.commons.codec.digest.DigestUtils;
 
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.google.common.base.Optional;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.util.concurrent.AsyncFunction;
@@ -39,24 +41,30 @@ import com.google.common.util.concurrent.FutureFallback;
 
 public class DownloadCommand extends Command
 {
+  private CloudStoreClient _client;
   private ListeningExecutorService _downloadExecutor;
   private ListeningScheduledExecutorService _executor;
   private KeyProvider _encKeyProvider;
+  private boolean _dryRun;
   private ConcurrentMap<Integer, byte[]> etags = new ConcurrentSkipListMap<Integer, byte[]>();
   private Optional<OverallProgressListenerFactory> progressListenerFactory;
 
   public DownloadCommand(
+    CloudStoreClient client,
     ListeningExecutorService downloadExecutor,
     ListeningScheduledExecutorService internalExecutor,
     File file,
     boolean overwrite,
     KeyProvider encKeyProvider,
+    boolean dryRun,
     OverallProgressListenerFactory progressListenerFactory)
-  throws IOException
+      throws IOException
   {
+    _client = client;
     _downloadExecutor = downloadExecutor;
     _executor = internalExecutor;
     _encKeyProvider = encKeyProvider;
+    _dryRun = dryRun;
 
     this.file = file;
     createNewFile(overwrite);
@@ -70,16 +78,28 @@ public class DownloadCommand extends Command
     File dir = file.getParentFile();
     if(!dir.exists())
     {
-      if(!dir.mkdirs())
-        throw new IOException("Could not create directory '" + dir + "'");
+      List<File> newDirs = Utils.mkdirs(dir, _dryRun);
+      if(_dryRun)
+      {
+        for(File f : newDirs)
+          System.out.println("<DRYRUN> creating missing directory '"
+            + f.getAbsolutePath() + "'");
+      }
     }
 
     if(file.exists())
     {
       if(overwrite)
       {
-        if(!file.delete())
-          throw new IOException("Could not delete existing file '" + file + "'");
+        if(_dryRun)
+        {
+          System.out.println("<DRYRUN> overwrite existing file '" + file.getAbsolutePath() + "'");
+        }
+        else
+        {
+          if(!file.delete())
+            throw new UsageException("Could not delete existing file '" + file + "'");
+        }
       }
       else
       {
@@ -88,11 +108,43 @@ public class DownloadCommand extends Command
       }
     }
 
-    if(!file.createNewFile())
-      throw new IOException("File '" + file + "' already exists");
+    if(!_dryRun)
+    {
+      if(!file.createNewFile())
+        throw new IOException("File '" + file + "' already exists");
+    }
   }
 
-  public ListenableFuture<S3File> run(final String bucket, final String key, final String version)
+  
+  public ListenableFuture<S3File> run(String bucket, String key, String version)
+  {
+    if(_dryRun)
+    {
+      System.out.println("<DRYRUN> downloading '" + getUri(bucket, key)
+        + "' to '" + this.file.getAbsolutePath() + "'");
+      return Futures.immediateFuture(null);
+    }
+
+    ListenableFuture<ObjectMetadata> existsFuture = _client.exists(bucket, key);
+    ListenableFuture<S3File> result = Futures.transform(
+      existsFuture,
+      new AsyncFunction<ObjectMetadata,S3File>()
+      {
+        public ListenableFuture<S3File> apply(ObjectMetadata mdata)
+          throws UsageException
+        {
+          if(null == mdata)
+              throw new UsageException("Object not found at " + getUri(bucket, key));
+          return scheduleExecution(bucket, key, version);
+        }
+      });
+
+      return result;
+  }
+
+
+  private ListenableFuture<S3File> scheduleExecution(
+    final String bucket, final String key, final String version)
   {
     ListenableFuture<AmazonDownload> download = startDownload(bucket, key, version);
     download = Futures.transform(download, startPartsAsyncFunction());
@@ -126,7 +178,7 @@ public class DownloadCommand extends Command
             return Futures.immediateFailedFuture(t);
           }
           return Futures.immediateFailedFuture(new Exception("Error " +
-              "downloading " + getUri(bucket, key)+ ".", t));
+              "downloading " + getUri(bucket, key) + ".", t));
         }
       });
   }

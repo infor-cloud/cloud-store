@@ -2,7 +2,6 @@ package com.logicblox.s3lib;
 
 import com.amazonaws.services.s3.model.AccessControlList;
 import com.google.common.base.Optional;
-import com.google.common.base.Strings;
 
 import java.util.Map;
 
@@ -25,6 +24,8 @@ public class CopyOptionsBuilder {
     private Optional<String> cannedAcl = Optional.absent();
     private Optional<AccessControlList> s3Acl = Optional.absent();
     private Optional<Map<String,String>> userMetadata = Optional.absent();
+    private boolean dryRun = false;
+    private boolean ignoreAbortInjection = false;
     private Optional<OverallProgressListenerFactory>
         overallProgressListenerFactory = Optional.absent();
 
@@ -74,6 +75,18 @@ public class CopyOptionsBuilder {
         return this;
     }
 
+    public CopyOptionsBuilder setDryRun(boolean dryRun) {
+        this.dryRun = dryRun;
+        return this;
+    }
+
+    public CopyOptionsBuilder setIgnoreAbortInjection(boolean ignore)
+    {
+      this.ignoreAbortInjection = ignore;
+      return this;
+    }
+  
+
     // Disabled progress listener since AWS S3 copy progress indicator doesn't
     // notify about the copied bytes.
     //    public CopyOptionsBuilder setOverallProgressListenerFactory
@@ -85,7 +98,7 @@ public class CopyOptionsBuilder {
 
     public CopyOptions createCopyOptions() {
         return new CopyOptions(sourceBucketName, sourceKey,
-          destinationBucketName, destinationKey, cannedAcl, s3Acl, storageClass,
-          recursive, userMetadata, overallProgressListenerFactory);
+            destinationBucketName, destinationKey, cannedAcl, s3Acl, storageClass,
+            recursive, dryRun, ignoreAbortInjection, userMetadata, overallProgressListenerFactory);
     }
 }

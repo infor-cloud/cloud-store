@@ -42,7 +42,9 @@ public class TestUtils
   private static Random _rand = null;
   private static Set<File> _autoDeleteDirs = new HashSet<File>();
   private static Set<String> _bucketsToDestroy = new HashSet<String>();
+
   static boolean SKIP_CLEANUP = false;
+  static final int RETRY_COUNT = 5;
 
 
   // handle all input parameters
@@ -88,13 +90,11 @@ public class TestUtils
     {
       try
       {
-        _destUri = Utils.getURI(destPrefix);
-        _service = _destUri.getScheme();
+        setDest(destPrefix);
       }
       catch(Throwable t)
       {
-        System.out.println("Error: could not parse --dest-prefix URL ["
-           + t.getMessage() + "]");
+        System.out.println("Error: " + t.getMessage());
         System.exit(1);
       }
     }
@@ -104,6 +104,7 @@ public class TestUtils
       System.out.println("Error:  --service must be s3 or gs");
       System.exit(1);
     }
+
   }
 
 
@@ -304,7 +305,27 @@ public class TestUtils
     ListOptions lsOpts = builder.createListOptions();
     List<S3File> objs = _client.listObjects(lsOpts).get();
     for(S3File f : objs)
-      _client.delete(bucket, f.getKey()).get();
+      deleteObject(bucket, f.getKey());
+  }
+
+  public static S3File deleteObject(String bucket, String key)
+    throws InterruptedException, ExecutionException
+  {
+    DeleteOptions opts = new DeleteOptionsBuilder()
+      .setBucket(bucket)
+      .setObjectKey(key)
+      .createDeleteOptions();
+    return _client.delete(opts).get();
+  }
+
+  public static S3File deleteObject(URI uri)
+    throws InterruptedException, ExecutionException
+  {
+    DeleteOptions opts = new DeleteOptionsBuilder()
+      .setBucket(Utils.getBucket(uri))
+      .setObjectKey(Utils.getObjectKey(uri))
+      .createDeleteOptions();
+    return _client.delete(opts).get();
   }
 
   
@@ -389,6 +410,19 @@ public class TestUtils
   }
 
 
+  public static List<S3File> downloadDir(URI src, File dest, boolean recursive, boolean overwrite)
+      throws Throwable
+  {
+    DownloadOptions dlOpts = new DownloadOptionsBuilder()
+      .setFile(dest)
+      .setUri(src)
+      .setRecursive(recursive)
+      .setOverwrite(overwrite)
+      .createDownloadOptions();
+    return _client.downloadDirectory(dlOpts).get();
+  }
+
+
   public static List<S3File> listTestBucketObjects()
     throws Throwable
   {
@@ -449,15 +483,20 @@ public class TestUtils
   }
 
 
-  // GCS implementation currently doesn't support multipart uploads
-  public static boolean supportsMultiPart()
+  public static URI getUri(String bucket, String filePath, String prefix)
+    throws URISyntaxException
   {
-    return !getService().equalsIgnoreCase("gs");
+    if(!prefix.startsWith("/"))
+      prefix = "/" + prefix;
+    if(!prefix.endsWith("/"))
+      prefix = prefix + "/";
+    String end = "";
+    return new URI(TestUtils.getService() + "://" + bucket + prefix + filePath + end);
   }
 
 
-  // GCS implementation currently doesn't support copy functions
-  public static boolean supportsCopy()
+  // GCS implementation currently doesn't support multipart uploads
+  public static boolean supportsMultiPart()
   {
     return !getService().equalsIgnoreCase("gs");
   }
@@ -696,7 +735,83 @@ public class TestUtils
     return keys;
   }
 
+
+  public static boolean findCause(Throwable t, Class cls)
+  {
+    while(t.getCause() != null)
+    {
+      if(t.getCause().getClass().equals(cls))
+        return true;
+      t = t.getCause();
+    }
+    return false;
+  }
+
   
+  private static void setDest(String destPrefix)
+    throws Throwable
+  {
+    _destUri = null;
+    if((null == destPrefix) || destPrefix.isEmpty())
+      return;
+
+    // strip trailing slash, if exists, for consistency
+    if(destPrefix.endsWith("/"))
+      destPrefix = destPrefix.substring(0, destPrefix.length() - 1);
+
+    // make sure that the bucket exists but folder does not if --dest-prefix
+    // is passed in so we don't accidentally trash an existing folder
+    CloudStoreClient client = null;
+    try
+    {
+      URI destUri = null;
+      try
+      {
+        destUri = Utils.getURI(destPrefix);
+      }
+      catch(URISyntaxException ex)
+      {
+        throw new RuntimeException("could not parse --dest-prefix URL ["
+          + ex.getMessage() + "]");
+      }
+
+      _service = destUri.getScheme();
+      client = createClient(_defaultRetryCount);
+
+      String key = Utils.getObjectKey(destUri) + "/";
+      String bucket = Utils.getBucket(destUri);
+      ListOptionsBuilder builder = new ListOptionsBuilder()
+        .setBucket(bucket)
+        .setRecursive(false)
+        .setIncludeVersions(false)
+        .setExcludeDirs(false)
+        .setObjectKey(key);
+      List<S3File> matches =
+        client.listObjects(builder.createListOptions()).get();
+      boolean found = false;
+      for(S3File f : matches)
+      {
+        if(f.getKey().equals(key))
+        {
+          found = true;
+          break;
+        }
+      }
+      if(found)
+        throw new RuntimeException(
+           "Folder '" + destPrefix + "' specified by --dest-prefix already exists.");
+
+     // set the URI that will be used as a prefix by test functions
+     _destUri = destUri;
+
+    }
+    finally
+    {
+      destroyClient(client);
+    }
+  }
+
+
   private static Random getRand()
   {
     if(_rand == null)

@@ -111,7 +111,8 @@ public class ListPendingUploadsCommand extends Command
         multipartUpload.getKey(),
         multipartUpload.getUploadId(),
         multipartUpload.getInitiated(),
-        _httpExecutor);
+        _httpExecutor,
+        (new UploadOptionsBuilder()).createUploadOptions());
 
     return u;
   }

@@ -19,6 +19,7 @@ public class DownloadOptionsBuilder {
     private String version;
     private boolean recursive = false;
     private boolean overwrite = false;
+    private boolean dryRun = false;
     private Optional<OverallProgressListenerFactory> overallProgressListenerFactory =
         Optional.absent();
 
@@ -51,10 +52,14 @@ public class DownloadOptionsBuilder {
         this.version = version;
         return this;
     }
-    
 
     public DownloadOptionsBuilder setOverwrite(boolean overwrite) {
         this.overwrite = overwrite;
+        return this;
+    }
+
+    public DownloadOptionsBuilder setDryRun(boolean dryRun) {
+        this.dryRun = dryRun;
         return this;
     }
 
@@ -67,6 +72,6 @@ public class DownloadOptionsBuilder {
 
     public DownloadOptions createDownloadOptions() {
         return new DownloadOptions(file, bucket, objectKey, version, recursive,
-             overwrite, overallProgressListenerFactory);
+             overwrite, dryRun, overallProgressListenerFactory);
     }
 }

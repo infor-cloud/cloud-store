@@ -39,6 +39,7 @@ public class GCSUploadCommand extends Command {
 
     private ListeningExecutorService _uploadExecutor;
     private ListeningScheduledExecutorService _executor;
+    private UploadOptions _options;
 
     private String key;
     private String bucket;
@@ -48,13 +49,11 @@ public class GCSUploadCommand extends Command {
     public GCSUploadCommand(
             ListeningExecutorService uploadExecutor,
             ListeningScheduledExecutorService internalExecutor,
-            File file,
-            long chunkSize,
-            String encKeyName,
             KeyProvider encKeyProvider,
-            String acl,
+            UploadOptions options,
             Optional<OverallProgressListenerFactory> progressListenerFactory)
-            throws IOException {
+      throws IOException
+    {
         if (uploadExecutor == null)
             throw new IllegalArgumentException("non-null upload executor is required");
         if (internalExecutor == null)
@@ -62,11 +61,12 @@ public class GCSUploadCommand extends Command {
 
         _uploadExecutor = uploadExecutor;
         _executor = internalExecutor;
+        _options = options;
 
-        this.file = file;
-        setChunkSize(chunkSize);
-        setFileLength(file.length());
-        this.encKeyName = encKeyName;
+        this.file = _options.getFile();
+        setChunkSize(_options.getChunkSize());
+        setFileLength(this.file.length());
+        this.encKeyName = _options.getEncKey().orNull();
 
         if (this.encKeyName != null) {
             byte[] encKeyBytes = new byte[32];
@@ -92,20 +92,37 @@ public class GCSUploadCommand extends Command {
             }
         }
 
-        this.acl = acl;
+        this.acl = _options.getAcl().or("projectPrivate");
         this.progressListenerFactory = progressListenerFactory;
     }
 
     /**
      * Run ties Step 1, Step 2, and Step 3 together. The return result is the ETag of the upload.
      */
-    public ListenableFuture<S3File> run(final String bucket, final String key) throws FileNotFoundException {
+    public ListenableFuture<S3File> run(final String bucket, final String key)
+      throws FileNotFoundException
+    {
         if (!file.exists())
             throw new FileNotFoundException(file.getPath());
 
         this.bucket = bucket;
         this.key = key;
 
+        if(_options.isDryRun())
+        {
+          System.out.println("<DRYRUN> uploading '" + this.file.getAbsolutePath()
+            + "' to '" + getUri(bucket, key) + "'");
+          return Futures.immediateFuture(null);
+        }
+        else
+        {
+          return scheduleExecution();
+        }
+    }
+
+    
+    private ListenableFuture<S3File> scheduleExecution()
+    {
         ListenableFuture<Upload> upload = startUpload(bucket, key);
         upload = Futures.transform(upload, startPartsAsyncFunction());
         ListenableFuture<String> result = Futures.transform(upload, completeAsyncFunction());
@@ -151,7 +168,7 @@ public class GCSUploadCommand extends Command {
         meta.put("s3tool-chunk-size", Long.toString(fileLength));
         meta.put("s3tool-file-length", Long.toString(fileLength));
 
-        return factory.startUpload(bucket, key, meta, acl);
+        return factory.startUpload(bucket, key, meta, acl, _options);
     }
 
     /**

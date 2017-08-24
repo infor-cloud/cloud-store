@@ -24,6 +24,7 @@ public class CopyCommand extends Command
 {
   private ListeningExecutorService _copyExecutor;
   private ListeningScheduledExecutorService _executor;
+  private CopyOptions _options;
   private String acl;
   private String storageClass;
   private Optional<OverallProgressListenerFactory> progressListenerFactory;
@@ -31,18 +32,16 @@ public class CopyCommand extends Command
   public CopyCommand(
       ListeningExecutorService copyExecutor,
       ListeningScheduledExecutorService internalExecutor,
-      String acl,
-      String storageClass,
-      OverallProgressListenerFactory progressListenerFactory)
-  throws IOException
+      CopyOptions options)
   {
     _copyExecutor = copyExecutor;
     _executor = internalExecutor;
+    _options = options;
 
-    this.acl = acl;
-    this.storageClass = storageClass;
-    this.progressListenerFactory = Optional.fromNullable
-        (progressListenerFactory);
+    this.acl = _options.getCannedAcl().or("bucket-owner-full-control");
+    this.storageClass = _options.getStorageClass().orNull();
+    this.progressListenerFactory = Optional.fromNullable(
+      options.getOverallProgressListenerFactory().orNull());
   }
 
   public ListenableFuture<S3File> run(final String sourceBucketName,
@@ -50,12 +49,20 @@ public class CopyCommand extends Command
                                       final String destinationBucketName,
                                       final String destinationKey)
   {
-    ListenableFuture<Copy> copy = startCopy(sourceBucketName, sourceKey,
+    if(_options.isDryRun())
+    {
+      System.out.println("<DRYRUN> copying '" + getUri(sourceBucketName, sourceKey)
+        + "' to '" + getUri(destinationBucketName, destinationKey) + "'");
+      return Futures.immediateFuture(null);
+    }
+    else
+    {
+      ListenableFuture<Copy> copy = startCopy(sourceBucketName, sourceKey,
         destinationBucketName, destinationKey);
-    copy = Futures.transform(copy, startPartsAsyncFunction());
-    ListenableFuture<String> result = Futures.transform(copy,
+      copy = Futures.transform(copy, startPartsAsyncFunction());
+      ListenableFuture<String> result = Futures.transform(copy,
         completeAsyncFunction());
-    return Futures.transform(
+      return Futures.transform(
         result,
         new Function<String, S3File>() {
           public S3File apply(String etag) {
@@ -67,7 +74,8 @@ public class CopyCommand extends Command
             return f;
           }
         }
-    );
+      );
+    }
   }
 
   /**
@@ -114,7 +122,7 @@ public class CopyCommand extends Command
   {
     return new AsyncFunction<Copy, Copy>()
     {
-      public ListenableFuture<Copy> apply(Copy copy) throws Exception
+      public ListenableFuture<Copy> apply(final Copy copy) throws Exception
       {
         return startParts(copy);
       }
@@ -122,13 +130,13 @@ public class CopyCommand extends Command
   }
 
   private ListenableFuture<Copy> startParts(Copy copy)
-  throws IOException, UsageException
+    throws UsageException
   {
+    String srcUri = getUri(copy.getSourceBucket(), copy.getSourceKey());
+    String destUri = getUri(copy.getDestinationBucket(), copy.getDestinationKey());
+    
     Map<String,String> meta = copy.getMeta();
-
-    String errPrefix = "Copy of " + getUri(copy.getSourceBucket(),
-        copy.getSourceKey()) + " to " + getUri(copy.getDestinationBucket(),
-        copy.getDestinationKey()) + ": ";
+    String errPrefix = "Copy of " + srcUri + " to " + destUri + ": ";
 
     // s3lib-specific metadata should already be set by factory.startCopy
     String objectVersion = meta.get("s3tool-version");
@@ -188,6 +196,10 @@ public class CopyCommand extends Command
                                                      final int partNumber,
                                                      OverallProgressListener opl)
   {
+    // support for testing failures
+    String srcUri = getUri(copy.getSourceBucket(), copy.getSourceKey());
+    _options.injectAbort(srcUri);
+
     Long start;
     Long end;
     long partSize;

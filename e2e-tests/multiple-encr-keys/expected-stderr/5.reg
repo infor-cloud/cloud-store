@@ -1,2 +1,0 @@
-DEBUG AddEncryptedKeyCommand - userMetadata = {s3tool-key-name=test1,test2,test3, s3tool-file-length=[0-9]+, s3tool-pubkey-hash=UENMOemr,HJjq/WNp,Go2Wqhd6, s3tool-version=3, s3tool-symmetric-key=.{344},.{344},.{344}, s3tool-chunk-size=5242880}
-error: s3://.+: No eligible private key found

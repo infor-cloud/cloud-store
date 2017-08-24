@@ -17,8 +17,6 @@ let
 
 in {
 
-  # TODO(geokollias): Add slf4j dep. lb-web depends already on it?
-
   guava =
     buildjar {
       name = "guava-15.0";

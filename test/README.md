@@ -60,6 +60,9 @@ To build the cloud-store test suite, download all the source files from the clou
 
 To run the full test suite using the minio server, start the server as outlined and then run
 
+    # AWS_ACCESS_KEY_ID & AWS_SECRET_ACCESS_KEY should be set, e.g.:
+    #   export AWS_ACCESS_KEY_ID=$MINIO_ACCESS_KEY 
+    #   export AWS_SECRET_ACCESS_KEY=$MINIO_SECRET_KEY
     ./run-tests --endpoint http://127.0.0.1:9000/
 
 Pass a -h or --help option to run-tests to set the options supported by the test script.  By default, the test framework will try to create a new unique bucket in which to work while executing tests.  This really only works with the minio server (may work with AWS if you have the right credentials, but unlikely).  To run the tests using a GCS or AWS server, it is recommended that you specify a existing bucket and folder using the --dest-prefix option as in the following examples:

@@ -261,7 +261,6 @@ public class DownloadCommand extends Command
                   {
                     throw new UsageException(
                       "Public-key checksums do not match. " +
-
                       "Calculated hash: " + pubKeyHashLocal +
                       ", Expected hash: " + pubKeyHashHeader);
                   }

@@ -453,7 +453,7 @@ public class GCSClient implements CloudStoreClient {
             throws IOException
         {
            AddEncryptionKeyCommand cmd = super.createAddKeyCommand(key);
-           cmd.setGcsStorage(gcsClient);
+           configure(cmd);
            return cmd;
         }
 
@@ -462,7 +462,7 @@ public class GCSClient implements CloudStoreClient {
             throws IOException
         {
            RemoveEncryptionKeyCommand cmd = super.createRemoveKeyCommand(key);
-           cmd.setGcsStorage(gcsClient);
+           configure(cmd);
            return cmd;
         }
 

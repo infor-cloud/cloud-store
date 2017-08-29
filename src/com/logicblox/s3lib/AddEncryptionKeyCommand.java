@@ -55,12 +55,6 @@ public class AddEncryptionKeyCommand extends Command
 
   }
 
-  // internal use
-  void setGcsStorage(Storage storage)
-  {
-    _gcsStorage = storage;
-  }
-
   public ListenableFuture<S3File> run(final String bucket,final String key,
                                       final String version)
   {
@@ -349,7 +343,7 @@ public class AddEncryptionKeyCommand extends Command
               public ListenableFuture<S3File> apply(
                 AccessControlList acl) throws IOException
               {
-                if(null == _gcsStorage)
+                if(null == getGCSClient())
                 {
                   // It seems for AWS there is no way to update an object's metadata
                   // without re-uploading/copying the whole object. Here, we
@@ -368,16 +362,24 @@ public class AddEncryptionKeyCommand extends Command
                 }
                 else
                 {
-                   return _executor.submit(new Callable<S3File>()
-                   {
-                     public S3File call()
-                       throws IOException
-                     {
-                       Utils.patchMetaData(_gcsStorage, metadata.getBucket(), metadata.getKey(),
-                                                    metadata.getUserMetadata());
-                       return new S3File(metadata.getBucket(), metadata.getKey());
-                     }
-                   });
+                  return executeWithRetry(
+                    _executor,
+                    new Callable<ListenableFuture<S3File>>()
+                    {
+                      public ListenableFuture<S3File> call()
+                      {
+                        return _httpExecutor.submit(new Callable<S3File>()
+                        {
+                          public S3File call()
+                            throws IOException
+                          {
+                            Utils.patchMetaData(getGCSClient(), metadata.getBucket(),
+                              metadata.getKey(), metadata.getUserMetadata());
+                            return new S3File(metadata.getBucket(), metadata.getKey());
+                          }
+                        });
+                      }
+                    });
                 }
               }
             };

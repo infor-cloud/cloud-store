@@ -1,6 +1,9 @@
 package com.logicblox.s3lib;
 
+import com.amazonaws.services.s3.model.AccessControlList;
 import com.google.common.base.Optional;
+
+import java.util.Map;
 
 /**
  * {@code CopyOptionsBuilder} is a builder for {@code CopyOptions} objects.
@@ -16,9 +19,11 @@ public class CopyOptionsBuilder {
     private String destinationKey;
     // TODO(geo): Revise use of Optionals. E.g. it's not a good idea to use them
     // as fields.
-    private Optional<String> cannedAcl = Optional.absent();
     private String storageClass;
     private boolean recursive = false;
+    private Optional<String> cannedAcl = Optional.absent();
+    private Optional<AccessControlList> s3Acl = Optional.absent();
+    private Optional<Map<String,String>> userMetadata = Optional.absent();
     private boolean dryRun = false;
     private boolean ignoreAbortInjection = false;
     private Optional<OverallProgressListenerFactory>
@@ -50,11 +55,21 @@ public class CopyOptionsBuilder {
         return this;
     }
 
+    public CopyOptionsBuilder setS3Acl(AccessControlList s3Acl) {
+        this.s3Acl = Optional.fromNullable(s3Acl);
+        return this;
+    }
+
+    public CopyOptionsBuilder setUserMetadata(Map<String,String> userMetadata) {
+        this.userMetadata = Optional.fromNullable(userMetadata);
+        return this;
+    }
+
     public CopyOptionsBuilder setStorageClass(String storageClass) {
         this.storageClass = storageClass;
         return this;
     }
-
+    
     public CopyOptionsBuilder setRecursive(boolean recursive) {
         this.recursive = recursive;
         return this;
@@ -83,7 +98,7 @@ public class CopyOptionsBuilder {
 
     public CopyOptions createCopyOptions() {
         return new CopyOptions(sourceBucketName, sourceKey,
-            destinationBucketName, destinationKey, cannedAcl, storageClass,
-            recursive, dryRun, ignoreAbortInjection, overallProgressListenerFactory);
+            destinationBucketName, destinationKey, cannedAcl, s3Acl, storageClass,
+            recursive, dryRun, ignoreAbortInjection, userMetadata, overallProgressListenerFactory);
     }
 }

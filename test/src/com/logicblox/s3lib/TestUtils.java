@@ -12,9 +12,8 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -337,6 +336,23 @@ public class TestUtils
         return true;
     }
     return false;
+  }
+
+
+  public static S3File updateObjectUserMetadata(String bucket, String key,
+                                                Map<String,String> userMetadata)
+    throws InterruptedException, ExecutionException
+  {
+    CopyOptions options = new CopyOptionsBuilder()
+      .setSourceBucketName(bucket)
+      .setSourceKey(key)
+      .setDestinationBucketName(bucket)
+      .setDestinationKey(key)
+      // .setS3Acl(acl)
+      .setUserMetadata(userMetadata)
+      .createCopyOptions();
+
+    return _client.copy(options).get();
   }
 
 
@@ -733,6 +749,23 @@ public class TestUtils
     kgc.savePemKeypair(keyfile);
     String[] keys = parsePem(keyfile);
     return keys;
+  }
+
+
+  public static void moveFile(String fname, File srcDir, File destDir)
+  {
+    File src = new File(srcDir, fname);
+    File dest = new File(destDir, fname);
+    src.renameTo(dest);
+  }
+
+
+  public static void copyFile(String fname, File srcDir, File destDir)
+    throws IOException
+  {
+    File src = new File(srcDir, fname);
+    File dest = new File(destDir, fname);
+    Files.copy(src.toPath(), dest.toPath());
   }
 
 

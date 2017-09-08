@@ -14,7 +14,8 @@ import org.junit.runners.Suite;
   UploadDownloadTests.class,
   CopyTests.class,
   DeleteTests.class,
-  RenameTests.class
+  RenameTests.class,
+  MultiKeyTests.class
  })
 public class TestRunner
 {

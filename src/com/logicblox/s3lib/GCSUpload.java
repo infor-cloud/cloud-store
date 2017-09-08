@@ -133,12 +133,12 @@ class GCSUpload implements Upload {
 
             StorageObject objectMetadata = new StorageObject()
                 .setName(key)
-                .setMetadata(ImmutableMap.copyOf(meta))
-                .setContentDisposition("attachment");
-//                    .setAcl(ImmutableList.of(
-//                            new ObjectAccessControl().setEntity("domain-example.com").setRole("READER"),
-//                            new ObjectAccessControl().setEntity("user-administrator@example.com").setRole("OWNER")
-//                    ));
+                .setMetadata(ImmutableMap.copyOf(meta));
+                // .setContentDisposition("attachment");
+                // .setAcl(ImmutableList.of(
+                //   new ObjectAccessControl().setEntity("domain-example.com").setRole("READER"),
+                //   new ObjectAccessControl().setEntity("user-administrator@example.com").setRole("OWNER")
+                // ));
 
             Storage.Objects.Insert insertObject =
                 client.objects()

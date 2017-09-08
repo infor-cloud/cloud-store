@@ -345,6 +345,20 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
+    public ListenableFuture<S3File> addEncryptionKey(String bucket, String object, String key)
+        throws IOException
+    {
+        return s3Client.addEncryptionKey(bucket, object, key);
+    }
+
+    @Override
+    public ListenableFuture<S3File> removeEncryptionKey(String bucket, String object, String key)
+        throws IOException
+    {
+        return s3Client.removeEncryptionKey(bucket, object, key);
+    }
+
+  @Override
     public void shutdown() {
         s3Client.shutdown();
     }
@@ -416,7 +430,7 @@ public class GCSClient implements CloudStoreClient {
           configure(cmd);
           return cmd.run(lsOptions);
         }
-        
+
         @Override
         public ListenableFuture<S3File> copy(CopyOptions options)
         {
@@ -433,6 +447,26 @@ public class GCSClient implements CloudStoreClient {
           configure(cmd);
           return cmd.run(options);
         }
+
+        @Override
+        protected AddEncryptionKeyCommand createAddKeyCommand(String key)
+            throws IOException
+        {
+           AddEncryptionKeyCommand cmd = super.createAddKeyCommand(key);
+           configure(cmd);
+           return cmd;
+        }
+
+        @Override
+        protected RemoveEncryptionKeyCommand createRemoveKeyCommand(String key)
+            throws IOException
+        {
+           RemoveEncryptionKeyCommand cmd = super.createRemoveKeyCommand(key);
+           configure(cmd);
+           return cmd;
+        }
+
+
     }
 
     @Override

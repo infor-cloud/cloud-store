@@ -1,7 +1,7 @@
 package com.logicblox.s3lib;
 
+import com.amazonaws.services.s3.model.AccessControlList;
 import com.google.common.base.Optional;
-import java.util.HashMap;
 import java.util.Map;
 
 
@@ -31,7 +31,9 @@ public class CopyOptions {
     // TODO(geo): Revise use of Optionals. E.g. it's not a good idea to use them
     // as fields.
     private final Optional<String> cannedAcl;
+    private final Optional<AccessControlList> s3Acl;
     private final String storageClass;
+    private final Optional<Map<String,String>> userMetadata;
     private final Optional<OverallProgressListenerFactory>
         overallProgressListenerFactory;
 
@@ -44,10 +46,12 @@ public class CopyOptions {
                 String destinationBucketName,
                 String destinationKey,
                 Optional<String> cannedAcl,
+                Optional<AccessControlList> s3Acl,
                 String storageClass,
                 boolean recursive,
                 boolean dryRun,
                 boolean ignoreAbortInjection,
+                Optional<Map<String,String>> userMetadata,
                 Optional<OverallProgressListenerFactory>
                     overallProgressListenerFactory) {
         this.sourceBucketName = sourceBucketName;
@@ -56,9 +60,11 @@ public class CopyOptions {
         this.destinationKey = destinationKey;
         this.recursive = recursive;
         this.cannedAcl = cannedAcl;
+        this.s3Acl = s3Acl;
         this.storageClass = storageClass;
         this.dryRun = dryRun;
         this.ignoreAbortInjection = ignoreAbortInjection;
+        this.userMetadata = userMetadata;
         this.overallProgressListenerFactory = overallProgressListenerFactory;
     }
 
@@ -102,12 +108,20 @@ public class CopyOptions {
         return Optional.fromNullable(storageClass);
     }
 
+    public Optional<AccessControlList> getS3Acl() {
+        return s3Acl;
+    }
+
     public boolean isRecursive() {
         return recursive;
     }
 
     public boolean isDryRun() {
         return dryRun;
+    }
+
+    public Optional<Map<String,String>> getUserMetadata() {
+        return userMetadata;
     }
 
     public Optional<OverallProgressListenerFactory>

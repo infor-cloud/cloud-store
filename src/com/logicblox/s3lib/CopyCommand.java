@@ -1,11 +1,11 @@
 package com.logicblox.s3lib;
 
 
+import com.amazonaws.services.s3.model.AccessControlList;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -13,7 +13,6 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
-import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,9 +24,11 @@ public class CopyCommand extends Command
   private ListeningExecutorService _copyExecutor;
   private ListeningScheduledExecutorService _executor;
   private CopyOptions _options;
-  private String acl;
-  private String storageClass;
-  private Optional<OverallProgressListenerFactory> progressListenerFactory;
+  private String _cannedAcl;
+  private AccessControlList _s3Acl;
+  private String _storageClass;
+  private Map<String, String> _userMetadata;
+  private Optional<OverallProgressListenerFactory> _progressListenerFactory;
 
   public CopyCommand(
       ListeningExecutorService copyExecutor,
@@ -38,9 +39,11 @@ public class CopyCommand extends Command
     _executor = internalExecutor;
     _options = options;
 
-    this.acl = _options.getCannedAcl().or("bucket-owner-full-control");
-    this.storageClass = _options.getStorageClass().orNull();
-    this.progressListenerFactory = Optional.fromNullable(
+    _cannedAcl = _options.getCannedAcl().or("bucket-owner-full-control");
+    _s3Acl = _options.getS3Acl().orNull();
+    _storageClass = _options.getStorageClass().orNull();
+    _userMetadata = _options.getUserMetadata().orNull();
+    _progressListenerFactory = Optional.fromNullable(
       options.getOverallProgressListenerFactory().orNull());
   }
 
@@ -111,8 +114,15 @@ public class CopyCommand extends Command
   {
     MultipartAmazonCopyFactory factory = new MultipartAmazonCopyFactory
         (getAmazonS3Client(), _copyExecutor);
+    if (_s3Acl != null)
+    {
+      return factory.startCopy(sourceBucketName, sourceKey,
+        destinationBucketName, destinationKey, _s3Acl, _userMetadata,
+        _storageClass);
+    }
     return factory.startCopy(sourceBucketName, sourceKey,
-        destinationBucketName, destinationKey, acl, storageClass);
+      destinationBucketName, destinationKey, _cannedAcl, _userMetadata,
+      _storageClass);
   }
 
   /**
@@ -150,8 +160,8 @@ public class CopyCommand extends Command
     setChunkSize(Long.valueOf(meta.get("s3tool-chunk-size")));
 
     OverallProgressListener opl = null;
-    if (progressListenerFactory.isPresent()) {
-      opl = progressListenerFactory.get().create(
+    if (_progressListenerFactory.isPresent()) {
+      opl = _progressListenerFactory.get().create(
           new ProgressOptionsBuilder()
               .setObjectUri(getUri(copy.getDestinationBucket(),
                   copy.getDestinationKey()))

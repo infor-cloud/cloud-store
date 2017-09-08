@@ -77,6 +77,10 @@ class Main
         AbortPendingUploadsCommandOptions());
     _commander.addCommand("exists", new ExistsCommandOptions());
     _commander.addCommand("list-buckets", new ListBucketsCommandOptions());
+    _commander.addCommand("add-encryption-key", new
+      AddEncryptionKeyCommandOptions());
+    _commander.addCommand("remove-encryption-key", new
+      RemoveEncryptionKeyCommandOptions());
     _commander.addCommand("keygen", new KeyGenCommandOptions());
     _commander.addCommand("version", new VersionCommand());
     _commander.addCommand("help", new HelpCommand());
@@ -1093,6 +1097,81 @@ class Main
       }
 
       client.shutdown();
+    }
+  }
+
+  @Parameters(commandDescription = "Add new encryption key")
+  class AddEncryptionKeyCommandOptions extends S3ObjectCommandOptions
+  {
+    @Parameter(names = "--key",
+      description = "The name of the encryption key to add",
+      required = true)
+    String encKeyName = null;
+
+    public void invoke() throws Exception
+    {
+      CloudStoreClient client = createCloudStoreClient();
+      try
+      {
+        if(getObjectKey().endsWith("/") || getObjectKey().equals(""))
+        {
+          throw new UsageException("Invalid object key " + getURI());
+        }
+        else
+        {
+          if (client.exists(getBucket(), getObjectKey()).get() == null)
+          {
+            throw new UsageException("Object not found at " + getURI());
+          }
+          client.addEncryptionKey(getBucket(), getObjectKey(), encKeyName).get();
+        }
+      }
+      catch(ExecutionException exc)
+      {
+        rethrow(exc.getCause());
+      }
+      finally
+      {
+        client.shutdown();
+      }
+    }
+  }
+
+  @Parameters(commandDescription = "Remove existing encryption key")
+  class RemoveEncryptionKeyCommandOptions extends S3ObjectCommandOptions
+  {
+    @Parameter(names = "--key",
+      description = "The name of the encryption key to remove",
+      required = true)
+    String encKeyName = null;
+
+    public void invoke() throws Exception
+    {
+      CloudStoreClient client = createCloudStoreClient();
+      try
+      {
+        if(getObjectKey().endsWith("/") || getObjectKey().equals(""))
+        {
+          throw new UsageException("Invalid object key " + getURI());
+        }
+        else
+        {
+          if (client.exists(getBucket(), getObjectKey()).get() == null)
+          {
+            throw new UsageException("Object not found at " + getURI());
+          }
+          client.removeEncryptionKey(getBucket(), getObjectKey(),
+            encKeyName).get();
+        }
+      }
+      catch(ExecutionException exc)
+      {
+        rethrow(exc.getCause());
+      }
+      finally
+      {
+        client.shutdown();
+      }
     }
   }
 

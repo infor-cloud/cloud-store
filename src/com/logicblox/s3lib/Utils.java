@@ -6,7 +6,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-
 import java.security.GeneralSecurityException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -31,8 +30,12 @@ import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.auth.SystemPropertiesCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.AccessControlList;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
+import com.google.api.services.storage.Storage;
+import com.google.api.services.storage.model.StorageObject;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -530,6 +533,35 @@ public class Utils
        }
      }
      return created;
+  }
+
+  // returns null if the store does not support acl (like minio)
+  public static AccessControlList getObjectAcl(
+    AmazonS3Client client, String bucket, String key)
+      throws AmazonS3Exception
+  {
+    AccessControlList acl = null;
+    try
+    {
+      acl = client.getObjectAcl(bucket, key);
+    }
+    catch(AmazonS3Exception ex)
+    {
+      if(!ex.getErrorCode().equalsIgnoreCase("NotImplemented"))
+        throw ex;
+    }
+    return acl;
+  }
+
+  public static void patchMetaData(
+    Storage gcsStorage, String bucket, String key, Map<String,String> userMetadata)
+      throws IOException
+  {
+    StorageObject sobj = new StorageObject()
+      .setName(key)
+      .setMetadata(userMetadata);
+    Storage.Objects.Patch cmd = gcsStorage.objects().patch(bucket, key, sobj);
+    cmd.execute();
   }
 
   protected static void print(ObjectMetadata m)

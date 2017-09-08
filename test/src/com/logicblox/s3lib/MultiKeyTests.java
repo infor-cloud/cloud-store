@@ -88,7 +88,8 @@ public class MultiKeyTests
     // add the rest of the keys to the file
     for(int i = 1; i < keys.length; i++)
     {
-      f = _client.addEncryptionKey(_testBucket, objKey, keys[i]).get();
+      f = _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(
+        _testBucket, objKey, keys[i])).get();
       Assert.assertNotNull(f);
     }
 
@@ -130,7 +131,8 @@ public class MultiKeyTests
       dlTemp.delete();
 
       // remove key from the file, dl should fail
-      f = _client.removeEncryptionKey(_testBucket, objKey, keys[ki]).get();
+      f = _client.removeEncryptionKey(TestUtils.buildEncryptionKeyOptions(
+        _testBucket, objKey, keys[ki])).get();
       Assert.assertNotNull(f);
       dlTemp = TestUtils.createTmpFile();
       try
@@ -194,7 +196,8 @@ public class MultiKeyTests
     TestUtils.writeToFile(publicKey2, new File(keydir, key2FileName));
 
     String objKey = rootPrefix + toUpload.getName();
-    f = _client.addEncryptionKey(_testBucket, objKey, key2).get();
+    f = _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(
+      _testBucket, objKey, key2)).get();
     Assert.assertNotNull(f);
 
     // try to decrypt with key2's private part
@@ -232,7 +235,8 @@ public class MultiKeyTests
     String msg = null;
     try
     {
-      _client.addEncryptionKey(_testBucket, objKey, key1).get();
+      _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(
+        _testBucket, objKey, key1)).get();
       msg = "Expected error adding key";
     }
     catch(Throwable t)
@@ -267,7 +271,8 @@ public class MultiKeyTests
     String msg = null;
     try
     {
-      _client.addEncryptionKey(_testBucket, objKey, key2).get();
+      _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(
+        _testBucket, objKey, key2)).get();
       msg = "Expected error adding key";
     }
     catch(Throwable t)
@@ -303,7 +308,8 @@ public class MultiKeyTests
     String msg = null;
     try
     {
-      _client.removeEncryptionKey(_testBucket, objKey, key2).get();
+      _client.removeEncryptionKey(TestUtils.buildEncryptionKeyOptions(
+        _testBucket, objKey, key2)).get();
       msg = "Expected error removing key";
     }
     catch(Throwable t)
@@ -337,7 +343,8 @@ public class MultiKeyTests
     String msg = null;
     try
     {
-      _client.addEncryptionKey(_testBucket, objKey, key1).get();
+      _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(
+        _testBucket, objKey, key1)).get();
       msg = "Expected exception";
     }
     catch(Throwable t)
@@ -371,7 +378,8 @@ public class MultiKeyTests
     String msg = null;
     try
     {
-      _client.removeEncryptionKey(_testBucket, objKey, key1).get();
+      _client.removeEncryptionKey(TestUtils.buildEncryptionKeyOptions(
+        _testBucket, objKey, key1)).get();
       msg = "Expected error removing key";
     }
     catch(Throwable t)
@@ -404,18 +412,21 @@ public class MultiKeyTests
     Assert.assertNotNull(f);
 
     // add the second key
-    f = _client.addEncryptionKey(_testBucket, objKey, key2).get();
+    f = _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(
+      _testBucket, objKey, key2)).get();
     Assert.assertNotNull(f);
 
     // removing first key should be OK
-    f = _client.removeEncryptionKey(_testBucket, objKey, key1).get();
+    f = _client.removeEncryptionKey(TestUtils.buildEncryptionKeyOptions(
+      _testBucket, objKey, key1)).get();
     Assert.assertNotNull(f);
 
     // removing last key should fail
     String msg = null;
     try
     {
-      _client.removeEncryptionKey(_testBucket, objKey, key2).get();
+      _client.removeEncryptionKey(TestUtils.buildEncryptionKeyOptions(
+        _testBucket, objKey, key2)).get();
       msg = "Expected error removing key";
     }
     catch(Throwable t)
@@ -453,13 +464,15 @@ public class MultiKeyTests
 
     // should be OK
     for(int i = 1; i < maxKeys; ++i)
-      _client.addEncryptionKey(_testBucket, objKey, keys[i]).get();
+      _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(
+        _testBucket, objKey, keys[i])).get();
 
     // one more should fail
     String msg = null;
     try
     {
-      _client.addEncryptionKey(_testBucket, objKey, keys[maxKeys]).get();
+      _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(
+        _testBucket, objKey, keys[maxKeys])).get();
       msg = "Expected exception";
     }
     catch(Throwable t)
@@ -491,7 +504,7 @@ public class MultiKeyTests
     // remove "s3tool-pubkey-hash" from metadata to simulate files
     // uploaded by older cloud-store versions
     String objKey = rootPrefix + toUpload.getName();
-    ObjectMetadata destMeta = _client.exists(dest).get();
+    ObjectMetadata destMeta = _client.exists(Utils.getBucket(dest), Utils.getObjectKey(dest)).get();
     Assert.assertNotNull(destMeta);
     Map<String,String> destUserMeta = destMeta.getUserMetadata();
     Assert.assertNotNull(destUserMeta);
@@ -500,7 +513,7 @@ public class MultiKeyTests
     TestUtils.updateObjectUserMetadata(_testBucket, objKey, destUserMeta);
 
     // make sure "s3tool-pubkey-hash" has been removed
-    destMeta = _client.exists(dest).get();
+    destMeta = _client.exists(Utils.getBucket(dest), Utils.getObjectKey(dest)).get();
     Assert.assertNotNull(destMeta);
     destUserMeta = destMeta.getUserMetadata();
     Assert.assertNotNull(destUserMeta);

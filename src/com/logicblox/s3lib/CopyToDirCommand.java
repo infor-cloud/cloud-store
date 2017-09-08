@@ -9,7 +9,6 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -33,7 +32,7 @@ public class CopyToDirCommand extends Command
   }
 
   public ListenableFuture<List<S3File>> run(final CopyOptions options)
-      throws ExecutionException, InterruptedException, IOException, URISyntaxException {
+      throws ExecutionException, InterruptedException, IOException {
     if (!options.getDestinationKey().endsWith("/") && !options.getDestinationKey().equals(""))
       throw new UsageException("Destination directory key should end with a '/'");
 

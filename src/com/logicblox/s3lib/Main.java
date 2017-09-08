@@ -360,8 +360,8 @@ class Main
       if(metadata == null)
       {
         if(_verbose)
-          System.err.println("Object " + client.getUri(bucket, key) + " does " +
-              "not exist.");
+          System.err.println("Object " + Utils.getURI(client.getScheme(), bucket, key) +
+                             " does not exist.");
       }
       else
       {
@@ -435,7 +435,7 @@ class Main
         if (client.exists(getDestinationBucket(), "").get() == null)
         {
           throw new UsageException("Bucket not found at " +
-              client.getUri(getDestinationBucket(), ""));
+              Utils.getURI(client.getScheme(), getDestinationBucket(), ""));
         }
 
         if(getDestinationObjectKey().endsWith("/") ||
@@ -574,7 +574,7 @@ class Main
 
       if (f.isDirectory() && !getObjectKey().endsWith("/")) {
         throw new UsageException("Destination key " +
-            client.getUri(getBucket(), getObjectKey()) +
+            Utils.getURI(client.getScheme(), getBucket(), getObjectKey()) +
             " should end with '/', since a directory is uploaded.");
       }
 
@@ -640,7 +640,7 @@ class Main
           DateFormat df = Utils.getDefaultDateFormat();
           for (int i = 0; i < listCommandResults.size(); i++) {
             S3File obj = listCommandResults.get(i);
-            table[i][0] = client.getUri(obj.getBucketName(), "") + obj.getKey();
+            table[i][0] = Utils.getURI(client.getScheme(), obj.getBucketName(), "") + obj.getKey();
             table[i][1] = obj.getVersionId().orElse("No Version Id");
             if (obj.getTimestamp().isPresent()) {
               table[i][2] = df.format(obj.getTimestamp().get());
@@ -661,7 +661,7 @@ class Main
           }
         } else {
           for (S3File obj : listCommandResults) {
-            System.out.println(client.getUri(obj.getBucketName(), "") + obj.getKey());
+            System.out.println(Utils.getURI(client.getScheme(), obj.getBucketName(), "") + obj.getKey());
           }
         }
       } catch (ExecutionException exc) {
@@ -892,8 +892,11 @@ class Main
 
       try
       {
-        List<Upload> pendingUploads = client.listPendingUploads(getBucket(),
-            getObjectKey()).get();
+        PendingUploadsOptions options = new PendingUploadsOptionsBuilder()
+          .setBucket(getBucket())
+          .setObjectKey(getObjectKey())
+          .createPendingUploadsOptions();
+        List<Upload> pendingUploads = client.listPendingUploads(options).get();
 
         Collections.sort(pendingUploads, new Comparator<Upload>(){
           public int compare(Upload u1, Upload u2) {
@@ -909,7 +912,7 @@ class Main
         for(int i = 0; i < pendingUploads.size(); i++)
         {
           Upload u = pendingUploads.get(i);
-          table[i][0] = client.getUri(u.getBucket(), u.getKey()).toString();
+          table[i][0] = Utils.getURI(client.getScheme(), u.getBucket(), u.getKey()).toString();
           table[i][1] = u.getId();
           table[i][2] = df.format(u.getInitiationDate());
 
@@ -961,35 +964,33 @@ class Main
 
       try
       {
-        if (id != null && (dateTimeStr != null || dateStr != null)) {
-          throw new UsageException("You can abort pending uploads either by " +
-              "id or by date/datetime parameters");
+        if (id != null && dateTimeStr != null && dateStr != null)
+        {
+          throw new UsageException("id and/or date/datetime should be specified");
         }
-        if (dateTimeStr != null && dateStr != null) {
+        if (dateTimeStr != null && dateStr != null)
+        {
           throw new UsageException("Only one of date and datetime " +
-              "parameters can be specified");
+              "options can be specified");
         }
 
-        if (id != null) {
-          client.abortPendingUpload(getBucket(), getObjectKey(), id).get();
-        }
-        else if (dateStr != null) {
+        Date date = null;
+        if (dateStr != null) {
           DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
           df.setTimeZone(TimeZone.getTimeZone("UTC"));
-          Date date = df.parse(dateStr);
-
-          client.abortOldPendingUploads(getBucket(), getObjectKey(), date).get();
+          date = df.parse(dateStr);
         }
         else if (dateTimeStr != null) {
           DateFormat df = Utils.getDefaultDateFormat();
-          Date date = df.parse(dateTimeStr);
-
-          client.abortOldPendingUploads(getBucket(), getObjectKey(), date).get();
+          date = df.parse(dateTimeStr);
         }
-        else {
-          throw new UsageException("Either id or date/datetime parameters " +
-              "should be specified");
-        }
+        PendingUploadsOptions options = new PendingUploadsOptionsBuilder()
+          .setBucket(getBucket())
+          .setObjectKey(getObjectKey())
+          .setUploadId(id)
+          .setDate(date)
+          .createPendingUploadsOptions();
+        client.abortPendingUploads(options).get();
       }
       catch(ExecutionException exc)
       {
@@ -1123,7 +1124,13 @@ class Main
           {
             throw new UsageException("Object not found at " + getURI());
           }
-          client.addEncryptionKey(getBucket(), getObjectKey(), encKeyName).get();
+          EncryptionKeyOptions options = new EncryptionKeyOptionsBuilder()
+            .setBucket(getBucket())
+            .setObjectKey(getObjectKey())
+            .setEncryptionKey(encKeyName)
+            .createEncryptionKeyOptions();
+
+          client.addEncryptionKey(options).get();
         }
       }
       catch(ExecutionException exc)
@@ -1160,8 +1167,13 @@ class Main
           {
             throw new UsageException("Object not found at " + getURI());
           }
-          client.removeEncryptionKey(getBucket(), getObjectKey(),
-            encKeyName).get();
+          EncryptionKeyOptions options = new EncryptionKeyOptionsBuilder()
+            .setBucket(getBucket())
+            .setObjectKey(getObjectKey())
+            .setEncryptionKey(encKeyName)
+            .createEncryptionKeyOptions();
+
+          client.removeEncryptionKey(options).get();
         }
       }
       catch(ExecutionException exc)

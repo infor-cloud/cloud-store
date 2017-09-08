@@ -1,15 +1,10 @@
 package com.logicblox.s3lib;
 
 import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -41,13 +36,9 @@ public interface CloudStoreClient {
     void setEndpoint(String endpoint);
 
     /**
-     * Creates a full URI out of {@code bucket} and {@code object} key. S3 URI
-     * example: s3://bucket/object GCS URI example: gs://bucket/object
-     *
-     * @param bucket Bucket name
-     * @param object Object key
+     * Returns the scheme of the backend storage service (e.g. "s3" or "gs")
      */
-    URI getUri(String bucket, String object) throws URISyntaxException;
+    String getScheme();
 
     /**
      * Uploads a file according to {@code options}. For more details
@@ -79,93 +70,6 @@ public interface CloudStoreClient {
         throws IOException;
 
     /**
-     * Uploads the specified {@code file} under the specified {@code bucket} and
-     * {@code object} name. If the {@code key} is not null, the {@code
-     * keyProvider} will be asked to provide a public key with that name. This
-     * key will be used to encrypt the {@code file} at the client side. It
-     * applies {@code acl} permissions on the uploaded object.
-     *
-     * @param file   File to upload
-     * @param bucket Bucket to upload to
-     * @param object Path in bucket to upload to
-     * @param key    Name of encryption key to use
-     * @param acl    Access control list to use
-     * @see CloudStoreClient#upload(UploadOptions)
-     */
-    @Deprecated
-    ListenableFuture<S3File> upload(File file, String bucket, String
-        object, String key, CannedAccessControlList acl)
-        throws IOException;
-
-    /**
-     * Uploads the specified {@code file} under the specified {@code uri}.
-     * <p>
-     * By default, the canned ACL "bucket-owner-full-control" is applied to the
-     * uploaded object.
-     *
-     * @param file File to upload
-     * @param uri  Object URI (e.g. s3://bucket/key)
-     * @see CloudStoreClient#upload(UploadOptions)
-     */
-    @Deprecated
-    ListenableFuture<S3File> upload(File file, URI uri)
-        throws IOException;
-
-    /**
-     * Uploads the specified {@code file} under the specified {@code uri}. If
-     * the {@code key} is not null, the {@code keyProvider} will be asked to
-     * provide a public key with that name. This key will be used to encrypt the
-     * {@code file} at the client side.
-     * <p>
-     * By default, the canned ACL "bucket-owner-full-control" is applied to the
-     * uploaded object.
-     *
-     * @param file File to upload
-     * @param uri  Object URI (e.g. s3://bucket/key)
-     * @param key  Name of encryption key to use
-     * @see CloudStoreClient#upload(UploadOptions)
-     */
-    @Deprecated
-    ListenableFuture<S3File> upload(File file, URI uri, String key)
-        throws IOException;
-
-    /**
-     * Uploads the specified {@code file} under the specified {@code bucket} and
-     * {@code object} name.
-     * <p>
-     * By default, the canned ACL "bucket-owner-full-control" is applied to the
-     * uploaded object.
-     *
-     * @param file   File to upload
-     * @param bucket Bucket to upload to
-     * @param object Path in bucket to upload to
-     * @see CloudStoreClient#upload(UploadOptions)
-     */
-    @Deprecated
-    ListenableFuture<S3File> upload(File file, String bucket, String object)
-        throws IOException;
-
-    /**
-     * Uploads the specified {@code file} under the specified {@code bucket} and
-     * {@code object} name. If the {@code key} is not null, the {@code
-     * keyProvider} will be asked to provide a public key with that name. This
-     * key will be used to encrypt the {@code file} at the client side.
-     * <p>
-     * By default, the canned ACL "bucket-owner-full-control" is applied to the
-     * uploaded object.
-     *
-     * @param file   File to upload
-     * @param bucket Bucket to upload to
-     * @param object Path in bucket to upload to
-     * @param key    Name of encryption key to use
-     * @see CloudStoreClient#upload(UploadOptions)
-     */
-    @Deprecated
-    ListenableFuture<S3File> upload(File file, String bucket, String
-        object, String key)
-        throws IOException;
-
-    /**
      * Uploads a directory according to {@code options}. For more details
      * check {@link com.logicblox.s3lib.UploadOptions}.
      * <p>
@@ -179,38 +83,6 @@ public interface CloudStoreClient {
      */
     ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
         throws IOException, ExecutionException, InterruptedException;
-
-    /**
-     * Uploads every file under {@code directory} recursively.
-     * <p>
-     * By default, the canned ACL "bucket-owner-full-control" is applied to each
-     * uploaded object.
-     *
-     * @param directory Directory to upload
-     * @param uri       URL to upload to
-     * @param encKey    Encryption key to use
-     * @see CloudStoreClient#uploadDirectory(UploadOptions options)
-     */
-    @Deprecated
-    ListenableFuture<List<S3File>> uploadDirectory(File directory, URI
-        uri, String encKey)
-        throws IOException, ExecutionException, InterruptedException;
-
-    /**
-     * Uploads every file under {@code directory} recursively. The specified
-     * {@code acl} is applied to each uploaded object.
-     *
-     * @param directory Directory to upload
-     * @param uri       URL to upload to
-     * @param encKey    Encryption key to use
-     * @param acl       Access control list to use
-     * @see CloudStoreClient#uploadDirectory(UploadOptions options)
-     */
-    @Deprecated
-    ListenableFuture<List<S3File>> uploadDirectory(File directory, URI
-        uri, String encKey, CannedAccessControlList acl)
-        throws IOException, ExecutionException, InterruptedException;
-
 
     /**
      * Deletes a single object from a cloud store service.
@@ -227,18 +99,6 @@ public interface CloudStoreClient {
     ListenableFuture<List<S3File>> deleteDir(DeleteOptions opts)
       throws InterruptedException, ExecutionException;
 
-    /**
-     * Deprecated.  Use CloudStoreClient#delete(DeleteOptions)
-     */
-    @Deprecated
-    ListenableFuture<S3File> delete(String bucket, String object);
-
-    /**
-     * Deprecated.  Use CloudStoreClient#delete(DeleteOptions)
-     */
-    @Deprecated
-    ListenableFuture<S3File> delete(URI uri);
-
     /** Lists all buckets visible for this account. */
     ListenableFuture<List<Bucket>> listBuckets();
 
@@ -254,14 +114,6 @@ public interface CloudStoreClient {
      * @param object Path in bucket to check
      */
     ListenableFuture<ObjectMetadata> exists(String bucket, String object);
-
-    /**
-     * Checks if the specified {@code uri} exists.
-     *
-     * @param uri Object URI (e.g. s3://bucket/key)
-     * @see CloudStoreClient#exists(String, String)
-     */
-    ListenableFuture<ObjectMetadata> exists(URI uri);
 
     /**
      * Downloads a file according to {@code options}. For more details
@@ -300,59 +152,6 @@ public interface CloudStoreClient {
         throws IOException;
 
     /**
-     * Downloads the specified {@code object}, under {@code bucket}, to a local
-     * {@code file}.
-     *
-     * @param file   File to download
-     * @param bucket Bucket to download from
-     * @param object Path in bucket to download
-     * @see CloudStoreClient#download(DownloadOptions options)
-     */
-    @Deprecated
-    ListenableFuture<S3File> download(File file, String bucket, String
-        object)
-        throws IOException;
-
-    /**
-     * Downloads the specified {@code object}, under {@code bucket}, to a local
-     * {@code file}.
-     *
-     * @param file   File to download
-     * @param bucket Bucket to download from
-     * @param object Path in bucket to download
-     * @param overwrite Boolean set to true if you want to replace an exiting file
-     * @see CloudStoreClient#download(DownloadOptions options)
-     */
-    @Deprecated
-    ListenableFuture<S3File> download(
-      File file, String bucket, String object, boolean overwrite)
-        throws IOException;
-
-    /**
-     * Downloads the specified {@code uri} to a local {@code file}.
-     *
-     * @param file File to download
-     * @param uri  Object URL to download from
-     * @see CloudStoreClient#download(DownloadOptions options)
-     */
-    @Deprecated
-    ListenableFuture<S3File> download(File file, URI uri)
-        throws IOException;
-
-    /**
-     * Downloads the specified {@code uri} to a local {@code file}, optionally
-     * overwriting the destination file if it exists.
-     *
-     * @param file File to download
-     * @param uri  Object URL to download from
-     * @param overwrite Boolean set to true if you want to replace an exiting file
-     * @see CloudStoreClient#download(DownloadOptions options)
-     */
-    @Deprecated
-    ListenableFuture<S3File> download(File file, URI uri, boolean overwrite)
-        throws IOException;
-
-    /**
      * Downloads a conceptual directory according to {@code options}. For more
      * details check {@link com.logicblox.s3lib.DownloadOptions}.
      * <p>
@@ -364,27 +163,11 @@ public interface CloudStoreClient {
      * overwrite existing local files.
      * <p>
      * Each individual file is downloaded with {@link
-     * CloudStoreClient#download(File, String, String)}.
+     * CloudStoreClient#download(DownloadOptions)}.
      *
      * @param options Download options
      */
     ListenableFuture<List<S3File>> downloadDirectory(DownloadOptions options)
-        throws IOException, ExecutionException, InterruptedException;
-
-    /**
-     * Downloads the conceptual directory, under {@code uri}, to the local file
-     * system, under {@code directory}.
-     *
-     * @param directory Directory to download to
-     * @param uri       Object URI that represents a directory (e.g.
-     *                  s3://bucket/key/)
-     * @param recursive Download all files recursively under uri
-     * @param overwrite Overwrite a file if it already exists
-     * @see CloudStoreClient#downloadDirectory(DownloadOptions options)
-     */
-    @Deprecated
-    ListenableFuture<List<S3File>> downloadDirectory(
-        File directory, URI uri, boolean recursive, boolean overwrite)
         throws IOException, ExecutionException, InterruptedException;
 
     /**
@@ -416,8 +199,7 @@ public interface CloudStoreClient {
      * @see CopyOptions
      */
     ListenableFuture<List<S3File>> copyToDir(CopyOptions options) throws
-        InterruptedException, ExecutionException, IOException,
-        URISyntaxException;
+        InterruptedException, ExecutionException, IOException;
 
     /**
      * Renames an object according to {@code options}. For more details
@@ -474,66 +256,50 @@ public interface CloudStoreClient {
     ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions);
 
     /**
-     * Returns a list of the pending uploads to keys that start with {@code
-     * prefix}, inside {@code bucket}.
+     * Returns a list of the pending uploads to object keys that start with
+     * {@code options.getObjectKey()}, inside {@code options.getBucket()}.
+     * <p>
+     * Returned uploads' {@code Upload#getId()} and {@code
+     * Upload#getInitiationDate()} are useful to abort them via
+     * {@link CloudStoreClient#abortPendingUploads(PendingUploadsOptions)}
      *
-     * @param bucket The name of the bucket
-     * @param prefix Prefix to limit the returned uploads to those for keys that
-     *               match this prefix
+     * @param options Bucket and key/prefix are specified here
      */
-    ListenableFuture<List<Upload>> listPendingUploads(String bucket, String
-        prefix);
+    ListenableFuture<List<Upload>> listPendingUploads(PendingUploadsOptions options);
 
     /**
-     * Aborts the pending upload to {@code bucket/key} with the given {@code
-     * uploadId}.
+     * Aborts pending uploads depending on the passed {@code options}.
+     * <p>
+     * If only the upload id is specified, then only this specific pending
+     * upload will be aborted. Such ids can be found via
+     * {@link CloudStoreClient#listPendingUploads}.
+     * <p>
+     * If only the date is specified ({@code options.getDate()}), then all
+     * pending uploads that were initiated before this date will be aborted.
+     * <p>
+     * If both upload id and date are specified, then only this specific
+     * pending upload will be aborted, provided it has been initiated before
+     * the specified date.
      *
-     * @param bucket   The name of the bucket
-     * @param key      The object key that the pending upload targets to
-     * @param uploadId The id of the pending upload. Such ids can be found via
-     *                 {@link CloudStoreClient#listPendingUploads}.
-     * @see CloudStoreClient#listPendingUploads(String, String)
-     * @see CloudStoreClient#abortOldPendingUploads(String, String, Date)
+     * @param options PendingUploadsOptions
+     * @see CloudStoreClient#listPendingUploads(PendingUploadsOptions)
      */
-    ListenableFuture<Void> abortPendingUpload(String bucket, String key,
-                                              String uploadId);
-
-    /**
-     * Aborts pending uploads under {@code bucket/prefix} that were initiated
-     * before {@code date}.
-     *
-     * @param bucket The name of the bucket
-     * @param date   The date indicating which multipart uploads should be
-     *               aborted. All pending uploads initiated before this date
-     *               will be aborted.
-     * @see CloudStoreClient#listPendingUploads(String, String)
-     * @see CloudStoreClient#abortPendingUpload(String, String, String)
-     */
-    ListenableFuture<List<Void>> abortOldPendingUploads(String bucket,
-                                                        String prefix,
-                                                        Date date)
-        throws InterruptedException, ExecutionException, URISyntaxException;
+    ListenableFuture<List<Void>> abortPendingUploads(PendingUploadsOptions options);
 
     /**
      * Adds a new encryption key.
      *
-     * @param bucket Object's bucket
-     * @param object The object we add a new encryption key to
-     * @param key    Name of encryption key to add
+     * @param options EncryptionKeyOptions
      */
-    ListenableFuture<S3File> addEncryptionKey(String bucket, String object,
-                                              String key)
+    ListenableFuture<S3File> addEncryptionKey(EncryptionKeyOptions options)
     throws IOException;
 
     /**
      * Removes an existing encryption key.
      *
-     * @param bucket Object's bucket
-     * @param object The object we remove the encryption key from
-     * @param key    Name of encryption key to remove
+     * @param options EncryptionKeyOptions
      */
-    ListenableFuture<S3File> removeEncryptionKey(String bucket, String object,
-                                                 String key)
+    ListenableFuture<S3File> removeEncryptionKey(EncryptionKeyOptions options)
     throws IOException;
 
     /**

@@ -365,7 +365,7 @@ try
     f = _client.delete(opts).get();
     Assert.assertNotNull(f);
     Assert.assertEquals(uploadCount - 3, TestUtils.listObjects(_testBucket, rootPrefix).size());
-    Assert.assertNull(_client.exists(uri).get());
+    Assert.assertNull(_client.exists(Utils.getBucket(uri), Utils.getObjectKey(uri)).get());
 
     // recursively delete the rest of the files (should just be two left by now)
     uri = TestUtils.getUri(_testBucket, top, rootPrefix);

@@ -153,7 +153,8 @@ catch(Throwable t)
     dlTemp.delete();
     DownloadOptions opts = new DownloadOptionsBuilder()
       .setFile(dlTemp)
-      .setUri(src)
+      .setBucket(Utils.getBucket(src))
+      .setObjectKey(Utils.getObjectKey(src))
       .setRecursive(false)
       .setOverwrite(true)
       .setDryRun(true)
@@ -185,7 +186,8 @@ catch(Throwable t)
     URI src = dest;
     DownloadOptions opts = new DownloadOptionsBuilder()
       .setFile(dlDir)
-      .setUri(src)
+      .setBucket(Utils.getBucket(src))
+      .setObjectKey(Utils.getObjectKey(src))
       .setRecursive(true)
       .setOverwrite(true)
       .setDryRun(true)
@@ -213,17 +215,17 @@ catch(Throwable t)
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     S3File f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
-    Assert.assertNotNull(_client.exists(dest).get());
+    Assert.assertNotNull(_client.exists(Utils.getBucket(dest), Utils.getObjectKey(dest)).get());
 
     // check for missing file key
     URI src = TestUtils.getUri(
       _testBucket, toUpload, rootPrefix + "-missing-" + System.currentTimeMillis());
-    Assert.assertNull(_client.exists(src).get());
+    Assert.assertNull(_client.exists(Utils.getBucket(src), Utils.getObjectKey(src)).get());
     
     // bad bucket should fail
     src = TestUtils.getUri(
     _testBucket + "-missing-" + System.currentTimeMillis(), toUpload, rootPrefix);
-    Assert.assertNull(_client.exists(src).get());
+    Assert.assertNull(_client.exists(Utils.getBucket(src), Utils.getObjectKey(src)).get());
   }
 
 
@@ -254,13 +256,13 @@ catch(Throwable t)
     Assert.assertTrue(TestUtils.compareFiles(toUpload, f.getLocalFile()));
 
     // test a few other misc cloud-store functions
-    Assert.assertNotNull(_client.exists(dest).get());
+    Assert.assertNotNull(_client.exists(Utils.getBucket(dest), Utils.getObjectKey(dest)).get());
     Assert.assertNotNull(_client.exists(_testBucket, key).get());
     Assert.assertEquals(
-      dest.toString(), _client.getUri(_testBucket, key).toString());
+      dest.toString(), Utils.getURI(_client.getScheme(), _testBucket, key).toString());
 
     Assert.assertNotNull(TestUtils.deleteObject(dest));
-    Assert.assertNull(_client.exists(dest).get());
+    Assert.assertNull(_client.exists(Utils.getBucket(dest), Utils.getObjectKey(dest)).get());
   }
 
 
@@ -367,7 +369,8 @@ catch(Throwable t)
       File dlTemp = TestUtils.createTmpFile();
       DownloadOptions dlOpts = new DownloadOptionsBuilder()
         .setFile(dlTemp)
-        .setUri(dest)
+        .setBucket(Utils.getBucket(dest))
+        .setObjectKey(Utils.getObjectKey(dest))
         .setRecursive(false)
         .setOverwrite(true)
         .createDownloadOptions();
@@ -427,7 +430,7 @@ catch(Throwable t)
       }
     }
 
-    ObjectMetadata meta = _client.exists(dest).get();
+    ObjectMetadata meta = _client.exists(Utils.getBucket(dest), Utils.getObjectKey(dest)).get();
     Assert.assertNotNull(meta.getLastModified());
     Assert.assertEquals(fileSize, meta.getContentLength());
     Assert.assertEquals(fileSize, meta.getInstanceLength());
@@ -831,7 +834,8 @@ catch(Throwable t)
     File dlTemp = TestUtils.createTmpFile();
     DownloadOptions dlOpts = new DownloadOptionsBuilder()
       .setFile(dlTemp)
-      .setUri(dest)
+      .setBucket(Utils.getBucket(dest))
+      .setObjectKey(Utils.getObjectKey(dest))
       .setRecursive(false)
       .setOverwrite(true)
       .setOverallProgressListenerFactory(this)
@@ -886,7 +890,8 @@ catch(Throwable t)
     File dlTemp = TestUtils.createTmpFile();
     DownloadOptions dlOpts = new DownloadOptionsBuilder()
       .setFile(dlTemp)
-      .setUri(dest)
+      .setBucket(Utils.getBucket(dest))
+      .setObjectKey(Utils.getObjectKey(dest))
       .setRecursive(false)
       .setOverwrite(true)
       .setOverallProgressListenerFactory(this)

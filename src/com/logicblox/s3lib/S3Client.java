@@ -2,14 +2,12 @@ package com.logicblox.s3lib;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.services.codepipeline.model.EncryptionKey;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -242,9 +240,9 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public URI getUri(String bucket, String object) throws URISyntaxException
+  public String getScheme()
   {
-    return new URI("s3://" + bucket + "/" + object);
+    return "s3";
   }
 
   void configure(Command cmd)
@@ -271,61 +269,6 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> upload(File file, String bucket, String
-      object, String key, CannedAccessControlList acl)
-  throws IOException
-  {
-    UploadOptions options = new UploadOptionsBuilder()
-        .setFile(file)
-        .setBucket(bucket)
-        .setObjectKey(object)
-        .setEncKey(key)
-        .setAcl(acl.toString())
-        .createUploadOptions();
-
-    return upload(options);
-  }
-
-  @Override
-  public ListenableFuture<S3File> upload(File file, URI s3url)
-  throws IOException
-  {
-    return upload(file, s3url, null);
-  }
-
-  @Override
-  public ListenableFuture<S3File> upload(File file, URI s3url, String key)
-      throws IOException
-  {
-    String bucket = Utils.getBucket(s3url);
-    String object = Utils.getObjectKey(s3url);
-    return upload(file, bucket, object, key);
-  }
-
-  @Override
-  public ListenableFuture<S3File> upload(File file, String bucket, String
-      object)
-  throws IOException
-  {
-    return upload(file, bucket, object, null);
-  }
-
-  @Override
-  public ListenableFuture<S3File> upload(File file, String bucket, String
-      object, String key)
-  throws IOException
-  {
-    UploadOptions options = new UploadOptionsBuilder()
-        .setFile(file)
-        .setBucket(bucket)
-        .setObjectKey(object)
-        .setEncKey(key)
-        .createUploadOptions();
-
-    return upload(options);
-  }
-
-  @Override
   public ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
       throws IOException, ExecutionException, InterruptedException {
 
@@ -344,34 +287,6 @@ public class S3Client implements CloudStoreClient {
     configure(cmd);
     return cmd.run(directory, bucket, object, chunkSize,  encKey, acl,
       dryRun, progressListenerFactory);
-  }
-
-  @Override
-  public ListenableFuture<List<S3File>> uploadDirectory(File directory, URI
-      s3url, String encKey)
-          throws IOException, ExecutionException, InterruptedException {
-    UploadOptions options = new UploadOptionsBuilder()
-        .setFile(directory)
-        .setUri(s3url)
-        .setEncKey(encKey)
-        .setAcl("bucket-owner-full-control")
-        .createUploadOptions();
-
-    return this.uploadDirectory(options);
-  }
-
-  @Override
-  public ListenableFuture<List<S3File>> uploadDirectory(File directory, URI
-      s3url, String encKey, CannedAccessControlList acl)
-          throws IOException, ExecutionException, InterruptedException {
-    UploadOptions options = new UploadOptionsBuilder()
-        .setFile(directory)
-        .setUri(s3url)
-        .setEncKey(encKey)
-        .setAcl(acl.toString())
-        .createUploadOptions();
-
-    return this.uploadDirectory(options);
   }
 
   @Override
@@ -394,26 +309,6 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> delete(String bucket, String object)
-  {
-    DeleteOptions opts = new DeleteOptionsBuilder()
-      .setBucket(bucket)
-      .setObjectKey(object)
-      .createDeleteOptions();
-    return delete(opts);
-  }
-
-  @Override
-  public ListenableFuture<S3File> delete(URI s3url)
-  {
-    DeleteOptions opts = new DeleteOptionsBuilder()
-      .setBucket(Utils.getBucket(s3url))
-      .setObjectKey(Utils.getObjectKey(s3url))
-      .createDeleteOptions();
-    return delete(opts);
-  }
-
-  @Override
   public ListenableFuture<List<Bucket>> listBuckets()
   {
       List<Bucket> result = _client.listBuckets();
@@ -426,14 +321,6 @@ public class S3Client implements CloudStoreClient {
     ExistsCommand cmd = new ExistsCommand(_s3Executor, _executor);
     configure(cmd);
     return cmd.run(bucket, object);
-  }
-
-  @Override
-  public ListenableFuture<ObjectMetadata> exists(URI s3url)
-  {
-    String bucket = Utils.getBucket(s3url);
-    String object = Utils.getObjectKey(s3url);
-    return exists(bucket, object);
   }
 
   @Override
@@ -453,53 +340,6 @@ public class S3Client implements CloudStoreClient {
     String key = options.getObjectKey();
     String version = options.getVersion();
     return cmd.run(bucket, key, version);
-  }
-
-  @Override
-  public ListenableFuture<S3File> download(File file, String bucket, String
-      object)
-      throws IOException
-  {
-    DownloadOptions options = new DownloadOptionsBuilder()
-        .setFile(file)
-        .setBucket(bucket)
-        .setObjectKey(object)
-        .createDownloadOptions();
-
-    return download(options);
-  }
-
-  @Override
-  public ListenableFuture<S3File> download(
-    File file, String bucket, String object, boolean overwrite)
-      throws IOException
-  {
-    DownloadOptions options = new DownloadOptionsBuilder()
-        .setFile(file)
-        .setBucket(bucket)
-        .setObjectKey(object)
-        .setOverwrite(overwrite)
-        .createDownloadOptions();
-
-    return download(options);
-  }
-
-  @Override
-  public ListenableFuture<S3File> download(File file, URI s3url)
-          throws IOException
-  {
-    String bucket = Utils.getBucket(s3url);
-    String object = Utils.getObjectKey(s3url);
-    return download(file, bucket, object);
-  }
-
-  @Override
-  public ListenableFuture<S3File> download(File file, URI s3url, boolean overwrite)
-          throws IOException
-  {
-    String bucket = Utils.getBucket(s3url);
-    String object = Utils.getObjectKey(s3url);
-    return download(file, bucket, object, overwrite);
   }
 
   @Override
@@ -525,21 +365,6 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<List<S3File>> downloadDirectory(
-      File directory, URI s3url, boolean recursive, boolean overwrite)
-  throws IOException, ExecutionException, InterruptedException
-  {
-    DownloadOptions options = new DownloadOptionsBuilder()
-        .setFile(directory)
-        .setUri(s3url)
-        .setRecursive(recursive)
-        .setOverwrite(overwrite)
-        .createDownloadOptions();
-
-    return this.downloadDirectory(options);
-  }
-
-  @Override
   public ListenableFuture<S3File> copy(CopyOptions options)
   {
     CopyCommand cmd = new CopyCommand(_s3Executor, _executor, options);
@@ -550,8 +375,7 @@ public class S3Client implements CloudStoreClient {
 
   @Override
   public ListenableFuture<List<S3File>> copyToDir(CopyOptions options) throws
-      InterruptedException, ExecutionException, IOException,
-      URISyntaxException {
+      InterruptedException, ExecutionException, IOException {
     boolean dryRun = options.isDryRun();
     CopyToDirCommand cmd = new CopyToDirCommand(_s3Executor, _executor, dryRun, this);
     configure(cmd);
@@ -595,40 +419,30 @@ public class S3Client implements CloudStoreClient {
 
   @Override
   public ListenableFuture<List<Upload>> listPendingUploads(
-      String bucket, String prefix)
+    PendingUploadsOptions options)
   {
       ListPendingUploadsCommand cmd =
-          new ListPendingUploadsCommand(_s3Executor, _executor);
+          new ListPendingUploadsCommand(_s3Executor, _executor, options);
       configure(cmd);
-      return cmd.run(bucket, prefix);
+      return cmd.run();
   }
 
   @Override
-  public ListenableFuture<Void> abortPendingUpload(
-      String bucket, String key, String uploadId)
+  public ListenableFuture<List<Void>> abortPendingUploads(
+      PendingUploadsOptions options)
   {
-      AbortPendingUploadCommand cmd =
-          new AbortPendingUploadCommand(_s3Executor, _executor);
+      AbortPendingUploadsCommand cmd =
+          new AbortPendingUploadsCommand(_s3Executor, _executor, this, options);
       configure(cmd);
-      return cmd.run(bucket, key, uploadId);
+      return cmd.run();
   }
 
   @Override
-  public ListenableFuture<List<Void>> abortOldPendingUploads(
-      String bucket, String prefix, Date date)
-      throws InterruptedException, ExecutionException, URISyntaxException {
-      AbortOldPendingUploadsCommand cmd =
-          new AbortOldPendingUploadsCommand(_s3Executor, _executor, this);
-      configure(cmd);
-      return cmd.run(bucket, prefix, date);
-  }
-
-  @Override
-  public ListenableFuture<S3File> addEncryptionKey(String bucket, String object, String key)
+  public ListenableFuture<S3File> addEncryptionKey(EncryptionKeyOptions options)
       throws IOException
   {
-    AddEncryptionKeyCommand cmd = createAddKeyCommand(key);
-    return cmd.run(bucket, object, null);
+    AddEncryptionKeyCommand cmd = createAddKeyCommand(options.getEncryptionKey());
+    return cmd.run(options.getBucket(), options.getObjectKey(), null);
   }
 
   protected AddEncryptionKeyCommand createAddKeyCommand(String key)
@@ -641,11 +455,11 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> removeEncryptionKey(String bucket, String object, String key)
+  public ListenableFuture<S3File> removeEncryptionKey(EncryptionKeyOptions options)
     throws IOException
   {
-    RemoveEncryptionKeyCommand cmd = createRemoveKeyCommand(key);
-    return cmd.run(bucket, object, null);
+    RemoveEncryptionKeyCommand cmd = createRemoveKeyCommand(options.getEncryptionKey());
+    return cmd.run(options.getBucket(), options.getObjectKey(), null);
   }
 
   protected RemoveEncryptionKeyCommand createRemoveKeyCommand(String key)

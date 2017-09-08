@@ -3,7 +3,6 @@ package com.logicblox.s3lib;
 import com.google.common.base.Optional;
 
 import java.io.File;
-import java.net.URI;
 
 /**
  * {@code DownloadOptionsBuilder} is a builder for {@code DownloadOptions}
@@ -35,11 +34,6 @@ public class DownloadOptionsBuilder {
 
     public DownloadOptionsBuilder setObjectKey(String objectKey) {
         this.objectKey = objectKey;
-        return this;
-    }
-
-    public DownloadOptionsBuilder setUri(URI uri) {
-        setBucket(Utils.getBucket(uri)).setObjectKey(Utils.getObjectKey(uri));
         return this;
     }
 

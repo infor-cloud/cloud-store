@@ -403,9 +403,11 @@ public class TestUtils
   public static S3File downloadFile(URI src, File dest, boolean overwrite)
       throws Throwable
   {
+
     DownloadOptions dlOpts = new DownloadOptionsBuilder()
       .setFile(dest)
-      .setUri(src)
+      .setBucket(Utils.getBucket(src))
+      .setObjectKey(Utils.getObjectKey(src))
       .setRecursive(false)
       .setOverwrite(overwrite)
       .createDownloadOptions();
@@ -418,7 +420,8 @@ public class TestUtils
   {
     DownloadOptions dlOpts = new DownloadOptionsBuilder()
       .setFile(dest)
-      .setUri(src)
+      .setBucket(Utils.getBucket(src))
+      .setObjectKey(Utils.getObjectKey(src))
       .setRecursive(recursive)
       .setOverwrite(true)
       .createDownloadOptions();
@@ -431,7 +434,8 @@ public class TestUtils
   {
     DownloadOptions dlOpts = new DownloadOptionsBuilder()
       .setFile(dest)
-      .setUri(src)
+      .setBucket(Utils.getBucket(src))
+      .setObjectKey(Utils.getObjectKey(src))
       .setRecursive(recursive)
       .setOverwrite(overwrite)
       .createDownloadOptions();
@@ -664,6 +668,18 @@ public class TestUtils
     Class cls = _client.getClass();
     Method meth = cls.getDeclaredMethod("setKeyProvider", KeyProvider.class);
     meth.invoke(_client, Utils.getKeyProvider(keydir.getAbsolutePath()));
+  }
+
+  public static EncryptionKeyOptions buildEncryptionKeyOptions(
+    String bucket, String objectKey, String encryptionKey)
+  {
+    EncryptionKeyOptions options = new EncryptionKeyOptionsBuilder()
+      .setBucket(bucket)
+      .setObjectKey(objectKey)
+      .setEncryptionKey(encryptionKey)
+      .createEncryptionKeyOptions();
+
+    return options;
   }
 
 

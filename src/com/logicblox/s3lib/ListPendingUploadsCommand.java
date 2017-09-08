@@ -15,25 +15,19 @@ public class ListPendingUploadsCommand extends Command
 {
   private ListeningExecutorService _httpExecutor;
   private ListeningScheduledExecutorService _executor;
+  private PendingUploadsOptions _options;
 
   public ListPendingUploadsCommand(
       ListeningExecutorService httpExecutor,
-      ListeningScheduledExecutorService internalExecutor)
+      ListeningScheduledExecutorService internalExecutor,
+      PendingUploadsOptions options)
   {
     _httpExecutor = httpExecutor;
     _executor = internalExecutor;
+    _options = options;
   }
 
-  /**
-   * Returns a list of the pending uploads to keys that start with {@code
-   * prefix}, inside {@code bucket}.
-   *
-   * @param bucket The name of the bucket
-   * @param prefix Prefix to limit the returned uploads to those for keys that
-   *               match this prefix
-   */
-  public ListenableFuture<List<Upload>> run(final String bucket,
-                                            final String prefix)
+  public ListenableFuture<List<Upload>> run()
   {
     ListenableFuture<List<Upload>> future =
       executeWithRetry(
@@ -42,21 +36,20 @@ public class ListPendingUploadsCommand extends Command
         {
           public ListenableFuture<List<Upload>> call()
           {
-            return runActual(bucket, prefix);
+            return runActual();
           }
 
           public String toString()
           {
-            return "list pending uploads of " + getScheme() + bucket + "/" +
-                prefix;
+            return "list pending uploads of " + getUri(_options.getBucket(),
+              _options.getObjectKey());
           }
         });
 
     return future;
   }
 
-  private ListenableFuture<List<Upload>> runActual(final String bucket,
-                                                   final String prefix)
+  private ListenableFuture<List<Upload>> runActual()
   {
     return _httpExecutor.submit(
       new Callable<List<Upload>>()
@@ -64,9 +57,9 @@ public class ListPendingUploadsCommand extends Command
         public List<Upload> call()
         {
           ListMultipartUploadsRequest listMultipartUploadsRequest =
-              new ListMultipartUploadsRequest(bucket);
+              new ListMultipartUploadsRequest(_options.getBucket());
 
-          listMultipartUploadsRequest.setPrefix(prefix);
+          listMultipartUploadsRequest.setPrefix(_options.getObjectKey());
 
           MultipartUploadListing multipartUploadListing = getAmazonS3Client()
               .listMultipartUploads(listMultipartUploadsRequest);
@@ -76,7 +69,7 @@ public class ListPendingUploadsCommand extends Command
           {
             appendMultipartUploadList(uploadsList,
                 multipartUploadListing.getMultipartUploads(),
-                bucket);
+                _options.getBucket());
             listMultipartUploadsRequest.setKeyMarker(
                 multipartUploadListing.getNextKeyMarker());
             multipartUploadListing = getAmazonS3Client()
@@ -84,7 +77,7 @@ public class ListPendingUploadsCommand extends Command
           }
           appendMultipartUploadList(uploadsList,
               multipartUploadListing.getMultipartUploads(),
-              bucket);
+              _options.getBucket());
 
           return uploadsList;
         }

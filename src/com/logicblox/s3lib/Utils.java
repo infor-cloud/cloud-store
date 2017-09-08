@@ -139,8 +139,14 @@ public class Utils
     uri = new URI(s);
     if((!"s3".equals(uri.getScheme())) && (!"gs".equals(uri.getScheme())))
       throw new UsageException("Object URL needs to have either 's3' or 'gs' as scheme");
-    
+
     return uri;
+  }
+
+  public static URI getURI(String scheme, String bucket, String objectKey)
+    throws URISyntaxException
+  {
+    return new URI(scheme + "://" + bucket + "/" + objectKey);
   }
 
   public static URI getS3URI(String s) throws URISyntaxException, UsageException {
@@ -360,7 +366,7 @@ public class Utils
     
     return path.substring(1);
   }
-  
+
   public static ListeningExecutorService getHttpExecutor(int nThreads)
   {
     return MoreExecutors.listeningDecorator(

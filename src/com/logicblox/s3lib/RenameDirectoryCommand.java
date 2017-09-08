@@ -10,7 +10,6 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -103,14 +102,7 @@ public class RenameDirectoryCommand extends Command
     // hack -- exceptions are a bit of a mess.  copyToDir throws all sorts of stuff that 
     //         should be collected into an ExecutionException?
     ListenableFuture<List<S3File>> copyFuture = null;
-    try
-    {
-      copyFuture = _client.copyToDir(copyOpts);
-    }
-    catch(URISyntaxException ex)
-    {
-      throw new ExecutionException("invalid URI in rename dir copy operation", ex);
-    }
+    copyFuture = _client.copyToDir(copyOpts);
 
     return Futures.transform(
       copyFuture,

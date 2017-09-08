@@ -2,7 +2,6 @@ package com.logicblox.s3lib;
 
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.api.services.storage.Storage;
 import com.google.common.base.Optional;
@@ -12,10 +11,7 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -98,98 +94,23 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public URI getUri(String bucket, String object) throws URISyntaxException {
-        return new URI("gs://" + bucket + "/" + object);
+    public String getScheme()
+    {
+        return "gs";
     }
 
     @Override
-    public ListenableFuture<S3File> upload(UploadOptions options) throws IOException {
+    public ListenableFuture<S3File> upload(UploadOptions options) throws IOException
+    {
         return s3Client.upload(options);
-    }
-
-    @Override
-    public ListenableFuture<S3File> upload(File file, String bucket, String
-        object, String key, CannedAccessControlList acl)
-        throws IOException {
-        UploadOptions options = new UploadOptionsBuilder()
-            .setFile(file)
-            .setBucket(bucket)
-            .setObjectKey(object)
-            .setEncKey(key)
-            .setAcl(acl.toString())
-            .createUploadOptions();
-
-        return upload(options);
-    }
-
-    @Override
-    public ListenableFuture<S3File> upload(File file, URI s3url)
-        throws IOException {
-        return upload(file, s3url, null);
-    }
-
-    @Override
-    public ListenableFuture<S3File> upload(File file, URI s3url, String key)
-        throws IOException {
-        String bucket = Utils.getBucket(s3url);
-        String object = Utils.getObjectKey(s3url);
-        return upload(file, bucket, object, key);
-    }
-
-    @Override
-    public ListenableFuture<S3File> upload(File file, String bucket, String
-        object)
-        throws IOException {
-        return upload(file, bucket, object, null);
-    }
-
-    @Override
-    public ListenableFuture<S3File> upload(File file, String bucket, String
-        object, String key)
-        throws IOException {
-        UploadOptions options = new UploadOptionsBuilder()
-            .setFile(file)
-            .setBucket(bucket)
-            .setObjectKey(object)
-            .setEncKey(key)
-            .createUploadOptions();
-
-        return upload(options);
     }
 
     @Override
     public ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
         throws IOException,
-        ExecutionException, InterruptedException {
+        ExecutionException, InterruptedException
+    {
         return s3Client.uploadDirectory(options);
-    }
-
-    @Override
-    public ListenableFuture<List<S3File>> uploadDirectory(File directory, URI
-        s3url, String encKey) throws IOException, ExecutionException,
-        InterruptedException {
-        UploadOptions options = new UploadOptionsBuilder()
-            .setFile(directory)
-            .setUri(s3url)
-            .setEncKey(encKey)
-            .setAcl("projectPrivate")
-            .createUploadOptions();
-
-        return uploadDirectory(options);
-    }
-
-    @Override
-    public ListenableFuture<List<S3File>> uploadDirectory(File directory, URI
-        s3url, String encKey, CannedAccessControlList acl) throws IOException,
-        ExecutionException, InterruptedException {
-        UploadOptions options = new UploadOptionsBuilder()
-            .setFile(directory)
-            .setUri(s3url)
-            .setEncKey(encKey)
-            .setAcl(acl.toString())
-            .createUploadOptions();
-
-        return uploadDirectory(options);
     }
 
     @Override
@@ -204,26 +125,6 @@ public class GCSClient implements CloudStoreClient {
     {
       return s3Client.delete(opts);
     }
-    
-    @Override
-    public ListenableFuture<S3File> delete(String bucket, String object)
-    {
-      DeleteOptions opts = new DeleteOptionsBuilder()
-        .setBucket(bucket)
-        .setObjectKey(object)
-        .createDeleteOptions();
-      return delete(opts);
-    }
-
-    @Override
-    public ListenableFuture<S3File> delete(URI s3url)
-    {
-      DeleteOptions opts = new DeleteOptionsBuilder()
-        .setBucket(Utils.getBucket(s3url))
-        .setObjectKey(Utils.getObjectKey(s3url))
-        .createDeleteOptions();
-      return delete(opts);
-    }
 
     @Override
     public ListenableFuture<List<Bucket>> listBuckets() {
@@ -237,41 +138,9 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<ObjectMetadata> exists(URI s3url) {
-        return s3Client.exists(s3url);
-    }
-
-    @Override
     public ListenableFuture<S3File> download(DownloadOptions options) throws
         IOException {
         return s3Client.download(options);
-    }
-
-    @Override
-    public ListenableFuture<S3File> download(File file, String bucket, String
-        object) throws IOException {
-        return s3Client.download(file, bucket, object);
-    }
-
-    @Override
-    public ListenableFuture<S3File> download(
-      File file, String bucket, String object, boolean overwrite)
-         throws IOException
-    {
-        return s3Client.download(file, bucket, object, overwrite);
-    }
-
-    @Override
-    public ListenableFuture<S3File> download(File file, URI s3url) throws
-        IOException {
-        return s3Client.download(file, s3url);
-    }
-
-    @Override
-    public ListenableFuture<S3File> download(File file, URI s3url, boolean overwrite)
-      throws IOException
-    {
-        return s3Client.download(file, s3url, overwrite);
     }
 
     @Override
@@ -283,14 +152,6 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<List<S3File>> downloadDirectory(File directory, URI
-        s3url, boolean recursive, boolean overwrite) throws IOException,
-        ExecutionException, InterruptedException {
-        return s3Client.downloadDirectory(directory, s3url, recursive,
-            overwrite);
-    }
-
-    @Override
     public ListenableFuture<S3File> copy(CopyOptions options)
     {
         return s3Client.copy(options);
@@ -298,7 +159,7 @@ public class GCSClient implements CloudStoreClient {
 
     @Override
     public ListenableFuture<List<S3File>> copyToDir(CopyOptions options)
-        throws InterruptedException, ExecutionException, IOException, URISyntaxException
+        throws InterruptedException, ExecutionException, IOException
     {
         return s3Client.copyToDir(options);
     }
@@ -322,40 +183,29 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<List<Upload>> listPendingUploads(String bucket,
-                                                             String prefix) {
+    public ListenableFuture<List<Upload>> listPendingUploads(PendingUploadsOptions options) {
         throw new UnsupportedOperationException("listPendingUploads is not " +
             "supported.");
     }
 
     @Override
-    public ListenableFuture<Void> abortPendingUpload(String bucket,
-                                                     String key,
-                                                     String uploadId) {
+    public ListenableFuture<List<Void>> abortPendingUploads(PendingUploadsOptions options) {
         throw new UnsupportedOperationException("abortPendingUpload is not " +
             "supported.");
     }
 
     @Override
-    public ListenableFuture<List<Void>> abortOldPendingUploads(String bucket,
-                                                               String prefix,
-                                                               Date date) {
-        throw new UnsupportedOperationException("abortOldPendingUploads is " +
-            "not supported.");
+    public ListenableFuture<S3File> addEncryptionKey(EncryptionKeyOptions options)
+        throws IOException
+    {
+        return s3Client.addEncryptionKey(options);
     }
 
     @Override
-    public ListenableFuture<S3File> addEncryptionKey(String bucket, String object, String key)
+    public ListenableFuture<S3File> removeEncryptionKey(EncryptionKeyOptions options)
         throws IOException
     {
-        return s3Client.addEncryptionKey(bucket, object, key);
-    }
-
-    @Override
-    public ListenableFuture<S3File> removeEncryptionKey(String bucket, String object, String key)
-        throws IOException
-    {
-        return s3Client.removeEncryptionKey(bucket, object, key);
+        return s3Client.removeEncryptionKey(options);
     }
 
   @Override
@@ -411,7 +261,7 @@ public class GCSClient implements CloudStoreClient {
             String object = options.getObjectKey();
             long chunkSize = options.getChunkSize();
             String encKey = options.getEncKey().orNull();
-            String acl = options.getAcl().or("projectPrivate");
+            String acl = options.getAcl().or(GCSClient.defaultCannedACL);
             boolean dryRun = options.isDryRun();
             OverallProgressListenerFactory progressListenerFactory = options
                 .getOverallProgressListenerFactory().orNull();

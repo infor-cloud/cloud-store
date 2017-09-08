@@ -1,7 +1,5 @@
 package com.logicblox.s3lib;
 
-import java.util.HashMap;
-import java.util.Map;
 
 public class DeleteOptions {
   

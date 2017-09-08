@@ -323,9 +323,9 @@ catch(Throwable t)
     Assert.assertTrue(TestUtils.compareFiles(toUpload, f.getLocalFile()));
 
     // compare metadata
-    ObjectMetadata srcMeta = _client.exists(src).get();
+    ObjectMetadata srcMeta = _client.exists(Utils.getBucket(src), Utils.getObjectKey(src)).get();
     Assert.assertNotNull(srcMeta);
-    ObjectMetadata destMeta = _client.exists(dest).get();
+    ObjectMetadata destMeta = _client.exists(Utils.getBucket(dest), Utils.getObjectKey(dest)).get();
     Assert.assertNotNull(destMeta);
 
     Assert.assertEquals(srcMeta.getContentLength(), destMeta.getContentLength());
@@ -457,7 +457,7 @@ try
     // validate results, dest file should exist and original dir should be the same
     Assert.assertEquals(7 + originalCount, TestUtils.listTestBucketObjects().size());
     URI file = TestUtils.getUri(_testBucket, top.getName(), rootPrefix);
-    Assert.assertNotNull(_client.exists(file).get());
+    Assert.assertNotNull(_client.exists(Utils.getBucket(file), Utils.getObjectKey(file)).get());
     List<S3File> objs = TestUtils.listObjects(_testBucket, Utils.getObjectKey(topUri));
     Assert.assertEquals(5, objs.size());
     return;
@@ -592,7 +592,8 @@ catch(Throwable t)
     URI src = new URI(TestUtils.getService() + "://" + bucket2 + "/" + f.getKey());
     DownloadOptions dlOpts = new DownloadOptionsBuilder()
       .setFile(dlTemp)
-      .setUri(src)
+      .setBucket(Utils.getBucket(src))
+      .setObjectKey(Utils.getObjectKey(src))
       .setRecursive(false)
       .setOverwrite(true)
       .createDownloadOptions();

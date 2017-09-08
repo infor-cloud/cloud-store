@@ -3,7 +3,6 @@ package com.logicblox.s3lib;
 import com.google.common.base.Optional;
 
 import java.io.File;
-import java.net.URI;
 
 
 /**
@@ -41,11 +40,6 @@ public class UploadOptionsBuilder {
 
     public UploadOptionsBuilder setChunkSize(long chunkSize) {
         this.chunkSize = chunkSize;
-        return this;
-    }
-
-    public UploadOptionsBuilder setUri(URI uri) {
-        setBucket(Utils.getBucket(uri)).setObjectKey(Utils.getObjectKey(uri));
         return this;
     }
 

@@ -4,10 +4,18 @@ import java.util.Date;
 
 public class PendingUploadsOptionsBuilder
 {
+  private CloudStoreClient _cloudStoreClient;
   private String _bucket;
   private String _objectKey;
   private String _uploadId;
   private Date _date;
+
+
+  public PendingUploadsOptionsBuilder setCloudStoreClient(CloudStoreClient client)
+  {
+    _cloudStoreClient = client;
+    return this;
+  }
 
   public PendingUploadsOptionsBuilder setBucket(String bucket)
   {
@@ -35,6 +43,7 @@ public class PendingUploadsOptionsBuilder
 
   public PendingUploadsOptions createPendingUploadsOptions()
   {
-    return new PendingUploadsOptions(_bucket, _objectKey, _uploadId, _date);
+    return new PendingUploadsOptions(_cloudStoreClient, _bucket, _objectKey,
+      _uploadId, _date);
   }
 }

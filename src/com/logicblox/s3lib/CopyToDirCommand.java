@@ -5,8 +5,6 @@ import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -15,52 +13,47 @@ import java.util.concurrent.ExecutionException;
 
 public class CopyToDirCommand extends Command
 {
-  private ListeningExecutorService _httpExecutor;
-  private ListeningScheduledExecutorService _executor;
+  private CopyOptions _options;
   private CloudStoreClient _client;
   private boolean _dryRun;
 
-  public CopyToDirCommand(ListeningExecutorService httpExecutor,
-                          ListeningScheduledExecutorService internalExecutor,
-                          boolean dryRun,
-                          CloudStoreClient client)
+  public CopyToDirCommand(CopyOptions options)
   {
-    _httpExecutor = httpExecutor;
-    _executor = internalExecutor;
-    _client = client;
-    _dryRun = dryRun;
+    _options = options;
+    _client = _options.getCloudStoreClient();
+    _dryRun = _options.isDryRun();
   }
 
-  public ListenableFuture<List<S3File>> run(final CopyOptions options)
+  public ListenableFuture<List<S3File>> run()
       throws ExecutionException, InterruptedException, IOException {
-    if (!options.getDestinationKey().endsWith("/") && !options.getDestinationKey().equals(""))
+    if (!_options.getDestinationKey().endsWith("/") && !_options.getDestinationKey().equals(""))
       throw new UsageException("Destination directory key should end with a '/'");
 
     String baseDirPath = "";
-    if (options.getSourceKey().length() > 0)
+    if (_options.getSourceKey().length() > 0)
     {
-      int endIndex = options.getSourceKey().lastIndexOf("/");
+      int endIndex = _options.getSourceKey().lastIndexOf("/");
       if (endIndex != -1)
-        baseDirPath = options.getSourceKey().substring(0, endIndex+1);
+        baseDirPath = _options.getSourceKey().substring(0, endIndex+1);
     }
 
     List<ListenableFuture<S3File>> files = new ArrayList<>();
 
     ListObjectsRequest req = new ListObjectsRequest()
-      .withBucketName(options.getSourceBucketName())
-      .withPrefix(options.getSourceKey());
-    if (!options.isRecursive()) req.setDelimiter("/");
+      .withBucketName(_options.getSourceBucketName())
+      .withPrefix(_options.getSourceKey());
+    if (!_options.isRecursive()) req.setDelimiter("/");
 
     ObjectListing current = getAmazonS3Client().listObjects(req);
-    files.addAll(copyBatch(current.getObjectSummaries(), options, baseDirPath));
+    files.addAll(copyBatch(current.getObjectSummaries(), baseDirPath));
     current = getAmazonS3Client().listNextBatchOfObjects(current);
 
     while (current.isTruncated())
     {
-      files.addAll(copyBatch(current.getObjectSummaries(), options, baseDirPath));
+      files.addAll(copyBatch(current.getObjectSummaries(), baseDirPath));
       current = getAmazonS3Client().listNextBatchOfObjects(current);
     }
-    files.addAll(copyBatch(current.getObjectSummaries(), options, baseDirPath));
+    files.addAll(copyBatch(current.getObjectSummaries(), baseDirPath));
 
     if(_dryRun)
     {
@@ -73,7 +66,6 @@ public class CopyToDirCommand extends Command
   }
 
   private List<ListenableFuture<S3File>> copyBatch(List<S3ObjectSummary> lst,
-                                                   CopyOptions options,
                                                    String baseDirPath)
     throws IOException
   {
@@ -84,20 +76,21 @@ public class CopyToDirCommand extends Command
       if (!obj.getKey().endsWith("/"))
       {
         String destKeyLastPart = obj.getKey().substring(baseDirPath.length());
-        String destKey = options.getDestinationKey() + destKeyLastPart;
+        String destKey = _options.getDestinationKey() + destKeyLastPart;
         CopyOptions options0 = new CopyOptionsBuilder()
-            .setSourceBucketName(options.getSourceBucketName())
+            .setCloudStoreClient(_options.getCloudStoreClient())
+            .setSourceBucketName(_options.getSourceBucketName())
             .setSourceKey(obj.getKey())
-            .setDestinationBucketName(options.getDestinationBucketName())
+            .setDestinationBucketName(_options.getDestinationBucketName())
             .setDestinationKey(destKey)
-            .setCannedAcl(options.getCannedAcl().orNull())
-            .setStorageClass(options.getStorageClass().orNull())
+            .setCannedAcl(_options.getCannedAcl().orNull())
+            .setStorageClass(_options.getStorageClass().orNull())
             .createCopyOptions();
 
         if(_dryRun)
         {
-          System.out.println("<DRYRUN> copying '" + getUri(options.getSourceBucketName(), obj.getKey())
-            + "' to '" + getUri(options.getDestinationBucketName(), destKey) + "'");
+          System.out.println("<DRYRUN> copying '" + getUri(_options.getSourceBucketName(), obj.getKey())
+            + "' to '" + getUri(_options.getDestinationBucketName(), destKey) + "'");
         }
         else
         {

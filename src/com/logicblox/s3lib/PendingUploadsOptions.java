@@ -15,20 +15,28 @@ import java.util.Optional;
  */
 public class PendingUploadsOptions
 {
+  private final CloudStoreClient _cloudStoreClient;
   private final String _bucket;
   private final String _objectKey;
   private final String _uploadId;
   private final Date _date;
 
-  PendingUploadsOptions(String bucket,
+  PendingUploadsOptions(CloudStoreClient cloudStoreClient,
+                        String bucket,
                         String objectKey,
                         String uploadId,
                         Date date)
   {
+    _cloudStoreClient = cloudStoreClient;
     _bucket = bucket;
     _objectKey = objectKey;
     _uploadId = uploadId;
     _date = date;
+  }
+
+  public CloudStoreClient getCloudStoreClient()
+  {
+    return _cloudStoreClient;
   }
 
   public String getBucket()

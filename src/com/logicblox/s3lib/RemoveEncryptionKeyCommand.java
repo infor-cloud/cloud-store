@@ -3,7 +3,6 @@ package com.logicblox.s3lib;
 
 import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.google.api.services.storage.Storage;
 import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FutureFallback;
@@ -15,41 +14,34 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
 public class RemoveEncryptionKeyCommand extends Command
 {
+  private EncryptionKeyOptions _options;
   private CloudStoreClient _client;
   private ListeningExecutorService _httpExecutor;
   private ListeningScheduledExecutorService _executor;
   private String _encKeyName;
   private KeyProvider _encKeyProvider;
-  private Storage _gcsStorage = null;
 
-  public RemoveEncryptionKeyCommand(
-    ListeningExecutorService httpExecutor,
-    ListeningScheduledExecutorService internalExecutor,
-    CloudStoreClient client,
-    String encKeyName,
-    KeyProvider encKeyProvider)
+  public RemoveEncryptionKeyCommand(EncryptionKeyOptions options)
   throws IOException
   {
-    _httpExecutor = httpExecutor;
-    _executor = internalExecutor;
-    _client = client;
-    _encKeyName = encKeyName;
-    _encKeyProvider = encKeyProvider;
-
+    _options = options;
+    _client = _options.getCloudStoreClient();
+    _httpExecutor = _client.getApiExecutor();
+    _executor = _client.getInternalExecutor();
+    _encKeyProvider = _client.getKeyProvider();
+    _encKeyName = _options.getEncryptionKey();
   }
 
-  public ListenableFuture<S3File> run(final String bucket,final String key,
-                                      final String version)
+  public ListenableFuture<S3File> run()
   {
     // TODO(geokollias): Handle versions?
-    ListenableFuture<S3ObjectMetadata> objMeta = getMetadata(bucket, key);
+    ListenableFuture<S3ObjectMetadata> objMeta = getMetadata();
     objMeta = Futures.transform(objMeta, removeEncryptionKeyFn());
     ListenableFuture<S3File> res = Futures.transform(objMeta,
       updateObjectMetadataFn());
@@ -64,7 +56,8 @@ public class RemoveEncryptionKeyCommand extends Command
             return Futures.immediateFailedFuture(t);
           }
           return Futures.immediateFailedFuture(new Exception("Error " +
-              "adding new encryption key to " + getUri(bucket, key)+ ".", t));
+              "adding new encryption key to " +
+              getUri(_options.getBucket(), _options.getObjectKey())+ ".", t));
         }
       });
   }
@@ -72,8 +65,7 @@ public class RemoveEncryptionKeyCommand extends Command
   /**
    * Step 1: Fetch metadata.
    */
-  private ListenableFuture<S3ObjectMetadata> getMetadata(final String bucket,
-                                                         final String key)
+  private ListenableFuture<S3ObjectMetadata> getMetadata()
   {
     return executeWithRetry(
       _executor,
@@ -81,25 +73,23 @@ public class RemoveEncryptionKeyCommand extends Command
       {
         public ListenableFuture<S3ObjectMetadata> call()
         {
-          return getMetadataAsync(bucket, key);
+          return getMetadataAsync();
         }
 
         public String toString()
         {
           return "Starting removal of existing encryption key to " +
-                 getUri(bucket, key);
+                 getUri(_options.getBucket(), _options.getObjectKey());
         }
       });
   }
 
-  private ListenableFuture<S3ObjectMetadata> getMetadataAsync(final String
-                                                                bucket,
-                                                              final String key)
+  private ListenableFuture<S3ObjectMetadata> getMetadataAsync()
   {
     S3ObjectMetadataFactory f = new S3ObjectMetadataFactory(getAmazonS3Client(),
       _httpExecutor);
-    ListenableFuture<S3ObjectMetadata> metadataFactory = f.create(bucket, key,
-      null);
+    ListenableFuture<S3ObjectMetadata> metadataFactory = f.create(
+      _options.getBucket(), _options.getObjectKey(), null);
 
     AsyncFunction<S3ObjectMetadata, S3ObjectMetadata> checkMetadata = new
       AsyncFunction<S3ObjectMetadata, S3ObjectMetadata>()
@@ -245,6 +235,7 @@ public class RemoveEncryptionKeyCommand extends Command
                   // copy the object to itself in order to add the new
                   // user-metadata.
                   CopyOptions options = new CopyOptionsBuilder()
+                    .setCloudStoreClient(_client)
                     .setSourceBucketName(metadata.getBucket())
                     .setSourceKey(metadata.getKey())
                     .setDestinationBucketName(metadata.getBucket())

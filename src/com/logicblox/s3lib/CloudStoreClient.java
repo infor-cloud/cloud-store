@@ -3,6 +3,8 @@ package com.logicblox.s3lib;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.io.IOException;
 import java.util.List;
@@ -39,6 +41,27 @@ public interface CloudStoreClient {
      * Returns the scheme of the backend storage service (e.g. "s3" or "gs")
      */
     String getScheme();
+
+    /**
+     * Returns the executor responsible for issuing HTTP API calls
+     * against the backend storage service asynchronously. It, also,
+     * determines the level of parallelism of an operation, e.g. number of
+     * threads used for uploading/downloading a file.
+     */
+    ListeningExecutorService getApiExecutor();
+
+    /**
+     * Returns the executor responsible for executing internal cloud-store tasks
+     * asynchronously. Such tasks include file I/O, file encryption, file
+     * splitting and error handling.
+     */
+    ListeningScheduledExecutorService getInternalExecutor();
+
+    /**
+     * Returns the provider of encryption key-pairs used to encrypt/decrypt
+     * files during upload/download.
+     */
+    KeyProvider getKeyProvider();
 
     /**
      * Uploads a file according to {@code options}. For more details

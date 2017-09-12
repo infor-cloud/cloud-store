@@ -1,6 +1,5 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -9,32 +8,18 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 
 public class DeleteDirCommand extends Command
 {
-  private ListeningExecutorService _httpExecutor;
-  private ListeningScheduledExecutorService _executor;
   private DeleteOptions _options;
   private CloudStoreClient _client;
 
-  public DeleteDirCommand(
-    ListeningExecutorService httpExecutor,
-    ListeningScheduledExecutorService internalExecutor,
-    CloudStoreClient client,
-    DeleteOptions opts)
+  public DeleteDirCommand(DeleteOptions options)
   {
-    if(httpExecutor == null)
-      throw new IllegalArgumentException("non-null http executor is required");
-    if(internalExecutor == null)
-      throw new IllegalArgumentException("non-null internal executor is required");
-
-    _httpExecutor = httpExecutor;
-    _executor = internalExecutor;
-    _client = client;
-    _options = opts;
+    _options = options;
+    _client = _options.getCloudStoreClient();
   }
 
 
@@ -85,6 +70,7 @@ public class DeleteDirCommand extends Command
       else
       {
         DeleteOptions opts = new DeleteOptionsBuilder()
+          .setCloudStoreClient(_client)
           .setBucket(src.getBucketName())
           .setObjectKey(src.getKey())
           .createDeleteOptions();
@@ -99,6 +85,7 @@ public class DeleteDirCommand extends Command
   {
     // find all files that need to be deleted
     ListOptions opts = new ListOptionsBuilder()
+        .setCloudStoreClient(_client)
         .setBucket(_options.getBucket())
         .setObjectKey(_options.getObjectKey())
         .setRecursive(_options.isRecursive())

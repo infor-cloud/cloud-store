@@ -1,6 +1,5 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import com.google.common.base.Function;
@@ -8,39 +7,20 @@ import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-
-import java.io.IOException;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 
 
 public class RenameCommand extends Command
 {
-  private ListeningExecutorService _httpExecutor;
-  private ListeningScheduledExecutorService _executor;
   private CloudStoreClient _client;
   private RenameOptions _options;
   private String _acl;
 
 
-  public RenameCommand(
-    ListeningExecutorService httpExecutor,
-    ListeningScheduledExecutorService internalExecutor,
-    CloudStoreClient client,
-    RenameOptions opts)
+  public RenameCommand(RenameOptions options)
   {
-    if(httpExecutor == null)
-      throw new IllegalArgumentException("non-null http executor is required");
-    if(internalExecutor == null)
-      throw new IllegalArgumentException("non-null internal executor is required");
-
-    _httpExecutor = httpExecutor;
-    _executor = internalExecutor;
-    _client = client;
-    _options = opts;
-    _acl = opts.getCannedAcl().or("bucket-owner-full-control");
+    _options = options;
+    _client = _options.getCloudStoreClient();
+    _acl = _options.getCannedAcl().orNull();
   }
 
 
@@ -70,6 +50,7 @@ public class RenameCommand extends Command
       public ListenableFuture<S3File> create(Throwable t)
       {
         DeleteOptions deleteOpts = new DeleteOptionsBuilder()
+          .setCloudStoreClient(_options.getCloudStoreClient())
           .setBucket(_options.getDestinationBucket())
           .setObjectKey(_options.getDestinationKey())
           .setForceDelete(true)
@@ -173,6 +154,7 @@ public class RenameCommand extends Command
   private ListenableFuture<S3File> getDeleteOp()
   {
     DeleteOptions deleteOpts = new DeleteOptionsBuilder()
+      .setCloudStoreClient(_options.getCloudStoreClient())
       .setBucket(_options.getSourceBucket())
       .setObjectKey(_options.getSourceKey())
       .createDeleteOptions();
@@ -184,6 +166,7 @@ public class RenameCommand extends Command
   private ListenableFuture<S3File> getCopyOp()
   {
     CopyOptions copyOpts = new CopyOptionsBuilder()
+      .setCloudStoreClient(_options.getCloudStoreClient())
       .setSourceBucketName(_options.getSourceBucket())
       .setSourceKey(_options.getSourceKey())
       .setDestinationBucketName(_options.getDestinationBucket())

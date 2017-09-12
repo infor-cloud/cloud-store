@@ -37,13 +37,13 @@ public class S3ClientBuilder {
             setInternalS3Client(new AmazonS3Client());
         }
         if (apiExecutor == null) {
-            setApiExecutor(Utils.getHttpExecutor(10));
+            setApiExecutor(Utils.createApiExecutor(10));
         }
         if (internalExecutor == null) {
-            setInternalExecutor(Utils.getInternalExecutor(50));
+            setInternalExecutor(Utils.createInternalExecutor(50));
         }
         if (keyProvider == null) {
-            setKeyProvider(Utils.getKeyProvider(Utils.getDefaultKeyDirectory()));
+            setKeyProvider(Utils.createKeyProvider(Utils.getDefaultKeyDirectory()));
         }
         return new S3Client(s3Client, apiExecutor, internalExecutor, keyProvider);
     }

@@ -10,71 +10,69 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.amazonaws.services.s3.internal.Constants;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.Callable;
 
 public class ListVersionsCommand extends Command {
   
-  
+  private ListOptions _options;
   private ListeningExecutorService _httpExecutor;
   private ListeningScheduledExecutorService _executor;
-  
-  public ListVersionsCommand(ListeningExecutorService httpExecutor,
-      ListeningScheduledExecutorService internalExecutor) {
-    _httpExecutor = httpExecutor;
-    _executor = internalExecutor;
+
+  public ListVersionsCommand(ListOptions options) {
+    _options = options;
+    _httpExecutor = _options.getCloudStoreClient().getApiExecutor();
+    _executor = _options.getCloudStoreClient().getInternalExecutor();
   }
   
-  public ListenableFuture<List<S3File>> run(final ListOptions lsOptions) {
+  public ListenableFuture<List<S3File>> run() {
     ListenableFuture<List<S3File>> future =
         executeWithRetry(_executor, new Callable<ListenableFuture<List<S3File>>>() {
           
           
           public ListenableFuture<List<S3File>> call() {
-            return runActual(lsOptions);
+            return runActual();
           }
           
           public String toString() {
             return "listing objects and directories for "
-                + getUri(lsOptions.getBucket(), lsOptions.getObjectKey());
+                + getUri(_options.getBucket(), _options.getObjectKey());
           }
         });
     
     return future;
   }
   
-  private ListenableFuture<List<S3File>> runActual(final ListOptions lsOptions) {
+  private ListenableFuture<List<S3File>> runActual() {
     return _httpExecutor.submit(new Callable<List<S3File>>() {
       
       
       public List<S3File> call() {
         ListVersionsRequest req = new ListVersionsRequest()
-            .withBucketName(lsOptions.getBucket())
-            .withPrefix(lsOptions.getObjectKey());
-        if (! lsOptions.isRecursive()) {
+            .withBucketName(_options.getBucket())
+            .withPrefix(_options.getObjectKey());
+        if (! _options.isRecursive()) {
           req.setDelimiter("/");
         }
         
         List<S3File> all = new ArrayList<S3File>();
         VersionListing current = getAmazonS3Client().listVersions(req);
         appendVersionSummaryList(all, current.getVersionSummaries());
-        if (! lsOptions.dirsExcluded()) {
-          appendVersionsDirStringList(all, current.getCommonPrefixes(), lsOptions.getBucket());
+        if (! _options.dirsExcluded()) {
+          appendVersionsDirStringList(all, current.getCommonPrefixes(), _options.getBucket());
         }
         current = getAmazonS3Client().listNextBatchOfVersions(current);
         
         while (current.isTruncated()) {
           appendVersionSummaryList(all, current.getVersionSummaries());
-          if (! lsOptions.dirsExcluded()) {
-            appendVersionsDirStringList(all, current.getCommonPrefixes(), lsOptions.getBucket());
+          if (! _options.dirsExcluded()) {
+            appendVersionsDirStringList(all, current.getCommonPrefixes(), _options.getBucket());
           }
           current = getAmazonS3Client().listNextBatchOfVersions(current);
         }
         appendVersionSummaryList(all, current.getVersionSummaries());
-        if (! lsOptions.dirsExcluded()) {
-          appendVersionsDirStringList(all, current.getCommonPrefixes(), lsOptions.getBucket());
+        if (! _options.dirsExcluded()) {
+          appendVersionsDirStringList(all, current.getCommonPrefixes(), _options.getBucket());
         }
         
         return all;

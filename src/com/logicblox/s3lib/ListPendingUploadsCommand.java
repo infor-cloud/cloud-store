@@ -13,18 +13,16 @@ import java.util.concurrent.Callable;
 
 public class ListPendingUploadsCommand extends Command
 {
+  private PendingUploadsOptions options;
   private ListeningExecutorService _httpExecutor;
   private ListeningScheduledExecutorService _executor;
   private PendingUploadsOptions _options;
 
-  public ListPendingUploadsCommand(
-      ListeningExecutorService httpExecutor,
-      ListeningScheduledExecutorService internalExecutor,
-      PendingUploadsOptions options)
+  public ListPendingUploadsCommand(PendingUploadsOptions options)
   {
-    _httpExecutor = httpExecutor;
-    _executor = internalExecutor;
     _options = options;
+    _httpExecutor = _options.getCloudStoreClient().getApiExecutor();
+    _executor = _options.getCloudStoreClient().getInternalExecutor();
   }
 
   public ListenableFuture<List<Upload>> run()

@@ -15,19 +15,22 @@ import com.google.common.base.Optional;
  */
 public class RenameOptions
 {
+  private final CloudStoreClient _cloudStoreClient;
   private final String _sourceBucket;
   private final String _sourceKey;
   private final String _destinationBucket;
   private final String _destinationKey;
   private final boolean _recursive;
   private final boolean _dryRun;
-  private final Optional<String> _cannedAcl;
+  private Optional<String> _cannedAcl;
 
   RenameOptions(
-    String sourceBucket, String sourceKey, String destinationBucket,
-    String destinationKey, Optional<String> cannedAcl, boolean recursive,
+    CloudStoreClient cloudStoreClient, String sourceBucket, String sourceKey,
+    String destinationBucket, String destinationKey,
+    Optional<String> cannedAcl, boolean recursive,
     boolean dryRun)
   {
+    _cloudStoreClient = cloudStoreClient;
     _sourceBucket = sourceBucket;
     _sourceKey = sourceKey;
     _destinationBucket = destinationBucket;
@@ -35,6 +38,11 @@ public class RenameOptions
     _recursive = recursive;
     _cannedAcl = cannedAcl;
     _dryRun = dryRun;
+  }
+
+  public CloudStoreClient getCloudStoreClient()
+  {
+    return _cloudStoreClient;
   }
 
   public String getSourceBucket()
@@ -59,6 +67,14 @@ public class RenameOptions
 
   public Optional<String> getCannedAcl()
   {
+    if (!_cannedAcl.isPresent()) {
+      if (_cloudStoreClient.getScheme().equals("s3")) {
+        _cannedAcl = Optional.of("bucket-owner-full-control");
+      }
+      else if (_cloudStoreClient.getScheme().equals("gs")) {
+        _cannedAcl = Optional.of("projectPrivate");
+      }
+    }
     return _cannedAcl;
   }
 

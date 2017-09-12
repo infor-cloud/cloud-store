@@ -63,6 +63,7 @@ public class RenameTests
     URI src = dest;
     dest = TestUtils.getUri(_testBucket, toUpload.getName() + "-RENAME", rootPrefix);
     RenameOptions opts = new RenameOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setSourceBucket(Utils.getBucket(src))
       .setSourceKey(Utils.getObjectKey(src))
       .setDestinationBucket(Utils.getBucket(dest))
@@ -105,6 +106,7 @@ try
     URI src = dest;
     dest = TestUtils.getUri(_testBucket, top.getName() + "-RENAME", rootPrefix);
     RenameOptions opts = new RenameOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setSourceBucket(Utils.getBucket(src))
       .setSourceKey(Utils.getObjectKey(src))
       .setDestinationBucket(Utils.getBucket(dest))
@@ -172,6 +174,7 @@ while(count < retryCount)
       int newCount = TestUtils.listObjects(_testBucket, destPrefix).size();
       dest = TestUtils.getUri(_testBucket, "subdir2", destPrefix);
       RenameOptions opts = new RenameOptionsBuilder()
+        .setCloudStoreClient(_client)
         .setSourceBucket(Utils.getBucket(src))
         .setSourceKey(Utils.getObjectKey(src))
         .setDestinationBucket(Utils.getBucket(dest))
@@ -262,6 +265,7 @@ while(count < retryCount)
       int newCount = TestUtils.listObjects(_testBucket, destPrefix).size();
       dest = TestUtils.getUri(_testBucket, "subdir2", destPrefix);
       RenameOptions opts = new RenameOptionsBuilder()
+        .setCloudStoreClient(_client)
         .setSourceBucket(Utils.getBucket(src))
         .setSourceKey(Utils.getObjectKey(src))
         .setDestinationBucket(Utils.getBucket(dest))
@@ -352,6 +356,7 @@ while(count < retryCount)
       int newCount = TestUtils.listObjects(_testBucket, destPrefix).size();
       dest = TestUtils.getUri(_testBucket, "subdir2", destPrefix);
       RenameOptions opts = new RenameOptionsBuilder()
+        .setCloudStoreClient(_client)
         .setSourceBucket(Utils.getBucket(src))
         .setSourceKey(Utils.getObjectKey(src))
         .setDestinationBucket(Utils.getBucket(dest))
@@ -438,6 +443,7 @@ while(count < retryCount)
       int newCount = TestUtils.listObjects(_testBucket, destPrefix).size();
       dest = TestUtils.getUri(_testBucket, "subdir2", destPrefix);
       RenameOptions opts = new RenameOptionsBuilder()
+        .setCloudStoreClient(_client)
         .setSourceBucket(Utils.getBucket(src))
         .setSourceKey(Utils.getObjectKey(src))
         .setDestinationBucket(Utils.getBucket(dest))
@@ -517,6 +523,7 @@ while(count < retryCount)
       URI src = dest;
       dest = TestUtils.getUri(_testBucket, toUpload.getName() + "-RENAMED", rootPrefix);
       RenameOptions opts = new RenameOptionsBuilder()
+        .setCloudStoreClient(_client)
         .setSourceBucket(Utils.getBucket(src))
         .setSourceKey(Utils.getObjectKey(src))
         .setDestinationBucket(Utils.getBucket(dest))
@@ -570,6 +577,7 @@ while(count < retryCount)
       URI src = dest;
       dest = TestUtils.getUri(_testBucket, toUpload.getName() + "-RENAMED", rootPrefix);
       RenameOptions opts = new RenameOptionsBuilder()
+        .setCloudStoreClient(_client)
         .setSourceBucket(Utils.getBucket(src))
         .setSourceKey(Utils.getObjectKey(src))
         .setDestinationBucket(Utils.getBucket(dest))
@@ -615,6 +623,7 @@ while(count < retryCount)
       URI src = dest;
       dest = TestUtils.getUri(_testBucket, toUpload.getName() + "-RENAMED", rootPrefix);
       RenameOptions opts = new RenameOptionsBuilder()
+        .setCloudStoreClient(_client)
         .setSourceBucket(Utils.getBucket(src))
         .setSourceKey(Utils.getObjectKey(src))
         .setDestinationBucket(Utils.getBucket(dest))
@@ -670,6 +679,7 @@ while(count < retryCount)
       URI src = dest;
       dest = TestUtils.getUri(_testBucket, toUpload.getName() + "-RENAMED", rootPrefix);
       RenameOptions opts = new RenameOptionsBuilder()
+        .setCloudStoreClient(_client)
         .setSourceBucket(Utils.getBucket(src))
         .setSourceKey(Utils.getObjectKey(src))
         .setDestinationBucket(Utils.getBucket(dest))
@@ -732,6 +742,7 @@ try
     int newCount = TestUtils.listObjects(_testBucket, newPrefix).size();
     dest = TestUtils.getUri(_testBucket, "new-file.txt", newPrefix);
     RenameOptions opts = new RenameOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setSourceBucket(Utils.getBucket(src))
       .setSourceKey(Utils.getObjectKey(src))
       .setDestinationBucket(Utils.getBucket(dest))
@@ -791,6 +802,7 @@ try
     URI src = dest1;
     URI dest = dest2;
     RenameOptions opts = new RenameOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setSourceBucket(Utils.getBucket(src))
       .setSourceKey(Utils.getObjectKey(src))
       .setDestinationBucket(Utils.getBucket(dest))
@@ -841,6 +853,7 @@ try
     // rename 
     URI src = dest;
     RenameOptions opts = new RenameOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setSourceBucket(Utils.getBucket(src))
       .setSourceKey(Utils.getObjectKey(src))
       .setDestinationBucket(Utils.getBucket(dest))
@@ -886,6 +899,7 @@ try
       _testBucket, "rename-missing-file" + System.currentTimeMillis(), rootPrefix);
     URI dest = TestUtils.getUri(_testBucket, "dummy.txt", rootPrefix);
     RenameOptions opts = new RenameOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setSourceBucket(Utils.getBucket(src))
       .setSourceKey(Utils.getObjectKey(src))
       .setDestinationBucket(Utils.getBucket(dest))
@@ -949,6 +963,7 @@ try
     int newCount = TestUtils.listObjects(bucket2, newPrefix).size();
     dest = TestUtils.getUri(bucket2, "new-file.txt", newPrefix);
     RenameOptions opts = new RenameOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setSourceBucket(Utils.getBucket(src))
       .setSourceKey(Utils.getObjectKey(src))
       .setDestinationBucket(Utils.getBucket(dest))
@@ -1016,6 +1031,7 @@ try
     int newCount = TestUtils.listObjects(_testBucket, newPrefix).size();
     dest = TestUtils.getUri(_testBucket, "subdir2", newPrefix);
     RenameOptions opts = new RenameOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setSourceBucket(Utils.getBucket(src))
       .setSourceKey(Utils.getObjectKey(src))
       .setDestinationBucket(Utils.getBucket(dest))
@@ -1085,6 +1101,7 @@ try
     int newCount = TestUtils.listObjects(_testBucket, newPrefix).size();
     dest = TestUtils.getUri(_testBucket, "subdir2", newPrefix);
     RenameOptions opts = new RenameOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setSourceBucket(Utils.getBucket(src))
       .setSourceKey(Utils.getObjectKey(src))
       .setDestinationBucket(Utils.getBucket(dest))
@@ -1166,6 +1183,7 @@ try
     int newCount = TestUtils.listObjects(bucket2, newPrefix).size();
     dest = TestUtils.getUri(bucket2, "subdir2", newPrefix);
     RenameOptions opts = new RenameOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setSourceBucket(Utils.getBucket(src))
       .setSourceKey(Utils.getObjectKey(src))
       .setDestinationBucket(Utils.getBucket(dest))
@@ -1221,6 +1239,7 @@ try
       _testBucket, "rename-missing-dir" + System.currentTimeMillis(), rootPrefix);
     URI dest = TestUtils.getUri(_testBucket, "subdir", rootPrefix);
     RenameOptions opts = new RenameOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setSourceBucket(Utils.getBucket(src))
       .setSourceKey(Utils.getObjectKey(src))
       .setDestinationBucket(Utils.getBucket(dest))
@@ -1285,6 +1304,7 @@ try
     URI src = destDir;
     URI dest = destFile;
     RenameOptions opts = new RenameOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setSourceBucket(Utils.getBucket(src))
       .setSourceKey(Utils.getObjectKey(src))
       .setDestinationBucket(Utils.getBucket(dest))
@@ -1349,6 +1369,7 @@ try
     URI src = destFile;
     URI dest = destDir;
     RenameOptions opts = new RenameOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setSourceBucket(Utils.getBucket(src))
       .setSourceKey(Utils.getObjectKey(src))
       .setDestinationBucket(Utils.getBucket(dest))

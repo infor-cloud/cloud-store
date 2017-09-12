@@ -3,54 +3,30 @@ package com.logicblox.s3lib;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 
 public class RenameDirectoryCommand extends Command
 {
-  private ListeningExecutorService _httpExecutor;
-  private ListeningScheduledExecutorService _executor;
   private RenameOptions _options;
   private CloudStoreClient _client;
 
-  public RenameDirectoryCommand(
-    ListeningExecutorService httpExecutor,
-    ListeningScheduledExecutorService internalExecutor,
-    CloudStoreClient client,
-    RenameOptions opts)
+  public RenameDirectoryCommand(RenameOptions options)
   {
-    if(httpExecutor == null)
-      throw new IllegalArgumentException("non-null http executor is required");
-    if(internalExecutor == null)
-      throw new IllegalArgumentException("non-null internal executor is required");
-
-    _httpExecutor = httpExecutor;
-    _executor = internalExecutor;
-    _client = client;
-    _options = opts;
+    _options = options;
+    _client = _options.getCloudStoreClient();
   }
-
 
   public ListenableFuture<List<S3File>> run()
     throws InterruptedException, ExecutionException, IOException
   {
     return startCopyThenDelete();
   }
-
 
   private ListenableFuture<List<S3File>> startCopyThenDelete()
     throws InterruptedException, ExecutionException, IOException
@@ -90,6 +66,7 @@ public class RenameDirectoryCommand extends Command
     throws InterruptedException, ExecutionException, IOException
   {
     CopyOptions copyOpts = new CopyOptionsBuilder()
+       .setCloudStoreClient(_options.getCloudStoreClient())
        .setSourceBucketName(_options.getSourceBucket())
        .setSourceKey(_options.getSourceKey())
        .setDestinationBucketName(_options.getDestinationBucket())
@@ -112,6 +89,7 @@ public class RenameDirectoryCommand extends Command
           throws InterruptedException, ExecutionException
         {
           DeleteOptions delOpts = new DeleteOptionsBuilder()
+            .setCloudStoreClient((_options.getCloudStoreClient()))
             .setBucket(_options.getSourceBucket())
             .setObjectKey(_options.getSourceKey())
             .setRecursive(_options.isRecursive())

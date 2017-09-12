@@ -1,7 +1,6 @@
 package com.logicblox.s3lib;
 
 import com.google.api.services.storage.Storage;
-import com.google.api.services.storage.model.Objects;
 import com.google.api.services.storage.model.StorageObject;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
@@ -15,27 +14,25 @@ import java.util.concurrent.Callable;
 
 public class GCSCopyCommand extends Command
 {
-
-  private ListeningExecutorService _s3Executor;
+  private CopyOptions _options;
+  private ListeningExecutorService _apiExecutor;
   private ListeningScheduledExecutorService _executor;
 
-  public GCSCopyCommand(
-      ListeningExecutorService s3Executor,
-      ListeningScheduledExecutorService internalExecutor)
+  public GCSCopyCommand(CopyOptions options)
   {
-    _s3Executor = s3Executor;
-    _executor = internalExecutor;
+    _options = options;
+    _apiExecutor = _options.getCloudStoreClient().getApiExecutor();
+    _executor = _options.getCloudStoreClient().getInternalExecutor();
   }
 
-
-  public ListenableFuture<S3File> run(final CopyOptions options)
+  public ListenableFuture<S3File> run()
   {
-    if(options.isDryRun())
+    if(_options.isDryRun())
     {
       System.out.println("<DRYRUN> copying '"
-        + getUri(options.getSourceBucketName(), options.getSourceKey())
+        + getUri(_options.getSourceBucketName(), _options.getSourceKey())
         + "' to '"
-        + getUri(options.getDestinationBucketName(), options.getDestinationKey()) + "'");
+        + getUri(_options.getDestinationBucketName(), _options.getDestinationKey()) + "'");
       return Futures.immediateFuture(null);
     }
     else
@@ -45,14 +42,14 @@ public class GCSCopyCommand extends Command
         {
           public ListenableFuture<S3File> call()
           {
-            return runActual(options);
+            return runActual();
           }
           
           public String toString()
           {
             return "copying object from "
-                + getUri(options.getSourceBucketName(), options.getSourceKey()) + " to "
-                + getUri(options.getDestinationBucketName(), options.getDestinationKey());
+                + getUri(_options.getSourceBucketName(), _options.getSourceKey()) + " to "
+                + getUri(_options.getDestinationBucketName(), _options.getDestinationKey());
           }
         });
     
@@ -61,22 +58,22 @@ public class GCSCopyCommand extends Command
   }
   
 
-  private ListenableFuture<S3File> runActual(final CopyOptions options)
+  private ListenableFuture<S3File> runActual()
   {
-    return _s3Executor.submit(new Callable<S3File>()
+    return _apiExecutor.submit(new Callable<S3File>()
     {
       public S3File call() throws IOException
       {
         // support for testing failures
-        String srcUri = getUri(options.getSourceBucketName(), options.getSourceKey());
-        options.injectAbort(srcUri);
+        String srcUri = getUri(_options.getSourceBucketName(), _options.getSourceKey());
+        _options.injectAbort(srcUri);
 
         StorageObject objectMetadata = null;
-        Map<String,String> userMetadata = options.getUserMetadata().orNull();
+        Map<String,String> userMetadata = _options.getUserMetadata().orNull();
         if (userMetadata != null)
         {
           Storage.Objects.Get get = getGCSClient().objects().get(
-            options.getSourceBucketName(), options.getSourceKey());
+            _options.getSourceBucketName(), _options.getSourceKey());
           StorageObject sourceObject = get.execute();
           // Map<String,String> sourceUserMetadata = sourceObject.getMetadata();
 
@@ -89,8 +86,8 @@ public class GCSCopyCommand extends Command
         }
 
         Storage.Objects.Copy cmd = getGCSClient().objects().copy(
-          options.getSourceBucketName(), options.getSourceKey(),
-          options.getDestinationBucketName(), options.getDestinationKey(),
+          _options.getSourceBucketName(), _options.getSourceKey(),
+          _options.getDestinationBucketName(), _options.getDestinationKey(),
           objectMetadata);
         StorageObject resp = cmd.execute();
         return createS3File(resp, false);

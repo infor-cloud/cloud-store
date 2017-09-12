@@ -295,6 +295,7 @@ public class TestUtils
       return;
       
     ListOptionsBuilder builder = new ListOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setBucket(bucket)
       .setRecursive(true)
       .setIncludeVersions(false)
@@ -311,6 +312,7 @@ public class TestUtils
     throws InterruptedException, ExecutionException
   {
     DeleteOptions opts = new DeleteOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setBucket(bucket)
       .setObjectKey(key)
       .createDeleteOptions();
@@ -321,6 +323,7 @@ public class TestUtils
     throws InterruptedException, ExecutionException
   {
     DeleteOptions opts = new DeleteOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setBucket(Utils.getBucket(uri))
       .setObjectKey(Utils.getObjectKey(uri))
       .createDeleteOptions();
@@ -344,6 +347,7 @@ public class TestUtils
     throws InterruptedException, ExecutionException
   {
     CopyOptions options = new CopyOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setSourceBucketName(bucket)
       .setSourceKey(key)
       .setDestinationBucketName(bucket)
@@ -360,6 +364,7 @@ public class TestUtils
     throws Throwable
   {
     UploadOptions upOpts = new UploadOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setFile(src)
       .setBucket(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
@@ -372,6 +377,7 @@ public class TestUtils
       throws Throwable
   {
     UploadOptions upOpts = new UploadOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setFile(src)
       .setBucket(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
@@ -385,6 +391,7 @@ public class TestUtils
     throws Throwable
   {
     UploadOptions upOpts = new UploadOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setFile(src)
       .setBucket(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
@@ -405,6 +412,7 @@ public class TestUtils
   {
 
     DownloadOptions dlOpts = new DownloadOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setFile(dest)
       .setBucket(Utils.getBucket(src))
       .setObjectKey(Utils.getObjectKey(src))
@@ -419,6 +427,7 @@ public class TestUtils
       throws Throwable
   {
     DownloadOptions dlOpts = new DownloadOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setFile(dest)
       .setBucket(Utils.getBucket(src))
       .setObjectKey(Utils.getObjectKey(src))
@@ -433,6 +442,7 @@ public class TestUtils
       throws Throwable
   {
     DownloadOptions dlOpts = new DownloadOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setFile(dest)
       .setBucket(Utils.getBucket(src))
       .setObjectKey(Utils.getObjectKey(src))
@@ -461,6 +471,7 @@ public class TestUtils
     throws Throwable
   {
     ListOptionsBuilder builder = new ListOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setBucket(bucket)
       .setRecursive(true)
       .setIncludeVersions(false)
@@ -667,13 +678,14 @@ public class TestUtils
   {
     Class cls = _client.getClass();
     Method meth = cls.getDeclaredMethod("setKeyProvider", KeyProvider.class);
-    meth.invoke(_client, Utils.getKeyProvider(keydir.getAbsolutePath()));
+    meth.invoke(_client, Utils.createKeyProvider(keydir.getAbsolutePath()));
   }
 
   public static EncryptionKeyOptions buildEncryptionKeyOptions(
     String bucket, String objectKey, String encryptionKey)
   {
     EncryptionKeyOptions options = new EncryptionKeyOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setBucket(bucket)
       .setObjectKey(objectKey)
       .setEncryptionKey(encryptionKey)
@@ -830,6 +842,7 @@ public class TestUtils
       String key = Utils.getObjectKey(destUri) + "/";
       String bucket = Utils.getBucket(destUri);
       ListOptionsBuilder builder = new ListOptionsBuilder()
+        .setCloudStoreClient(_client)
         .setBucket(bucket)
         .setRecursive(false)
         .setIncludeVersions(false)

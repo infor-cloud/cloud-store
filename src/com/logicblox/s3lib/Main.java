@@ -419,6 +419,7 @@ class Main
       CloudStoreClient client = createCloudStoreClient();
 
       CopyOptions options = new CopyOptionsBuilder()
+          .setCloudStoreClient(client)
           .setSourceBucketName(getSourceBucket())
           .setSourceKey(getSourceObjectKey())
           .setDestinationBucketName(getDestinationBucket())
@@ -501,6 +502,7 @@ class Main
       CloudStoreClient client = createCloudStoreClient();
 
       RenameOptions options = new RenameOptionsBuilder()
+          .setCloudStoreClient(client)
           .setSourceBucket(getSourceBucket())
           .setSourceKey(getSourceObjectKey())
           .setDestinationBucket(getDestinationBucket())
@@ -579,7 +581,8 @@ class Main
       }
 
       UploadOptionsBuilder uob = new UploadOptionsBuilder();
-      uob.setFile(f)
+      uob.setCloudStoreClient(client)
+          .setFile(f)
           .setBucket(getBucket())
           .setObjectKey(getObjectKey())
           .setChunkSize(chunkSize)
@@ -627,6 +630,7 @@ class Main
     public void invoke() throws Exception {
       CloudStoreClient client = createCloudStoreClient();
       ListOptionsBuilder lob = new ListOptionsBuilder()
+          .setCloudStoreClient(client)
           .setBucket(getBucket())
           .setObjectKey(getObjectKey())
           .setRecursive(recursive)
@@ -693,6 +697,7 @@ class Main
 
       CloudStoreClient client = createCloudStoreClient();
       DeleteOptions opts = new DeleteOptionsBuilder()
+          .setCloudStoreClient(client)
           .setBucket(getBucket())
           .setObjectKey(getObjectKey())
           .setRecursive(recursive)
@@ -740,6 +745,7 @@ class Main
     public void invoke() throws Exception {
       CloudStoreClient client = createCloudStoreClient();
       ListOptionsBuilder lob = new ListOptionsBuilder()
+          .setCloudStoreClient(client)
           .setBucket(getBucket())
           .setObjectKey(getObjectKey())
           .setRecursive(true)
@@ -893,6 +899,7 @@ class Main
       try
       {
         PendingUploadsOptions options = new PendingUploadsOptionsBuilder()
+          .setCloudStoreClient(client)
           .setBucket(getBucket())
           .setObjectKey(getObjectKey())
           .createPendingUploadsOptions();
@@ -985,6 +992,7 @@ class Main
           date = df.parse(dateTimeStr);
         }
         PendingUploadsOptions options = new PendingUploadsOptionsBuilder()
+          .setCloudStoreClient(client)
           .setBucket(getBucket())
           .setObjectKey(getObjectKey())
           .setUploadId(id)
@@ -1064,6 +1072,7 @@ class Main
       ListenableFuture<?> result;
 
       DownloadOptionsBuilder dob = new DownloadOptionsBuilder()
+          .setCloudStoreClient(client)
           .setFile(output)
           .setBucket(getBucket())
           .setObjectKey(getObjectKey())
@@ -1125,6 +1134,7 @@ class Main
             throw new UsageException("Object not found at " + getURI());
           }
           EncryptionKeyOptions options = new EncryptionKeyOptionsBuilder()
+            .setCloudStoreClient(client)
             .setBucket(getBucket())
             .setObjectKey(getObjectKey())
             .setEncryptionKey(encKeyName)
@@ -1168,6 +1178,7 @@ class Main
             throw new UsageException("Object not found at " + getURI());
           }
           EncryptionKeyOptions options = new EncryptionKeyOptionsBuilder()
+            .setCloudStoreClient(client)
             .setBucket(getBucket())
             .setObjectKey(getObjectKey())
             .setEncryptionKey(encKeyName)

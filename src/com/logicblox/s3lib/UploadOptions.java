@@ -1,11 +1,9 @@
 package com.logicblox.s3lib;
 
+import com.amazonaws.services.rds.model.Option;
 import com.google.common.base.Optional;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-
 
 /**
  * {@code UploadOptions} contains all the details needed by the upload
@@ -31,6 +29,7 @@ import java.util.Map;
  * UploadOptionsBuilder}. This class provides only public getter methods.
  */
 public class UploadOptions {
+    private CloudStoreClient cloudStoreClient;
     private File file;
     private String bucket;
     private String objectKey;
@@ -46,7 +45,8 @@ public class UploadOptions {
     private static AbortCounters _abortCounters = new AbortCounters();
 
 
-    UploadOptions(File file,
+    UploadOptions(CloudStoreClient cloudStoreClient,
+                  File file,
                   String bucket,
                   String objectKey,
                   long chunkSize,
@@ -56,6 +56,7 @@ public class UploadOptions {
                   boolean ignoreAbortInjection,
                   Optional<OverallProgressListenerFactory>
                       overallProgressListenerFactory) {
+        this.cloudStoreClient = cloudStoreClient;
         this.file = file;
         this.bucket = bucket;
         this.objectKey = objectKey;
@@ -83,6 +84,9 @@ public class UploadOptions {
       return _abortCounters;
     }
 
+    public CloudStoreClient getCloudStoreClient() {
+        return cloudStoreClient;
+    }
 
     public File getFile() {
         return file;
@@ -111,6 +115,14 @@ public class UploadOptions {
     }
 
     public Optional<String> getAcl() {
+        if (!acl.isPresent()) {
+            if (cloudStoreClient.getScheme().equals("s3")) {
+                acl = Optional.of("bucket-owner-full-control");
+            }
+            else if (cloudStoreClient.getScheme().equals("gs")) {
+                acl = Optional.of("projectPrivate");
+            }
+        }
         return acl;
     }
 

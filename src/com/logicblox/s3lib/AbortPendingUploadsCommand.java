@@ -20,15 +20,11 @@ public class AbortPendingUploadsCommand extends Command
   private CloudStoreClient _csClient;
   private PendingUploadsOptions _options;
 
-  public AbortPendingUploadsCommand(
-    ListeningExecutorService httpExecutor,
-    ListeningScheduledExecutorService internalExecutor,
-    CloudStoreClient csClient,
-    PendingUploadsOptions options)
+  public AbortPendingUploadsCommand(PendingUploadsOptions options)
   {
-    _httpExecutor = httpExecutor;
-    _executor = internalExecutor;
-    _csClient = csClient;
+    _csClient = options.getCloudStoreClient();
+    _httpExecutor = _csClient.getApiExecutor();
+    _executor = _csClient.getInternalExecutor();
     _options = options;
   }
 

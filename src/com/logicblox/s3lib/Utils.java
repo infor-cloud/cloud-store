@@ -367,19 +367,19 @@ public class Utils
     return path.substring(1);
   }
 
-  public static ListeningExecutorService getHttpExecutor(int nThreads)
+  public static ListeningExecutorService createApiExecutor(int nThreads)
   {
     return MoreExecutors.listeningDecorator(
         Executors.newFixedThreadPool(nThreads));
   }
 
-  public static ListeningScheduledExecutorService getInternalExecutor(int poolSize)
+  public static ListeningScheduledExecutorService createInternalExecutor(int poolSize)
   {
     return MoreExecutors.listeningDecorator(
         Executors.newScheduledThreadPool(poolSize));
   }
 
-  public static KeyProvider getKeyProvider(String encKeyDirectory)
+  public static KeyProvider createKeyProvider(String encKeyDirectory)
   {
     File dir = new File(encKeyDirectory);
     if(!dir.exists() && !dir.mkdirs())
@@ -457,7 +457,7 @@ public class Utils
       throws URISyntaxException, GeneralSecurityException, IOException
   {
     ListeningExecutorService uploadExecutor = 
-      getHttpExecutor(maxConcurrentConnections);
+      createApiExecutor(maxConcurrentConnections);
 
     StorageService service = detectStorageService(endpoint, scheme);
 
@@ -476,7 +476,7 @@ public class Utils
       client = new GCSClientBuilder()
           .setInternalS3Client(s3Client)
           .setApiExecutor(uploadExecutor)
-          .setKeyProvider(getKeyProvider(encKeyDirectory))
+          .setKeyProvider(createKeyProvider(encKeyDirectory))
           .createGCSClient();
     }
     else
@@ -490,7 +490,7 @@ public class Utils
       client = new S3ClientBuilder()
           .setInternalS3Client(s3Client)
           .setApiExecutor(uploadExecutor)
-          .setKeyProvider(getKeyProvider(encKeyDirectory))
+          .setKeyProvider(createKeyProvider(encKeyDirectory))
           .createS3Client();
     }
 

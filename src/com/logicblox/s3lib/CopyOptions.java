@@ -21,6 +21,7 @@ import java.util.Map;
  * CopyOptionsBuilder}. This class provides only public getter methods.
  */
 public class CopyOptions {
+    private final CloudStoreClient cloudStoreClient;
     private final String sourceBucketName;
     private final String sourceKey;
     private final String destinationBucketName;
@@ -30,7 +31,7 @@ public class CopyOptions {
     private final boolean ignoreAbortInjection;
     // TODO(geo): Revise use of Optionals. E.g. it's not a good idea to use them
     // as fields.
-    private final Optional<String> cannedAcl;
+    private Optional<String> cannedAcl;
     private final Optional<AccessControlList> s3Acl;
     private final String storageClass;
     private final Optional<Map<String,String>> userMetadata;
@@ -41,7 +42,8 @@ public class CopyOptions {
     private static AbortCounters _abortCounters = new AbortCounters();
 
 
-    CopyOptions(String sourceBucketName,
+    CopyOptions(CloudStoreClient cloudStoreClient,
+                String sourceBucketName,
                 String sourceKey,
                 String destinationBucketName,
                 String destinationKey,
@@ -54,6 +56,7 @@ public class CopyOptions {
                 Optional<Map<String,String>> userMetadata,
                 Optional<OverallProgressListenerFactory>
                     overallProgressListenerFactory) {
+        this.cloudStoreClient = cloudStoreClient;
         this.sourceBucketName = sourceBucketName;
         this.sourceKey = sourceKey;
         this.destinationBucketName = destinationBucketName;
@@ -83,6 +86,9 @@ public class CopyOptions {
       return _abortCounters;
     }
 
+    public CloudStoreClient getCloudStoreClient() {
+        return cloudStoreClient;
+    }
 
     public String getSourceBucketName() {
         return sourceBucketName;
@@ -101,6 +107,14 @@ public class CopyOptions {
     }
 
     public Optional<String> getCannedAcl() {
+        if (!cannedAcl.isPresent()) {
+            if (cloudStoreClient.getScheme().equals("s3")) {
+                cannedAcl = Optional.of("bucket-owner-full-control");
+            }
+            else if (cloudStoreClient.getScheme().equals("gs")) {
+                cannedAcl = Optional.of("projectPrivate");
+            }
+        }
         return cannedAcl;
     }
 

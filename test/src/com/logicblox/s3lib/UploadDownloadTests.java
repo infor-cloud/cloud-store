@@ -79,6 +79,7 @@ public class UploadDownloadTests
 
     // dryrun the upload and make sure the dest doesn't change
     UploadOptions opts = new UploadOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setFile(toUpload)
       .setBucket(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
@@ -112,6 +113,7 @@ try
 
     // dryrun the upload and verify the dest didn't change
     UploadOptions opts = new UploadOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setFile(top)
       .setBucket(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
@@ -152,6 +154,7 @@ catch(Throwable t)
     File dlTemp = TestUtils.createTmpFile();
     dlTemp.delete();
     DownloadOptions opts = new DownloadOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setFile(dlTemp)
       .setBucket(Utils.getBucket(src))
       .setObjectKey(Utils.getObjectKey(src))
@@ -185,6 +188,7 @@ catch(Throwable t)
     File dlDir = TestUtils.createTmpDir(true);
     URI src = dest;
     DownloadOptions opts = new DownloadOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setFile(dlDir)
       .setBucket(Utils.getBucket(src))
       .setObjectKey(Utils.getObjectKey(src))
@@ -291,6 +295,7 @@ catch(Throwable t)
       // upload file in multiple concurrent chunks
       clearParts();
       UploadOptions upOpts = new UploadOptionsBuilder()
+        .setCloudStoreClient(_client)
         .setFile(toUpload)
         .setBucket(Utils.getBucket(dest))
         .setObjectKey(Utils.getObjectKey(dest))
@@ -351,6 +356,7 @@ catch(Throwable t)
 
       // upload file in multiple concurrent chunks
       UploadOptions upOpts = new UploadOptionsBuilder()
+        .setCloudStoreClient(_client)
         .setFile(toUpload)
         .setBucket(Utils.getBucket(dest))
         .setObjectKey(Utils.getObjectKey(dest))
@@ -368,6 +374,7 @@ catch(Throwable t)
       // download the file and compare it with the original
       File dlTemp = TestUtils.createTmpFile();
       DownloadOptions dlOpts = new DownloadOptionsBuilder()
+        .setCloudStoreClient(_client)
         .setFile(dlTemp)
         .setBucket(Utils.getBucket(dest))
         .setObjectKey(Utils.getObjectKey(dest))
@@ -813,6 +820,7 @@ catch(Throwable t)
     // upload file in multiple concurrent chunks
     clearParts();
     UploadOptions upOpts = new UploadOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setFile(toUpload)
       .setBucket(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
@@ -833,6 +841,7 @@ catch(Throwable t)
     // download the file and compare it with the original
     File dlTemp = TestUtils.createTmpFile();
     DownloadOptions dlOpts = new DownloadOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setFile(dlTemp)
       .setBucket(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
@@ -869,6 +878,7 @@ catch(Throwable t)
     // upload file in multiple concurrent chunks
     clearParts();
     UploadOptions upOpts = new UploadOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setFile(toUpload)
       .setBucket(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
@@ -889,6 +899,7 @@ catch(Throwable t)
     // download the file and compare it with the original
     File dlTemp = TestUtils.createTmpFile();
     DownloadOptions dlOpts = new DownloadOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setFile(dlTemp)
       .setBucket(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))

@@ -12,6 +12,7 @@ import java.io.File;
  * mandatory. All the others are optional.
  */
 public class DownloadOptionsBuilder {
+    private CloudStoreClient cloudStoreClient;
     private File file;
     private String bucket;
     private String objectKey;
@@ -21,6 +22,11 @@ public class DownloadOptionsBuilder {
     private boolean dryRun = false;
     private Optional<OverallProgressListenerFactory> overallProgressListenerFactory =
         Optional.absent();
+
+    public DownloadOptionsBuilder setCloudStoreClient(CloudStoreClient client) {
+        this.cloudStoreClient = client;
+        return this;
+    }
 
     public DownloadOptionsBuilder setFile(File file) {
         this.file = file;
@@ -65,7 +71,7 @@ public class DownloadOptionsBuilder {
     }
 
     public DownloadOptions createDownloadOptions() {
-        return new DownloadOptions(file, bucket, objectKey, version, recursive,
-             overwrite, dryRun, overallProgressListenerFactory);
+        return new DownloadOptions(cloudStoreClient,file, bucket, objectKey,
+          version, recursive, overwrite, dryRun, overallProgressListenerFactory);
     }
 }

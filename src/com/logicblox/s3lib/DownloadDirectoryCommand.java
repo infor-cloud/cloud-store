@@ -5,8 +5,6 @@ import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,46 +14,37 @@ import java.util.concurrent.ExecutionException;
 
 public class DownloadDirectoryCommand extends Command
 {
-  private ListeningExecutorService _httpExecutor;
-  private ListeningScheduledExecutorService _executor;
+  private DownloadOptions _options;
   private CloudStoreClient _client;
+  private File _destination;
   private List<ListenableFuture<S3File>> _futures;
   private java.util.Set<File> _filesToCleanup;
   private List<File> _dirsToCleanup;
   private boolean _dryRun = false;
   
 
-  public DownloadDirectoryCommand(
-          ListeningExecutorService httpExecutor,
-          ListeningScheduledExecutorService internalExecutor,
-          CloudStoreClient client)
+  public DownloadDirectoryCommand(DownloadOptions options)
   {
-    _httpExecutor = httpExecutor;
-    _executor = internalExecutor;
-    _client = client;
-    _futures = new ArrayList<ListenableFuture<S3File>>();
-    _filesToCleanup = new java.util.HashSet<File>();
-    _dirsToCleanup = new ArrayList<File>();
+    _options = options;
+    _client = _options.getCloudStoreClient();
+    _destination = _options.getFile();
+    _futures = new ArrayList<>();
+    _filesToCleanup = new java.util.HashSet<>();
+    _dirsToCleanup = new ArrayList<>();
+    _dryRun = _options.isDryRun();
+
   }
 
-  public ListenableFuture<List<S3File>> run(
-    File destination,
-    String bucket,
-    String key,
-    boolean recursive,
-    boolean overwrite,
-    boolean dryRun,
-    OverallProgressListenerFactory progressFactory)
+  public ListenableFuture<List<S3File>> run()
       throws ExecutionException, InterruptedException, IOException
   {
-    _dryRun = dryRun;
     _futures.clear();
     _filesToCleanup.clear();
     _dirsToCleanup.clear();
 
     try
     {
-      checkDestination(destination, overwrite);
+      checkDestination();
     }
     catch(UsageException ex)
     {
@@ -63,7 +52,7 @@ public class DownloadDirectoryCommand extends Command
       throw ex;
     }
 
-    ListenableFuture<List<S3File>> listObjs = querySourceFiles(bucket, key, recursive);
+    ListenableFuture<List<S3File>> listObjs = querySourceFiles();
     ListenableFuture<List<S3File>> result = Futures.transform(
       listObjs,
       new AsyncFunction<List<S3File>, List<S3File>>()
@@ -71,11 +60,12 @@ public class DownloadDirectoryCommand extends Command
         public ListenableFuture<List<S3File>> apply(List<S3File> srcFiles)
           throws IOException
         {
-          prepareFutures(srcFiles, destination, bucket, key, overwrite, progressFactory);
+          prepareFutures(srcFiles);
           if(srcFiles.isEmpty())
-            throw new UsageException("No objects found for '" + getUri(bucket, key) + "'");
+            throw new UsageException("No objects found for '" + getUri(
+              _options.getBucket(), _options.getObjectKey()) + "'");
 
-          if(dryRun)
+          if(_options.isDryRun())
             return Futures.immediateFuture(null);
           else
             return scheduleExecution();
@@ -104,40 +94,40 @@ public class DownloadDirectoryCommand extends Command
   }
 
 
-  private ListenableFuture<List<S3File>> querySourceFiles(
-    String bucket, String key, boolean recursive)
+  private ListenableFuture<List<S3File>> querySourceFiles()
   {
     // find all files that need to be downloaded
     ListOptionsBuilder lob = new ListOptionsBuilder()
-        .setBucket(bucket)
-        .setObjectKey(key)
-        .setRecursive(recursive)
+        .setCloudStoreClient(_options.getCloudStoreClient())
+        .setBucket(_options.getBucket())
+        .setObjectKey(_options.getObjectKey())
+        .setRecursive(_options.isRecursive())
         .setIncludeVersions(false)
         .setExcludeDirs(false);
     return _client.listObjects(lob.createListOptions());
   }
 
 
-  private void checkDestination(File dest, boolean overwrite)
+  private void checkDestination()
   {
     // the destination must be a directory if it exists.  if doesn't exist, create it.
     // overwrite flag is only checked on a file by file basis, not for the destination
     // directory
-    if(dest.exists())
+    if(_destination.exists())
     {
-      if(!dest.isDirectory())
+      if(!_destination.isDirectory())
       {
-        if(overwrite)
+        if(_options.doesOverwrite())
         {
           if(_dryRun)
-            System.out.println("<DRYRUN> overwriting existing file '" + dest.getAbsolutePath()
+            System.out.println("<DRYRUN> overwriting existing file '" + _destination.getAbsolutePath()
               + "' with new directory");
           else
-            dest.delete();
+            _destination.delete();
         }
         else
         {
-          throw new UsageException("Existing destination '" + dest + "' must be a directory");
+          throw new UsageException("Existing destination '" + _destination + "' must be a directory");
         }
       }
     }
@@ -145,11 +135,11 @@ public class DownloadDirectoryCommand extends Command
     {
       try
       {
-        updateDirsToCleanup(Utils.mkdirs(dest, _dryRun));
+        updateDirsToCleanup(Utils.mkdirs(_destination, _dryRun));
       }
       catch(IOException ex)
       {
-        throw new UsageException("Could not create directory '" + dest + "': "
+        throw new UsageException("Could not create directory '" + _destination + "': "
           + ex.getMessage());
       }
     }
@@ -171,15 +161,13 @@ public class DownloadDirectoryCommand extends Command
   }
   
   
-  private void prepareFutures(
-    List<S3File> potentialFiles, File dest, String bucket, String srcKey, boolean overwrite,
-    OverallProgressListenerFactory progressFactory)
+  private void prepareFutures(List<S3File> potentialFiles)
       throws IOException
   {
-    File destAbs = dest.getAbsoluteFile();
+    File destAbs = _destination.getAbsoluteFile();
     for(S3File src : potentialFiles)
     {
-      String relFile = src.getKey().substring(srcKey.length());
+      String relFile = src.getKey().substring(_options.getObjectKey().length());
       File outputFile = new File(destAbs, relFile);
       File outputPath = new File(outputFile.getParent());
 
@@ -200,7 +188,7 @@ public class DownloadDirectoryCommand extends Command
       {
         if(outputFile.exists())
         {
-          if(overwrite)
+          if(_options.doesOverwrite())
           {
             if(_dryRun)
             {
@@ -221,7 +209,7 @@ public class DownloadDirectoryCommand extends Command
         }
         if(_dryRun)
         {
-          System.out.println("<DRYRUN> downloading '" + getUri(bucket, src.getKey())
+          System.out.println("<DRYRUN> downloading '" + getUri(_options.getBucket(), src.getKey())
             + "' to '" + outputFile.getAbsolutePath() + "'");
         }
         else
@@ -229,10 +217,12 @@ public class DownloadDirectoryCommand extends Command
           _filesToCleanup.add(outputFile);
 
           DownloadOptions options = new DownloadOptionsBuilder()
+            .setCloudStoreClient(_options.getCloudStoreClient())
             .setFile(outputFile)
-            .setBucket(bucket)
+            .setBucket(_options.getBucket())
             .setObjectKey(src.getKey())
-            .setOverallProgressListenerFactory(progressFactory)
+            .setOverallProgressListenerFactory(
+              _options.getOverallProgressListenerFactory().orNull())
             .createDownloadOptions();
 
           _futures.add(_client.download(options));

@@ -11,17 +11,25 @@ import java.util.Date;
  */
 public class EncryptionKeyOptions
 {
+  private final CloudStoreClient _cloudStoreClient;
   private final String _bucket;
   private final String _objectKey;
   private final String _encryptionKey;
 
-  EncryptionKeyOptions(String bucket,
+  EncryptionKeyOptions(CloudStoreClient cloudStoreClient,
+                       String bucket,
                        String objectKey,
                        String encryptionKey)
   {
+    _cloudStoreClient = cloudStoreClient;
     _bucket = bucket;
     _objectKey = objectKey;
     _encryptionKey = encryptionKey;
+  }
+
+  public CloudStoreClient getCloudStoreClient()
+  {
+    return _cloudStoreClient;
   }
 
   public String getBucket()

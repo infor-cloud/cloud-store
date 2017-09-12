@@ -2,25 +2,31 @@ package com.logicblox.s3lib;
 
 
 public class ListOptions {
-  
+  private CloudStoreClient cloudStoreClient;
   private String bucket;
   private String objectKey;
   private boolean recursive;
   private boolean includeVersions;
   private boolean excludeDirs;
   
-  ListOptions(String bucket,
-      String objectKey,
-      boolean recursive,
-      boolean includeVersions,
-      boolean excludeDirs) {
+  ListOptions(CloudStoreClient cloudStoreClient,
+              String bucket,
+              String objectKey,
+              boolean recursive,
+              boolean includeVersions,
+              boolean excludeDirs) {
+    this.cloudStoreClient = cloudStoreClient;
     this.bucket = bucket;
     this.objectKey = objectKey;
     this.recursive = recursive;
     this.includeVersions = includeVersions;
     this.excludeDirs = excludeDirs;
   }
-  
+
+  public CloudStoreClient getCloudStoreClient() {
+    return cloudStoreClient;
+  }
+
   public String getBucket() {
     return bucket;
   }

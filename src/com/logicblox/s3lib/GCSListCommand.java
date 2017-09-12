@@ -15,32 +15,32 @@ import java.util.concurrent.Callable;
 public class GCSListCommand extends Command
 {
 
-  private ListeningExecutorService _s3Executor;
+  private ListOptions _options;
+  private ListeningExecutorService _apiExecutor;
   private ListeningScheduledExecutorService _executor;
 
-  public GCSListCommand(
-      ListeningExecutorService s3Executor,
-      ListeningScheduledExecutorService internalExecutor)
+  public GCSListCommand(ListOptions options)
   {
-    _s3Executor = s3Executor;
-    _executor = internalExecutor;
+    _options = options;
+    _apiExecutor = _options.getCloudStoreClient().getApiExecutor();
+    _executor = _options.getCloudStoreClient().getInternalExecutor();
   }
 
 
-  public ListenableFuture<List<S3File>> run(final ListOptions lsOptions)
+  public ListenableFuture<List<S3File>> run()
   {
     ListenableFuture<List<S3File>> future =
         executeWithRetry(_executor, new Callable<ListenableFuture<List<S3File>>>()
         {
           public ListenableFuture<List<S3File>> call()
           {
-            return runActual(lsOptions);
+            return runActual();
           }
           
           public String toString()
           {
             return "listing objects and directories for "
-                + getUri(lsOptions.getBucket(), lsOptions.getObjectKey());
+                + getUri(_options.getBucket(), _options.getObjectKey());
           }
         });
     
@@ -48,20 +48,20 @@ public class GCSListCommand extends Command
   }
   
 
-  private ListenableFuture<List<S3File>> runActual(final ListOptions lsOptions)
+  private ListenableFuture<List<S3File>> runActual()
   {
-    return _s3Executor.submit(new Callable<List<S3File>>()
+    return _apiExecutor.submit(new Callable<List<S3File>>()
     {
       public List<S3File> call()
         throws IOException
       {
         List<S3File> s3files = new ArrayList<S3File>();
         List<StorageObject> allObjs = new ArrayList<StorageObject>();
-        Storage.Objects.List cmd = getGCSClient().objects().list(lsOptions.getBucket());
-        cmd.setPrefix(lsOptions.getObjectKey());
-        if(!lsOptions.isRecursive())
+        Storage.Objects.List cmd = getGCSClient().objects().list(_options.getBucket());
+        cmd.setPrefix(_options.getObjectKey());
+        if(!_options.isRecursive())
           cmd.setDelimiter("/");
-        boolean ver = lsOptions.versionsIncluded();
+        boolean ver = _options.versionsIncluded();
         cmd.setVersions(ver);
         Objects objs;
         do

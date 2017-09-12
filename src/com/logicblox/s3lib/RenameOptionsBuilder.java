@@ -11,6 +11,7 @@ import com.google.common.base.Optional;
  */
 public class RenameOptionsBuilder
 {
+  private CloudStoreClient _cloudStoreClient;
   private String _sourceBucket;
   private String _sourceKey;
   private String _destinationBucket;
@@ -19,7 +20,11 @@ public class RenameOptionsBuilder
   private boolean _recursive = false;
   private boolean _dryRun = false;
 
-  
+  public RenameOptionsBuilder setCloudStoreClient(CloudStoreClient client) {
+    _cloudStoreClient = client;
+    return this;
+  }
+
   public RenameOptionsBuilder setSourceBucket(String sourceBucket)
   {
     _sourceBucket = sourceBucket;
@@ -64,7 +69,7 @@ public class RenameOptionsBuilder
 
   public RenameOptions createRenameOptions()
   {
-    return new RenameOptions(
+    return new RenameOptions(_cloudStoreClient,
       _sourceBucket, _sourceKey, _destinationBucket, _destinationKey,
       _cannedAcl, _recursive, _dryRun);
   }

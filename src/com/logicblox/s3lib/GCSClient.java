@@ -100,6 +100,24 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
+    public ListeningExecutorService getApiExecutor()
+    {
+        return s3Client.getApiExecutor();
+    }
+
+    @Override
+    public ListeningScheduledExecutorService getInternalExecutor()
+    {
+        return s3Client.getInternalExecutor();
+    }
+
+    @Override
+    public KeyProvider getKeyProvider()
+    {
+        return s3Client.getKeyProvider();
+    }
+
+    @Override
     public ListenableFuture<S3File> upload(UploadOptions options) throws IOException
     {
         return s3Client.upload(options);
@@ -238,14 +256,9 @@ public class GCSClient implements CloudStoreClient {
         @Override
         public ListenableFuture<S3File> upload(UploadOptions options)
             throws IOException {
-            Optional<OverallProgressListenerFactory> progressListenerFactory =
-                options.getOverallProgressListenerFactory();
-
-            GCSUploadCommand cmd =
-                new GCSUploadCommand(_s3Executor, _executor, _keyProvider, options,
-                    progressListenerFactory);
+            GCSUploadCommand cmd = new GCSUploadCommand(options);
             s3Client.configure(cmd);
-            return cmd.run(options.getBucket(), options.getObjectKey());
+            return cmd.run();
         }
 
         /**
@@ -256,62 +269,50 @@ public class GCSClient implements CloudStoreClient {
         @Override
         public ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
             throws IOException, ExecutionException, InterruptedException {
-            File directory = options.getFile();
-            String bucket = options.getBucket();
-            String object = options.getObjectKey();
-            long chunkSize = options.getChunkSize();
-            String encKey = options.getEncKey().orNull();
-            String acl = options.getAcl().or(GCSClient.defaultCannedACL);
-            boolean dryRun = options.isDryRun();
-            OverallProgressListenerFactory progressListenerFactory = options
-                .getOverallProgressListenerFactory().orNull();
-
-            UploadDirectoryCommand cmd = new UploadDirectoryCommand(_s3Executor,
-                _executor, this);
+            UploadDirectoryCommand cmd = new UploadDirectoryCommand(options);
             s3Client.configure(cmd);
-            return cmd.run(directory, bucket, object, chunkSize, encKey, acl, dryRun,
-                progressListenerFactory);
+            return cmd.run();
         }
 
         @Override
-        public ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions)
+        public ListenableFuture<List<S3File>> listObjects(ListOptions options)
         {
-          GCSListCommand cmd = new GCSListCommand(_s3Executor, _executor);
+          GCSListCommand cmd = new GCSListCommand(options);
           configure(cmd);
-          return cmd.run(lsOptions);
+          return cmd.run();
         }
 
         @Override
         public ListenableFuture<S3File> copy(CopyOptions options)
         {
-          GCSCopyCommand cmd = new GCSCopyCommand(_s3Executor, _executor);
+          GCSCopyCommand cmd = new GCSCopyCommand(options);
           configure(cmd);
-          return cmd.run(options);
+          return cmd.run();
         }
 
         @Override
         public ListenableFuture<List<S3File>> copyToDir(CopyOptions options)
           throws IOException
         {
-          GCSCopyDirCommand cmd = new GCSCopyDirCommand(_s3Executor, _executor);
+          GCSCopyDirCommand cmd = new GCSCopyDirCommand(options);
           configure(cmd);
-          return cmd.run(options);
+          return cmd.run();
         }
 
         @Override
-        protected AddEncryptionKeyCommand createAddKeyCommand(String key)
+        protected AddEncryptionKeyCommand createAddKeyCommand(EncryptionKeyOptions options)
             throws IOException
         {
-           AddEncryptionKeyCommand cmd = super.createAddKeyCommand(key);
+           AddEncryptionKeyCommand cmd = super.createAddKeyCommand(options);
            configure(cmd);
            return cmd;
         }
 
         @Override
-        protected RemoveEncryptionKeyCommand createRemoveKeyCommand(String key)
+        protected RemoveEncryptionKeyCommand createRemoveKeyCommand(EncryptionKeyOptions options)
             throws IOException
         {
-           RemoveEncryptionKeyCommand cmd = super.createRemoveKeyCommand(key);
+           RemoveEncryptionKeyCommand cmd = super.createRemoveKeyCommand(options);
            configure(cmd);
            return cmd;
         }

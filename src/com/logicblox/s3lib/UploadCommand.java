@@ -48,22 +48,12 @@ public class UploadCommand extends Command
   private UploadOptions _options;
 
 
-  public UploadCommand(
-    ListeningExecutorService uploadExecutor,
-    ListeningScheduledExecutorService internalExecutor,
-    KeyProvider encKeyProvider,
-    UploadOptions options,
-    Optional<OverallProgressListenerFactory> progressListenerFactory)
+  public UploadCommand(UploadOptions options)
   throws IOException
   {
     _options = options;
-    if(uploadExecutor == null)
-      throw new IllegalArgumentException("non-null upload executor is required");
-    if(internalExecutor == null)
-      throw new IllegalArgumentException("non-null internal executor is required");
-
-    _uploadExecutor = uploadExecutor;
-    _executor = internalExecutor;
+    _uploadExecutor = _options.getCloudStoreClient().getApiExecutor();
+    _executor = _options.getCloudStoreClient().getInternalExecutor();
 
     this.file = _options.getFile();
     setChunkSize(_options.getChunkSize());
@@ -76,9 +66,9 @@ public class UploadCommand extends Command
       this.encKey = new SecretKeySpec(encKeyBytes, "AES");
       try
       {
-        if (encKeyProvider == null)
+        if (_options.getCloudStoreClient().getKeyProvider() == null)
           throw new UsageException("No encryption key provider is specified");
-        Key pubKey = encKeyProvider.getPublicKey(this.encKeyName);
+        Key pubKey = _options.getCloudStoreClient().getKeyProvider().getPublicKey(this.encKeyName);
 
         this.pubKeyHash = DatatypeConverter.printBase64Binary(
           DigestUtils.sha256(pubKey.getEncoded()));
@@ -101,14 +91,14 @@ public class UploadCommand extends Command
       }
     }
 
-    this.acl = _options.getAcl().or("bucket-owner-full-control");
-    this.progressListenerFactory = progressListenerFactory;
+    this.acl = _options.getAcl().orNull();
+    this.progressListenerFactory = _options.getOverallProgressListenerFactory();
   }
 
   /**
    * Run ties Step 1, Step 2, and Step 3 together. The return result is the ETag of the upload.
    */
-  public ListenableFuture<S3File> run(String bucket, String key)
+  public ListenableFuture<S3File> run()
     throws FileNotFoundException
   {
     if (!file.exists())
@@ -117,19 +107,19 @@ public class UploadCommand extends Command
     if(_options.isDryRun())
     {
       System.out.println("<DRYRUN> uploading '" + this.file.getAbsolutePath()
-        + "' to '" + getUri(bucket, key) + "'");
+        + "' to '" + getUri(_options.getBucket(), _options.getObjectKey()) + "'");
       return Futures.immediateFuture(null);
     }
     else
     {
-      return scheduleExecution(bucket, key);
+      return scheduleExecution();
     }
   }
   
 
-  private ListenableFuture<S3File> scheduleExecution(final String bucket, final String key)
+  private ListenableFuture<S3File> scheduleExecution()
   {
-    final ListenableFuture<Upload> started = startUpload(bucket, key);
+    final ListenableFuture<Upload> started = startUpload();
     ListenableFuture<Upload> uploaded = Futures.transform(started, startPartsAsyncFunction());
     ListenableFuture<String> completed = Futures.transform(uploaded, completeAsyncFunction());
     ListenableFuture<S3File> res = Futures.transform(completed,
@@ -140,8 +130,8 @@ public class UploadCommand extends Command
           S3File f = new S3File();
           f.setLocalFile(file);
           f.setETag(etag);
-          f.setBucketName(bucket);
-          f.setKey(key);
+          f.setBucketName(_options.getBucket());
+          f.setKey(_options.getObjectKey());
           return f;
         }
       });
@@ -171,24 +161,24 @@ public class UploadCommand extends Command
   /**
    * Step 1: Returns a future upload that is internally retried.
    */
-  private ListenableFuture<Upload> startUpload(final String bucket, final String key)
+  private ListenableFuture<Upload> startUpload()
   {
     return executeWithRetry(_executor,
       new Callable<ListenableFuture<Upload>>()
       {
         public ListenableFuture<Upload> call()
         {
-          return startUploadActual(bucket, key);
+          return startUploadActual();
         }
 
         public String toString()
         {
-          return "starting upload " + bucket + "/" + key;
+          return "starting upload " + _options.getBucket() + "/" + _options.getObjectKey();
         }
       });
   }
 
-  private ListenableFuture<Upload> startUploadActual(final String bucket, final String key)
+  private ListenableFuture<Upload> startUploadActual()
   {
     UploadFactory factory = new MultipartAmazonUploadFactory
         (getAmazonS3Client(), _uploadExecutor);
@@ -203,7 +193,7 @@ public class UploadCommand extends Command
     meta.put("s3tool-chunk-size", Long.toString(chunkSize));
     meta.put("s3tool-file-length", Long.toString(fileLength));
 
-    return factory.startUpload(bucket, key, meta, acl, _options);
+    return factory.startUpload(_options.getBucket(), _options.getObjectKey(), meta, acl, _options);
   }
 
   /**

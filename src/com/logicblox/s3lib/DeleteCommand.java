@@ -20,21 +20,12 @@ public class DeleteCommand extends Command
   private DeleteOptions _options;
   private CloudStoreClient _client;
 
-  public DeleteCommand(
-    ListeningExecutorService httpExecutor,
-    ListeningScheduledExecutorService internalExecutor,
-    CloudStoreClient client,
-    DeleteOptions opts)
+  public DeleteCommand(DeleteOptions options)
   {
-    if(httpExecutor == null)
-      throw new IllegalArgumentException("non-null http executor is required");
-    if(internalExecutor == null)
-      throw new IllegalArgumentException("non-null internal executor is required");
-
-    _httpExecutor = httpExecutor;
-    _executor = internalExecutor;
-    _client = client;
-    _options = opts;
+    _options = options;
+    _client = _options.getCloudStoreClient();
+    _httpExecutor = _client.getApiExecutor();
+    _executor = _client.getInternalExecutor();
   }
 
 

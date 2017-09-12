@@ -12,6 +12,7 @@ import java.io.File;
  * mandatory. All the others are optional.
  */
 public class UploadOptionsBuilder {
+    private CloudStoreClient cloudStoreClient;
     private File file;
     private String bucket;
     private String objectKey;
@@ -22,6 +23,11 @@ public class UploadOptionsBuilder {
         overallProgressListenerFactory = Optional.absent();
     private boolean dryRun = false;
     private boolean ignoreAbortInjection = false;
+
+    public UploadOptionsBuilder setCloudStoreClient(CloudStoreClient client) {
+        this.cloudStoreClient = client;
+        return this;
+    }
 
     public UploadOptionsBuilder setFile(File file) {
         this.file = file;
@@ -71,7 +77,10 @@ public class UploadOptionsBuilder {
     }
 
     public UploadOptions createUploadOptions() {
-        return new UploadOptions(file, bucket, objectKey, chunkSize, encKey,
-            acl, dryRun, ignoreAbortInjection, overallProgressListenerFactory);
+        // TODO: Check that all mandatory fields have been set. All the rest
+        // should return Optional in the corresponding Options method.
+        return new UploadOptions(cloudStoreClient, file, bucket, objectKey,
+          chunkSize, encKey, acl, dryRun, ignoreAbortInjection,
+          overallProgressListenerFactory);
     }
 }

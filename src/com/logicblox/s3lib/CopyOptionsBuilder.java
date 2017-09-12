@@ -13,6 +13,7 @@ import java.util.Map;
  * others are optional.
  */
 public class CopyOptionsBuilder {
+    private CloudStoreClient cloudStoreClient;
     private String sourceBucketName;
     private String sourceKey;
     private String destinationBucketName;
@@ -28,6 +29,12 @@ public class CopyOptionsBuilder {
     private boolean ignoreAbortInjection = false;
     private Optional<OverallProgressListenerFactory>
         overallProgressListenerFactory = Optional.absent();
+
+
+    public CopyOptionsBuilder setCloudStoreClient(CloudStoreClient client) {
+        this.cloudStoreClient = client;
+        return this;
+    }
 
     public CopyOptionsBuilder setSourceBucketName(String sourceBucketName) {
         this.sourceBucketName = sourceBucketName;
@@ -97,7 +104,7 @@ public class CopyOptionsBuilder {
     //    }
 
     public CopyOptions createCopyOptions() {
-        return new CopyOptions(sourceBucketName, sourceKey,
+        return new CopyOptions(cloudStoreClient, sourceBucketName, sourceKey,
             destinationBucketName, destinationKey, cannedAcl, s3Acl, storageClass,
             recursive, dryRun, ignoreAbortInjection, userMetadata, overallProgressListenerFactory);
     }

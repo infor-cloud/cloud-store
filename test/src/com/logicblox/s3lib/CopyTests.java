@@ -87,6 +87,7 @@ try
     String topN = rootPrefix + top.getName() + "/";
     String copyTopN = rootPrefix + top.getName() + "-COPY/";
     CopyOptions copyOpts = new CopyOptionsBuilder()
+       .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
        .setSourceKey(topN)
        .setDestinationBucketName(_testBucket)
@@ -170,6 +171,7 @@ catch(Throwable t)
       
       // copy file
       CopyOptions copyOpts = new CopyOptionsBuilder()
+       .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
        .setSourceKey(f.getKey())
        .setDestinationBucketName(_testBucket)
@@ -214,6 +216,7 @@ catch(Throwable t)
 
     // dryrun the copy and make sure dest stays the same
     CopyOptions opts = new CopyOptionsBuilder()
+       .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
        .setSourceKey(f.getKey())
        .setDestinationBucketName(_testBucket)
@@ -254,6 +257,7 @@ try
     String topN = rootPrefix + top.getName() + "/";
     String copyTopN = rootPrefix + top.getName() + "-COPY/";
     CopyOptions copyOpts = new CopyOptionsBuilder()
+       .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
        .setSourceKey(topN)
        .setDestinationBucketName(_testBucket)
@@ -300,6 +304,7 @@ catch(Throwable t)
     // copy file
     URI src = dest;
     CopyOptions copyOpts = new CopyOptionsBuilder()
+       .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
        .setSourceKey(f.getKey())
        .setDestinationBucketName(_testBucket)
@@ -372,6 +377,7 @@ catch(Throwable t)
 
     // copy file1 over file2
     CopyOptions copyOpts = new CopyOptionsBuilder()
+       .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
        .setSourceKey(f1.getKey())
        .setDestinationBucketName(_testBucket)
@@ -446,6 +452,7 @@ try
     URI dest = TestUtils.getUri(_testBucket, top.getName(), rootPrefix);
     String expectedKey = Utils.getObjectKey(dest);
     CopyOptions copyOpts = new CopyOptionsBuilder()
+       .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
        .setSourceKey(f.getKey())
        .setDestinationBucketName(_testBucket)
@@ -515,6 +522,7 @@ try
     URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
     String expectedKey = Utils.getObjectKey(dest);
     CopyOptions copyOpts = new CopyOptionsBuilder()
+       .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
        .setSourceKey(f.getKey())
        .setDestinationBucketName(_testBucket)
@@ -569,6 +577,7 @@ catch(Throwable t)
     // copy file
     String bucket2 = TestUtils.createTestBucket();
     CopyOptions copyOpts = new CopyOptionsBuilder()
+       .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
        .setSourceKey(f.getKey())
        .setDestinationBucketName(bucket2)
@@ -591,6 +600,7 @@ catch(Throwable t)
     File dlTemp = TestUtils.createTmpFile();
     URI src = new URI(TestUtils.getService() + "://" + bucket2 + "/" + f.getKey());
     DownloadOptions dlOpts = new DownloadOptionsBuilder()
+      .setCloudStoreClient(_client)
       .setFile(dlTemp)
       .setBucket(Utils.getBucket(src))
       .setObjectKey(Utils.getObjectKey(src))
@@ -638,6 +648,7 @@ try
     String topN = rootPrefix + top.getName() + "/";
     String copyTopN = rootPrefix + top.getName() + "-COPY/";
     CopyOptions copyOpts = new CopyOptionsBuilder()
+       .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
        .setSourceKey(topN)
        .setDestinationBucketName(_testBucket)
@@ -658,6 +669,7 @@ try
     // recursive copy
     String copyTopN2 = topN + "COPY2/";
     copyOpts = new CopyOptionsBuilder()
+       .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
        .setSourceKey(topN)
        .setDestinationBucketName(_testBucket)
@@ -724,6 +736,7 @@ try
     String missingBucketName = "MISSING-cloud-store-ut-bucket-" + System.currentTimeMillis();
     String topN = rootPrefix + top.getName() + "/";
     CopyOptions copyOpts = new CopyOptionsBuilder()
+       .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
        .setSourceKey(topN)
        .setDestinationBucketName(missingBucketName)
@@ -795,6 +808,7 @@ try
     int originalCount2 = objs2.size();
     String topN = rootPrefix + top.getName() + "/";
     CopyOptions copyOpts = new CopyOptionsBuilder()
+       .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
        .setSourceKey(topN)
        .setDestinationBucketName(bucket2)
@@ -818,6 +832,7 @@ try
     // recursive copy
     String copyTopN = rootPrefix + top.getName() + "-COPY/";
     copyOpts = new CopyOptionsBuilder()
+       .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
        .setSourceKey(topN)
        .setDestinationBucketName(bucket2)

@@ -2,14 +2,21 @@ package com.logicblox.s3lib;
 
 public class DeleteOptionsBuilder
 {
-  
+  private CloudStoreClient _cloudStoreClient;
   private String _bucket = null;
   private String _objectKey = null;
   private boolean _recursive = false;
   private boolean _dryRun = false;
   private boolean _forceDelete = false;
   private boolean _ignoreAbortInjection = false;
-  
+
+
+  public DeleteOptionsBuilder setCloudStoreClient(CloudStoreClient client)
+  {
+    _cloudStoreClient = client;
+    return this;
+  }
+
   public DeleteOptionsBuilder setBucket(String bucket)
   {
     _bucket = bucket;
@@ -48,8 +55,8 @@ public class DeleteOptionsBuilder
   
   public DeleteOptions createDeleteOptions()
   {
-    return new DeleteOptions(_bucket, _objectKey, _recursive, _dryRun,
-      _forceDelete, _ignoreAbortInjection);
+    return new DeleteOptions(_cloudStoreClient, _bucket, _objectKey,
+      _recursive, _dryRun, _forceDelete, _ignoreAbortInjection);
   }
   
 }

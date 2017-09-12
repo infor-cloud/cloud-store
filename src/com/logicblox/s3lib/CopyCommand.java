@@ -30,16 +30,13 @@ public class CopyCommand extends Command
   private Map<String, String> _userMetadata;
   private Optional<OverallProgressListenerFactory> _progressListenerFactory;
 
-  public CopyCommand(
-      ListeningExecutorService copyExecutor,
-      ListeningScheduledExecutorService internalExecutor,
-      CopyOptions options)
+  public CopyCommand(CopyOptions options)
   {
-    _copyExecutor = copyExecutor;
-    _executor = internalExecutor;
     _options = options;
+    _copyExecutor = _options.getCloudStoreClient().getApiExecutor();
+    _executor = _options.getCloudStoreClient().getInternalExecutor();
 
-    _cannedAcl = _options.getCannedAcl().or("bucket-owner-full-control");
+    _cannedAcl = _options.getCannedAcl().orNull();
     _s3Acl = _options.getS3Acl().orNull();
     _storageClass = _options.getStorageClass().orNull();
     _userMetadata = _options.getUserMetadata().orNull();
@@ -47,21 +44,19 @@ public class CopyCommand extends Command
       options.getOverallProgressListenerFactory().orNull());
   }
 
-  public ListenableFuture<S3File> run(final String sourceBucketName,
-                                      final String sourceKey,
-                                      final String destinationBucketName,
-                                      final String destinationKey)
+  public ListenableFuture<S3File> run()
   {
     if(_options.isDryRun())
     {
-      System.out.println("<DRYRUN> copying '" + getUri(sourceBucketName, sourceKey)
-        + "' to '" + getUri(destinationBucketName, destinationKey) + "'");
+      System.out.println("<DRYRUN> copying '" + getUri(
+        _options.getSourceBucketName(), _options.getSourceKey())
+        + "' to '" + getUri(_options.getDestinationBucketName(),
+        _options.getDestinationKey()) + "'");
       return Futures.immediateFuture(null);
     }
     else
     {
-      ListenableFuture<Copy> copy = startCopy(sourceBucketName, sourceKey,
-        destinationBucketName, destinationKey);
+      ListenableFuture<Copy> copy = startCopy();
       copy = Futures.transform(copy, startPartsAsyncFunction());
       ListenableFuture<String> result = Futures.transform(copy,
         completeAsyncFunction());
@@ -72,8 +67,8 @@ public class CopyCommand extends Command
             S3File f = new S3File();
             f.setLocalFile(null);
             f.setETag(etag);
-            f.setBucketName(destinationBucketName);
-            f.setKey(destinationKey);
+            f.setBucketName(_options.getDestinationBucketName());
+            f.setKey(_options.getDestinationKey());
             return f;
           }
         }
@@ -84,10 +79,7 @@ public class CopyCommand extends Command
   /**
    * Step 1: Start copy and fetch metadata.
    */
-  private ListenableFuture<Copy> startCopy(final String sourceBucketName,
-                                           final String sourceKey,
-                                           final String destinationBucketName,
-                                           final String destinationKey)
+  private ListenableFuture<Copy> startCopy()
   {
     return executeWithRetry(
       _executor,
@@ -95,34 +87,34 @@ public class CopyCommand extends Command
       {
         public ListenableFuture<Copy> call()
         {
-          return startCopyActual(sourceBucketName, sourceKey,
-              destinationBucketName, destinationKey);
+          return startCopyActual();
         }
 
         public String toString()
         {
-          return "starting copy of " + getUri(sourceBucketName, sourceKey) +
-              " to " + getUri(destinationBucketName, destinationKey);
+          return "starting copy of " + getUri(
+            _options.getSourceBucketName(), _options.getSourceKey()) +
+            " to " + getUri(
+            _options.getDestinationBucketName(), _options.getDestinationKey());
         }
       });
   }
 
-  private ListenableFuture<Copy> startCopyActual(final String sourceBucketName,
-                                                 final String sourceKey,
-                                                 final String destinationBucketName,
-                                                 final String destinationKey)
+  private ListenableFuture<Copy> startCopyActual()
   {
-    MultipartAmazonCopyFactory factory = new MultipartAmazonCopyFactory
-        (getAmazonS3Client(), _copyExecutor);
+    MultipartAmazonCopyFactory factory = new MultipartAmazonCopyFactory(
+      getAmazonS3Client(), _copyExecutor);
     if (_s3Acl != null)
     {
-      return factory.startCopy(sourceBucketName, sourceKey,
-        destinationBucketName, destinationKey, _s3Acl, _userMetadata,
-        _storageClass);
+      return factory.startCopy(
+        _options.getSourceBucketName(), _options.getSourceKey(),
+        _options.getDestinationBucketName(), _options.getDestinationKey(),
+        _s3Acl, _userMetadata, _storageClass);
     }
-    return factory.startCopy(sourceBucketName, sourceKey,
-      destinationBucketName, destinationKey, _cannedAcl, _userMetadata,
-      _storageClass);
+    return factory.startCopy(
+      _options.getSourceBucketName(), _options.getSourceKey(),
+      _options.getDestinationBucketName(), _options.getDestinationKey(),
+      _cannedAcl, _userMetadata, _storageClass);
   }
 
   /**

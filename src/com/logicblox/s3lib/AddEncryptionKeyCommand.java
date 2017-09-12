@@ -55,20 +55,20 @@ public class AddEncryptionKeyCommand extends Command
 
   }
 
-  public ListenableFuture<S3File> run(final String bucket,final String key,
+  public ListenableFuture<StoreFile> run(final String bucket,final String key,
                                       final String version)
   {
     // TODO(geokollias): Handle versions?
     ListenableFuture<S3ObjectMetadata> objMeta = getMetadata(bucket, key);
     objMeta = Futures.transform(objMeta, addNewEncryptionKeyFn());
-    ListenableFuture<S3File> res = Futures.transform(objMeta,
+    ListenableFuture<StoreFile> res = Futures.transform(objMeta,
       updateObjectMetadataFn());
 
     return Futures.withFallback(
       res,
-      new FutureFallback<S3File>()
+      new FutureFallback<StoreFile>()
       {
-        public ListenableFuture<S3File> create(Throwable t)
+        public ListenableFuture<StoreFile> create(Throwable t)
         {
           if (t instanceof UsageException) {
             return Futures.immediateFailedFuture(t);
@@ -311,12 +311,12 @@ public class AddEncryptionKeyCommand extends Command
   /**
    * Step 3: Update object's metadata
    */
-  private AsyncFunction<S3ObjectMetadata, S3File> updateObjectMetadataFn()
+  private AsyncFunction<S3ObjectMetadata, StoreFile> updateObjectMetadataFn()
   {
-    AsyncFunction<S3ObjectMetadata, S3File> update = new
-      AsyncFunction<S3ObjectMetadata, S3File>()
+    AsyncFunction<S3ObjectMetadata, StoreFile> update = new
+      AsyncFunction<S3ObjectMetadata, StoreFile>()
       {
-        public ListenableFuture<S3File> apply(final S3ObjectMetadata metadata)
+        public ListenableFuture<StoreFile> apply(final S3ObjectMetadata metadata)
         throws IOException
         {
           ListenableFuture<AccessControlList> acl = executeWithRetry(
@@ -337,10 +337,10 @@ public class AddEncryptionKeyCommand extends Command
               }
             });
 
-          AsyncFunction<AccessControlList, S3File> updateObj = new
-            AsyncFunction<AccessControlList, S3File>()
+          AsyncFunction<AccessControlList, StoreFile> updateObj = new
+            AsyncFunction<AccessControlList, StoreFile>()
             {
-              public ListenableFuture<S3File> apply(
+              public ListenableFuture<StoreFile> apply(
                 AccessControlList acl) throws IOException
               {
                 if(null == getGCSClient())
@@ -364,18 +364,18 @@ public class AddEncryptionKeyCommand extends Command
                 {
                   return executeWithRetry(
                     _executor,
-                    new Callable<ListenableFuture<S3File>>()
+                    new Callable<ListenableFuture<StoreFile>>()
                     {
-                      public ListenableFuture<S3File> call()
+                      public ListenableFuture<StoreFile> call()
                       {
-                        return _httpExecutor.submit(new Callable<S3File>()
+                        return _httpExecutor.submit(new Callable<StoreFile>()
                         {
-                          public S3File call()
+                          public StoreFile call()
                             throws IOException
                           {
                             Utils.patchMetaData(getGCSClient(), metadata.getBucket(),
                               metadata.getKey(), metadata.getUserMetadata());
-                            return new S3File(metadata.getBucket(), metadata.getKey());
+                            return new StoreFile(metadata.getBucket(), metadata.getKey());
                           }
                         });
                       }

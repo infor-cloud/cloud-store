@@ -29,7 +29,7 @@ public class GCSCopyDirCommand extends Command
   }
 
 
-  public ListenableFuture<List<S3File>> run(final CopyOptions options)
+  public ListenableFuture<List<StoreFile>> run(final CopyOptions options)
     throws IOException
   {
     if(!options.getDestinationKey().endsWith("/") && !options.getDestinationKey().equals(""))
@@ -44,17 +44,17 @@ public class GCSCopyDirCommand extends Command
     }
     final String baseDirPathF = baseDirPath;
 
-    ListenableFuture<List<S3File>> listFuture = getListFuture(
+    ListenableFuture<List<StoreFile>> listFuture = getListFuture(
       options.getSourceBucketName(), options.getSourceKey(), options.isRecursive());
-    ListenableFuture<List<S3File>> result = Futures.transform(
+    ListenableFuture<List<StoreFile>> result = Futures.transform(
       listFuture,
-      new AsyncFunction<List<S3File>, List<S3File>>()
+      new AsyncFunction<List<StoreFile>, List<StoreFile>>()
       {
-        public ListenableFuture<List<S3File>> apply(List<S3File> filesToCopy)
+        public ListenableFuture<List<StoreFile>> apply(List<StoreFile> filesToCopy)
         {
-          List<ListenableFuture<S3File>> files = new ArrayList<>();
-          List<ListenableFuture<S3File>> futures = new ArrayList<>();
-          for(S3File src : filesToCopy)
+          List<ListenableFuture<StoreFile>> files = new ArrayList<>();
+          List<ListenableFuture<StoreFile>> futures = new ArrayList<>();
+          for(StoreFile src : filesToCopy)
             createCopyOp(futures, src, options, baseDirPathF);
 
           if(options.isDryRun())
@@ -68,7 +68,7 @@ public class GCSCopyDirCommand extends Command
 
 
   private void createCopyOp(
-    List<ListenableFuture<S3File>> futures, final S3File src,
+    List<ListenableFuture<StoreFile>> futures, final StoreFile src,
     final CopyOptions options, String baseDirPath)
   {
     if(!src.getKey().endsWith("/"))
@@ -89,16 +89,16 @@ public class GCSCopyDirCommand extends Command
     }
   }
 
-  private ListenableFuture<S3File> wrapCopyWithRetry(
-    final CopyOptions options, final S3File src, final String destKey)
+  private ListenableFuture<StoreFile> wrapCopyWithRetry(
+    final CopyOptions options, final StoreFile src, final String destKey)
   {
-    return executeWithRetry(_executor, new Callable<ListenableFuture<S3File>>()
+    return executeWithRetry(_executor, new Callable<ListenableFuture<StoreFile>>()
     {
-      public ListenableFuture<S3File> call()
+      public ListenableFuture<StoreFile> call()
       {
-        return _s3Executor.submit(new Callable<S3File>()
+        return _s3Executor.submit(new Callable<StoreFile>()
         {
-          public S3File call() throws IOException
+          public StoreFile call() throws IOException
           {
             return performCopy(options, src, destKey);
           }
@@ -108,7 +108,7 @@ public class GCSCopyDirCommand extends Command
   }
 
   
-  private S3File performCopy(CopyOptions options, S3File src, String destKey)
+  private StoreFile performCopy(CopyOptions options, StoreFile src, String destKey)
     throws IOException
   {
     // support for testing failures
@@ -120,11 +120,11 @@ public class GCSCopyDirCommand extends Command
       options.getDestinationBucketName(), destKey,
       null);
     StorageObject resp = cmd.execute();
-    return createS3File(resp, false);
+    return createStoreFile(resp, false);
   }
   
 
-  private ListenableFuture<List<S3File>> getListFuture(
+  private ListenableFuture<List<StoreFile>> getListFuture(
     String bucket, String prefix, boolean isRecursive)
   {
     // FIXME - if we gave commands a CloudStoreClient when they were created
@@ -144,9 +144,9 @@ public class GCSCopyDirCommand extends Command
   }
 
   
-  private S3File createS3File(StorageObject obj, boolean includeVersion)
+  private StoreFile createStoreFile(StorageObject obj, boolean includeVersion)
   {
-    S3File f = new S3File();
+    StoreFile f = new StoreFile();
     f.setKey(obj.getName());
     f.setETag(obj.getEtag());
     f.setBucketName(obj.getBucket());

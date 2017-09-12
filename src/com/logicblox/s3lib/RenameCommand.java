@@ -1,7 +1,6 @@
 package com.logicblox.s3lib;
 
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.AsyncFunction;
@@ -44,7 +43,7 @@ public class RenameCommand extends Command
   }
 
 
-  public ListenableFuture<S3File> run()
+  public ListenableFuture<StoreFile> run()
   {
     if(_options.isDryRun())
     {
@@ -63,11 +62,11 @@ public class RenameCommand extends Command
   // try to clean up if a failure occurs.  just have to worry
   // about failure during a delete phase and remove the copied
   // file
-  private FutureFallback<S3File> cleanupOnError()
+  private FutureFallback<StoreFile> cleanupOnError()
   {
-    return new FutureFallback<S3File>()
+    return new FutureFallback<StoreFile>()
     {
-      public ListenableFuture<S3File> create(Throwable t)
+      public ListenableFuture<StoreFile> create(Throwable t)
       {
         DeleteOptions deleteOpts = new DeleteOptionsBuilder()
           .setBucket(_options.getDestinationBucket())
@@ -75,14 +74,14 @@ public class RenameCommand extends Command
           .setForceDelete(true)
           .setIgnoreAbortInjection(true)
           .createDeleteOptions();
-        ListenableFuture<S3File> deleteFuture = _client.delete(deleteOpts);
+        ListenableFuture<StoreFile> deleteFuture = _client.delete(deleteOpts);
 
         return Futures.transform(
           deleteFuture,
 
-          new AsyncFunction<S3File,S3File>()
+          new AsyncFunction<StoreFile,StoreFile>()
           {
-            public ListenableFuture<S3File> apply(S3File f)
+            public ListenableFuture<StoreFile> apply(StoreFile f)
             {
               return Futures.immediateFailedFuture(t);
             }
@@ -93,16 +92,16 @@ public class RenameCommand extends Command
 
 
   // start by checking that source exists, then follow with dest check
-  private ListenableFuture<S3File> buildFutureChain()
+  private ListenableFuture<StoreFile> buildFutureChain()
   {
-    ListenableFuture<ObjectMetadata> sourceExists = 
+    ListenableFuture<Metadata> sourceExists = 
       _client.exists(_options.getSourceBucket(), _options.getSourceKey());
 
     return Futures.transform(
       sourceExists,
-      new AsyncFunction<ObjectMetadata,S3File>()
+      new AsyncFunction<Metadata,StoreFile>()
       {
-        public ListenableFuture<S3File> apply(ObjectMetadata mdata)
+        public ListenableFuture<StoreFile> apply(Metadata mdata)
           throws UsageException
         {
           if(null == mdata)
@@ -114,15 +113,15 @@ public class RenameCommand extends Command
   
 
   // follow dest check with copy op
-  private ListenableFuture<S3File> checkDestExists()
+  private ListenableFuture<StoreFile> checkDestExists()
   {
-    ListenableFuture<ObjectMetadata> destExists = 
+    ListenableFuture<Metadata> destExists = 
       _client.exists(_options.getDestinationBucket(), getDestKey());
     return Futures.transform(
       destExists,
-      new AsyncFunction<ObjectMetadata,S3File>()
+      new AsyncFunction<Metadata,StoreFile>()
       {
-        public ListenableFuture<S3File> apply(ObjectMetadata mdata)
+        public ListenableFuture<StoreFile> apply(Metadata mdata)
           throws UsageException
         {
           if(null != mdata)
@@ -137,13 +136,13 @@ public class RenameCommand extends Command
 
 
   // copy is followed by delete
-  private ListenableFuture<S3File> copyObject()
+  private ListenableFuture<StoreFile> copyObject()
   {
     return Futures.transform(
       getCopyOp(),
-      new AsyncFunction<S3File,S3File>()
+      new AsyncFunction<StoreFile,StoreFile>()
       {
-        public ListenableFuture<S3File> apply(S3File srcFile)
+        public ListenableFuture<StoreFile> apply(StoreFile srcFile)
         {
           return deleteObject();
         }
@@ -154,15 +153,15 @@ public class RenameCommand extends Command
 
 
   // delete is followed by return of the dest file
-  private ListenableFuture<S3File> deleteObject()
+  private ListenableFuture<StoreFile> deleteObject()
   {
     return Futures.transform(
       getDeleteOp(),
-      new Function<S3File, S3File>()
+      new Function<StoreFile, StoreFile>()
       {
-        public S3File apply(S3File deletedFile)
+        public StoreFile apply(StoreFile deletedFile)
         {
-          return new S3File(
+          return new StoreFile(
             _options.getDestinationBucket(), getDestKey());
         }
       }
@@ -170,7 +169,7 @@ public class RenameCommand extends Command
   }
 
 
-  private ListenableFuture<S3File> getDeleteOp()
+  private ListenableFuture<StoreFile> getDeleteOp()
   {
     DeleteOptions deleteOpts = new DeleteOptionsBuilder()
       .setBucket(_options.getSourceBucket())
@@ -181,7 +180,7 @@ public class RenameCommand extends Command
   }
 
 
-  private ListenableFuture<S3File> getCopyOp()
+  private ListenableFuture<StoreFile> getCopyOp()
   {
     CopyOptions copyOpts = new CopyOptionsBuilder()
       .setSourceBucketName(_options.getSourceBucket())

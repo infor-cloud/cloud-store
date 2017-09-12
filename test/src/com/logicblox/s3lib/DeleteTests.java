@@ -54,7 +54,7 @@ public class DeleteTests
     int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
     File toUpload = TestUtils.createTextFile(100);
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, dest);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
     Assert.assertEquals(
       originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -87,7 +87,7 @@ public class DeleteTests
     }
 
     // verify the deletion
-    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
     Assert.assertEquals(originalCount, objs.size());
     Assert.assertFalse(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
   }
@@ -117,7 +117,7 @@ try
     String rootPrefix = TestUtils.addPrefix("delete-retry-dir/");
     int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
     URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
     Assert.assertEquals(5, uploaded.size());
     Assert.assertEquals(
       originalCount + uploaded.size(), TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -140,7 +140,7 @@ try
       _client.setRetryCount(retryCount);
       DeleteOptions.getAbortCounters().setInjectionCounter(abortCount);
 
-      List<S3File> files = _client.deleteDir(opts).get();
+      List<StoreFile> files = _client.deleteDir(opts).get();
       Assert.assertEquals(5, files.size());
       Assert.assertEquals(abortCount, getRetryCount());
     }
@@ -176,7 +176,7 @@ catch(Throwable t)
     int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
     File toUpload = TestUtils.createTextFile(100);
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, dest);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
     Assert.assertEquals(
       originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -189,7 +189,7 @@ catch(Throwable t)
         .createDeleteOptions();
     f = _client.delete(opts).get();
     Assert.assertNull(f);
-    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
     Assert.assertEquals(originalCount + 1, objs.size());
     Assert.assertTrue(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
   }
@@ -213,7 +213,7 @@ try
     String rootPrefix = TestUtils.addPrefix("delete-dryrun-dir/");
     int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
     URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
     Assert.assertEquals(2, uploaded.size());
     Assert.assertEquals(
       originalCount + 2, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -225,9 +225,9 @@ try
         .setRecursive(true)
         .setDryRun(true)
         .createDeleteOptions();
-    List<S3File> files = _client.deleteDir(opts).get();
+    List<StoreFile> files = _client.deleteDir(opts).get();
     Assert.assertNull(files);
-    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
     Assert.assertEquals(originalCount + 2, objs.size());
 
     String topN = rootPrefix + top.getName() + "/";
@@ -268,12 +268,12 @@ try
     File e = TestUtils.createTextFile(sub2, 100);
 
     String rootPrefix = TestUtils.addPrefix("delete-basics-" + count + "/");
-    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
     int originalCount = objs.size();
 
     // upload the directory
     URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
     Assert.assertEquals(5, uploaded.size());
     int uploadCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
     Assert.assertEquals(uploaded.size(), uploadCount);
@@ -306,7 +306,7 @@ try
         .setObjectKey(Utils.getObjectKey(uri))
         .setForceDelete(true)
         .createDeleteOptions();
-    S3File f = _client.delete(opts).get();
+    StoreFile f = _client.delete(opts).get();
     Assert.assertNotNull(f);
     Assert.assertEquals(uploadCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
 
@@ -340,7 +340,7 @@ try
         .setRecursive(true)
         .setForceDelete(true)
         .createDeleteOptions();
-    List<S3File> files = _client.deleteDir(opts).get();
+    List<StoreFile> files = _client.deleteDir(opts).get();
     Assert.assertTrue(files.isEmpty());
     Assert.assertEquals(uploadCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
     

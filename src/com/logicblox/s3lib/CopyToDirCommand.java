@@ -32,7 +32,7 @@ public class CopyToDirCommand extends Command
     _dryRun = dryRun;
   }
 
-  public ListenableFuture<List<S3File>> run(final CopyOptions options)
+  public ListenableFuture<List<StoreFile>> run(final CopyOptions options)
       throws ExecutionException, InterruptedException, IOException, URISyntaxException {
     if (!options.getDestinationKey().endsWith("/") && !options.getDestinationKey().equals(""))
       throw new UsageException("Destination directory key should end with a '/'");
@@ -45,7 +45,7 @@ public class CopyToDirCommand extends Command
         baseDirPath = options.getSourceKey().substring(0, endIndex+1);
     }
 
-    List<ListenableFuture<S3File>> files = new ArrayList<>();
+    List<ListenableFuture<StoreFile>> files = new ArrayList<>();
 
     ListObjectsRequest req = new ListObjectsRequest()
       .withBucketName(options.getSourceBucketName())
@@ -73,12 +73,12 @@ public class CopyToDirCommand extends Command
     }
   }
 
-  private List<ListenableFuture<S3File>> copyBatch(List<S3ObjectSummary> lst,
+  private List<ListenableFuture<StoreFile>> copyBatch(List<S3ObjectSummary> lst,
                                                    CopyOptions options,
                                                    String baseDirPath)
     throws IOException
   {
-    List<ListenableFuture<S3File>> batch = new ArrayList<>();
+    List<ListenableFuture<StoreFile>> batch = new ArrayList<>();
 
     for (S3ObjectSummary obj : lst)
     {

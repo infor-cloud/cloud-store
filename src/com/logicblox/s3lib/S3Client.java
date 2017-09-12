@@ -11,8 +11,6 @@ import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
 
@@ -256,7 +254,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> upload(UploadOptions options)
+  public ListenableFuture<StoreFile> upload(UploadOptions options)
       throws IOException
   {
     Optional<OverallProgressListenerFactory> progressListenerFactory = options
@@ -271,7 +269,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> upload(File file, String bucket, String
+  public ListenableFuture<StoreFile> upload(File file, String bucket, String
       object, String key, CannedAccessControlList acl)
   throws IOException
   {
@@ -287,14 +285,14 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> upload(File file, URI s3url)
+  public ListenableFuture<StoreFile> upload(File file, URI s3url)
   throws IOException
   {
     return upload(file, s3url, null);
   }
 
   @Override
-  public ListenableFuture<S3File> upload(File file, URI s3url, String key)
+  public ListenableFuture<StoreFile> upload(File file, URI s3url, String key)
       throws IOException
   {
     String bucket = Utils.getBucket(s3url);
@@ -303,7 +301,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> upload(File file, String bucket, String
+  public ListenableFuture<StoreFile> upload(File file, String bucket, String
       object)
   throws IOException
   {
@@ -311,7 +309,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> upload(File file, String bucket, String
+  public ListenableFuture<StoreFile> upload(File file, String bucket, String
       object, String key)
   throws IOException
   {
@@ -326,7 +324,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
+  public ListenableFuture<List<StoreFile>> uploadDirectory(UploadOptions options)
       throws IOException, ExecutionException, InterruptedException {
 
     File directory = options.getFile();
@@ -347,7 +345,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<List<S3File>> uploadDirectory(File directory, URI
+  public ListenableFuture<List<StoreFile>> uploadDirectory(File directory, URI
       s3url, String encKey)
           throws IOException, ExecutionException, InterruptedException {
     UploadOptions options = new UploadOptionsBuilder()
@@ -361,7 +359,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<List<S3File>> uploadDirectory(File directory, URI
+  public ListenableFuture<List<StoreFile>> uploadDirectory(File directory, URI
       s3url, String encKey, CannedAccessControlList acl)
           throws IOException, ExecutionException, InterruptedException {
     UploadOptions options = new UploadOptionsBuilder()
@@ -375,7 +373,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<List<S3File>> deleteDir(DeleteOptions opts)
+  public ListenableFuture<List<StoreFile>> deleteDir(DeleteOptions opts)
     throws InterruptedException, ExecutionException
   {
     DeleteDirCommand cmd =
@@ -385,7 +383,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> delete(DeleteOptions opts)
+  public ListenableFuture<StoreFile> delete(DeleteOptions opts)
   {
     DeleteCommand cmd =
       new DeleteCommand(_s3Executor, _executor, this, opts);
@@ -394,7 +392,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> delete(String bucket, String object)
+  public ListenableFuture<StoreFile> delete(String bucket, String object)
   {
     DeleteOptions opts = new DeleteOptionsBuilder()
       .setBucket(bucket)
@@ -404,7 +402,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> delete(URI s3url)
+  public ListenableFuture<StoreFile> delete(URI s3url)
   {
     DeleteOptions opts = new DeleteOptionsBuilder()
       .setBucket(Utils.getBucket(s3url))
@@ -416,12 +414,20 @@ public class S3Client implements CloudStoreClient {
   @Override
   public ListenableFuture<List<Bucket>> listBuckets()
   {
-      List<Bucket> result = _client.listBuckets();
-      return Futures.immediateFuture(result);
+    List<com.amazonaws.services.s3.model.Bucket> s3Buckets = _client.listBuckets();
+    List<Bucket> buckets = new ArrayList<Bucket>();
+    for(com.amazonaws.services.s3.model.Bucket b : s3Buckets)
+    {
+      buckets.add(new Bucket(
+        b.getName(),
+	b.getCreationDate(),
+        new Owner(b.getOwner().getId(), b.getOwner().getDisplayName())));
+    }
+    return Futures.immediateFuture(buckets);
   }
 
   @Override
-  public ListenableFuture<ObjectMetadata> exists(String bucket, String object)
+  public ListenableFuture<Metadata> exists(String bucket, String object)
   {
     ExistsCommand cmd = new ExistsCommand(_s3Executor, _executor);
     configure(cmd);
@@ -429,7 +435,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<ObjectMetadata> exists(URI s3url)
+  public ListenableFuture<Metadata> exists(URI s3url)
   {
     String bucket = Utils.getBucket(s3url);
     String object = Utils.getObjectKey(s3url);
@@ -437,7 +443,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> download(DownloadOptions options)
+  public ListenableFuture<StoreFile> download(DownloadOptions options)
   throws IOException
   {
     File file = options.getFile();
@@ -456,7 +462,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> download(File file, String bucket, String
+  public ListenableFuture<StoreFile> download(File file, String bucket, String
       object)
       throws IOException
   {
@@ -470,7 +476,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> download(
+  public ListenableFuture<StoreFile> download(
     File file, String bucket, String object, boolean overwrite)
       throws IOException
   {
@@ -485,7 +491,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> download(File file, URI s3url)
+  public ListenableFuture<StoreFile> download(File file, URI s3url)
           throws IOException
   {
     String bucket = Utils.getBucket(s3url);
@@ -494,7 +500,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> download(File file, URI s3url, boolean overwrite)
+  public ListenableFuture<StoreFile> download(File file, URI s3url, boolean overwrite)
           throws IOException
   {
     String bucket = Utils.getBucket(s3url);
@@ -503,7 +509,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<List<S3File>> downloadDirectory(DownloadOptions
+  public ListenableFuture<List<StoreFile>> downloadDirectory(DownloadOptions
                                                                 options)
   throws IOException, ExecutionException, InterruptedException
   {
@@ -525,7 +531,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<List<S3File>> downloadDirectory(
+  public ListenableFuture<List<StoreFile>> downloadDirectory(
       File directory, URI s3url, boolean recursive, boolean overwrite)
   throws IOException, ExecutionException, InterruptedException
   {
@@ -540,7 +546,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> copy(CopyOptions options)
+  public ListenableFuture<StoreFile> copy(CopyOptions options)
   {
     CopyCommand cmd = new CopyCommand(_s3Executor, _executor, options);
     configure(cmd);
@@ -549,7 +555,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<List<S3File>> copyToDir(CopyOptions options) throws
+  public ListenableFuture<List<StoreFile>> copyToDir(CopyOptions options) throws
       InterruptedException, ExecutionException, IOException,
       URISyntaxException {
     boolean dryRun = options.isDryRun();
@@ -560,7 +566,7 @@ public class S3Client implements CloudStoreClient {
   }
   
   @Override
-  public ListenableFuture<S3File> rename(RenameOptions options)
+  public ListenableFuture<StoreFile> rename(RenameOptions options)
   {
     RenameCommand cmd = new RenameCommand(
       _s3Executor, _executor, this, options);
@@ -569,7 +575,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<List<S3File>> renameDirectory(RenameOptions options)
+  public ListenableFuture<List<StoreFile>> renameDirectory(RenameOptions options)
     throws InterruptedException, ExecutionException, IOException
   {
     RenameDirectoryCommand cmd = new RenameDirectoryCommand(
@@ -579,8 +585,8 @@ public class S3Client implements CloudStoreClient {
   }
   
   @Override
-  public ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions) {
-    ListenableFuture<List<S3File>> results = null;
+  public ListenableFuture<List<StoreFile>> listObjects(ListOptions lsOptions) {
+    ListenableFuture<List<StoreFile>> results = null;
     if (lsOptions.versionsIncluded()) {
       ListVersionsCommand cmd = new ListVersionsCommand(_s3Executor, _executor);
       configure(cmd);
@@ -624,7 +630,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> addEncryptionKey(String bucket, String object, String key)
+  public ListenableFuture<StoreFile> addEncryptionKey(String bucket, String object, String key)
       throws IOException
   {
     AddEncryptionKeyCommand cmd = createAddKeyCommand(key);
@@ -641,7 +647,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> removeEncryptionKey(String bucket, String object, String key)
+  public ListenableFuture<StoreFile> removeEncryptionKey(String bucket, String object, String key)
     throws IOException
   {
     RemoveEncryptionKeyCommand cmd = createRemoveKeyCommand(key);

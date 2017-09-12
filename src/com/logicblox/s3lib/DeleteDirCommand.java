@@ -38,18 +38,18 @@ public class DeleteDirCommand extends Command
   }
 
 
-  public ListenableFuture<List<S3File>> run()
+  public ListenableFuture<List<StoreFile>> run()
     throws InterruptedException, ExecutionException
   {
-    ListenableFuture<List<S3File>> listObjs = queryFiles();
-    ListenableFuture<List<S3File>> result = Futures.transform(
+    ListenableFuture<List<StoreFile>> listObjs = queryFiles();
+    ListenableFuture<List<StoreFile>> result = Futures.transform(
       listObjs,
-      new AsyncFunction<List<S3File>, List<S3File>>()
+      new AsyncFunction<List<StoreFile>, List<StoreFile>>()
       {
-        public ListenableFuture<List<S3File>> apply(List<S3File> potential)
+        public ListenableFuture<List<StoreFile>> apply(List<StoreFile> potential)
         {
-          List<S3File> matches = new ArrayList<S3File>();
-          for(S3File f : potential)
+          List<StoreFile> matches = new ArrayList<StoreFile>();
+          for(StoreFile f : potential)
           {
             if(!f.getKey().endsWith("/"))
               matches.add(f);
@@ -60,7 +60,7 @@ public class DeleteDirCommand extends Command
               + getUri(_options.getBucket(), _options.getObjectKey()) + "'");
           }
 
-          List<ListenableFuture<S3File>> futures = prepareFutures(matches);
+          List<ListenableFuture<StoreFile>> futures = prepareFutures(matches);
 
           if(_options.isDryRun())
             return Futures.immediateFuture(null);
@@ -72,10 +72,10 @@ public class DeleteDirCommand extends Command
   }
 
 
-  private List<ListenableFuture<S3File>> prepareFutures(List<S3File> toDelete)
+  private List<ListenableFuture<StoreFile>> prepareFutures(List<StoreFile> toDelete)
   {
-    List<ListenableFuture<S3File>> futures = new ArrayList<ListenableFuture<S3File>>();
-    for(S3File src : toDelete)
+    List<ListenableFuture<StoreFile>> futures = new ArrayList<ListenableFuture<StoreFile>>();
+    for(StoreFile src : toDelete)
     {
       if(_options.isDryRun())
       {
@@ -95,7 +95,7 @@ public class DeleteDirCommand extends Command
   }
 
 
-  private ListenableFuture<List<S3File>> queryFiles()
+  private ListenableFuture<List<StoreFile>> queryFiles()
   {
     // find all files that need to be deleted
     ListOptions opts = new ListOptionsBuilder()

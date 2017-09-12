@@ -2,7 +2,6 @@ package com.logicblox.s3lib;
 
 
 import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -24,14 +23,14 @@ public class ExistsCommand extends Command
     _executor = internalExecutor;
   }
 
-  public ListenableFuture<ObjectMetadata> run(final String bucket, final String key)
+  public ListenableFuture<Metadata> run(final String bucket, final String key)
   {
-    ListenableFuture<ObjectMetadata> future =
+    ListenableFuture<Metadata> future =
       executeWithRetry(
         _executor,
-        new Callable<ListenableFuture<ObjectMetadata>>()
+        new Callable<ListenableFuture<Metadata>>()
         {
-          public ListenableFuture<ObjectMetadata> call()
+          public ListenableFuture<Metadata> call()
           {
             return runActual(bucket, key);
           }
@@ -47,9 +46,9 @@ public class ExistsCommand extends Command
     // null value.
     return Futures.withFallback(
       future,
-      new FutureFallback<ObjectMetadata>()
+      new FutureFallback<Metadata>()
       {
-        public ListenableFuture<ObjectMetadata> create(Throwable t)
+        public ListenableFuture<Metadata> create(Throwable t)
         {
           if(t instanceof AmazonS3Exception)
           {
@@ -64,18 +63,18 @@ public class ExistsCommand extends Command
       });    
   }
   
-  private ListenableFuture<ObjectMetadata> runActual(final String bucket, final String key)
+  private ListenableFuture<Metadata> runActual(final String bucket, final String key)
   {
     return _httpExecutor.submit(
-      new Callable<ObjectMetadata>()
+      new Callable<Metadata>()
       {
-        public ObjectMetadata call()
+        public Metadata call()
         {
           // Note: we on purpose do not catch the 404 exception here
           // to make sure that the retry facility works when the
           // --stubborn option is used, which retries client
           // exceptions as well.
-          return getAmazonS3Client().getObjectMetadata(bucket, key);
+          return new Metadata(getAmazonS3Client().getObjectMetadata(bucket, key));
         }
       });
   }

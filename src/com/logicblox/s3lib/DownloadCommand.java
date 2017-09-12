@@ -28,7 +28,6 @@ import javax.xml.bind.DatatypeConverter;
 
 import org.apache.commons.codec.digest.DigestUtils;
 
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.base.Optional;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
@@ -116,7 +115,7 @@ public class DownloadCommand extends Command
   }
 
   
-  public ListenableFuture<S3File> run(String bucket, String key, String version)
+  public ListenableFuture<StoreFile> run(String bucket, String key, String version)
   {
     if(_dryRun)
     {
@@ -125,12 +124,12 @@ public class DownloadCommand extends Command
       return Futures.immediateFuture(null);
     }
 
-    ListenableFuture<ObjectMetadata> existsFuture = _client.exists(bucket, key);
-    ListenableFuture<S3File> result = Futures.transform(
+    ListenableFuture<Metadata> existsFuture = _client.exists(bucket, key);
+    ListenableFuture<StoreFile> result = Futures.transform(
       existsFuture,
-      new AsyncFunction<ObjectMetadata,S3File>()
+      new AsyncFunction<Metadata,StoreFile>()
       {
-        public ListenableFuture<S3File> apply(ObjectMetadata mdata)
+        public ListenableFuture<StoreFile> apply(Metadata mdata)
           throws UsageException
         {
           if(null == mdata)
@@ -143,19 +142,19 @@ public class DownloadCommand extends Command
   }
 
 
-  private ListenableFuture<S3File> scheduleExecution(
+  private ListenableFuture<StoreFile> scheduleExecution(
     final String bucket, final String key, final String version)
   {
     ListenableFuture<AmazonDownload> download = startDownload(bucket, key, version);
     download = Futures.transform(download, startPartsAsyncFunction());
     download = Futures.transform(download, validate());
-    ListenableFuture<S3File> res = Futures.transform(
+    ListenableFuture<StoreFile> res = Futures.transform(
       download,
-      new Function<AmazonDownload, S3File>()
+      new Function<AmazonDownload, StoreFile>()
       {
-        public S3File apply(AmazonDownload download)
+        public StoreFile apply(AmazonDownload download)
         {
-          S3File f = new S3File();
+          StoreFile f = new StoreFile();
           f.setLocalFile(DownloadCommand.this.file);
           f.setETag(download.getETag());
           f.setBucketName(bucket);
@@ -167,9 +166,9 @@ public class DownloadCommand extends Command
 
     return Futures.withFallback(
       res,
-      new FutureFallback<S3File>()
+      new FutureFallback<StoreFile>()
       {
-        public ListenableFuture<S3File> create(Throwable t)
+        public ListenableFuture<StoreFile> create(Throwable t)
         {
           if(DownloadCommand.this.file.exists())
             DownloadCommand.this.file.delete();

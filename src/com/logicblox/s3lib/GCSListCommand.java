@@ -27,12 +27,12 @@ public class GCSListCommand extends Command
   }
 
 
-  public ListenableFuture<List<S3File>> run(final ListOptions lsOptions)
+  public ListenableFuture<List<StoreFile>> run(final ListOptions lsOptions)
   {
-    ListenableFuture<List<S3File>> future =
-        executeWithRetry(_executor, new Callable<ListenableFuture<List<S3File>>>()
+    ListenableFuture<List<StoreFile>> future =
+        executeWithRetry(_executor, new Callable<ListenableFuture<List<StoreFile>>>()
         {
-          public ListenableFuture<List<S3File>> call()
+          public ListenableFuture<List<StoreFile>> call()
           {
             return runActual(lsOptions);
           }
@@ -48,14 +48,14 @@ public class GCSListCommand extends Command
   }
   
 
-  private ListenableFuture<List<S3File>> runActual(final ListOptions lsOptions)
+  private ListenableFuture<List<StoreFile>> runActual(final ListOptions lsOptions)
   {
-    return _s3Executor.submit(new Callable<List<S3File>>()
+    return _s3Executor.submit(new Callable<List<StoreFile>>()
     {
-      public List<S3File> call()
+      public List<StoreFile> call()
         throws IOException
       {
-        List<S3File> s3files = new ArrayList<S3File>();
+        List<StoreFile> s3files = new ArrayList<StoreFile>();
         List<StorageObject> allObjs = new ArrayList<StorageObject>();
         Storage.Objects.List cmd = getGCSClient().objects().list(lsOptions.getBucket());
         cmd.setPrefix(lsOptions.getObjectKey());
@@ -74,15 +74,15 @@ public class GCSListCommand extends Command
         } while (objs.getNextPageToken() != null);
 
         for(StorageObject s : allObjs)
-          s3files.add(createS3File(s, ver));
+          s3files.add(createStoreFile(s, ver));
         return s3files;
       }
     });
   }
 
-  private S3File createS3File(StorageObject obj, boolean includeVersion)
+  private StoreFile createStoreFile(StorageObject obj, boolean includeVersion)
   {
-    S3File f = new S3File();
+    StoreFile f = new StoreFile();
     f.setKey(obj.getName());
     f.setETag(obj.getEtag());
     f.setBucketName(obj.getBucket());

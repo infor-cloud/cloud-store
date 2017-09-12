@@ -105,7 +105,7 @@ public class GCSUploadCommand extends Command {
     /**
      * Run ties Step 1, Step 2, and Step 3 together. The return result is the ETag of the upload.
      */
-    public ListenableFuture<S3File> run(final String bucket, final String key)
+    public ListenableFuture<StoreFile> run(final String bucket, final String key)
       throws FileNotFoundException
     {
         if (!file.exists())
@@ -127,15 +127,15 @@ public class GCSUploadCommand extends Command {
     }
 
     
-    private ListenableFuture<S3File> scheduleExecution()
+    private ListenableFuture<StoreFile> scheduleExecution()
     {
         ListenableFuture<Upload> upload = startUpload(bucket, key);
         upload = Futures.transform(upload, startPartsAsyncFunction());
         ListenableFuture<String> result = Futures.transform(upload, completeAsyncFunction());
         return Futures.transform(result,
-                new Function<String, S3File>() {
-                    public S3File apply(String etag) {
-                        S3File f = new S3File();
+                new Function<String, StoreFile>() {
+                    public StoreFile apply(String etag) {
+                        StoreFile f = new StoreFile();
                         f.setLocalFile(file);
                         f.setETag(etag);
                         f.setBucketName(bucket);

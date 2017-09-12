@@ -33,7 +33,7 @@ public class UploadDirectoryCommand extends Command
     _client = client;
   }
 
-  public ListenableFuture<List<S3File>> run(final File dir,
+  public ListenableFuture<List<StoreFile>> run(final File dir,
                                             final String bucket,
                                             final String object,
                                             final long chunkSize,
@@ -79,7 +79,7 @@ public class UploadDirectoryCommand extends Command
 
     Collection<File> found = FileUtils.listFiles(dir, noSymlinks, noSymlinks);
 
-    List<ListenableFuture<S3File>> files = new ArrayList<ListenableFuture<S3File>>();
+    List<ListenableFuture<StoreFile>> files = new ArrayList<ListenableFuture<StoreFile>>();
     for (File file : found)
     {
       String relPath = file.getPath().substring(dir.getPath().length()+1);

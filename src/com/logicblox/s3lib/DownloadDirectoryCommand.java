@@ -20,7 +20,7 @@ public class DownloadDirectoryCommand extends Command
   private ListeningExecutorService _httpExecutor;
   private ListeningScheduledExecutorService _executor;
   private CloudStoreClient _client;
-  private List<ListenableFuture<S3File>> _futures;
+  private List<ListenableFuture<StoreFile>> _futures;
   private java.util.Set<File> _filesToCleanup;
   private List<File> _dirsToCleanup;
   private boolean _dryRun = false;
@@ -34,12 +34,12 @@ public class DownloadDirectoryCommand extends Command
     _httpExecutor = httpExecutor;
     _executor = internalExecutor;
     _client = client;
-    _futures = new ArrayList<ListenableFuture<S3File>>();
+    _futures = new ArrayList<ListenableFuture<StoreFile>>();
     _filesToCleanup = new java.util.HashSet<File>();
     _dirsToCleanup = new ArrayList<File>();
   }
 
-  public ListenableFuture<List<S3File>> run(
+  public ListenableFuture<List<StoreFile>> run(
     File destination,
     String bucket,
     String key,
@@ -64,12 +64,12 @@ public class DownloadDirectoryCommand extends Command
       throw ex;
     }
 
-    ListenableFuture<List<S3File>> listObjs = querySourceFiles(bucket, key, recursive);
-    ListenableFuture<List<S3File>> result = Futures.transform(
+    ListenableFuture<List<StoreFile>> listObjs = querySourceFiles(bucket, key, recursive);
+    ListenableFuture<List<StoreFile>> result = Futures.transform(
       listObjs,
-      new AsyncFunction<List<S3File>, List<S3File>>()
+      new AsyncFunction<List<StoreFile>, List<StoreFile>>()
       {
-        public ListenableFuture<List<S3File>> apply(List<S3File> srcFiles)
+        public ListenableFuture<List<StoreFile>> apply(List<StoreFile> srcFiles)
           throws IOException
         {
           prepareFutures(srcFiles, destination, bucket, key, overwrite, progressFactory);
@@ -86,17 +86,17 @@ public class DownloadDirectoryCommand extends Command
   }
 
 
-  private ListenableFuture<List<S3File>> scheduleExecution()
+  private ListenableFuture<List<StoreFile>> scheduleExecution()
   {
     // Don't see a way to have all peer futures in the list fail and clean up if any
     // one fails, even if explicitly cancelled.  This seems to be the only way
     // to clean up all the newly created files reliably.
-    ListenableFuture<List<S3File>> futureList = Futures.allAsList(_futures);
+    ListenableFuture<List<StoreFile>> futureList = Futures.allAsList(_futures);
     return Futures.withFallback(
       futureList,
-      new FutureFallback<List<S3File>>()
+      new FutureFallback<List<StoreFile>>()
       {
-        public ListenableFuture<List<S3File>> create(Throwable t)
+        public ListenableFuture<List<StoreFile>> create(Throwable t)
         {
            cleanup();
            return Futures.immediateFailedFuture(t);
@@ -105,7 +105,7 @@ public class DownloadDirectoryCommand extends Command
   }
 
 
-  private ListenableFuture<List<S3File>> querySourceFiles(
+  private ListenableFuture<List<StoreFile>> querySourceFiles(
     String bucket, String key, boolean recursive)
   {
     // find all files that need to be downloaded
@@ -173,12 +173,12 @@ public class DownloadDirectoryCommand extends Command
   
   
   private void prepareFutures(
-    List<S3File> potentialFiles, File dest, String bucket, String srcKey, boolean overwrite,
+    List<StoreFile> potentialFiles, File dest, String bucket, String srcKey, boolean overwrite,
     OverallProgressListenerFactory progressFactory)
       throws IOException
   {
     File destAbs = dest.getAbsoluteFile();
-    for(S3File src : potentialFiles)
+    for(StoreFile src : potentialFiles)
     {
       String relFile = src.getKey().substring(srcKey.length());
       File outputFile = new File(destAbs, relFile);
@@ -246,7 +246,7 @@ public class DownloadDirectoryCommand extends Command
   private void cleanup()
   {
     // cancel any futures that may still be trying to run
-    for(ListenableFuture<S3File> f : _futures)
+    for(ListenableFuture<StoreFile> f : _futures)
       f.cancel(true);
     _futures.clear();
 

@@ -47,7 +47,7 @@ public class CopyCommand extends Command
       options.getOverallProgressListenerFactory().orNull());
   }
 
-  public ListenableFuture<S3File> run(final String sourceBucketName,
+  public ListenableFuture<StoreFile> run(final String sourceBucketName,
                                       final String sourceKey,
                                       final String destinationBucketName,
                                       final String destinationKey)
@@ -67,9 +67,9 @@ public class CopyCommand extends Command
         completeAsyncFunction());
       return Futures.transform(
         result,
-        new Function<String, S3File>() {
-          public S3File apply(String etag) {
-            S3File f = new S3File();
+        new Function<String, StoreFile>() {
+          public StoreFile apply(String etag) {
+            StoreFile f = new StoreFile();
             f.setLocalFile(null);
             f.setETag(etag);
             f.setBucketName(destinationBucketName);

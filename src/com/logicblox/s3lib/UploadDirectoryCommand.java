@@ -75,7 +75,7 @@ public class UploadDirectoryCommand extends Command
           .setFile(file)
           .setBucket(_options.getBucket())
           .setObjectKey(key)
-          .setChunkSize(chunkSize)
+          .setChunkSize(_options.getChunkSize())
           .setEncKey(_options.getEncKey().orNull())
           .setAcl(_options.getAcl().orNull())
           .setOverallProgressListenerFactory(_options

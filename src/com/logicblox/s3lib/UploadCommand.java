@@ -1,7 +1,6 @@
 package com.logicblox.s3lib;
 
 import java.io.InputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.BufferedInputStream;
@@ -26,7 +25,6 @@ import javax.xml.bind.DatatypeConverter;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
-import com.google.common.base.Optional;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.FutureFallback;
@@ -40,7 +38,7 @@ public class UploadCommand extends Command
   private String encKeyName;
   private String encryptedSymmetricKeyString;
   private String acl;
-  private Optional<OverallProgressListenerFactory> progressListenerFactory;
+  private OverallProgressListenerFactory progressListenerFactory;
   private String pubKeyHash;
 
   private ListeningExecutorService _uploadExecutor;
@@ -58,7 +56,7 @@ public class UploadCommand extends Command
     this.file = _options.getFile();
     setChunkSize(_options.getChunkSize());
     setFileLength(this.file.length());
-    this.encKeyName = _options.getEncKey().orNull();
+    this.encKeyName = _options.getEncKey().orElse(null);
 
     if (this.encKeyName != null) {
       byte[] encKeyBytes = new byte[32];
@@ -91,8 +89,8 @@ public class UploadCommand extends Command
       }
     }
 
-    this.acl = _options.getAcl().orNull();
-    this.progressListenerFactory = _options.getOverallProgressListenerFactory();
+    this.acl = _options.getAcl();
+    this.progressListenerFactory = _options.getOverallProgressListenerFactory().orElse(null);
   }
 
   /**
@@ -107,7 +105,7 @@ public class UploadCommand extends Command
     if(_options.isDryRun())
     {
       System.out.println("<DRYRUN> uploading '" + this.file.getAbsolutePath()
-        + "' to '" + getUri(_options.getBucket(), _options.getObjectKey()) + "'");
+                         + "' to '" + getUri(_options.getBucketName(), _options.getObjectKey()) + "'");
       return Futures.immediateFuture(null);
     }
     else
@@ -130,7 +128,7 @@ public class UploadCommand extends Command
           S3File f = new S3File();
           f.setLocalFile(file);
           f.setETag(etag);
-          f.setBucketName(_options.getBucket());
+          f.setBucketName(_options.getBucketName());
           f.setKey(_options.getObjectKey());
           return f;
         }
@@ -173,7 +171,7 @@ public class UploadCommand extends Command
 
         public String toString()
         {
-          return "starting upload " + _options.getBucket() + "/" + _options.getObjectKey();
+          return "starting upload " + _options.getBucketName() + "/" + _options.getObjectKey();
         }
       });
   }
@@ -193,7 +191,7 @@ public class UploadCommand extends Command
     meta.put("s3tool-chunk-size", Long.toString(chunkSize));
     meta.put("s3tool-file-length", Long.toString(fileLength));
 
-    return factory.startUpload(_options.getBucket(), _options.getObjectKey(), meta, acl, _options);
+    return factory.startUpload(_options.getBucketName(), _options.getObjectKey(), meta, acl, _options);
   }
 
   /**
@@ -213,8 +211,8 @@ public class UploadCommand extends Command
   private ListenableFuture<Upload> startParts(final Upload upload)
   {
     OverallProgressListener opl = null;
-    if (progressListenerFactory.isPresent()) {
-      opl = progressListenerFactory.get().create(
+    if (progressListenerFactory != null) {
+      opl = progressListenerFactory.create(
           new ProgressOptionsBuilder()
               .setObjectUri(getUri(upload.getBucket(), upload.getKey()))
               .setOperation("upload")
@@ -324,8 +322,7 @@ public class UploadCommand extends Command
       }
     };
 
-    return upload.uploadPart(partNumber, partSize, inputStreamCallable,
-        Optional.fromNullable(opl));
+    return upload.uploadPart(partNumber, partSize, inputStreamCallable, opl);
   }
 
   /**

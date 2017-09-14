@@ -11,7 +11,6 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import javax.xml.bind.DatatypeConverter;
 
 import com.amazonaws.event.ProgressListener;
-import com.google.common.base.Optional;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -53,7 +52,7 @@ class MultipartAmazonUpload implements Upload
   public ListenableFuture<Void> uploadPart(int partNumber,
                                            long partSize,
                                            Callable<InputStream> stream,
-                                           Optional<OverallProgressListener>
+                                           OverallProgressListener
                                                progressListener)
   {
     return executor.submit(new UploadCallable(partNumber, partSize, stream,
@@ -135,12 +134,12 @@ class MultipartAmazonUpload implements Upload
     private int partNumber;
     private long partSize;
     private Callable<InputStream> streamCallable;
-    private Optional<OverallProgressListener> progressListener;
+    private OverallProgressListener progressListener;
 
     public UploadCallable(int partNumber,
                           long partSize,
                           Callable<InputStream> streamCallable,
-                          Optional<OverallProgressListener> progressListener)
+                          OverallProgressListener progressListener)
     {
       this.partNumber = partNumber;
       this.partSize = partSize;
@@ -181,11 +180,9 @@ class MultipartAmazonUpload implements Upload
       // partSize+1.
       req.getRequestClientOptions().setReadLimit(Ints.checkedCast(partSize+1));
 
-      if (progressListener.isPresent()) {
-        PartProgressEvent ppe = new PartProgressEvent(Integer.toString
-            (partNumber));
-        ProgressListener s3pl = new S3ProgressListener(progressListener.get(),
-            ppe);
+      if (progressListener != null) {
+        PartProgressEvent ppe = new PartProgressEvent(Integer.toString(partNumber));
+        ProgressListener s3pl = new S3ProgressListener(progressListener, ppe);
         req.setGeneralProgressListener(s3pl);
       }
 

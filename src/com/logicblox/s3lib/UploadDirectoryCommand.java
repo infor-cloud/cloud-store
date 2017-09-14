@@ -73,19 +73,19 @@ public class UploadDirectoryCommand extends Command
       UploadOptions options = new UploadOptionsBuilder()
           .setCloudStoreClient(_options.getCloudStoreClient())
           .setFile(file)
-          .setBucket(_options.getBucket())
+          .setBucketName(_options.getBucketName())
           .setObjectKey(key)
           .setChunkSize(_options.getChunkSize())
-          .setEncKey(_options.getEncKey().orNull())
-          .setAcl(_options.getAcl().orNull())
+          .setEncKey(_options.getEncKey().orElse(null))
+          .setAcl(_options.getAcl())
           .setOverallProgressListenerFactory(_options
-            .getOverallProgressListenerFactory().orNull())
+            .getOverallProgressListenerFactory().orElse(null))
           .createUploadOptions();
 
       if(_dryRun)
       {
         System.out.println("<DRYRUN> uploading '" + file.getAbsolutePath()
-            + "' to '" + getUri(_options.getBucket(), key) + "'");
+                           + "' to '" + getUri(_options.getBucketName(), key) + "'");
       }
       else
       {

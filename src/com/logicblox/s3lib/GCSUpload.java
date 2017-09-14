@@ -4,7 +4,6 @@ import com.google.api.client.googleapis.media.MediaHttpUploaderProgressListener;
 import com.google.api.client.http.InputStreamContent;
 import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.model.StorageObject;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -53,7 +52,7 @@ class GCSUpload implements Upload {
     public ListenableFuture<Void> uploadPart(int partNumber,
                                              long partSize,
                                              Callable<InputStream> stream,
-                                             Optional<OverallProgressListener>
+                                             OverallProgressListener
                                                  progressListener) {
         // added to support retry testing
         options.injectAbort(uploadId);
@@ -106,12 +105,12 @@ class GCSUpload implements Upload {
         private int partNumber;
         private long partSize;
         private Callable<InputStream> streamCallable;
-        private Optional<OverallProgressListener> progressListener;
+        private OverallProgressListener progressListener;
 
         public UploadCallable(int partNumber,
                               long partSize,
                               Callable<InputStream> streamCallable,
-                              Optional<OverallProgressListener> progressListener) {
+                              OverallProgressListener progressListener) {
             this.partNumber = partNumber;
             this.partSize = partSize;
             this.streamCallable = streamCallable;
@@ -148,10 +147,10 @@ class GCSUpload implements Upload {
             insertObject.getMediaHttpUploader().setDisableGZipContent(true);
 //              .setDisableGZipContent(true).setDirectUploadEnabled(true);
 
-            if (progressListener.isPresent()) {
+            if (progressListener != null) {
                 PartProgressEvent ppe = new PartProgressEvent(Integer.toString(partNumber));
                 MediaHttpUploaderProgressListener gcspl =
-                    new GCSProgressListener(progressListener.get(), ppe);
+                    new GCSProgressListener(progressListener, ppe);
                 insertObject.getMediaHttpUploader()
                     .setProgressListener(gcspl);
             }

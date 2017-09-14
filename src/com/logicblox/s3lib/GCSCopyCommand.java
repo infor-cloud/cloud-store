@@ -30,9 +30,9 @@ public class GCSCopyCommand extends Command
     if(_options.isDryRun())
     {
       System.out.println("<DRYRUN> copying '"
-        + getUri(_options.getSourceBucketName(), _options.getSourceKey())
-        + "' to '"
-        + getUri(_options.getDestinationBucketName(), _options.getDestinationKey()) + "'");
+                         + getUri(_options.getSourceBucketName(), _options.getSourceObjectKey())
+                         + "' to '"
+                         + getUri(_options.getDestinationBucketName(), _options.getDestinationObjectKey()) + "'");
       return Futures.immediateFuture(null);
     }
     else
@@ -48,8 +48,9 @@ public class GCSCopyCommand extends Command
           public String toString()
           {
             return "copying object from "
-                + getUri(_options.getSourceBucketName(), _options.getSourceKey()) + " to "
-                + getUri(_options.getDestinationBucketName(), _options.getDestinationKey());
+                   + getUri(_options.getSourceBucketName(), _options
+              .getSourceObjectKey()) + " to "
+                   + getUri(_options.getDestinationBucketName(), _options.getDestinationObjectKey());
           }
         });
     
@@ -65,15 +66,15 @@ public class GCSCopyCommand extends Command
       public S3File call() throws IOException
       {
         // support for testing failures
-        String srcUri = getUri(_options.getSourceBucketName(), _options.getSourceKey());
+        String srcUri = getUri(_options.getSourceBucketName(), _options.getSourceObjectKey());
         _options.injectAbort(srcUri);
 
         StorageObject objectMetadata = null;
-        Map<String,String> userMetadata = _options.getUserMetadata().orNull();
+        Map<String,String> userMetadata = _options.getUserMetadata().orElse(null);
         if (userMetadata != null)
         {
           Storage.Objects.Get get = getGCSClient().objects().get(
-            _options.getSourceBucketName(), _options.getSourceKey());
+            _options.getSourceBucketName(), _options.getSourceObjectKey());
           StorageObject sourceObject = get.execute();
           // Map<String,String> sourceUserMetadata = sourceObject.getMetadata();
 
@@ -86,8 +87,8 @@ public class GCSCopyCommand extends Command
         }
 
         Storage.Objects.Copy cmd = getGCSClient().objects().copy(
-          _options.getSourceBucketName(), _options.getSourceKey(),
-          _options.getDestinationBucketName(), _options.getDestinationKey(),
+          _options.getSourceBucketName(), _options.getSourceObjectKey(),
+          _options.getDestinationBucketName(), _options.getDestinationObjectKey(),
           objectMetadata);
         StorageObject resp = cmd.execute();
         return createS3File(resp, false);

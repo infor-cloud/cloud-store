@@ -8,7 +8,6 @@ import com.amazonaws.services.s3.model.CopyPartRequest;
 import com.amazonaws.services.s3.model.CopyPartResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PartETag;
-import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -27,24 +26,24 @@ class MultipartAmazonCopy implements Copy
   private ConcurrentMap<Integer, PartETag> etags = new ConcurrentSkipListMap<Integer, PartETag>();
   private AmazonS3 client;
   private String sourceBucketName;
-  private String sourceKey;
+  private String sourceObjectKey;
   private String destinationBucketName;
-  private String destinationKey;
+  private String destinationObjectKey;
   private String uploadId;
   private ObjectMetadata meta;
   private ListeningExecutorService executor;
 
   public MultipartAmazonCopy(AmazonS3 client,
-                             String sourceBucketName, String sourceKey,
-                             String destinationBucketName, String destinationKey,
+                             String sourceBucketName, String sourceObjectKey,
+                             String destinationBucketName, String destinationObjectKey,
                              String uploadId,
                              ObjectMetadata meta,
                              ListeningExecutorService executor)
   {
     this.sourceBucketName = sourceBucketName;
-    this.sourceKey = sourceKey;
+    this.sourceObjectKey = sourceObjectKey;
     this.destinationBucketName = destinationBucketName;
-    this.destinationKey = destinationKey;
+    this.destinationObjectKey = destinationObjectKey;
     this.client = client;
     this.uploadId = uploadId;
     this.meta = meta;
@@ -52,7 +51,7 @@ class MultipartAmazonCopy implements Copy
   }
 
   public ListenableFuture<Void> copyPart(int partNumber, Long startByte, Long
-      endByte, Optional<OverallProgressListener> progressListener)
+      endByte, OverallProgressListener progressListener)
   {
     return executor.submit(new CopyCallable(partNumber, startByte, endByte,
         progressListener));
@@ -63,24 +62,24 @@ class MultipartAmazonCopy implements Copy
     return executor.submit(new CompleteCallable());
   }
 
-  public String getSourceBucket()
+  public String getSourceBucketName()
   {
     return sourceBucketName;
   }
 
-  public String getSourceKey()
+  public String getSourceObjectKey()
   {
-    return sourceKey;
+    return sourceObjectKey;
   }
 
-  public String getDestinationBucket()
+  public String getDestinationBucketName()
   {
     return destinationBucketName;
   }
 
-  public String getDestinationKey()
+  public String getDestinationObjectKey()
   {
-    return destinationKey;
+    return destinationObjectKey;
   }
 
   public Long getObjectSize()
@@ -101,7 +100,7 @@ class MultipartAmazonCopy implements Copy
       CompleteMultipartUploadRequest req;
 
       req = new CompleteMultipartUploadRequest(destinationBucketName,
-          destinationKey, uploadId, new ArrayList<PartETag>(etags.values()));
+          destinationObjectKey, uploadId, new ArrayList<PartETag>(etags.values()));
       ByteArrayOutputStream os = new ByteArrayOutputStream();
       for (Integer pNum : etags.keySet()) {
         os.write(DatatypeConverter.parseHexBinary(etags.get(pNum).getETag()));
@@ -116,7 +115,7 @@ class MultipartAmazonCopy implements Copy
       }
       else {
         throw new BadHashException("Failed checksum validation for " +
-            destinationBucketName + "/" + destinationKey + ". " +
+            destinationBucketName + "/" + destinationObjectKey + ". " +
             "Calculated MD5: " + multipartDigest +
             ", Expected MD5: " + res.getETag());
       }
@@ -128,10 +127,10 @@ class MultipartAmazonCopy implements Copy
     private int partNumber;
     private Long startByte;
     private Long endByte;
-    private Optional<OverallProgressListener> progressListener;
+    private OverallProgressListener progressListener;
 
     public CopyCallable(int partNumber, Long startByte, Long endByte,
-                        Optional<OverallProgressListener> progressListener)
+                        OverallProgressListener progressListener)
     {
       this.partNumber = partNumber;
       this.startByte = startByte;
@@ -143,19 +142,17 @@ class MultipartAmazonCopy implements Copy
     {
       CopyPartRequest req = new CopyPartRequest()
           .withSourceBucketName(sourceBucketName)
-          .withSourceKey(sourceKey)
+          .withSourceKey(sourceObjectKey)
           .withDestinationBucketName(destinationBucketName)
-          .withDestinationKey(destinationKey)
+          .withDestinationKey(destinationObjectKey)
           .withUploadId(uploadId)
           .withFirstByte(startByte)
           .withLastByte(endByte)
           .withPartNumber(partNumber + 1);
       
-      if (progressListener.isPresent()) {
-        PartProgressEvent ppe = new PartProgressEvent(Integer.toString
-            (partNumber));
-        ProgressListener s3pl = new S3ProgressListener(progressListener.get(),
-            ppe);
+      if (progressListener != null) {
+        PartProgressEvent ppe = new PartProgressEvent(Integer.toString(partNumber));
+        ProgressListener s3pl = new S3ProgressListener(progressListener, ppe);
         req.setGeneralProgressListener(s3pl);
       }
 

@@ -32,7 +32,7 @@ public class ListCommand extends Command {
           
           public String toString() {
             return "listing objects and directories for "
-                + getUri(_options.getBucket(), _options.getObjectKey());
+                + getUri(_options.getBucketName(), _options.getObjectKey().orElse(""));
           }
         });
     
@@ -44,8 +44,8 @@ public class ListCommand extends Command {
 
       public List<S3File> call() {
         ListObjectsRequest req = new ListObjectsRequest()
-            .withBucketName(_options.getBucket())
-            .withPrefix(_options.getObjectKey());
+            .withBucketName(_options.getBucketName())
+            .withPrefix(_options.getObjectKey().orElse(null));
         if (! _options.isRecursive()) {
           req.setDelimiter("/");
         }
@@ -54,20 +54,20 @@ public class ListCommand extends Command {
         ObjectListing current = getAmazonS3Client().listObjects(req);
         appendS3ObjectSummaryList(all, current.getObjectSummaries());
         if (! _options.dirsExcluded()) {
-          appendS3DirStringList(all, current.getCommonPrefixes(), _options.getBucket());
+          appendS3DirStringList(all, current.getCommonPrefixes(), _options.getBucketName());
         }
         current = getAmazonS3Client().listNextBatchOfObjects(current);
         
         while (current.isTruncated()) {
           appendS3ObjectSummaryList(all, current.getObjectSummaries());
           if (! _options.dirsExcluded()) {
-            appendS3DirStringList(all, current.getCommonPrefixes(), _options.getBucket());
+            appendS3DirStringList(all, current.getCommonPrefixes(), _options.getBucketName());
           }
           current = getAmazonS3Client().listNextBatchOfObjects(current);
         }
         appendS3ObjectSummaryList(all, current.getObjectSummaries());
         if (! _options.dirsExcluded()) {
-          appendS3DirStringList(all, current.getCommonPrefixes(), _options.getBucket());
+          appendS3DirStringList(all, current.getCommonPrefixes(), _options.getBucketName());
         }
         
         return all;

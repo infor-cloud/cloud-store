@@ -40,7 +40,7 @@ public class GCSListCommand extends Command
           public String toString()
           {
             return "listing objects and directories for "
-                + getUri(_options.getBucket(), _options.getObjectKey());
+                + getUri(_options.getBucketName(), _options.getObjectKey().orElse(""));
           }
         });
     
@@ -57,8 +57,8 @@ public class GCSListCommand extends Command
       {
         List<S3File> s3files = new ArrayList<S3File>();
         List<StorageObject> allObjs = new ArrayList<StorageObject>();
-        Storage.Objects.List cmd = getGCSClient().objects().list(_options.getBucket());
-        cmd.setPrefix(_options.getObjectKey());
+        Storage.Objects.List cmd = getGCSClient().objects().list(_options.getBucketName());
+        cmd.setPrefix(_options.getObjectKey().orElse(null));
         if(!_options.isRecursive())
           cmd.setDelimiter("/");
         boolean ver = _options.versionsIncluded();

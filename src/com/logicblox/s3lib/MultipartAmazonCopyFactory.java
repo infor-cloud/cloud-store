@@ -31,64 +31,64 @@ class MultipartAmazonCopyFactory
   }
 
   public ListenableFuture<Copy> startCopy(String sourceBucketName,
-                                          String sourceKey,
+                                          String sourceObjectKey,
                                           String destinationBucketName,
-                                          String destinationKey,
+                                          String destinationObjectKey,
                                           String cannedAcl,
                                           Map<String, String> _userMetadata,
                                           String storageClass)
   {
-    return executor.submit(new StartCallable(sourceBucketName, sourceKey,
-      destinationBucketName, destinationKey, cannedAcl, _userMetadata, storageClass));
+    return executor.submit(new StartCallable(sourceBucketName, sourceObjectKey,
+      destinationBucketName, destinationObjectKey, cannedAcl, _userMetadata, storageClass));
   }
 
   public ListenableFuture<Copy> startCopy(String sourceBucketName,
-                                          String sourceKey,
+                                          String sourceObjectKey,
                                           String destinationBucketName,
-                                          String destinationKey,
+                                          String destinationObjectKey,
                                           AccessControlList acl,
                                           Map<String, String> _userMetadata,
                                           String storageClass)
   {
-    return executor.submit(new StartCallable(sourceBucketName, sourceKey,
-      destinationBucketName, destinationKey, acl, _userMetadata, storageClass));
+    return executor.submit(new StartCallable(sourceBucketName, sourceObjectKey,
+      destinationBucketName, destinationObjectKey, acl, _userMetadata, storageClass));
   }
 
   private class StartCallable implements Callable<Copy>
   {
     private String sourceBucketName;
-    private String sourceKey;
+    private String sourceObjectKey;
     private String destinationBucketName;
-    private String destinationKey;
+    private String destinationObjectKey;
     private String cannedAcl;
     private AccessControlList acl;
     private String storageClass;
     private Map<String, String> userMetadata;
 
-    public StartCallable(String sourceBucketName, String sourceKey,
-                         String destinationBucketName, String destinationKey,
+    public StartCallable(String sourceBucketName, String sourceObjectKey,
+                         String destinationBucketName, String destinationObjectKey,
                          String cannedAcl, Map<String, String> userMetadata,
                          String storageClass)
     {
       this.sourceBucketName = sourceBucketName;
-      this.sourceKey = sourceKey;
+      this.sourceObjectKey = sourceObjectKey;
       this.destinationBucketName = destinationBucketName;
-      this.destinationKey = destinationKey;
+      this.destinationObjectKey = destinationObjectKey;
       this.cannedAcl = cannedAcl;
       this.userMetadata = userMetadata;
       this.storageClass = storageClass;
     }
 
-    public StartCallable(String sourceBucketName, String sourceKey,
-                         String destinationBucketName, String destinationKey,
+    public StartCallable(String sourceBucketName, String sourceObjectKey,
+                         String destinationBucketName, String destinationObjectKey,
                          AccessControlList acl,
                          Map<String, String> userMetadata,
                          String storageClass)
     {
       this.sourceBucketName = sourceBucketName;
-      this.sourceKey = sourceKey;
+      this.sourceObjectKey = sourceObjectKey;
       this.destinationBucketName = destinationBucketName;
-      this.destinationKey = destinationKey;
+      this.destinationObjectKey = destinationObjectKey;
       this.acl = acl;
       this.userMetadata = userMetadata;
       this.storageClass = storageClass;
@@ -97,7 +97,7 @@ class MultipartAmazonCopyFactory
     public Copy call() throws Exception
     {
       ObjectMetadata metadata = client.getObjectMetadata(sourceBucketName,
-        sourceKey);
+        sourceObjectKey);
 
       if (userMetadata != null)
       {
@@ -119,7 +119,7 @@ class MultipartAmazonCopyFactory
       }
 
       InitiateMultipartUploadRequest req = new InitiateMultipartUploadRequest
-          (destinationBucketName, destinationKey, metadata);
+          (destinationBucketName, destinationObjectKey, metadata);
       if (cannedAcl != null)
       {
         req.setCannedACL(getCannedAcl(cannedAcl));
@@ -131,8 +131,8 @@ class MultipartAmazonCopyFactory
         req.setAccessControlList(acl);
       }
       InitiateMultipartUploadResult res = client.initiateMultipartUpload(req);
-      return new MultipartAmazonCopy(client, sourceBucketName, sourceKey,
-          destinationBucketName, destinationKey, res.getUploadId(), metadata,
+      return new MultipartAmazonCopy(client, sourceBucketName, sourceObjectKey,
+          destinationBucketName, destinationObjectKey, res.getUploadId(), metadata,
           executor);
     }
 

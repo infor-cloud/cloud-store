@@ -17,7 +17,7 @@ public class PendingUploadsOptionsBuilder
     return this;
   }
 
-  public PendingUploadsOptionsBuilder setBucket(String bucket)
+  public PendingUploadsOptionsBuilder setBucketName(String bucket)
   {
     _bucket = bucket;
     return this;
@@ -43,6 +43,16 @@ public class PendingUploadsOptionsBuilder
 
   public PendingUploadsOptions createPendingUploadsOptions()
   {
+    if (_cloudStoreClient == null) {
+      throw new UsageException("CloudStoreClient has to be set");
+    }
+    else if (_bucket == null) {
+      throw new UsageException("Bucket has to be set");
+    }
+    else if (_objectKey == null) {
+      throw new UsageException("Object key has to be set");
+    }
+
     return new PendingUploadsOptions(_cloudStoreClient, _bucket, _objectKey,
       _uploadId, _date);
   }

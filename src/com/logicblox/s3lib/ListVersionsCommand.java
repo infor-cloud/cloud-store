@@ -36,7 +36,7 @@ public class ListVersionsCommand extends Command {
           
           public String toString() {
             return "listing objects and directories for "
-                + getUri(_options.getBucket(), _options.getObjectKey());
+                + getUri(_options.getBucketName(), _options.getObjectKey().orElse(""));
           }
         });
     
@@ -49,8 +49,8 @@ public class ListVersionsCommand extends Command {
       
       public List<S3File> call() {
         ListVersionsRequest req = new ListVersionsRequest()
-            .withBucketName(_options.getBucket())
-            .withPrefix(_options.getObjectKey());
+            .withBucketName(_options.getBucketName())
+            .withPrefix(_options.getObjectKey().orElse(null));
         if (! _options.isRecursive()) {
           req.setDelimiter("/");
         }
@@ -59,20 +59,20 @@ public class ListVersionsCommand extends Command {
         VersionListing current = getAmazonS3Client().listVersions(req);
         appendVersionSummaryList(all, current.getVersionSummaries());
         if (! _options.dirsExcluded()) {
-          appendVersionsDirStringList(all, current.getCommonPrefixes(), _options.getBucket());
+          appendVersionsDirStringList(all, current.getCommonPrefixes(), _options.getBucketName());
         }
         current = getAmazonS3Client().listNextBatchOfVersions(current);
         
         while (current.isTruncated()) {
           appendVersionSummaryList(all, current.getVersionSummaries());
           if (! _options.dirsExcluded()) {
-            appendVersionsDirStringList(all, current.getCommonPrefixes(), _options.getBucket());
+            appendVersionsDirStringList(all, current.getCommonPrefixes(), _options.getBucketName());
           }
           current = getAmazonS3Client().listNextBatchOfVersions(current);
         }
         appendVersionSummaryList(all, current.getVersionSummaries());
         if (! _options.dirsExcluded()) {
-          appendVersionsDirStringList(all, current.getCommonPrefixes(), _options.getBucket());
+          appendVersionsDirStringList(all, current.getCommonPrefixes(), _options.getBucketName());
         }
         
         return all;

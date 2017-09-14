@@ -2,7 +2,6 @@ package com.logicblox.s3lib;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
-import com.google.common.base.Optional;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -43,7 +42,7 @@ public class GCSUploadCommand extends Command {
     private String key;
     private String bucket;
 
-    private Optional<OverallProgressListenerFactory> progressListenerFactory;
+    private OverallProgressListenerFactory progressListenerFactory;
     private String pubKeyHash;
 
     
@@ -57,9 +56,9 @@ public class GCSUploadCommand extends Command {
         this.file = _options.getFile();
         setChunkSize(_options.getChunkSize());
         setFileLength(this.file.length());
-        this.encKeyName = _options.getEncKey().orNull();
+        this.encKeyName = _options.getEncKey().orElse(null);
 
-        this.bucket = _options.getBucket();
+        this.bucket = _options.getBucketName();
         this.key = _options.getObjectKey();
 
         if (this.encKeyName != null) {
@@ -88,8 +87,8 @@ public class GCSUploadCommand extends Command {
             }
         }
 
-        this.acl = _options.getAcl().orNull();
-        this.progressListenerFactory = _options.getOverallProgressListenerFactory();
+        this.acl = _options.getAcl();
+        this.progressListenerFactory = _options.getOverallProgressListenerFactory().orElse(null);
     }
 
     /**
@@ -178,8 +177,8 @@ public class GCSUploadCommand extends Command {
 
     private ListenableFuture<Upload> startParts(final Upload upload) {
         OverallProgressListener opl = null;
-        if (progressListenerFactory.isPresent()) {
-            opl = progressListenerFactory.get().create(
+        if (progressListenerFactory != null) {
+            opl = progressListenerFactory.create(
                 new ProgressOptionsBuilder()
                     .setObjectUri(getUri(upload.getBucket(), upload.getKey()))
                     .setOperation("upload")
@@ -262,8 +261,7 @@ public class GCSUploadCommand extends Command {
             }
         };
 
-        return upload.uploadPart(partNumber, partSize, inputStreamCallable,
-            Optional.fromNullable(opl));
+        return upload.uploadPart(partNumber, partSize, inputStreamCallable, opl);
     }
 
     /**

@@ -39,7 +39,7 @@ public class ListPendingUploadsCommand extends Command
 
           public String toString()
           {
-            return "list pending uploads of " + getUri(_options.getBucket(),
+            return "list pending uploads of " + getUri(_options.getBucketName(),
               _options.getObjectKey());
           }
         });
@@ -55,7 +55,7 @@ public class ListPendingUploadsCommand extends Command
         public List<Upload> call()
         {
           ListMultipartUploadsRequest listMultipartUploadsRequest =
-              new ListMultipartUploadsRequest(_options.getBucket());
+              new ListMultipartUploadsRequest(_options.getBucketName());
 
           listMultipartUploadsRequest.setPrefix(_options.getObjectKey());
 
@@ -67,7 +67,7 @@ public class ListPendingUploadsCommand extends Command
           {
             appendMultipartUploadList(uploadsList,
                 multipartUploadListing.getMultipartUploads(),
-                _options.getBucket());
+                _options.getBucketName());
             listMultipartUploadsRequest.setKeyMarker(
                 multipartUploadListing.getNextKeyMarker());
             multipartUploadListing = getAmazonS3Client()
@@ -75,7 +75,7 @@ public class ListPendingUploadsCommand extends Command
           }
           appendMultipartUploadList(uploadsList,
               multipartUploadListing.getMultipartUploads(),
-              _options.getBucket());
+              _options.getBucketName());
 
           return uploadsList;
         }

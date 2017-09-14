@@ -5,8 +5,6 @@ import java.io.File;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.HashSet;
 import java.util.concurrent.ExecutionException;
 import junit.framework.Assert;
 import org.junit.AfterClass;
@@ -89,9 +87,9 @@ try
     CopyOptions copyOpts = new CopyOptionsBuilder()
        .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
-       .setSourceKey(topN)
+       .setSourceObjectKey(topN)
        .setDestinationBucketName(_testBucket)
-       .setDestinationKey(copyTopN)
+       .setDestinationObjectKey(copyTopN)
        .setRecursive(true)
        .createCopyOptions();
     boolean oldGlobalFlag = false;
@@ -173,9 +171,9 @@ catch(Throwable t)
       CopyOptions copyOpts = new CopyOptionsBuilder()
        .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
-       .setSourceKey(f.getKey())
+       .setSourceObjectKey(f.getKey())
        .setDestinationBucketName(_testBucket)
-       .setDestinationKey(f.getKey() + "-COPY")
+       .setDestinationObjectKey(f.getKey() + "-COPY")
        .createCopyOptions();
       S3File copy = _client.copy(copyOpts).get();
       Assert.assertEquals(abortCount, getRetryCount());
@@ -218,9 +216,9 @@ catch(Throwable t)
     CopyOptions opts = new CopyOptionsBuilder()
        .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
-       .setSourceKey(f.getKey())
+       .setSourceObjectKey(f.getKey())
        .setDestinationBucketName(_testBucket)
-       .setDestinationKey(f.getKey() + "-COPY")
+       .setDestinationObjectKey(f.getKey() + "-COPY")
        .setDryRun(true)
        .createCopyOptions();
     S3File copy = _client.copy(opts).get();
@@ -259,9 +257,9 @@ try
     CopyOptions copyOpts = new CopyOptionsBuilder()
        .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
-       .setSourceKey(topN)
+       .setSourceObjectKey(topN)
        .setDestinationBucketName(_testBucket)
-       .setDestinationKey(copyTopN)
+       .setDestinationObjectKey(copyTopN)
        .setRecursive(false)
        .setDryRun(true)
        .createCopyOptions();
@@ -306,9 +304,9 @@ catch(Throwable t)
     CopyOptions copyOpts = new CopyOptionsBuilder()
        .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
-       .setSourceKey(f.getKey())
+       .setSourceObjectKey(f.getKey())
        .setDestinationBucketName(_testBucket)
-       .setDestinationKey(f.getKey() + "-COPY")
+       .setDestinationObjectKey(f.getKey() + "-COPY")
        .createCopyOptions();
     S3File copy = _client.copy(copyOpts).get();
     String expectedKey = TestUtils.addPrefix("simple-copy/" + toUpload.getName() + "-COPY");
@@ -379,9 +377,9 @@ catch(Throwable t)
     CopyOptions copyOpts = new CopyOptionsBuilder()
        .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
-       .setSourceKey(f1.getKey())
+       .setSourceObjectKey(f1.getKey())
        .setDestinationBucketName(_testBucket)
-       .setDestinationKey(f2.getKey())
+       .setDestinationObjectKey(f2.getKey())
        .createCopyOptions();
     S3File copy = _client.copy(copyOpts).get();
     String expectedKey = TestUtils.addPrefix("copy-overwrite-file/" + file2.getName());
@@ -454,9 +452,9 @@ try
     CopyOptions copyOpts = new CopyOptionsBuilder()
        .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
-       .setSourceKey(f.getKey())
+       .setSourceObjectKey(f.getKey())
        .setDestinationBucketName(_testBucket)
-       .setDestinationKey(expectedKey)
+       .setDestinationObjectKey(expectedKey)
        .createCopyOptions();
     S3File copy = _client.copy(copyOpts).get();
     Assert.assertEquals(expectedKey, copy.getKey());
@@ -524,9 +522,9 @@ try
     CopyOptions copyOpts = new CopyOptionsBuilder()
        .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
-       .setSourceKey(f.getKey())
+       .setSourceObjectKey(f.getKey())
        .setDestinationBucketName(_testBucket)
-       .setDestinationKey(expectedKey)
+       .setDestinationObjectKey(expectedKey)
        .createCopyOptions();
     List<S3File> copy = _client.copyToDir(copyOpts).get();
     Assert.assertEquals(1, copy.size());
@@ -579,9 +577,9 @@ catch(Throwable t)
     CopyOptions copyOpts = new CopyOptionsBuilder()
        .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
-       .setSourceKey(f.getKey())
+       .setSourceObjectKey(f.getKey())
        .setDestinationBucketName(bucket2)
-       .setDestinationKey(f.getKey())
+       .setDestinationObjectKey(f.getKey())
        .createCopyOptions();
     S3File copy = _client.copy(copyOpts).get();
 
@@ -602,7 +600,7 @@ catch(Throwable t)
     DownloadOptions dlOpts = new DownloadOptionsBuilder()
       .setCloudStoreClient(_client)
       .setFile(dlTemp)
-      .setBucket(Utils.getBucket(src))
+      .setBucketName(Utils.getBucket(src))
       .setObjectKey(Utils.getObjectKey(src))
       .setRecursive(false)
       .setOverwrite(true)
@@ -650,9 +648,9 @@ try
     CopyOptions copyOpts = new CopyOptionsBuilder()
        .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
-       .setSourceKey(topN)
+       .setSourceObjectKey(topN)
        .setDestinationBucketName(_testBucket)
-       .setDestinationKey(copyTopN)
+       .setDestinationObjectKey(copyTopN)
        .setRecursive(false)
        .createCopyOptions();
     List<S3File> copy = _client.copyToDir(copyOpts).get();
@@ -671,9 +669,9 @@ try
     copyOpts = new CopyOptionsBuilder()
        .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
-       .setSourceKey(topN)
+       .setSourceObjectKey(topN)
        .setDestinationBucketName(_testBucket)
-       .setDestinationKey(copyTopN2)
+       .setDestinationObjectKey(copyTopN2)
        .setRecursive(true)
        .createCopyOptions();
     copy = _client.copyToDir(copyOpts).get();
@@ -738,9 +736,9 @@ try
     CopyOptions copyOpts = new CopyOptionsBuilder()
        .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
-       .setSourceKey(topN)
+       .setSourceObjectKey(topN)
        .setDestinationBucketName(missingBucketName)
-       .setDestinationKey(topN)
+       .setDestinationObjectKey(topN)
        .setRecursive(true)
        .createCopyOptions();
     String msg = null;
@@ -810,9 +808,9 @@ try
     CopyOptions copyOpts = new CopyOptionsBuilder()
        .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
-       .setSourceKey(topN)
+       .setSourceObjectKey(topN)
        .setDestinationBucketName(bucket2)
-       .setDestinationKey(topN)
+       .setDestinationObjectKey(topN)
        .setRecursive(false)
        .createCopyOptions();
     List<S3File> copy = _client.copyToDir(copyOpts).get();
@@ -834,9 +832,9 @@ try
     copyOpts = new CopyOptionsBuilder()
        .setCloudStoreClient(_client)
        .setSourceBucketName(_testBucket)
-       .setSourceKey(topN)
+       .setSourceObjectKey(topN)
        .setDestinationBucketName(bucket2)
-       .setDestinationKey(copyTopN)
+       .setDestinationObjectKey(copyTopN)
        .setRecursive(true)
        .createCopyOptions();
     copy = _client.copyToDir(copyOpts).get();

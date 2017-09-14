@@ -1,22 +1,20 @@
 package com.logicblox.s3lib;
 
-import com.google.common.base.Optional;
-
 /**
  * {@code RenameOptionsBuilder} is a builder for {@code RenameOptions} objects.
  * <p>
- * Setting {@code sourceBucket}, {@code sourceKey}, {@code
- * destinationBucket} and {@code destinationKey} is mandatory. All the
+ * Setting {@code sourceBucketName}, {@code sourceObjectKey}, {@code
+ * destinationBucket} and {@code destinationObjectKey} is mandatory. All the
  * others are optional.
  */
 public class RenameOptionsBuilder
 {
   private CloudStoreClient _cloudStoreClient;
-  private String _sourceBucket;
-  private String _sourceKey;
-  private String _destinationBucket;
-  private String _destinationKey;
-  private Optional<String> _cannedAcl = Optional.absent();
+  private String _sourceBucketName;
+  private String _sourceObjectKey;
+  private String _destinationBucketName;
+  private String _destinationObjectKey;
+  private String _cannedAcl;
   private boolean _recursive = false;
   private boolean _dryRun = false;
 
@@ -25,33 +23,33 @@ public class RenameOptionsBuilder
     return this;
   }
 
-  public RenameOptionsBuilder setSourceBucket(String sourceBucket)
+  public RenameOptionsBuilder setSourceBucketName(String sourceBucketName)
   {
-    _sourceBucket = sourceBucket;
+    _sourceBucketName = sourceBucketName;
     return this;
   }
 
-  public RenameOptionsBuilder setSourceKey(String sourceKey)
+  public RenameOptionsBuilder setSourceObjectKey(String sourceObjectKey)
   {
-    _sourceKey = sourceKey;
+    _sourceObjectKey = sourceObjectKey;
     return this;
   }
 
-  public RenameOptionsBuilder setDestinationBucket(String destinationBucket)
+  public RenameOptionsBuilder setDestinationBucketName(String destinationBucket)
   {
-    _destinationBucket = destinationBucket;
+    _destinationBucketName = destinationBucket;
     return this;
   }
 
-  public RenameOptionsBuilder setDestinationKey(String destinationKey)
+  public RenameOptionsBuilder setDestinationObjectKey(String destinationObjectKey)
   {
-    _destinationKey = destinationKey;
+    _destinationObjectKey = destinationObjectKey;
     return this;
   }
 
   public RenameOptionsBuilder setCannedAcl(String cannedAcl)
   {
-    _cannedAcl = Optional.fromNullable(cannedAcl);
+    _cannedAcl = cannedAcl;
     return this;
   }
 
@@ -69,8 +67,24 @@ public class RenameOptionsBuilder
 
   public RenameOptions createRenameOptions()
   {
-    return new RenameOptions(_cloudStoreClient,
-      _sourceBucket, _sourceKey, _destinationBucket, _destinationKey,
+    if (_cloudStoreClient == null) {
+      throw new UsageException("CloudStoreClient has to be set");
+    }
+    else if (_sourceBucketName == null) {
+      throw new UsageException("Source bucket name has to be set");
+    }
+    else if (_sourceObjectKey == null) {
+      throw new UsageException("Source object key has to be set");
+    }
+    else if (_destinationBucketName == null) {
+      throw new UsageException("Destination bucket name key has to be set");
+    }
+    else if (_destinationObjectKey == null) {
+      throw new UsageException("Destination object key has to be set");
+    }
+
+    return new RenameOptions(_cloudStoreClient, _sourceBucketName,
+      _sourceObjectKey, _destinationBucketName, _destinationObjectKey,
       _cannedAcl, _recursive, _dryRun);
   }
 }

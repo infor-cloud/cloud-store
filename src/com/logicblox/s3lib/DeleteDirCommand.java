@@ -3,8 +3,6 @@ package com.logicblox.s3lib;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +40,7 @@ public class DeleteDirCommand extends Command
           if(!_options.forceDelete() && matches.isEmpty())
           {
             throw new UsageException("No objects found that match '"
-              + getUri(_options.getBucket(), _options.getObjectKey()) + "'");
+                                     + getUri(_options.getBucketName(), _options.getObjectKey()) + "'");
           }
 
           List<ListenableFuture<S3File>> futures = prepareFutures(matches);
@@ -71,7 +69,7 @@ public class DeleteDirCommand extends Command
       {
         DeleteOptions opts = new DeleteOptionsBuilder()
           .setCloudStoreClient(_client)
-          .setBucket(src.getBucketName())
+          .setBucketName(src.getBucketName())
           .setObjectKey(src.getKey())
           .createDeleteOptions();
         futures.add(_client.delete(opts));
@@ -86,7 +84,7 @@ public class DeleteDirCommand extends Command
     // find all files that need to be deleted
     ListOptions opts = new ListOptionsBuilder()
         .setCloudStoreClient(_client)
-        .setBucket(_options.getBucket())
+        .setBucketName(_options.getBucketName())
         .setObjectKey(_options.getObjectKey())
         .setRecursive(_options.isRecursive())
         .createListOptions();

@@ -1,9 +1,7 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.services.rds.model.Option;
-import com.google.common.base.Optional;
-
 import java.io.File;
+import java.util.Optional;
 
 /**
  * {@code UploadOptions} contains all the details needed by the upload
@@ -34,12 +32,11 @@ public class UploadOptions {
     private String bucket;
     private String objectKey;
     private long chunkSize = -1;
-    private Optional<String> encKey;
-    private Optional<String> acl;
+    private String encKey;
+    private String acl;
     private boolean dryRun;
     private boolean ignoreAbortInjection;
-    private Optional<OverallProgressListenerFactory>
-        overallProgressListenerFactory;
+    private OverallProgressListenerFactory overallProgressListenerFactory;
 
     // for testing
     private static AbortCounters _abortCounters = new AbortCounters();
@@ -50,12 +47,12 @@ public class UploadOptions {
                   String bucket,
                   String objectKey,
                   long chunkSize,
-                  Optional<String> encKey,
-                  Optional<String> acl,
+                  String encKey,
+                  String acl,
                   boolean dryRun,
                   boolean ignoreAbortInjection,
-                  Optional<OverallProgressListenerFactory>
-                      overallProgressListenerFactory) {
+                  OverallProgressListenerFactory
+                    overallProgressListenerFactory) {
         this.cloudStoreClient = cloudStoreClient;
         this.file = file;
         this.bucket = bucket;
@@ -92,7 +89,7 @@ public class UploadOptions {
         return file;
     }
 
-    public String getBucket() {
+    public String getBucketName() {
         return bucket;
     }
 
@@ -110,17 +107,13 @@ public class UploadOptions {
         return chunkSize;
     }
 
-    public Optional<String> getEncKey() {
-        return encKey;
-    }
-
-    public Optional<String> getAcl() {
-        if (!acl.isPresent()) {
+    public String getAcl() {
+        if (acl == null) {
             if (cloudStoreClient.getScheme().equals("s3")) {
-                acl = Optional.of("bucket-owner-full-control");
+                acl = "bucket-owner-full-control";
             }
             else if (cloudStoreClient.getScheme().equals("gs")) {
-                acl = Optional.of("projectPrivate");
+                acl = "projectPrivate";
             }
         }
         return acl;
@@ -130,8 +123,12 @@ public class UploadOptions {
         return dryRun;
     }
 
+    public Optional<String> getEncKey() {
+        return Optional.ofNullable(encKey);
+    }
+
     public Optional<OverallProgressListenerFactory>
     getOverallProgressListenerFactory() {
-        return overallProgressListenerFactory;
+        return Optional.ofNullable(overallProgressListenerFactory);
     }
 }

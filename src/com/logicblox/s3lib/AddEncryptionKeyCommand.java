@@ -66,7 +66,7 @@ public class AddEncryptionKeyCommand extends Command
             return Futures.immediateFailedFuture(t);
           }
           return Futures.immediateFailedFuture(new Exception("Error " +
-              "adding new encryption key to " + getUri(_options.getBucket(),
+              "adding new encryption key to " + getUri(_options.getBucketName(),
             _options.getObjectKey())+ ".", t));
         }
       });
@@ -89,7 +89,7 @@ public class AddEncryptionKeyCommand extends Command
         public String toString()
         {
           return "Starting addition of new encryption key to " +
-                 getUri(_options.getBucket(), _options.getObjectKey());
+                 getUri(_options.getBucketName(), _options.getObjectKey());
         }
       });
   }
@@ -98,7 +98,7 @@ public class AddEncryptionKeyCommand extends Command
   {
     S3ObjectMetadataFactory f = new S3ObjectMetadataFactory(getAmazonS3Client(),
       _httpExecutor);
-    ListenableFuture<S3ObjectMetadata> metadataFactory = f.create(_options.getBucket(), _options.getObjectKey(),
+    ListenableFuture<S3ObjectMetadata> metadataFactory = f.create(_options.getBucketName(), _options.getObjectKey(),
       null);
 
     AsyncFunction<S3ObjectMetadata, S3ObjectMetadata> checkMetadata = new
@@ -342,9 +342,9 @@ public class AddEncryptionKeyCommand extends Command
                   CopyOptions options = new CopyOptionsBuilder()
                     .setCloudStoreClient(_client)
                     .setSourceBucketName(metadata.getBucket())
-                    .setSourceKey(metadata.getKey())
+                    .setSourceObjectKey(metadata.getKey())
                     .setDestinationBucketName(metadata.getBucket())
-                    .setDestinationKey(metadata.getKey())
+                    .setDestinationObjectKey(metadata.getKey())
                     .setS3Acl(acl)
                     .setUserMetadata(metadata.getUserMetadata())
                     .createCopyOptions();

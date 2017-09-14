@@ -32,7 +32,7 @@ public class EncryptionKeyOptions
     return _cloudStoreClient;
   }
 
-  public String getBucket()
+  public String getBucketName()
   {
     return _bucket;
   }

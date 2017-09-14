@@ -20,7 +20,7 @@ public class RenameCommand extends Command
   {
     _options = options;
     _client = _options.getCloudStoreClient();
-    _acl = _options.getCannedAcl().orNull();
+    _acl = _options.getCannedAcl();
   }
 
 
@@ -51,8 +51,8 @@ public class RenameCommand extends Command
       {
         DeleteOptions deleteOpts = new DeleteOptionsBuilder()
           .setCloudStoreClient(_options.getCloudStoreClient())
-          .setBucket(_options.getDestinationBucket())
-          .setObjectKey(_options.getDestinationKey())
+          .setBucketName(_options.getDestinationBucketName())
+          .setObjectKey(_options.getDestinationObjectKey())
           .setForceDelete(true)
           .setIgnoreAbortInjection(true)
           .createDeleteOptions();
@@ -77,7 +77,7 @@ public class RenameCommand extends Command
   private ListenableFuture<S3File> buildFutureChain()
   {
     ListenableFuture<ObjectMetadata> sourceExists = 
-      _client.exists(_options.getSourceBucket(), _options.getSourceKey());
+      _client.exists(_options.getSourceBucketName(), _options.getSourceObjectKey());
 
     return Futures.transform(
       sourceExists,
@@ -98,7 +98,7 @@ public class RenameCommand extends Command
   private ListenableFuture<S3File> checkDestExists()
   {
     ListenableFuture<ObjectMetadata> destExists = 
-      _client.exists(_options.getDestinationBucket(), getDestKey());
+      _client.exists(_options.getDestinationBucketName(), getDestKey());
     return Futures.transform(
       destExists,
       new AsyncFunction<ObjectMetadata,S3File>()
@@ -144,7 +144,7 @@ public class RenameCommand extends Command
         public S3File apply(S3File deletedFile)
         {
           return new S3File(
-            _options.getDestinationBucket(), getDestKey());
+            _options.getDestinationBucketName(), getDestKey());
         }
       }
     );
@@ -155,8 +155,8 @@ public class RenameCommand extends Command
   {
     DeleteOptions deleteOpts = new DeleteOptionsBuilder()
       .setCloudStoreClient(_options.getCloudStoreClient())
-      .setBucket(_options.getSourceBucket())
-      .setObjectKey(_options.getSourceKey())
+      .setBucketName(_options.getSourceBucketName())
+      .setObjectKey(_options.getSourceObjectKey())
       .createDeleteOptions();
 
     return _client.delete(deleteOpts);
@@ -167,10 +167,10 @@ public class RenameCommand extends Command
   {
     CopyOptions copyOpts = new CopyOptionsBuilder()
       .setCloudStoreClient(_options.getCloudStoreClient())
-      .setSourceBucketName(_options.getSourceBucket())
-      .setSourceKey(_options.getSourceKey())
-      .setDestinationBucketName(_options.getDestinationBucket())
-      .setDestinationKey(getDestKey())
+      .setSourceBucketName(_options.getSourceBucketName())
+      .setSourceObjectKey(_options.getSourceObjectKey())
+      .setDestinationBucketName(_options.getDestinationBucketName())
+      .setDestinationObjectKey(getDestKey())
       .setCannedAcl(_acl)
       .createCopyOptions();
 
@@ -180,11 +180,11 @@ public class RenameCommand extends Command
 
   private String getDestKey()
   {
-    String key = _options.getDestinationKey();
+    String key = _options.getDestinationObjectKey();
     if(key.endsWith("/"))
     {
       // moving a file into a folder....
-      String src = _options.getSourceKey();
+      String src = _options.getSourceObjectKey();
       int idx = src.lastIndexOf("/");
       if(-1 != idx)
         key = key + src.substring(idx + 1);
@@ -195,13 +195,13 @@ public class RenameCommand extends Command
 
   private String getSourceUri()
   {
-    return getUri(_options.getSourceBucket(), _options.getSourceKey());
+    return getUri(_options.getSourceBucketName(), _options.getSourceObjectKey());
   }
 
 
   private String getDestUri()
   {
-    return getUri(_options.getDestinationBucket(), getDestKey());
+    return getUri(_options.getDestinationBucketName(), getDestKey());
   }
 
 }

@@ -26,22 +26,22 @@ public class CopyToDirCommand extends Command
 
   public ListenableFuture<List<S3File>> run()
       throws ExecutionException, InterruptedException, IOException {
-    if (!_options.getDestinationKey().endsWith("/") && !_options.getDestinationKey().equals(""))
+    if (!_options.getDestinationObjectKey().endsWith("/") && !_options.getDestinationObjectKey().equals(""))
       throw new UsageException("Destination directory key should end with a '/'");
 
     String baseDirPath = "";
-    if (_options.getSourceKey().length() > 0)
+    if (_options.getSourceObjectKey().length() > 0)
     {
-      int endIndex = _options.getSourceKey().lastIndexOf("/");
+      int endIndex = _options.getSourceObjectKey().lastIndexOf("/");
       if (endIndex != -1)
-        baseDirPath = _options.getSourceKey().substring(0, endIndex+1);
+        baseDirPath = _options.getSourceObjectKey().substring(0, endIndex + 1);
     }
 
     List<ListenableFuture<S3File>> files = new ArrayList<>();
 
     ListObjectsRequest req = new ListObjectsRequest()
       .withBucketName(_options.getSourceBucketName())
-      .withPrefix(_options.getSourceKey());
+      .withPrefix(_options.getSourceObjectKey());
     if (!_options.isRecursive()) req.setDelimiter("/");
 
     ObjectListing current = getAmazonS3Client().listObjects(req);
@@ -76,15 +76,15 @@ public class CopyToDirCommand extends Command
       if (!obj.getKey().endsWith("/"))
       {
         String destKeyLastPart = obj.getKey().substring(baseDirPath.length());
-        String destKey = _options.getDestinationKey() + destKeyLastPart;
+        String destKey = _options.getDestinationObjectKey() + destKeyLastPart;
         CopyOptions options0 = new CopyOptionsBuilder()
             .setCloudStoreClient(_options.getCloudStoreClient())
             .setSourceBucketName(_options.getSourceBucketName())
-            .setSourceKey(obj.getKey())
+            .setSourceObjectKey(obj.getKey())
             .setDestinationBucketName(_options.getDestinationBucketName())
-            .setDestinationKey(destKey)
-            .setCannedAcl(_options.getCannedAcl().orNull())
-            .setStorageClass(_options.getStorageClass().orNull())
+            .setDestinationObjectKey(destKey)
+            .setCannedAcl(_options.getCannedAcl())
+            .setStorageClass(_options.getStorageClass().orElse(null))
             .createCopyOptions();
 
         if(_dryRun)

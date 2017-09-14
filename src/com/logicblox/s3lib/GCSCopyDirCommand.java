@@ -29,20 +29,20 @@ public class GCSCopyDirCommand extends Command
   public ListenableFuture<List<S3File>> run()
     throws IOException
   {
-    if(!_options.getDestinationKey().endsWith("/") && !_options.getDestinationKey().equals(""))
+    if(!_options.getDestinationObjectKey().endsWith("/") && !_options.getDestinationObjectKey().equals(""))
       throw new UsageException("Destination directory key should end with a '/'");
 
     String baseDirPath = "";
-    if(_options.getSourceKey().length() > 0)
+    if(_options.getSourceObjectKey().length() > 0)
     {
-      int endIndex = _options.getSourceKey().lastIndexOf("/");
+      int endIndex = _options.getSourceObjectKey().lastIndexOf("/");
       if(endIndex != -1)
-        baseDirPath = _options.getSourceKey().substring(0, endIndex+1);
+        baseDirPath = _options.getSourceObjectKey().substring(0, endIndex + 1);
     }
     final String baseDirPathF = baseDirPath;
 
     ListenableFuture<List<S3File>> listFuture = getListFuture(
-      _options.getSourceBucketName(), _options.getSourceKey(), _options.isRecursive());
+      _options.getSourceBucketName(), _options.getSourceObjectKey(), _options.isRecursive());
     ListenableFuture<List<S3File>> result = Futures.transform(
       listFuture,
       new AsyncFunction<List<S3File>, List<S3File>>()
@@ -70,7 +70,7 @@ public class GCSCopyDirCommand extends Command
     if(!src.getKey().endsWith("/"))
     {
       String destKeyLastPart = src.getKey().substring(baseDirPath.length());
-      final String destKey = _options.getDestinationKey() + destKeyLastPart;
+      final String destKey = _options.getDestinationObjectKey() + destKeyLastPart;
       if(_options.isDryRun())
       {
         System.out.println("<DRYRUN> copying '"
@@ -125,7 +125,7 @@ public class GCSCopyDirCommand extends Command
     //         we could then use client.listObjects() instead of all this....
     ListOptions listOpts = (new ListOptionsBuilder())
       .setCloudStoreClient(_options.getCloudStoreClient())
-      .setBucket(bucket)
+      .setBucketName(bucket)
       .setObjectKey(prefix)
       .setRecursive(isRecursive)
       .createListOptions();

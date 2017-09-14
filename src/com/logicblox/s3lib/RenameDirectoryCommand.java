@@ -31,8 +31,8 @@ public class RenameDirectoryCommand extends Command
   private ListenableFuture<List<S3File>> startCopyThenDelete()
     throws InterruptedException, ExecutionException, IOException
   {
-    final String bucket = _options.getDestinationBucket();
-    final String key = stripSlash(_options.getDestinationKey());
+    final String bucket = _options.getDestinationBucketName();
+    final String key = stripSlash(_options.getDestinationObjectKey());
        // exists command doesn't allow trailing slash
     ListenableFuture<ObjectMetadata> destExists = _client.exists(bucket, key);
     return Futures.transform(
@@ -67,13 +67,13 @@ public class RenameDirectoryCommand extends Command
   {
     CopyOptions copyOpts = new CopyOptionsBuilder()
        .setCloudStoreClient(_options.getCloudStoreClient())
-       .setSourceBucketName(_options.getSourceBucket())
-       .setSourceKey(_options.getSourceKey())
-       .setDestinationBucketName(_options.getDestinationBucket())
-       .setDestinationKey(_options.getDestinationKey())
+       .setSourceBucketName(_options.getSourceBucketName())
+       .setSourceObjectKey(_options.getSourceObjectKey())
+       .setDestinationBucketName(_options.getDestinationBucketName())
+       .setDestinationObjectKey(_options.getDestinationObjectKey())
        .setRecursive(_options.isRecursive())
        .setDryRun(_options.isDryRun())
-       .setCannedAcl(_options.getCannedAcl().orNull())
+       .setCannedAcl(_options.getCannedAcl())
        .createCopyOptions();
 
     // hack -- exceptions are a bit of a mess.  copyToDir throws all sorts of stuff that 
@@ -90,8 +90,8 @@ public class RenameDirectoryCommand extends Command
         {
           DeleteOptions delOpts = new DeleteOptionsBuilder()
             .setCloudStoreClient((_options.getCloudStoreClient()))
-            .setBucket(_options.getSourceBucket())
-            .setObjectKey(_options.getSourceKey())
+            .setBucketName(_options.getSourceBucketName())
+            .setObjectKey(_options.getSourceObjectKey())
             .setRecursive(_options.isRecursive())
             .setDryRun(_options.isDryRun())
             .createDeleteOptions();

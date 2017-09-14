@@ -1,7 +1,5 @@
 package com.logicblox.s3lib;
 
-import com.google.common.base.Optional;
-
 import java.io.File;
 
 
@@ -17,10 +15,9 @@ public class UploadOptionsBuilder {
     private String bucket;
     private String objectKey;
     private long chunkSize = -1;
-    private Optional<String> encKey = Optional.absent();
-    private Optional<String> acl = Optional.absent();
-    private Optional<OverallProgressListenerFactory>
-        overallProgressListenerFactory = Optional.absent();
+    private String encKey;
+    private String acl;
+    private OverallProgressListenerFactory overallProgressListenerFactory;
     private boolean dryRun = false;
     private boolean ignoreAbortInjection = false;
 
@@ -34,7 +31,7 @@ public class UploadOptionsBuilder {
         return this;
     }
 
-    public UploadOptionsBuilder setBucket(String bucket) {
+    public UploadOptionsBuilder setBucketName(String bucket) {
         this.bucket = bucket;
         return this;
     }
@@ -50,19 +47,18 @@ public class UploadOptionsBuilder {
     }
 
     public UploadOptionsBuilder setEncKey(String encKey) {
-        this.encKey = Optional.fromNullable(encKey);
+        this.encKey = encKey;
         return this;
     }
 
     public UploadOptionsBuilder setAcl(String acl) {
-        this.acl = Optional.fromNullable(acl);
+        this.acl = acl;
         return this;
     }
 
     public UploadOptionsBuilder setOverallProgressListenerFactory
         (OverallProgressListenerFactory overallProgressListenerFactory) {
-        this.overallProgressListenerFactory = Optional.fromNullable
-            (overallProgressListenerFactory);
+        this.overallProgressListenerFactory = overallProgressListenerFactory;
         return this;
     }
 
@@ -77,8 +73,19 @@ public class UploadOptionsBuilder {
     }
 
     public UploadOptions createUploadOptions() {
-        // TODO: Check that all mandatory fields have been set. All the rest
-        // should return Optional in the corresponding Options method.
+        if (cloudStoreClient == null) {
+            throw new UsageException("CloudStoreClient has to be set");
+        }
+        else if (file == null) {
+            throw new UsageException("File has to be set");
+        }
+        else if (bucket == null) {
+            throw new UsageException("Bucket has to be set");
+        }
+        else if (objectKey == null) {
+            throw new UsageException("Object key has to be set");
+        }
+
         return new UploadOptions(cloudStoreClient, file, bucket, objectKey,
           chunkSize, encKey, acl, dryRun, ignoreAbortInjection,
           overallProgressListenerFactory);

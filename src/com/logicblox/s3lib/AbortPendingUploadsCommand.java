@@ -76,7 +76,7 @@ public class AbortPendingUploadsCommand extends Command
     {
       Upload u = new MultipartAmazonUpload(
         getAmazonS3Client(),
-        _options.getBucket(),
+        _options.getBucketName(),
         _options.getObjectKey(),
         _uploadId,
         null,
@@ -92,7 +92,7 @@ public class AbortPendingUploadsCommand extends Command
 
     public String toString()
     {
-      return "aborting pending uploads of " + getUri(_options.getBucket(),
+      return "aborting pending uploads of " + getUri(_options.getBucketName(),
         _options.getObjectKey()) + ", initiated before " + _date;
     }
   }
@@ -110,7 +110,7 @@ public class AbortPendingUploadsCommand extends Command
     {
       Upload u = new MultipartAmazonUpload(
         getAmazonS3Client(),
-        _options.getBucket(),
+        _options.getBucketName(),
         _options.getObjectKey(),
         _uploadId,
         null,
@@ -122,7 +122,7 @@ public class AbortPendingUploadsCommand extends Command
 
     public String toString()
     {
-      return "aborting pending upload of " + getUri(_options.getBucket(),
+      return "aborting pending upload of " + getUri(_options.getBucketName(),
         _options.getObjectKey()) + ", with id " + _uploadId;
     }
   }
@@ -156,7 +156,7 @@ public class AbortPendingUploadsCommand extends Command
 
     public String toString()
     {
-      return "aborting pending uploads of " + getUri(_options.getBucket(),
+      return "aborting pending uploads of " + getUri(_options.getBucketName(),
         _options.getObjectKey()) + ", initiated before " + _date;
     }
   }

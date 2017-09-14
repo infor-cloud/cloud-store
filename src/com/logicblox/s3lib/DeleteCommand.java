@@ -3,14 +3,12 @@ package com.logicblox.s3lib;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 
 
 public class DeleteCommand extends Command
@@ -31,7 +29,7 @@ public class DeleteCommand extends Command
 
   public ListenableFuture<S3File> run()
   {
-    final String bucket = _options.getBucket();
+    final String bucket = _options.getBucketName();
     final String key = _options.getObjectKey();
     final boolean forceDelete = _options.forceDelete();
 
@@ -61,7 +59,7 @@ public class DeleteCommand extends Command
 
   private ListenableFuture<S3File> getDeleteFuture()
   {
-    final String bucket = _options.getBucket();
+    final String bucket = _options.getBucketName();
     final String key = _options.getObjectKey();
 
     ListenableFuture<S3File> deleteFuture = executeWithRetry(
@@ -84,7 +82,7 @@ public class DeleteCommand extends Command
 
   private ListenableFuture<S3File> runActual()
   {
-    final String srcUri = getUri(_options.getBucket(), _options.getObjectKey());
+    final String srcUri = getUri(_options.getBucketName(), _options.getObjectKey());
     if(_options.isDryRun())
     {
       System.out.println("<DRYRUN> deleting '" + srcUri + "'");
@@ -100,7 +98,7 @@ public class DeleteCommand extends Command
             // support for testing failures
             _options.injectAbort(srcUri);
 
-            String bucket = _options.getBucket();
+            String bucket = _options.getBucketName();
             String key = _options.getObjectKey();
             DeleteObjectRequest req = new DeleteObjectRequest(bucket, key);
             getAmazonS3Client().deleteObject(req);

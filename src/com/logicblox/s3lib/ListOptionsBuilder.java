@@ -13,7 +13,7 @@ public class ListOptionsBuilder {
     return this;
   }
 
-  public ListOptionsBuilder setBucket(String bucket) {
+  public ListOptionsBuilder setBucketName(String bucket) {
     this.bucket = bucket;
     return this;
   }
@@ -39,6 +39,13 @@ public class ListOptionsBuilder {
   }
   
   public ListOptions createListOptions() {
+    if (cloudStoreClient == null) {
+      throw new UsageException("CloudStoreClient has to be set");
+    }
+    else if (bucket == null) {
+      throw new UsageException("Bucket has to be set");
+    }
+
     return new ListOptions(cloudStoreClient, bucket, objectKey, recursive,
       includeVersions, excludeDirs);
   }

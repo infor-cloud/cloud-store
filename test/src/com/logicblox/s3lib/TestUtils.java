@@ -296,7 +296,7 @@ public class TestUtils
       
     ListOptionsBuilder builder = new ListOptionsBuilder()
       .setCloudStoreClient(_client)
-      .setBucket(bucket)
+      .setBucketName(bucket)
       .setRecursive(true)
       .setIncludeVersions(false)
       .setExcludeDirs(false);
@@ -313,7 +313,7 @@ public class TestUtils
   {
     DeleteOptions opts = new DeleteOptionsBuilder()
       .setCloudStoreClient(_client)
-      .setBucket(bucket)
+      .setBucketName(bucket)
       .setObjectKey(key)
       .createDeleteOptions();
     return _client.delete(opts).get();
@@ -324,7 +324,7 @@ public class TestUtils
   {
     DeleteOptions opts = new DeleteOptionsBuilder()
       .setCloudStoreClient(_client)
-      .setBucket(Utils.getBucket(uri))
+      .setBucketName(Utils.getBucket(uri))
       .setObjectKey(Utils.getObjectKey(uri))
       .createDeleteOptions();
     return _client.delete(opts).get();
@@ -349,9 +349,9 @@ public class TestUtils
     CopyOptions options = new CopyOptionsBuilder()
       .setCloudStoreClient(_client)
       .setSourceBucketName(bucket)
-      .setSourceKey(key)
+      .setSourceObjectKey(key)
       .setDestinationBucketName(bucket)
-      .setDestinationKey(key)
+      .setDestinationObjectKey(key)
       // .setS3Acl(acl)
       .setUserMetadata(userMetadata)
       .createCopyOptions();
@@ -366,7 +366,7 @@ public class TestUtils
     UploadOptions upOpts = new UploadOptionsBuilder()
       .setCloudStoreClient(_client)
       .setFile(src)
-      .setBucket(Utils.getBucket(dest))
+      .setBucketName(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .createUploadOptions();
     return _client.upload(upOpts).get();
@@ -379,7 +379,7 @@ public class TestUtils
     UploadOptions upOpts = new UploadOptionsBuilder()
       .setCloudStoreClient(_client)
       .setFile(src)
-      .setBucket(Utils.getBucket(dest))
+      .setBucketName(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .setEncKey(keyName)
       .createUploadOptions();
@@ -393,7 +393,7 @@ public class TestUtils
     UploadOptions upOpts = new UploadOptionsBuilder()
       .setCloudStoreClient(_client)
       .setFile(src)
-      .setBucket(Utils.getBucket(dest))
+      .setBucketName(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .createUploadOptions();
     return _client.uploadDirectory(upOpts).get();
@@ -414,7 +414,7 @@ public class TestUtils
     DownloadOptions dlOpts = new DownloadOptionsBuilder()
       .setCloudStoreClient(_client)
       .setFile(dest)
-      .setBucket(Utils.getBucket(src))
+      .setBucketName(Utils.getBucket(src))
       .setObjectKey(Utils.getObjectKey(src))
       .setRecursive(false)
       .setOverwrite(overwrite)
@@ -429,7 +429,7 @@ public class TestUtils
     DownloadOptions dlOpts = new DownloadOptionsBuilder()
       .setCloudStoreClient(_client)
       .setFile(dest)
-      .setBucket(Utils.getBucket(src))
+      .setBucketName(Utils.getBucket(src))
       .setObjectKey(Utils.getObjectKey(src))
       .setRecursive(recursive)
       .setOverwrite(true)
@@ -444,7 +444,7 @@ public class TestUtils
     DownloadOptions dlOpts = new DownloadOptionsBuilder()
       .setCloudStoreClient(_client)
       .setFile(dest)
-      .setBucket(Utils.getBucket(src))
+      .setBucketName(Utils.getBucket(src))
       .setObjectKey(Utils.getObjectKey(src))
       .setRecursive(recursive)
       .setOverwrite(overwrite)
@@ -472,7 +472,7 @@ public class TestUtils
   {
     ListOptionsBuilder builder = new ListOptionsBuilder()
       .setCloudStoreClient(_client)
-      .setBucket(bucket)
+      .setBucketName(bucket)
       .setRecursive(true)
       .setIncludeVersions(false)
       .setExcludeDirs(false);
@@ -686,7 +686,7 @@ public class TestUtils
   {
     EncryptionKeyOptions options = new EncryptionKeyOptionsBuilder()
       .setCloudStoreClient(_client)
-      .setBucket(bucket)
+      .setBucketName(bucket)
       .setObjectKey(objectKey)
       .setEncryptionKey(encryptionKey)
       .createEncryptionKeyOptions();
@@ -843,7 +843,7 @@ public class TestUtils
       String bucket = Utils.getBucket(destUri);
       ListOptionsBuilder builder = new ListOptionsBuilder()
         .setCloudStoreClient(_client)
-        .setBucket(bucket)
+        .setBucketName(bucket)
         .setRecursive(false)
         .setIncludeVersions(false)
         .setExcludeDirs(false)

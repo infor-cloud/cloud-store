@@ -1,6 +1,8 @@
 package com.logicblox.s3lib;
 
 
+import java.util.Optional;
+
 public class ListOptions {
   private CloudStoreClient cloudStoreClient;
   private String bucket;
@@ -27,12 +29,12 @@ public class ListOptions {
     return cloudStoreClient;
   }
 
-  public String getBucket() {
+  public String getBucketName() {
     return bucket;
   }
   
-  public String getObjectKey() {
-    return objectKey;
+  public Optional<String> getObjectKey() {
+    return Optional.ofNullable(objectKey);
   }
   
   public boolean isRecursive() {

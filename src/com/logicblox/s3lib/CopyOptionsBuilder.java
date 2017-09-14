@@ -1,34 +1,30 @@
 package com.logicblox.s3lib;
 
 import com.amazonaws.services.s3.model.AccessControlList;
-import com.google.common.base.Optional;
 
 import java.util.Map;
 
 /**
  * {@code CopyOptionsBuilder} is a builder for {@code CopyOptions} objects.
  * <p>
- * Setting {@code sourceBucketName}, {@code sourceKey}, {@code
- * destinationBucketName} and {@code destinationKey} is mandatory. All the
+ * Setting {@code sourceBucketName}, {@code sourceObjectKey}, {@code
+ * destinationBucketName} and {@code destinationObjectKey} is mandatory. All the
  * others are optional.
  */
 public class CopyOptionsBuilder {
     private CloudStoreClient cloudStoreClient;
     private String sourceBucketName;
-    private String sourceKey;
+    private String sourceObjectKey;
     private String destinationBucketName;
-    private String destinationKey;
-    // TODO(geo): Revise use of Optionals. E.g. it's not a good idea to use them
-    // as fields.
+    private String destinationObjectKey;
     private String storageClass;
     private boolean recursive = false;
-    private Optional<String> cannedAcl = Optional.absent();
-    private Optional<AccessControlList> s3Acl = Optional.absent();
-    private Optional<Map<String,String>> userMetadata = Optional.absent();
+    private String cannedAcl;
+    private AccessControlList s3Acl;
+    private Map<String,String> userMetadata;
     private boolean dryRun = false;
     private boolean ignoreAbortInjection = false;
-    private Optional<OverallProgressListenerFactory>
-        overallProgressListenerFactory = Optional.absent();
+    private OverallProgressListenerFactory overallProgressListenerFactory;
 
 
     public CopyOptionsBuilder setCloudStoreClient(CloudStoreClient client) {
@@ -41,8 +37,8 @@ public class CopyOptionsBuilder {
         return this;
     }
 
-    public CopyOptionsBuilder setSourceKey(String sourceKey) {
-        this.sourceKey = sourceKey;
+    public CopyOptionsBuilder setSourceObjectKey(String sourceObjectKey) {
+        this.sourceObjectKey = sourceObjectKey;
         return this;
     }
 
@@ -52,23 +48,23 @@ public class CopyOptionsBuilder {
         return this;
     }
 
-    public CopyOptionsBuilder setDestinationKey(String destinationKey) {
-        this.destinationKey = destinationKey;
+    public CopyOptionsBuilder setDestinationObjectKey(String destinationObjectKey) {
+        this.destinationObjectKey = destinationObjectKey;
         return this;
     }
 
     public CopyOptionsBuilder setCannedAcl(String cannedAcl) {
-        this.cannedAcl = Optional.fromNullable(cannedAcl);
+        this.cannedAcl = cannedAcl;
         return this;
     }
 
     public CopyOptionsBuilder setS3Acl(AccessControlList s3Acl) {
-        this.s3Acl = Optional.fromNullable(s3Acl);
+        this.s3Acl = s3Acl;
         return this;
     }
 
     public CopyOptionsBuilder setUserMetadata(Map<String,String> userMetadata) {
-        this.userMetadata = Optional.fromNullable(userMetadata);
+        this.userMetadata = userMetadata;
         return this;
     }
 
@@ -104,8 +100,24 @@ public class CopyOptionsBuilder {
     //    }
 
     public CopyOptions createCopyOptions() {
-        return new CopyOptions(cloudStoreClient, sourceBucketName, sourceKey,
-            destinationBucketName, destinationKey, cannedAcl, s3Acl, storageClass,
+        if (cloudStoreClient == null) {
+            throw new UsageException("CloudStoreClient has to be set");
+        }
+        else if (sourceBucketName == null) {
+            throw new UsageException("Source bucket name has to be set");
+        }
+        else if (sourceObjectKey == null) {
+            throw new UsageException("Source object key has to be set");
+        }
+        else if (destinationBucketName == null) {
+            throw new UsageException("Destination bucket name key has to be set");
+        }
+        else if (destinationObjectKey == null) {
+            throw new UsageException("Destination object key has to be set");
+        }
+
+        return new CopyOptions(cloudStoreClient, sourceBucketName, sourceObjectKey,
+            destinationBucketName, destinationObjectKey, cannedAcl, s3Acl, storageClass,
             recursive, dryRun, ignoreAbortInjection, userMetadata, overallProgressListenerFactory);
     }
 }

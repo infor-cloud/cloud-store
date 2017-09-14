@@ -14,16 +14,10 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
-
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.internal.Constants;
 
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -35,7 +29,6 @@ import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
 
 import com.amazonaws.AmazonServiceException;
 
@@ -421,9 +414,9 @@ class Main
       CopyOptions options = new CopyOptionsBuilder()
           .setCloudStoreClient(client)
           .setSourceBucketName(getSourceBucket())
-          .setSourceKey(getSourceObjectKey())
+          .setSourceObjectKey(getSourceObjectKey())
           .setDestinationBucketName(getDestinationBucket())
-          .setDestinationKey(getDestinationObjectKey())
+          .setDestinationObjectKey(getDestinationObjectKey())
           .setCannedAcl(cannedAcl)
           .setStorageClass(storageClass)
           .setRecursive(recursive)
@@ -503,10 +496,10 @@ class Main
 
       RenameOptions options = new RenameOptionsBuilder()
           .setCloudStoreClient(client)
-          .setSourceBucket(getSourceBucket())
-          .setSourceKey(getSourceObjectKey())
-          .setDestinationBucket(getDestinationBucket())
-          .setDestinationKey(getDestinationObjectKey())
+          .setSourceBucketName(getSourceBucket())
+          .setSourceObjectKey(getSourceObjectKey())
+          .setDestinationBucketName(getDestinationBucket())
+          .setDestinationObjectKey(getDestinationObjectKey())
           .setCannedAcl(cannedAcl)
           .setRecursive(recursive)
           .setDryRun(dryRun)
@@ -583,7 +576,7 @@ class Main
       UploadOptionsBuilder uob = new UploadOptionsBuilder();
       uob.setCloudStoreClient(client)
           .setFile(f)
-          .setBucket(getBucket())
+          .setBucketName(getBucket())
           .setObjectKey(getObjectKey())
           .setChunkSize(chunkSize)
           .setEncKey(encKeyName)
@@ -631,7 +624,7 @@ class Main
       CloudStoreClient client = createCloudStoreClient();
       ListOptionsBuilder lob = new ListOptionsBuilder()
           .setCloudStoreClient(client)
-          .setBucket(getBucket())
+          .setBucketName(getBucket())
           .setObjectKey(getObjectKey())
           .setRecursive(recursive)
           .setIncludeVersions(includeVersions)
@@ -698,7 +691,7 @@ class Main
       CloudStoreClient client = createCloudStoreClient();
       DeleteOptions opts = new DeleteOptionsBuilder()
           .setCloudStoreClient(client)
-          .setBucket(getBucket())
+          .setBucketName(getBucket())
           .setObjectKey(getObjectKey())
           .setRecursive(recursive)
           .setDryRun(dryRun)
@@ -746,7 +739,7 @@ class Main
       CloudStoreClient client = createCloudStoreClient();
       ListOptionsBuilder lob = new ListOptionsBuilder()
           .setCloudStoreClient(client)
-          .setBucket(getBucket())
+          .setBucketName(getBucket())
           .setObjectKey(getObjectKey())
           .setRecursive(true)
           .setIncludeVersions(false)
@@ -900,7 +893,7 @@ class Main
       {
         PendingUploadsOptions options = new PendingUploadsOptionsBuilder()
           .setCloudStoreClient(client)
-          .setBucket(getBucket())
+          .setBucketName(getBucket())
           .setObjectKey(getObjectKey())
           .createPendingUploadsOptions();
         List<Upload> pendingUploads = client.listPendingUploads(options).get();
@@ -993,7 +986,7 @@ class Main
         }
         PendingUploadsOptions options = new PendingUploadsOptionsBuilder()
           .setCloudStoreClient(client)
-          .setBucket(getBucket())
+          .setBucketName(getBucket())
           .setObjectKey(getObjectKey())
           .setUploadId(id)
           .setDate(date)
@@ -1074,7 +1067,7 @@ class Main
       DownloadOptionsBuilder dob = new DownloadOptionsBuilder()
           .setCloudStoreClient(client)
           .setFile(output)
-          .setBucket(getBucket())
+          .setBucketName(getBucket())
           .setObjectKey(getObjectKey())
           .setRecursive(recursive)
           .setVersion(version)
@@ -1135,7 +1128,7 @@ class Main
           }
           EncryptionKeyOptions options = new EncryptionKeyOptionsBuilder()
             .setCloudStoreClient(client)
-            .setBucket(getBucket())
+            .setBucketName(getBucket())
             .setObjectKey(getObjectKey())
             .setEncryptionKey(encKeyName)
             .createEncryptionKeyOptions();
@@ -1179,7 +1172,7 @@ class Main
           }
           EncryptionKeyOptions options = new EncryptionKeyOptionsBuilder()
             .setCloudStoreClient(client)
-            .setBucket(getBucket())
+            .setBucketName(getBucket())
             .setObjectKey(getObjectKey())
             .setEncryptionKey(encKeyName)
             .createEncryptionKeyOptions();

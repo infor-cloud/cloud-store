@@ -63,7 +63,7 @@ public class DownloadDirectoryCommand extends Command
           prepareFutures(srcFiles);
           if(srcFiles.isEmpty())
             throw new UsageException("No objects found for '" + getUri(
-              _options.getBucket(), _options.getObjectKey()) + "'");
+              _options.getBucketName(), _options.getObjectKey()) + "'");
 
           if(_options.isDryRun())
             return Futures.immediateFuture(null);
@@ -99,7 +99,7 @@ public class DownloadDirectoryCommand extends Command
     // find all files that need to be downloaded
     ListOptionsBuilder lob = new ListOptionsBuilder()
         .setCloudStoreClient(_options.getCloudStoreClient())
-        .setBucket(_options.getBucket())
+        .setBucketName(_options.getBucketName())
         .setObjectKey(_options.getObjectKey())
         .setRecursive(_options.isRecursive())
         .setIncludeVersions(false)
@@ -209,7 +209,7 @@ public class DownloadDirectoryCommand extends Command
         }
         if(_dryRun)
         {
-          System.out.println("<DRYRUN> downloading '" + getUri(_options.getBucket(), src.getKey())
+          System.out.println("<DRYRUN> downloading '" + getUri(_options.getBucketName(), src.getKey())
             + "' to '" + outputFile.getAbsolutePath() + "'");
         }
         else
@@ -219,10 +219,10 @@ public class DownloadDirectoryCommand extends Command
           DownloadOptions options = new DownloadOptionsBuilder()
             .setCloudStoreClient(_options.getCloudStoreClient())
             .setFile(outputFile)
-            .setBucket(_options.getBucket())
+            .setBucketName(_options.getBucketName())
             .setObjectKey(src.getKey())
             .setOverallProgressListenerFactory(
-              _options.getOverallProgressListenerFactory().orNull())
+              _options.getOverallProgressListenerFactory().orElse(null))
             .createDownloadOptions();
 
           _futures.add(_client.download(options));

@@ -62,7 +62,7 @@ public class DeleteTests
     // delete the file
     DeleteOptions opts = new DeleteOptionsBuilder()
         .setCloudStoreClient(_client)
-        .setBucket(Utils.getBucket(dest))
+        .setBucketName(Utils.getBucket(dest))
         .setObjectKey(Utils.getObjectKey(dest))
         .createDeleteOptions();
     try
@@ -126,7 +126,7 @@ try
     // dryrun the delete and make sure the files still exist
     DeleteOptions opts = new DeleteOptionsBuilder()
         .setCloudStoreClient(_client)
-        .setBucket(Utils.getBucket(dest))
+        .setBucketName(Utils.getBucket(dest))
         .setObjectKey(Utils.getObjectKey(dest))
         .setRecursive(true)
         .createDeleteOptions();
@@ -186,7 +186,7 @@ catch(Throwable t)
     // dryrun the delete and make sure file still exists
     DeleteOptions opts = new DeleteOptionsBuilder()
         .setCloudStoreClient(_client)
-        .setBucket(Utils.getBucket(dest))
+        .setBucketName(Utils.getBucket(dest))
         .setObjectKey(Utils.getObjectKey(dest))
         .setDryRun(true)
         .createDeleteOptions();
@@ -224,7 +224,7 @@ try
     // dryrun the delete and make sure the files still exist
     DeleteOptions opts = new DeleteOptionsBuilder()
         .setCloudStoreClient(_client)
-        .setBucket(Utils.getBucket(dest))
+        .setBucketName(Utils.getBucket(dest))
         .setObjectKey(Utils.getObjectKey(dest))
         .setRecursive(true)
         .setDryRun(true)
@@ -288,7 +288,7 @@ try
       rootPrefix);
     DeleteOptions opts = new DeleteOptionsBuilder()
         .setCloudStoreClient(_client)
-        .setBucket(Utils.getBucket(uri))
+        .setBucketName(Utils.getBucket(uri))
         .setObjectKey(Utils.getObjectKey(uri))
         .createDeleteOptions();
     String msg = null;
@@ -308,7 +308,7 @@ try
     // non-existent key with force should be ok
     opts = new DeleteOptionsBuilder()
         .setCloudStoreClient(_client)
-        .setBucket(Utils.getBucket(uri))
+        .setBucketName(Utils.getBucket(uri))
         .setObjectKey(Utils.getObjectKey(uri))
         .setForceDelete(true)
         .createDeleteOptions();
@@ -323,7 +323,7 @@ try
      rootPrefix);
     opts = new DeleteOptionsBuilder()
         .setCloudStoreClient(_client)
-        .setBucket(Utils.getBucket(uri))
+        .setBucketName(Utils.getBucket(uri))
         .setObjectKey(Utils.getObjectKey(uri))
         .setRecursive(true)
         .createDeleteOptions();
@@ -343,7 +343,7 @@ try
     // non-existent directory with force should be OK
     opts = new DeleteOptionsBuilder()
         .setCloudStoreClient(_client)
-        .setBucket(Utils.getBucket(uri))
+        .setBucketName(Utils.getBucket(uri))
         .setObjectKey(Utils.getObjectKey(uri))
         .setRecursive(true)
         .setForceDelete(true)
@@ -356,7 +356,7 @@ try
     uri = TestUtils.getUri(_testBucket, top, rootPrefix);
     opts = new DeleteOptionsBuilder()
         .setCloudStoreClient(_client)
-        .setBucket(Utils.getBucket(uri))
+        .setBucketName(Utils.getBucket(uri))
         .setObjectKey(Utils.getObjectKey(uri))
         .setRecursive(false)
         .createDeleteOptions();
@@ -369,7 +369,7 @@ try
       _testBucket, top.getName() + "/" + sub.getName() + "/" + c.getName(), rootPrefix);
     opts = new DeleteOptionsBuilder()
         .setCloudStoreClient(_client)
-        .setBucket(Utils.getBucket(uri))
+        .setBucketName(Utils.getBucket(uri))
         .setObjectKey(Utils.getObjectKey(uri))
         .createDeleteOptions();
     f = _client.delete(opts).get();
@@ -381,7 +381,7 @@ try
     uri = TestUtils.getUri(_testBucket, top, rootPrefix);
     opts = new DeleteOptionsBuilder()
         .setCloudStoreClient(_client)
-        .setBucket(Utils.getBucket(uri))
+        .setBucketName(Utils.getBucket(uri))
         .setObjectKey(Utils.getObjectKey(uri))
         .setRecursive(true)
         .createDeleteOptions();

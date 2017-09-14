@@ -280,7 +280,7 @@ public interface CloudStoreClient {
 
     /**
      * Returns a list of the pending uploads to object keys that start with
-     * {@code options.getObjectKey()}, inside {@code options.getBucket()}.
+     * {@code options.getObjectKey()}, inside {@code options.getBucketName()}.
      * <p>
      * Returned uploads' {@code Upload#getId()} and {@code
      * Upload#getInitiationDate()} are useful to abort them via

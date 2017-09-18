@@ -1,7 +1,6 @@
 package com.logicblox.s3lib;
 
 
-import com.amazonaws.services.s3.model.AccessControlList;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.util.concurrent.AsyncFunction;
@@ -23,10 +22,6 @@ public class CopyCommand extends Command
   private ListeningExecutorService _copyExecutor;
   private ListeningScheduledExecutorService _executor;
   private CopyOptions _options;
-  private String _cannedAcl;
-  private AccessControlList _s3Acl;
-  private String _storageClass;
-  private Map<String, String> _userMetadata;
   private OverallProgressListenerFactory _progressListenerFactory;
 
   public CopyCommand(CopyOptions options)
@@ -35,10 +30,6 @@ public class CopyCommand extends Command
     _copyExecutor = _options.getCloudStoreClient().getApiExecutor();
     _executor = _options.getCloudStoreClient().getInternalExecutor();
 
-    _cannedAcl = _options.getCannedAcl();
-    _s3Acl = _options.getS3Acl().orElse(null);
-    _storageClass = _options.getStorageClass().orElse(null);
-    _userMetadata = _options.getUserMetadata().orElse(null);
     _progressListenerFactory = options.getOverallProgressListenerFactory().orElse(null);
   }
 
@@ -101,17 +92,11 @@ public class CopyCommand extends Command
   {
     MultipartAmazonCopyFactory factory = new MultipartAmazonCopyFactory(
       getAmazonS3Client(), _copyExecutor);
-    if (_s3Acl != null)
-    {
-      return factory.startCopy(
-        _options.getSourceBucketName(), _options.getSourceObjectKey(),
-        _options.getDestinationBucketName(), _options.getDestinationObjectKey(),
-        _s3Acl, _userMetadata, _storageClass);
-    }
+
     return factory.startCopy(
       _options.getSourceBucketName(), _options.getSourceObjectKey(),
       _options.getDestinationBucketName(), _options.getDestinationObjectKey(),
-      _cannedAcl, _userMetadata, _storageClass);
+      _options);
   }
 
   /**

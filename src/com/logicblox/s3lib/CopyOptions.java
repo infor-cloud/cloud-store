@@ -29,7 +29,6 @@ public class CopyOptions {
     private final boolean dryRun;
     private final boolean ignoreAbortInjection;
     private String cannedAcl;
-    private final AccessControlList s3Acl;
     private final String storageClass;
     private final Map<String,String> userMetadata;
     private final OverallProgressListenerFactory
@@ -45,7 +44,6 @@ public class CopyOptions {
                 String destinationBucketName,
                 String destinationObjectKey,
                 String cannedAcl,
-                AccessControlList s3Acl,
                 String storageClass,
                 boolean recursive,
                 boolean dryRun,
@@ -59,7 +57,6 @@ public class CopyOptions {
         this.destinationObjectKey = destinationObjectKey;
         this.recursive = recursive;
         this.cannedAcl = cannedAcl;
-        this.s3Acl = s3Acl;
         this.storageClass = storageClass;
         this.dryRun = dryRun;
         this.ignoreAbortInjection = ignoreAbortInjection;
@@ -102,24 +99,12 @@ public class CopyOptions {
         return destinationObjectKey;
     }
 
-    public String getCannedAcl() {
-        if (cannedAcl == null) {
-            if (cloudStoreClient.getScheme().equals("s3")) {
-                cannedAcl = "bucket-owner-full-control";
-            }
-            else if (cloudStoreClient.getScheme().equals("gs")) {
-                cannedAcl = "projectPrivate";
-            }
-        }
-        return cannedAcl;
+    public Optional<String> getCannedACL() {
+        return Optional.ofNullable(cannedAcl);
     }
 
     public Optional<String> getStorageClass() {
         return Optional.ofNullable(storageClass);
-    }
-
-    public Optional<AccessControlList> getS3Acl() {
-        return Optional.ofNullable(s3Acl);
     }
 
     public boolean isRecursive() {

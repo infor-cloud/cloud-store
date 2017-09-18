@@ -1,9 +1,7 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.AccessControlList;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.Headers;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -15,10 +13,10 @@ import java.util.concurrent.Callable;
 
 class MultipartAmazonCopyFactory
 {
-  private AmazonS3 client;
+  private AmazonS3Client client;
   private ListeningExecutorService executor;
 
-  public MultipartAmazonCopyFactory(AmazonS3 client,
+  public MultipartAmazonCopyFactory(AmazonS3Client client,
                                     ListeningExecutorService executor)
   {
     if(client == null)
@@ -34,24 +32,10 @@ class MultipartAmazonCopyFactory
                                           String sourceObjectKey,
                                           String destinationBucketName,
                                           String destinationObjectKey,
-                                          String cannedAcl,
-                                          Map<String, String> _userMetadata,
-                                          String storageClass)
+                                          CopyOptions options)
   {
     return executor.submit(new StartCallable(sourceBucketName, sourceObjectKey,
-      destinationBucketName, destinationObjectKey, cannedAcl, _userMetadata, storageClass));
-  }
-
-  public ListenableFuture<Copy> startCopy(String sourceBucketName,
-                                          String sourceObjectKey,
-                                          String destinationBucketName,
-                                          String destinationObjectKey,
-                                          AccessControlList acl,
-                                          Map<String, String> _userMetadata,
-                                          String storageClass)
-  {
-    return executor.submit(new StartCallable(sourceBucketName, sourceObjectKey,
-      destinationBucketName, destinationObjectKey, acl, _userMetadata, storageClass));
+      destinationBucketName, destinationObjectKey, options));
   }
 
   private class StartCallable implements Callable<Copy>
@@ -60,38 +44,17 @@ class MultipartAmazonCopyFactory
     private String sourceObjectKey;
     private String destinationBucketName;
     private String destinationObjectKey;
-    private String cannedAcl;
-    private AccessControlList acl;
-    private String storageClass;
-    private Map<String, String> userMetadata;
+    private CopyOptions options;
 
     public StartCallable(String sourceBucketName, String sourceObjectKey,
                          String destinationBucketName, String destinationObjectKey,
-                         String cannedAcl, Map<String, String> userMetadata,
-                         String storageClass)
+                         CopyOptions options)
     {
       this.sourceBucketName = sourceBucketName;
       this.sourceObjectKey = sourceObjectKey;
       this.destinationBucketName = destinationBucketName;
       this.destinationObjectKey = destinationObjectKey;
-      this.cannedAcl = cannedAcl;
-      this.userMetadata = userMetadata;
-      this.storageClass = storageClass;
-    }
-
-    public StartCallable(String sourceBucketName, String sourceObjectKey,
-                         String destinationBucketName, String destinationObjectKey,
-                         AccessControlList acl,
-                         Map<String, String> userMetadata,
-                         String storageClass)
-    {
-      this.sourceBucketName = sourceBucketName;
-      this.sourceObjectKey = sourceObjectKey;
-      this.destinationBucketName = destinationBucketName;
-      this.destinationObjectKey = destinationObjectKey;
-      this.acl = acl;
-      this.userMetadata = userMetadata;
-      this.storageClass = storageClass;
+      this.options = options;
     }
 
     public Copy call() throws Exception
@@ -99,10 +62,7 @@ class MultipartAmazonCopyFactory
       ObjectMetadata metadata = client.getObjectMetadata(sourceBucketName,
         sourceObjectKey);
 
-      if (userMetadata != null)
-      {
-        metadata.setUserMetadata(userMetadata);
-      }
+      options.getUserMetadata().ifPresent(um -> metadata.setUserMetadata(um));
 
       if (metadata.getUserMetaDataOf("s3tool-version") == null)
       {
@@ -112,40 +72,26 @@ class MultipartAmazonCopyFactory
         metadata.addUserMetadata("s3tool-chunk-size", Long.toString(chunkSize));
         metadata.addUserMetadata("s3tool-file-length", Long.toString(metadata.getContentLength()));
       }
-      if (storageClass != null)
-      {
-        // It seems setting the STORAGE_CLASS metadata header is sufficient
-        metadata.setHeader(Headers.STORAGE_CLASS, storageClass);
-      }
+      // It seems setting the STORAGE_CLASS metadata header is sufficient
+      options.getStorageClass().ifPresent(
+        sc -> metadata.setHeader(Headers.STORAGE_CLASS, sc));
 
       InitiateMultipartUploadRequest req = new InitiateMultipartUploadRequest
           (destinationBucketName, destinationObjectKey, metadata);
-      if (cannedAcl != null)
+      if (options.getCannedACL().isPresent())
       {
-        req.setCannedACL(getCannedAcl(cannedAcl));
+        req.setCannedACL(Utils.getS3CannedACL(options.getCannedACL().get()));
+      }
+      else
+      {
+        req.setAccessControlList(Utils.getS3ObjectACL(client, sourceBucketName,
+          sourceObjectKey));
       }
       // req.setStorageClass(StorageClass.fromValue(storageClass));
-      if (acl != null)
-      {
-        // If specified, cannedAcl will be ignored.
-        req.setAccessControlList(acl);
-      }
       InitiateMultipartUploadResult res = client.initiateMultipartUpload(req);
       return new MultipartAmazonCopy(client, sourceBucketName, sourceObjectKey,
           destinationBucketName, destinationObjectKey, res.getUploadId(), metadata,
           executor);
-    }
-
-    private CannedAccessControlList getCannedAcl(String value)
-    {
-      for (CannedAccessControlList acl : CannedAccessControlList.values())
-      {
-        if (acl.toString().equals(value))
-        {
-          return acl;
-        }
-      }
-      return null;
     }
   }
 }

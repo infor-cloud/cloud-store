@@ -64,6 +64,16 @@ public interface CloudStoreClient {
     KeyProvider getKeyProvider();
 
     /**
+     * Enum values for backend storage service.
+     */
+    enum StorageService
+    {
+        S3, GCS
+    }
+
+    StorageService getStorageService();
+
+    /**
      * Uploads a file according to {@code options}. For more details
      * check {@link com.logicblox.s3lib.UploadOptions}.
      * <p>

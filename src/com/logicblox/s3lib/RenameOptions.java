@@ -1,5 +1,7 @@
 package com.logicblox.s3lib;
 
+import java.util.Optional;
+
 /**
  * {@code RenameOptions} contains all the details needed by the rename operation.
  * The specified {@code sourceObjectKey}, under {@code sourceBucketName} bucket, is renamed
@@ -63,17 +65,9 @@ public class RenameOptions
     return _destinationObjectKey;
   }
 
-  public String getCannedAcl()
+  public Optional<String> getCannedACL()
   {
-    if (_cannedAcl == null) {
-      if (_cloudStoreClient.getScheme().equals("s3")) {
-        _cannedAcl = "bucket-owner-full-control";
-      }
-      else if (_cloudStoreClient.getScheme().equals("gs")) {
-        _cannedAcl = "projectPrivate";
-      }
-    }
-    return _cannedAcl;
+    return Optional.ofNullable(_cannedAcl);
   }
 
   public boolean isRecursive()

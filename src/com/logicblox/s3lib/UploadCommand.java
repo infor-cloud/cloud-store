@@ -37,7 +37,6 @@ public class UploadCommand extends Command
 {
   private String encKeyName;
   private String encryptedSymmetricKeyString;
-  private String acl;
   private OverallProgressListenerFactory progressListenerFactory;
   private String pubKeyHash;
 
@@ -89,7 +88,6 @@ public class UploadCommand extends Command
       }
     }
 
-    this.acl = _options.getAcl();
     this.progressListenerFactory = _options.getOverallProgressListenerFactory().orElse(null);
   }
 
@@ -191,7 +189,7 @@ public class UploadCommand extends Command
     meta.put("s3tool-chunk-size", Long.toString(chunkSize));
     meta.put("s3tool-file-length", Long.toString(fileLength));
 
-    return factory.startUpload(_options.getBucketName(), _options.getObjectKey(), meta, acl, _options);
+    return factory.startUpload(_options.getBucketName(), _options.getObjectKey(), meta, _options);
   }
 
   /**

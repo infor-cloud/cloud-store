@@ -32,6 +32,7 @@ import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import com.google.api.services.storage.Storage;
@@ -188,35 +189,7 @@ public class Utils
     return Pattern.compile(pattern).matcher(uri);
   }
 
-  public static boolean isStorageServiceURL(String url)
-  {
-    try
-    {
-      return getURI(url) != null;
-    }
-    catch (URISyntaxException e)
-    {
-      return false;
-    }
-    catch (UsageException e)
-    {
-      return false;
-    }
-  }
-
-  /**
-   * Enum values for all supported storage services.
-   * <p>
-   * {@code UNKNOWN} value represents storage services that run on an unknown
-   * endpoint but provide an API compatible with one of the supported services
-   * (e.g. S3 or GCS-compatible API). It's mostly useful for testing purposes.
-   */
-  public enum StorageService
-  {
-    S3, GCS
-  }
-
-  public static StorageService detectStorageService(String endpoint, String scheme)
+  static CloudStoreClient.StorageService detectStorageService(String endpoint, String scheme)
       throws URISyntaxException
   {
     // We consider endpoint (if exists) stronger evidence than URI
@@ -229,9 +202,9 @@ public class Utils
         endpointuri = new URI(endpoint);
 
       if (endpointuri.getHost().endsWith("amazonaws.com"))
-        return StorageService.S3;
+        return CloudStoreClient.StorageService.S3;
       else if (endpointuri.getHost().endsWith("googleapis.com"))
-        return StorageService.GCS;
+        return CloudStoreClient.StorageService.GCS;
     }
 
     if (scheme != null)
@@ -239,9 +212,9 @@ public class Utils
       switch (scheme)
       {
         case "s3":
-          return StorageService.S3;
+          return CloudStoreClient.StorageService.S3;
         case "gs":
-          return StorageService.GCS;
+          return CloudStoreClient.StorageService.GCS;
       }
     }
 
@@ -249,21 +222,8 @@ public class Utils
         endpoint +  ", scheme=" + scheme + ")");
   }
 
-  public static String getDefaultCannedACLFor(StorageService service)
-  {
-    switch (service)
-    {
-      case S3:
-        return S3Client.defaultCannedACL;
-      case GCS:
-        return GCSClient.defaultCannedACL;
-      default:
-        throw new UsageException("Unknown storage service " + service);
-    }
-  }
-
-  public static boolean isValidCannedACLFor(StorageService service, String
-      cannedACL)
+  public static boolean isValidCannedACLFor(CloudStoreClient.StorageService service,
+                                            String cannedACL)
   {
     switch (service)
     {
@@ -459,10 +419,10 @@ public class Utils
     ListeningExecutorService uploadExecutor = 
       createApiExecutor(maxConcurrentConnections);
 
-    StorageService service = detectStorageService(endpoint, scheme);
+    CloudStoreClient.StorageService service = detectStorageService(endpoint, scheme);
 
     CloudStoreClient client;
-    if(service == StorageService.GCS)
+    if(service == CloudStoreClient.StorageService.GCS)
     {
       AWSCredentialsProvider gcsXMLProvider =
         getGCSXMLEnvironmentVariableCredentialsProvider();
@@ -542,7 +502,7 @@ public class Utils
   }
 
   // returns null if the store does not support acl (like minio)
-  public static AccessControlList getObjectAcl(
+  public static AccessControlList getS3ObjectACL(
     AmazonS3Client client, String bucket, String key)
       throws AmazonS3Exception
   {
@@ -557,6 +517,18 @@ public class Utils
         throw ex;
     }
     return acl;
+  }
+
+  public static CannedAccessControlList getS3CannedACL(String value)
+  {
+    for (CannedAccessControlList acl : CannedAccessControlList.values())
+    {
+      if (acl.toString().equals(value))
+      {
+        return acl;
+      }
+    }
+    return null;
   }
 
   public static void patchMetaData(

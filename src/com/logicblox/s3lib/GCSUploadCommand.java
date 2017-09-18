@@ -33,7 +33,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 public class GCSUploadCommand extends Command {
     private String encKeyName;
     private String encryptedSymmetricKeyString;
-    private String acl;
 
     private ListeningExecutorService _uploadExecutor;
     private ListeningScheduledExecutorService _executor;
@@ -87,7 +86,6 @@ public class GCSUploadCommand extends Command {
             }
         }
 
-        this.acl = _options.getAcl();
         this.progressListenerFactory = _options.getOverallProgressListenerFactory().orElse(null);
     }
 
@@ -161,7 +159,7 @@ public class GCSUploadCommand extends Command {
         meta.put("s3tool-chunk-size", Long.toString(fileLength));
         meta.put("s3tool-file-length", Long.toString(fileLength));
 
-        return factory.startUpload(bucket, key, meta, acl, _options);
+        return factory.startUpload(bucket, key, meta, _options);
     }
 
     /**

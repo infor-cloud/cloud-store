@@ -90,6 +90,9 @@ public class GCSCopyCommand extends Command
           _options.getSourceBucketName(), _options.getSourceObjectKey(),
           _options.getDestinationBucketName(), _options.getDestinationObjectKey(),
           objectMetadata);
+
+        _options.getCannedACL().ifPresent(ca -> cmd.setDestinationPredefinedAcl(ca));
+
         StorageObject resp = cmd.execute();
         return createS3File(resp, false);
       }

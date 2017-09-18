@@ -47,7 +47,7 @@ public class RenameOptionsBuilder
     return this;
   }
 
-  public RenameOptionsBuilder setCannedAcl(String cannedAcl)
+  public RenameOptionsBuilder setCannedACL(String cannedAcl)
   {
     _cannedAcl = cannedAcl;
     return this;
@@ -81,6 +81,13 @@ public class RenameOptionsBuilder
     }
     else if (_destinationObjectKey == null) {
       throw new UsageException("Destination object key has to be set");
+    }
+
+    if (_cannedAcl != null) {
+      if (!Utils.isValidCannedACLFor(
+        _cloudStoreClient.getStorageService(), _cannedAcl)); {
+        throw new UsageException("Invalid canned ACL '" + _cannedAcl + "'");
+      }
     }
 
     return new RenameOptions(_cloudStoreClient, _sourceBucketName,

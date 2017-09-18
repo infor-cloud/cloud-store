@@ -182,9 +182,6 @@ public class S3Client implements CloudStoreClient {
   /**
    * Canned ACLs handling
    */
-
-  public static final String defaultCannedACL = "bucket-owner-full-control";
-
   public static final List<String> allCannedACLs = initCannedACLs();
 
   /**
@@ -194,8 +191,7 @@ public class S3Client implements CloudStoreClient {
    */
   static final String cannedACLsDescConst = "For Amazon S3, choose one of: " +
       "private, public-read, public-read-write, authenticated-read, " +
-      "bucket-owner-read, bucket-owner-full-control (default: " +
-      "bucket-owner-full-control).";
+      "bucket-owner-read, bucket-owner-full-control.";
 
   public static boolean isValidCannedACL(String aclStr)
   {
@@ -258,6 +254,12 @@ public class S3Client implements CloudStoreClient {
   public KeyProvider getKeyProvider()
   {
     return _keyProvider;
+  }
+
+  @Override
+  public StorageService getStorageService()
+  {
+    return StorageService.S3;
   }
 
   void configure(Command cmd)

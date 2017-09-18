@@ -4,7 +4,6 @@ import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
@@ -31,9 +30,9 @@ class MultipartAmazonUploadFactory implements UploadFactory
   }
 
   public ListenableFuture<Upload> startUpload(String bucketName, String key,
-                                              Map<String,String> meta, String cannedAcl, UploadOptions options)
+                                              Map<String,String> meta, UploadOptions options)
   {
-    return executor.submit(new StartCallable(bucketName, key, meta, cannedAcl, options));
+    return executor.submit(new StartCallable(bucketName, key, meta, options));
   }
 
   private class StartCallable implements Callable<Upload>
@@ -41,15 +40,13 @@ class MultipartAmazonUploadFactory implements UploadFactory
     private String key;
     private String bucketName;
     private Map<String,String> meta;
-    private String cannedAcl;
     private UploadOptions options;
 
-    public StartCallable(String bucketName, String key, Map<String,String> meta, String cannedAcl, UploadOptions options)
+    public StartCallable(String bucketName, String key, Map<String,String> meta, UploadOptions options)
     {
       this.bucketName = bucketName;
       this.key = key;
       this.meta = meta;
-      this.cannedAcl = cannedAcl;
       this.options = options;
     }
 
@@ -57,23 +54,14 @@ class MultipartAmazonUploadFactory implements UploadFactory
     {
       ObjectMetadata metadata = new ObjectMetadata();
       metadata.setUserMetadata(meta);
-      InitiateMultipartUploadRequest req = new InitiateMultipartUploadRequest(bucketName, key, metadata);
-      req.setCannedACL(getAcl(cannedAcl));
+      InitiateMultipartUploadRequest req = new InitiateMultipartUploadRequest(
+        bucketName, key, metadata);
+      options.getCannedACL().ifPresent(ca -> req.setCannedACL(Utils.getS3CannedACL(ca)));
+
+
       InitiateMultipartUploadResult res = client.initiateMultipartUpload(req);
       return new MultipartAmazonUpload(client, bucketName, key,
           res.getUploadId(), new Date(), executor, options);
-    }
-
-    private CannedAccessControlList getAcl(String value)
-    {
-      for (CannedAccessControlList acl : CannedAccessControlList.values())
-      {
-        if (acl.toString().equals(value))
-        {
-          return acl;
-        }
-      }
-      return null;
     }
   }
 }

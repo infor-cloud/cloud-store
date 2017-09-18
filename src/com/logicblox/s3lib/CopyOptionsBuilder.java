@@ -1,6 +1,6 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.services.s3.model.AccessControlList;
+import com.amazonaws.services.s3.model.StorageClass;
 
 import java.util.Map;
 
@@ -20,7 +20,6 @@ public class CopyOptionsBuilder {
     private String storageClass;
     private boolean recursive = false;
     private String cannedAcl;
-    private AccessControlList s3Acl;
     private Map<String,String> userMetadata;
     private boolean dryRun = false;
     private boolean ignoreAbortInjection = false;
@@ -53,13 +52,8 @@ public class CopyOptionsBuilder {
         return this;
     }
 
-    public CopyOptionsBuilder setCannedAcl(String cannedAcl) {
+    public CopyOptionsBuilder setCannedACL(String cannedAcl) {
         this.cannedAcl = cannedAcl;
-        return this;
-    }
-
-    public CopyOptionsBuilder setS3Acl(AccessControlList s3Acl) {
-        this.s3Acl = s3Acl;
         return this;
     }
 
@@ -116,8 +110,42 @@ public class CopyOptionsBuilder {
             throw new UsageException("Destination object key has to be set");
         }
 
+        if (cannedAcl != null) {
+            if (!Utils.isValidCannedACLFor(
+              cloudStoreClient.getStorageService(), cannedAcl)); {
+                throw new UsageException("Invalid canned ACL '" + cannedAcl + "'");
+            }
+        }
+
+        if (storageClass != null) {
+            switch (cloudStoreClient.getStorageService())
+            {
+                case S3:
+                    try {
+                        StorageClass.fromValue(storageClass);
+                    }
+                    catch (IllegalArgumentException exc) {
+                        throw new UsageException(
+                          "Invalid storage class '" + storageClass + "'");
+                    }
+                    break;
+                case GCS:
+                    // TODO(geokollias): GCS does support something similar. Add support.
+                    throw new UsageException("Storage classes are not supported " +
+                                             "on GCS currently.");
+                default:
+                    throw new UsageException("Unknown storage service " +
+                                             cloudStoreClient.getStorageService());
+            }
+
+            if (cloudStoreClient.getStorageService() == CloudStoreClient.StorageService.GCS) {
+                throw new UsageException("Storage classes are not supported " +
+                                         "on GCS currently.");
+            }
+        }
+
         return new CopyOptions(cloudStoreClient, sourceBucketName, sourceObjectKey,
-            destinationBucketName, destinationObjectKey, cannedAcl, s3Acl, storageClass,
+            destinationBucketName, destinationObjectKey, cannedAcl, storageClass,
             recursive, dryRun, ignoreAbortInjection, userMetadata, overallProgressListenerFactory);
     }
 }

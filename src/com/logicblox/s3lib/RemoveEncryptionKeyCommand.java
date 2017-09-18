@@ -1,7 +1,6 @@
 package com.logicblox.s3lib;
 
 
-import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.AsyncFunction;
@@ -201,76 +200,47 @@ public class RemoveEncryptionKeyCommand extends Command
     AsyncFunction<S3ObjectMetadata, S3File> update = new
       AsyncFunction<S3ObjectMetadata, S3File>()
       {
-        public ListenableFuture<S3File> apply(final S3ObjectMetadata metadata)
+        public ListenableFuture<S3File> apply(S3ObjectMetadata metadata)
         throws IOException
         {
-          ListenableFuture<AccessControlList> acl = executeWithRetry(
-            _executor,
-            new Callable<ListenableFuture<AccessControlList>>()
-            {
-              public ListenableFuture<AccessControlList> call()
+          if(null == getGCSClient())
+          {
+            // It seems in AWS there is no way to update an object's metadata
+            // without re-uploading/copying the whole object. Here, we
+            // copy the object to itself in order to add the new
+            // user-metadata.
+            CopyOptions options = new CopyOptionsBuilder()
+              .setCloudStoreClient(_client)
+              .setSourceBucketName(metadata.getBucket())
+              .setSourceObjectKey(metadata.getKey())
+              .setDestinationBucketName(metadata.getBucket())
+              .setDestinationObjectKey(metadata.getKey())
+              .setUserMetadata(metadata.getUserMetadata())
+              .createCopyOptions();
+
+            return _client.copy(options);
+          }
+          else
+          {
+            return executeWithRetry(
+              _executor,
+              new Callable<ListenableFuture<S3File>>()
               {
-                return _httpExecutor.submit(
-                  new Callable<AccessControlList>()
+                public ListenableFuture<S3File> call()
+                {
+                  return _httpExecutor.submit(new Callable<S3File>()
                   {
-                    public AccessControlList call()
+                    public S3File call()
+                    throws IOException
                     {
-                      return Utils.getObjectAcl(
-                        getAmazonS3Client(), metadata.getBucket(), metadata.getKey());
+                      Utils.patchMetaData(getGCSClient(), metadata.getBucket(),
+                        metadata.getKey(), metadata.getUserMetadata());
+                      return new S3File(metadata.getBucket(), metadata.getKey());
                     }
                   });
-              }
-            });
-
-          AsyncFunction<AccessControlList, S3File> updateObj = new
-            AsyncFunction<AccessControlList, S3File>()
-            {
-              public ListenableFuture<S3File> apply(
-                AccessControlList acl) throws IOException
-              {
-                if(null == getGCSClient())
-                {
-                  // It seems in AWS there is no way to update an object's metadata
-                  // without re-uploading/copying the whole object. Here, we
-                  // copy the object to itself in order to add the new
-                  // user-metadata.
-                  CopyOptions options = new CopyOptionsBuilder()
-                    .setCloudStoreClient(_client)
-                    .setSourceBucketName(metadata.getBucket())
-                    .setSourceObjectKey(metadata.getKey())
-                    .setDestinationBucketName(metadata.getBucket())
-                    .setDestinationObjectKey(metadata.getKey())
-                    .setS3Acl(acl)
-                    .setUserMetadata(metadata.getUserMetadata())
-                    .createCopyOptions();
-
-                  return _client.copy(options);
                 }
-                else
-                {
-                  return executeWithRetry(
-                    _executor,
-                    new Callable<ListenableFuture<S3File>>()
-                    {
-                      public ListenableFuture<S3File> call()
-                      {
-                        return _httpExecutor.submit(new Callable<S3File>()
-                        {
-                          public S3File call()
-                            throws IOException
-                          {
-                            Utils.patchMetaData(getGCSClient(), metadata.getBucket(),
-                              metadata.getKey(), metadata.getUserMetadata());
-                            return new S3File(metadata.getBucket(), metadata.getKey());
-                          }
-                        });
-                      }
-                    });
-                }
-              }
-            };
-
-          return Futures.transform(acl, updateObj);
+              });
+          }
         }
       };
 

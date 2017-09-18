@@ -16,7 +16,7 @@ public class UploadOptionsBuilder {
     private String objectKey;
     private long chunkSize = -1;
     private String encKey;
-    private String acl;
+    private String cannedAcl;
     private OverallProgressListenerFactory overallProgressListenerFactory;
     private boolean dryRun = false;
     private boolean ignoreAbortInjection = false;
@@ -51,8 +51,8 @@ public class UploadOptionsBuilder {
         return this;
     }
 
-    public UploadOptionsBuilder setAcl(String acl) {
-        this.acl = acl;
+    public UploadOptionsBuilder setCannedACL(String acl) {
+        this.cannedAcl = acl;
         return this;
     }
 
@@ -86,8 +86,15 @@ public class UploadOptionsBuilder {
             throw new UsageException("Object key has to be set");
         }
 
+        if (cannedAcl != null) {
+            if (!Utils.isValidCannedACLFor(
+              cloudStoreClient.getStorageService(), cannedAcl)); {
+                throw new UsageException("Invalid canned ACL '" + cannedAcl + "'");
+            }
+        }
+
         return new UploadOptions(cloudStoreClient, file, bucket, objectKey,
-          chunkSize, encKey, acl, dryRun, ignoreAbortInjection,
+          chunkSize, encKey, cannedAcl, dryRun, ignoreAbortInjection,
           overallProgressListenerFactory);
     }
 }

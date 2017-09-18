@@ -107,16 +107,8 @@ public class UploadOptions {
         return chunkSize;
     }
 
-    public String getAcl() {
-        if (acl == null) {
-            if (cloudStoreClient.getScheme().equals("s3")) {
-                acl = "bucket-owner-full-control";
-            }
-            else if (cloudStoreClient.getScheme().equals("gs")) {
-                acl = "projectPrivate";
-            }
-        }
-        return acl;
+    public Optional<String> getCannedACL() {
+        return Optional.ofNullable(acl);
     }
 
     public boolean isDryRun() {

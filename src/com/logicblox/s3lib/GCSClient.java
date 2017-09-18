@@ -54,9 +54,6 @@ public class GCSClient implements CloudStoreClient {
     /**
      * Canned ACLs handling
      */
-
-    public static final String defaultCannedACL = "projectPrivate";
-
     public static final List<String> allCannedACLs = Arrays.asList(
         "projectPrivate", "private", "publicRead", "publicReadWrite",
         "authenticatedRead", "bucketOwnerRead", "bucketOwnerFullControl");
@@ -68,8 +65,7 @@ public class GCSClient implements CloudStoreClient {
      */
     static final String cannedACLsDescConst = "For Google Cloud Storage, " +
         "choose one of: projectPrivate, private, publicRead, publicReadWrite," +
-        " authenticatedRead,bucketOwnerRead, bucketOwnerFullControl (default:" +
-        " projectPrivate).";
+        " authenticatedRead, bucketOwnerRead, bucketOwnerFullControl.";
 
     public static boolean isValidCannedACL(String aclStr)
     {
@@ -115,7 +111,13 @@ public class GCSClient implements CloudStoreClient {
         return s3Client.getKeyProvider();
     }
 
-    @Override
+  @Override
+  public StorageService getStorageService()
+  {
+    return StorageService.GCS;
+  }
+
+  @Override
     public ListenableFuture<S3File> upload(UploadOptions options) throws IOException
     {
         return s3Client.upload(options);

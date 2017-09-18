@@ -123,11 +123,6 @@ class Main
         validateValueWith = CredentialProvidersValidator.class)
     List<String> credentialProvidersS3;
 
-    protected Utils.StorageService detectStorageService() throws URISyntaxException
-    {
-      return Utils.detectStorageService(endpoint, getScheme());
-    }
-
     protected URI getURI() throws URISyntaxException
     {
       return null;
@@ -144,31 +139,6 @@ class Main
       return Utils.createCloudStoreClient(
         getScheme(), endpoint, maxConcurrentConnections, 
         encKeyDirectory, credentialProvidersS3, _stubborn, _retryCount);
-    }
-
-    protected void validateStorageClass(String storageClass) throws URISyntaxException
-    {
-      if (storageClass != null)
-      {
-        // TODO(geo): GCS does support something similar. Add support.
-        if (detectStorageService() == Utils.StorageService.GCS)
-        {
-          throw new UsageException("Storage classes are not supported " +
-                                   "on GCS currently.");
-        }
-        if (detectStorageService() == Utils.StorageService.S3)
-        {
-          try
-          {
-            StorageClass.fromValue(storageClass);
-          }
-          catch (IllegalArgumentException exc)
-          {
-            throw new UsageException(
-              "Unknown storage class '" + storageClass + "'");
-          }
-        }
-      }
     }
   }
 
@@ -396,19 +366,6 @@ class Main
 
     public void invoke() throws Exception
     {
-      if (cannedAcl == null)
-      {
-        cannedAcl = Utils.getDefaultCannedACLFor(detectStorageService());
-      }
-
-      if(!Utils.isValidCannedACLFor(detectStorageService(), cannedAcl))
-      {
-        throw new UsageException("Unknown canned ACL '" + cannedAcl + "'");
-      }
-
-      // Catch erroneous storage class early
-      validateStorageClass(storageClass);
-
       CloudStoreClient client = createCloudStoreClient();
 
       CopyOptions options = new CopyOptionsBuilder()
@@ -417,7 +374,7 @@ class Main
           .setSourceObjectKey(getSourceObjectKey())
           .setDestinationBucketName(getDestinationBucket())
           .setDestinationObjectKey(getDestinationObjectKey())
-          .setCannedAcl(cannedAcl)
+          .setCannedACL(cannedAcl)
           .setStorageClass(storageClass)
           .setRecursive(recursive)
           .setDryRun(dryRun)
@@ -482,16 +439,6 @@ class Main
 
     public void invoke() throws Exception
     {
-      if (cannedAcl == null)
-      {
-        cannedAcl = Utils.getDefaultCannedACLFor(detectStorageService());
-      }
-
-      if(!Utils.isValidCannedACLFor(detectStorageService(), cannedAcl))
-      {
-        throw new UsageException("Unknown canned ACL '" + cannedAcl + "'");
-      }
-
       CloudStoreClient client = createCloudStoreClient();
 
       RenameOptions options = new RenameOptionsBuilder()
@@ -500,7 +447,7 @@ class Main
           .setSourceObjectKey(getSourceObjectKey())
           .setDestinationBucketName(getDestinationBucket())
           .setDestinationObjectKey(getDestinationObjectKey())
-          .setCannedAcl(cannedAcl)
+          .setCannedACL(cannedAcl)
           .setRecursive(recursive)
           .setDryRun(dryRun)
           .createRenameOptions();
@@ -554,16 +501,6 @@ class Main
 
     public void invoke() throws Exception
     {
-      if (cannedAcl == null)
-      {
-        cannedAcl = Utils.getDefaultCannedACLFor(detectStorageService());
-      }
-
-      if(!Utils.isValidCannedACLFor(detectStorageService(), cannedAcl))
-      {
-        throw new UsageException("Unknown canned ACL '" + cannedAcl + "'");
-      }
-
       CloudStoreClient client = createCloudStoreClient();
       File f = new File(file);
 
@@ -580,7 +517,7 @@ class Main
           .setObjectKey(getObjectKey())
           .setChunkSize(chunkSize)
           .setEncKey(encKeyName)
-          .setAcl(cannedAcl)
+          .setCannedACL(cannedAcl)
           .setDryRun(dryRun);
       if (progress) {
         OverallProgressListenerFactory cplf = new

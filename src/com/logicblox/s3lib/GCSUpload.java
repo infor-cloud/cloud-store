@@ -20,7 +20,6 @@ class GCSUpload implements Upload {
     private Storage client;
     private String bucketName;
     private String key;
-    private String acl;
     private Map<String, String> meta;
     private Date initiated;
     private ListeningExecutorService executor;
@@ -32,7 +31,6 @@ class GCSUpload implements Upload {
     public GCSUpload(Storage client,
                      String bucketName,
                      String key,
-                     String acl,
                      Map<String, String> meta,
                      Date initiated,
                      ListeningExecutorService executor,
@@ -41,7 +39,6 @@ class GCSUpload implements Upload {
         this.client = client;
         this.bucketName = bucketName;
         this.key = key;
-        this.acl = acl;
         this.meta = meta;
         this.initiated = initiated;
         this.executor = executor;
@@ -133,16 +130,12 @@ class GCSUpload implements Upload {
             StorageObject objectMetadata = new StorageObject()
                 .setName(key)
                 .setMetadata(ImmutableMap.copyOf(meta));
-                // .setContentDisposition("attachment");
-                // .setAcl(ImmutableList.of(
-                //   new ObjectAccessControl().setEntity("domain-example.com").setRole("READER"),
-                //   new ObjectAccessControl().setEntity("user-administrator@example.com").setRole("OWNER")
-                // ));
 
             Storage.Objects.Insert insertObject =
                 client.objects()
-                    .insert(bucketName, objectMetadata, mediaContent)
-                    .setPredefinedAcl(acl);
+                    .insert(bucketName, objectMetadata, mediaContent);
+
+            options.getCannedACL().ifPresent(ac -> insertObject.setPredefinedAcl(ac));
 
             insertObject.getMediaHttpUploader().setDisableGZipContent(true);
 //              .setDisableGZipContent(true).setDirectUploadEnabled(true);

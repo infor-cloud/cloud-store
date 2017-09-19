@@ -56,16 +56,16 @@ public class GCSClient implements CloudStoreClient {
     /**
      * Canned ACLs handling
      */
-    public static final List<String> allCannedAcls = Arrays.asList(
+    public static final List<String> ALL_CANNED_ACLS = Arrays.asList(
         "projectPrivate", "private", "publicRead", "publicReadWrite",
         "authenticatedRead", "bucketOwnerRead", "bucketOwnerFullControl");
 
     /**
-     * {@code cannedAclsDescConst} has to be a compile-time String constant
-     * expression. That's why e.g. we cannot re-use {@code allCannedAcls} to
+     * {@code CANNED_ACLS_DESC_CONST} has to be a compile-time String constant
+     * expression. That's why e.g. we cannot re-use {@code ALL_CANNED_ACLS} to
      * construct it.
      */
-    static final String cannedAclsDescConst = "For Google Cloud Storage, " +
+    static final String CANNED_ACLS_DESC_CONST = "For Google Cloud Storage, " +
         "choose one of: projectPrivate, private, publicRead, publicReadWrite," +
         " authenticatedRead, bucketOwnerRead, bucketOwnerFullControl.";
 
@@ -111,7 +111,7 @@ public class GCSClient implements CloudStoreClient {
     @Override
     public boolean isCannedAclValid(String cannedAcl)
     {
-        return allCannedAcls.contains(cannedAcl);
+        return ALL_CANNED_ACLS.contains(cannedAcl);
     }
 
     @Override

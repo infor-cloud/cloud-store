@@ -21,7 +21,6 @@ import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.StorageClass;
 import com.beust.jcommander.IValueValidator;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -350,12 +349,12 @@ class Main
   class CopyCommandOptions extends TwoObjectsCommandOptions
   {
     @Parameter(names = "--canned-acl", description = "The canned ACL to use. "
-        + S3Client.cannedAclsDescConst)
+        + S3Client.CANNED_ACLS_DESC_CONST)
     String cannedAcl;
 
     @Parameter(names = "--storage-class", description = "The storage class to" +
         " use. Source object's storage class will be used by default. " +
-        S3Client.storageClassesDescConst)
+        S3Client.STORAGE_CLASSES_DESC_CONST)
     String storageClass;
 
     @Parameter(names = {"-r", "--recursive"}, description = "Copy recursively")
@@ -428,7 +427,7 @@ class Main
   class RenameCommandOptions extends TwoObjectsCommandOptions
   {
     @Parameter(names = "--canned-acl", description = "The canned ACL to use. "
-        + S3Client.cannedAclsDescConst)
+        + S3Client.CANNED_ACLS_DESC_CONST)
     String cannedAcl;
 
     @Parameter(names = {"-r", "--recursive"}, description = "Rename recursively")
@@ -491,7 +490,7 @@ class Main
     boolean dryRun = false;
 
     @Parameter(names = "--canned-acl", description = "The canned ACL to use. "
-        + S3Client.cannedAclsDescConst + " " + GCSClient.cannedAclsDescConst)
+        + S3Client.CANNED_ACLS_DESC_CONST + " " + GCSClient.CANNED_ACLS_DESC_CONST)
     String cannedAcl;
 
     @Parameter(names = {"--chunk-size"},

@@ -185,14 +185,14 @@ public class S3Client implements CloudStoreClient {
   /**
    * Canned ACLs handling
    */
-  public static final List<String> allCannedAcls = initCannedAcls();
+  public static final List<String> ALL_CANNED_ACLS = initCannedAcls();
 
   /**
-   * {@code cannedAclsDescConst} has to be a compile-time String constant
-   * expression. That's why e.g. we cannot re-use {@code allCannedAcls} to
+   * {@code CANNED_ACLS_DESC_CONST} has to be a compile-time String constant
+   * expression. That's why e.g. we cannot re-use {@code ALL_CANNED_ACLS} to
    * construct it.
    */
-  static final String cannedAclsDescConst = "For Amazon S3, choose one of: " +
+  static final String CANNED_ACLS_DESC_CONST = "For Amazon S3, choose one of: " +
       "private, public-read, public-read-write, authenticated-read, " +
       "bucket-owner-read, bucket-owner-full-control.";
 
@@ -205,11 +205,11 @@ public class S3Client implements CloudStoreClient {
   }
 
   /**
-   * {@code storageClassesDescConst} has to be a compile-time String constant
+   * {@code STORAGE_CLASSES_DESC_CONST} has to be a compile-time String constant
    * expression. That's why e.g. we cannot re-use {@code StorageClass.values()}
    * to construct it.
    */
-  static final String storageClassesDescConst = "For Amazon S3, choose one of: " +
+  static final String STORAGE_CLASSES_DESC_CONST = "For Amazon S3, choose one of: " +
       "STANDARD, REDUCED_REDUNDANCY, GLACIER, STANDARD_IA.";
 
   @Override
@@ -257,7 +257,7 @@ public class S3Client implements CloudStoreClient {
   @Override
   public boolean isCannedAclValid(String cannedAcl)
   {
-    return allCannedAcls.contains(cannedAcl);
+    return ALL_CANNED_ACLS.contains(cannedAcl);
   }
 
   // returns null if the store does not support acl (like minio)

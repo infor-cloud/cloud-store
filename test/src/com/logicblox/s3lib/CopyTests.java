@@ -86,14 +86,14 @@ try
     // non-recursive copy
     String topN = rootPrefix + top.getName() + "/";
     String copyTopN = rootPrefix + top.getName() + "-COPY/";
-    CopyOptions copyOpts = new CopyOptionsBuilder()
-       .setCloudStoreClient(_client)
+    CopyOptions copyOpts = _client.getOptionsBuilderFactory()
+       .newCopyOptionsBuilder()
        .setSourceBucketName(_testBucket)
        .setSourceKey(topN)
        .setDestinationBucketName(_testBucket)
        .setDestinationKey(copyTopN)
        .setRecursive(true)
-       .createCopyOptions();
+       .createOptions();
     boolean oldGlobalFlag = false;
     try
     {
@@ -170,13 +170,13 @@ catch(Throwable t)
       CopyOptions.getAbortCounters().setInjectionCounter(abortCount);
       
       // copy file
-      CopyOptions copyOpts = new CopyOptionsBuilder()
-       .setCloudStoreClient(_client)
+      CopyOptions copyOpts = _client.getOptionsBuilderFactory()
+       .newCopyOptionsBuilder()
        .setSourceBucketName(_testBucket)
        .setSourceKey(f.getKey())
        .setDestinationBucketName(_testBucket)
        .setDestinationKey(f.getKey() + "-COPY")
-       .createCopyOptions();
+       .createOptions();
       S3File copy = _client.copy(copyOpts).get();
       Assert.assertEquals(abortCount, getRetryCount());
 
@@ -215,14 +215,14 @@ catch(Throwable t)
       originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
 
     // dryrun the copy and make sure dest stays the same
-    CopyOptions opts = new CopyOptionsBuilder()
-       .setCloudStoreClient(_client)
+    CopyOptions opts = _client.getOptionsBuilderFactory()
+       .newCopyOptionsBuilder()
        .setSourceBucketName(_testBucket)
        .setSourceKey(f.getKey())
        .setDestinationBucketName(_testBucket)
        .setDestinationKey(f.getKey() + "-COPY")
        .setDryRun(true)
-       .createCopyOptions();
+       .createOptions();
     S3File copy = _client.copy(opts).get();
     Assert.assertNull(copy);
     Assert.assertEquals(
@@ -256,15 +256,15 @@ try
     // dryrun the copy and make sure the dest doesn't change
     String topN = rootPrefix + top.getName() + "/";
     String copyTopN = rootPrefix + top.getName() + "-COPY/";
-    CopyOptions copyOpts = new CopyOptionsBuilder()
-       .setCloudStoreClient(_client)
+    CopyOptions copyOpts = _client.getOptionsBuilderFactory()
+       .newCopyOptionsBuilder()
        .setSourceBucketName(_testBucket)
        .setSourceKey(topN)
        .setDestinationBucketName(_testBucket)
        .setDestinationKey(copyTopN)
        .setRecursive(false)
        .setDryRun(true)
-       .createCopyOptions();
+       .createOptions();
     List<S3File> copy = _client.copyToDir(copyOpts).get();
     Assert.assertNull(copy);
     Assert.assertEquals(
@@ -303,13 +303,13 @@ catch(Throwable t)
 
     // copy file
     URI src = dest;
-    CopyOptions copyOpts = new CopyOptionsBuilder()
-       .setCloudStoreClient(_client)
+    CopyOptions copyOpts = _client.getOptionsBuilderFactory()
+       .newCopyOptionsBuilder()
        .setSourceBucketName(_testBucket)
        .setSourceKey(f.getKey())
        .setDestinationBucketName(_testBucket)
        .setDestinationKey(f.getKey() + "-COPY")
-       .createCopyOptions();
+       .createOptions();
     S3File copy = _client.copy(copyOpts).get();
     String expectedKey = TestUtils.addPrefix("simple-copy/" + toUpload.getName() + "-COPY");
     Assert.assertEquals(expectedKey, copy.getKey());
@@ -328,9 +328,9 @@ catch(Throwable t)
     Assert.assertTrue(TestUtils.compareFiles(toUpload, f.getLocalFile()));
 
     // compare metadata
-    ObjectMetadata srcMeta = _client.exists(Utils.getBucket(src), Utils.getObjectKey(src)).get();
+    ObjectMetadata srcMeta = TestUtils.objectExists(Utils.getBucket(src), Utils.getObjectKey(src));
     Assert.assertNotNull(srcMeta);
-    ObjectMetadata destMeta = _client.exists(Utils.getBucket(dest), Utils.getObjectKey(dest)).get();
+    ObjectMetadata destMeta = TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest));
     Assert.assertNotNull(destMeta);
 
     Assert.assertEquals(srcMeta.getContentLength(), destMeta.getContentLength());
@@ -376,13 +376,13 @@ catch(Throwable t)
       TestUtils.findObject(objs, Utils.getObjectKey(dest2)));
 
     // copy file1 over file2
-    CopyOptions copyOpts = new CopyOptionsBuilder()
-       .setCloudStoreClient(_client)
+    CopyOptions copyOpts = _client.getOptionsBuilderFactory()
+       .newCopyOptionsBuilder()
        .setSourceBucketName(_testBucket)
        .setSourceKey(f1.getKey())
        .setDestinationBucketName(_testBucket)
        .setDestinationKey(f2.getKey())
-       .createCopyOptions();
+       .createOptions();
     S3File copy = _client.copy(copyOpts).get();
     String expectedKey = TestUtils.addPrefix("copy-overwrite-file/" + file2.getName());
     Assert.assertEquals(expectedKey, copy.getKey());
@@ -451,20 +451,20 @@ try
     // copy file
     URI dest = TestUtils.getUri(_testBucket, top.getName(), rootPrefix);
     String expectedKey = Utils.getObjectKey(dest);
-    CopyOptions copyOpts = new CopyOptionsBuilder()
-       .setCloudStoreClient(_client)
+    CopyOptions copyOpts = _client.getOptionsBuilderFactory()
+       .newCopyOptionsBuilder()
        .setSourceBucketName(_testBucket)
        .setSourceKey(f.getKey())
        .setDestinationBucketName(_testBucket)
        .setDestinationKey(expectedKey)
-       .createCopyOptions();
+       .createOptions();
     S3File copy = _client.copy(copyOpts).get();
     Assert.assertEquals(expectedKey, copy.getKey());
 
     // validate results, dest file should exist and original dir should be the same
     Assert.assertEquals(7 + originalCount, TestUtils.listTestBucketObjects().size());
     URI file = TestUtils.getUri(_testBucket, top.getName(), rootPrefix);
-    Assert.assertNotNull(_client.exists(Utils.getBucket(file), Utils.getObjectKey(file)).get());
+    Assert.assertNotNull(TestUtils.objectExists(Utils.getBucket(file), Utils.getObjectKey(file)));
     List<S3File> objs = TestUtils.listObjects(_testBucket, Utils.getObjectKey(topUri));
     Assert.assertEquals(5, objs.size());
     return;
@@ -521,13 +521,13 @@ try
     // copy file
     URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
     String expectedKey = Utils.getObjectKey(dest);
-    CopyOptions copyOpts = new CopyOptionsBuilder()
-       .setCloudStoreClient(_client)
+    CopyOptions copyOpts = _client.getOptionsBuilderFactory()
+       .newCopyOptionsBuilder()
        .setSourceBucketName(_testBucket)
        .setSourceKey(f.getKey())
        .setDestinationBucketName(_testBucket)
        .setDestinationKey(expectedKey)
-       .createCopyOptions();
+       .createOptions();
     List<S3File> copy = _client.copyToDir(copyOpts).get();
     Assert.assertEquals(1, copy.size());
 
@@ -576,13 +576,13 @@ catch(Throwable t)
 
     // copy file
     String bucket2 = TestUtils.createTestBucket();
-    CopyOptions copyOpts = new CopyOptionsBuilder()
-       .setCloudStoreClient(_client)
+    CopyOptions copyOpts = _client.getOptionsBuilderFactory()
+       .newCopyOptionsBuilder()
        .setSourceBucketName(_testBucket)
        .setSourceKey(f.getKey())
        .setDestinationBucketName(bucket2)
        .setDestinationKey(f.getKey())
-       .createCopyOptions();
+       .createOptions();
     S3File copy = _client.copy(copyOpts).get();
 
     // check for the copy in 1st bucket, should be the same
@@ -599,14 +599,14 @@ catch(Throwable t)
     // download and compare copy
     File dlTemp = TestUtils.createTmpFile();
     URI src = new URI(TestUtils.getService() + "://" + bucket2 + "/" + f.getKey());
-    DownloadOptions dlOpts = new DownloadOptionsBuilder()
-      .setCloudStoreClient(_client)
+    DownloadOptions dlOpts = _client.getOptionsBuilderFactory()
+      .newDownloadOptionsBuilder()
       .setFile(dlTemp)
       .setBucket(Utils.getBucket(src))
       .setObjectKey(Utils.getObjectKey(src))
       .setRecursive(false)
       .setOverwrite(true)
-      .createDownloadOptions();
+      .createOptions();
     f = _client.download(dlOpts).get();
 
     Assert.assertNotNull(f.getLocalFile());
@@ -647,14 +647,14 @@ try
     // non-recursive copy
     String topN = rootPrefix + top.getName() + "/";
     String copyTopN = rootPrefix + top.getName() + "-COPY/";
-    CopyOptions copyOpts = new CopyOptionsBuilder()
-       .setCloudStoreClient(_client)
+    CopyOptions copyOpts = _client.getOptionsBuilderFactory()
+       .newCopyOptionsBuilder()
        .setSourceBucketName(_testBucket)
        .setSourceKey(topN)
        .setDestinationBucketName(_testBucket)
        .setDestinationKey(copyTopN)
        .setRecursive(false)
-       .createCopyOptions();
+       .createOptions();
     List<S3File> copy = _client.copyToDir(copyOpts).get();
     Assert.assertEquals(2, copy.size());
 
@@ -668,14 +668,14 @@ try
 
     // recursive copy
     String copyTopN2 = topN + "COPY2/";
-    copyOpts = new CopyOptionsBuilder()
-       .setCloudStoreClient(_client)
+    copyOpts = _client.getOptionsBuilderFactory()
+       .newCopyOptionsBuilder()
        .setSourceBucketName(_testBucket)
        .setSourceKey(topN)
        .setDestinationBucketName(_testBucket)
        .setDestinationKey(copyTopN2)
        .setRecursive(true)
-       .createCopyOptions();
+       .createOptions();
     copy = _client.copyToDir(copyOpts).get();
     Assert.assertEquals(5, copy.size());
 
@@ -735,14 +735,14 @@ try
 
     String missingBucketName = "MISSING-cloud-store-ut-bucket-" + System.currentTimeMillis();
     String topN = rootPrefix + top.getName() + "/";
-    CopyOptions copyOpts = new CopyOptionsBuilder()
-       .setCloudStoreClient(_client)
+    CopyOptions copyOpts = _client.getOptionsBuilderFactory()
+       .newCopyOptionsBuilder()
        .setSourceBucketName(_testBucket)
        .setSourceKey(topN)
        .setDestinationBucketName(missingBucketName)
        .setDestinationKey(topN)
        .setRecursive(true)
-       .createCopyOptions();
+       .createOptions();
     String msg = null;
     try
     {
@@ -807,14 +807,14 @@ try
     List<S3File> objs2 = TestUtils.listObjects(bucket2, rootPrefix);
     int originalCount2 = objs2.size();
     String topN = rootPrefix + top.getName() + "/";
-    CopyOptions copyOpts = new CopyOptionsBuilder()
-       .setCloudStoreClient(_client)
+    CopyOptions copyOpts = _client.getOptionsBuilderFactory()
+       .newCopyOptionsBuilder()
        .setSourceBucketName(_testBucket)
        .setSourceKey(topN)
        .setDestinationBucketName(bucket2)
        .setDestinationKey(topN)
        .setRecursive(false)
-       .createCopyOptions();
+       .createOptions();
     List<S3File> copy = _client.copyToDir(copyOpts).get();
     Assert.assertEquals(2, copy.size());
 
@@ -831,14 +831,14 @@ try
 
     // recursive copy
     String copyTopN = rootPrefix + top.getName() + "-COPY/";
-    copyOpts = new CopyOptionsBuilder()
-       .setCloudStoreClient(_client)
+    copyOpts = _client.getOptionsBuilderFactory()
+       .newCopyOptionsBuilder()
        .setSourceBucketName(_testBucket)
        .setSourceKey(topN)
        .setDestinationBucketName(bucket2)
        .setDestinationKey(copyTopN)
        .setRecursive(true)
-       .createCopyOptions();
+       .createOptions();
     copy = _client.copyToDir(copyOpts).get();
     Assert.assertEquals(5, copy.size());
 

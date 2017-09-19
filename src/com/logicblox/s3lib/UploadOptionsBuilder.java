@@ -11,8 +11,7 @@ import java.io.File;
  * Setting fields {@code file}, {@code bucket} and {@code objectKey} is
  * mandatory. All the others are optional.
  */
-public class UploadOptionsBuilder {
-    private CloudStoreClient cloudStoreClient;
+public class UploadOptionsBuilder extends CommandOptionsBuilder {
     private File file;
     private String bucket;
     private String objectKey;
@@ -24,10 +23,9 @@ public class UploadOptionsBuilder {
     private boolean dryRun = false;
     private boolean ignoreAbortInjection = false;
 
-    public UploadOptionsBuilder setCloudStoreClient(CloudStoreClient client) {
-        this.cloudStoreClient = client;
-        return this;
-    }
+    UploadOptionsBuilder(CloudStoreClient client) {
+        _cloudStoreClient = client;
+     }
 
     public UploadOptionsBuilder setFile(File file) {
         this.file = file;
@@ -76,10 +74,11 @@ public class UploadOptionsBuilder {
         return this;
     }
 
-    public UploadOptions createUploadOptions() {
+  @Override
+    public UploadOptions createOptions() {
         // TODO: Check that all mandatory fields have been set. All the rest
         // should return Optional in the corresponding Options method.
-        return new UploadOptions(cloudStoreClient, file, bucket, objectKey,
+        return new UploadOptions(_cloudStoreClient, file, bucket, objectKey,
           chunkSize, encKey, acl, dryRun, ignoreAbortInjection,
           overallProgressListenerFactory);
     }

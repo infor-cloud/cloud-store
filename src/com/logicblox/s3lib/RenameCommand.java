@@ -11,16 +11,12 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 public class RenameCommand extends Command
 {
-  private CloudStoreClient _client;
   private RenameOptions _options;
-  private String _acl;
-
 
   public RenameCommand(RenameOptions options)
   {
+    super(options);
     _options = options;
-    _client = _options.getCloudStoreClient();
-    _acl = _options.getCannedAcl().orNull();
   }
 
 
@@ -49,13 +45,13 @@ public class RenameCommand extends Command
     {
       public ListenableFuture<S3File> create(Throwable t)
       {
-        DeleteOptions deleteOpts = new DeleteOptionsBuilder()
-          .setCloudStoreClient(_options.getCloudStoreClient())
+        DeleteOptions deleteOpts = _client.getOptionsBuilderFactory()
+          .newDeleteOptionsBuilder()
           .setBucket(_options.getDestinationBucket())
           .setObjectKey(_options.getDestinationKey())
           .setForceDelete(true)
           .setIgnoreAbortInjection(true)
-          .createDeleteOptions();
+          .createOptions();
         ListenableFuture<S3File> deleteFuture = _client.delete(deleteOpts);
 
         return Futures.transform(
@@ -76,8 +72,14 @@ public class RenameCommand extends Command
   // start by checking that source exists, then follow with dest check
   private ListenableFuture<S3File> buildFutureChain()
   {
+    ExistsOptions opts = _client.getOptionsBuilderFactory()
+      .newExistsOptionsBuilder()
+      .setBucket(_options.getSourceBucket())
+      .setObjectKey(_options.getSourceKey())
+      .createOptions();
+
     ListenableFuture<ObjectMetadata> sourceExists = 
-      _client.exists(_options.getSourceBucket(), _options.getSourceKey());
+      _client.exists(opts);
 
     return Futures.transform(
       sourceExists,
@@ -97,8 +99,14 @@ public class RenameCommand extends Command
   // follow dest check with copy op
   private ListenableFuture<S3File> checkDestExists()
   {
+    ExistsOptions opts = _client.getOptionsBuilderFactory()
+      .newExistsOptionsBuilder()
+      .setBucket(_options.getDestinationBucket())
+      .setObjectKey(getDestKey())
+      .createOptions();
+
     ListenableFuture<ObjectMetadata> destExists = 
-      _client.exists(_options.getDestinationBucket(), getDestKey());
+      _client.exists(opts);
     return Futures.transform(
       destExists,
       new AsyncFunction<ObjectMetadata,S3File>()
@@ -153,11 +161,11 @@ public class RenameCommand extends Command
 
   private ListenableFuture<S3File> getDeleteOp()
   {
-    DeleteOptions deleteOpts = new DeleteOptionsBuilder()
-      .setCloudStoreClient(_options.getCloudStoreClient())
+    DeleteOptions deleteOpts = _client.getOptionsBuilderFactory()
+      .newDeleteOptionsBuilder()
       .setBucket(_options.getSourceBucket())
       .setObjectKey(_options.getSourceKey())
-      .createDeleteOptions();
+      .createOptions();
 
     return _client.delete(deleteOpts);
   }
@@ -165,14 +173,14 @@ public class RenameCommand extends Command
 
   private ListenableFuture<S3File> getCopyOp()
   {
-    CopyOptions copyOpts = new CopyOptionsBuilder()
-      .setCloudStoreClient(_options.getCloudStoreClient())
+    CopyOptions copyOpts = _client.getOptionsBuilderFactory()
+      .newCopyOptionsBuilder()
       .setSourceBucketName(_options.getSourceBucket())
       .setSourceKey(_options.getSourceKey())
       .setDestinationBucketName(_options.getDestinationBucket())
       .setDestinationKey(getDestKey())
-      .setCannedAcl(_acl)
-      .createCopyOptions();
+      .setCannedAcl(_options.getCannedAcl().orNull())
+      .createOptions();
 
     return _client.copy(copyOpts);
   }

@@ -13,9 +13,8 @@ import com.google.common.base.Optional;
  * {@code RenameOptions} objects are meant to be built by {@code
  * RenameOptionsBuilder}. This class provides only public getter methods.
  */
-public class RenameOptions
+public class RenameOptions extends CommandOptions
 {
-  private final CloudStoreClient _cloudStoreClient;
   private final String _sourceBucket;
   private final String _sourceKey;
   private final String _destinationBucket;
@@ -30,7 +29,7 @@ public class RenameOptions
     Optional<String> cannedAcl, boolean recursive,
     boolean dryRun)
   {
-    _cloudStoreClient = cloudStoreClient;
+    super(cloudStoreClient);
     _sourceBucket = sourceBucket;
     _sourceKey = sourceKey;
     _destinationBucket = destinationBucket;
@@ -38,11 +37,6 @@ public class RenameOptions
     _recursive = recursive;
     _cannedAcl = cannedAcl;
     _dryRun = dryRun;
-  }
-
-  public CloudStoreClient getCloudStoreClient()
-  {
-    return _cloudStoreClient;
   }
 
   public String getSourceBucket()
@@ -68,10 +62,10 @@ public class RenameOptions
   public Optional<String> getCannedAcl()
   {
     if (!_cannedAcl.isPresent()) {
-      if (_cloudStoreClient.getScheme().equals("s3")) {
+      if (getCloudStoreClient().getScheme().equals("s3")) {
         _cannedAcl = Optional.of("bucket-owner-full-control");
       }
-      else if (_cloudStoreClient.getScheme().equals("gs")) {
+      else if (getCloudStoreClient().getScheme().equals("gs")) {
         _cannedAcl = Optional.of("projectPrivate");
       }
     }

@@ -20,8 +20,7 @@ import java.util.Map;
  * {@code CopyOptions} objects are meant to be built by {@code
  * CopyOptionsBuilder}. This class provides only public getter methods.
  */
-public class CopyOptions {
-    private final CloudStoreClient cloudStoreClient;
+public class CopyOptions extends CommandOptions {
     private final String sourceBucketName;
     private final String sourceKey;
     private final String destinationBucketName;
@@ -56,7 +55,7 @@ public class CopyOptions {
                 Optional<Map<String,String>> userMetadata,
                 Optional<OverallProgressListenerFactory>
                     overallProgressListenerFactory) {
-        this.cloudStoreClient = cloudStoreClient;
+        super(cloudStoreClient);
         this.sourceBucketName = sourceBucketName;
         this.sourceKey = sourceKey;
         this.destinationBucketName = destinationBucketName;
@@ -86,10 +85,6 @@ public class CopyOptions {
       return _abortCounters;
     }
 
-    public CloudStoreClient getCloudStoreClient() {
-        return cloudStoreClient;
-    }
-
     public String getSourceBucketName() {
         return sourceBucketName;
     }
@@ -108,10 +103,10 @@ public class CopyOptions {
 
     public Optional<String> getCannedAcl() {
         if (!cannedAcl.isPresent()) {
-            if (cloudStoreClient.getScheme().equals("s3")) {
+            if (getCloudStoreClient().getScheme().equals("s3")) {
                 cannedAcl = Optional.of("bucket-owner-full-control");
             }
-            else if (cloudStoreClient.getScheme().equals("gs")) {
+            else if (getCloudStoreClient().getScheme().equals("gs")) {
                 cannedAcl = Optional.of("projectPrivate");
             }
         }

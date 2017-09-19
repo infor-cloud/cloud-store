@@ -14,16 +14,10 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
-
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.internal.Constants;
 
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -35,7 +29,6 @@ import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
 
 import com.amazonaws.AmazonServiceException;
 
@@ -353,7 +346,14 @@ class Main
       CloudStoreClient client = createCloudStoreClient();
       String bucket = getBucket();
       String key = getObjectKey();
-      ListenableFuture<ObjectMetadata> result = client.exists(bucket, key);
+
+      ExistsOptions opts = client.getOptionsBuilderFactory()
+        .newExistsOptionsBuilder()
+        .setBucket(bucket)
+        .setObjectKey(key)
+        .createOptions();
+
+      ListenableFuture<ObjectMetadata> result = client.exists(opts);
 
       boolean exists = false;
       ObjectMetadata metadata = result.get();
@@ -418,8 +418,8 @@ class Main
 
       CloudStoreClient client = createCloudStoreClient();
 
-      CopyOptions options = new CopyOptionsBuilder()
-          .setCloudStoreClient(client)
+      CopyOptions options = client.getOptionsBuilderFactory()
+          .newCopyOptionsBuilder()
           .setSourceBucketName(getSourceBucket())
           .setSourceKey(getSourceObjectKey())
           .setDestinationBucketName(getDestinationBucket())
@@ -428,12 +428,18 @@ class Main
           .setStorageClass(storageClass)
           .setRecursive(recursive)
           .setDryRun(dryRun)
-          .createCopyOptions();
+          .createOptions();
 
       try
       {
+        ExistsOptions opts = client.getOptionsBuilderFactory()
+          .newExistsOptionsBuilder()
+          .setBucket(getDestinationBucket())
+          .setObjectKey("")
+          .createOptions();
+
         // Check if destination bucket exists
-        if (client.exists(getDestinationBucket(), "").get() == null)
+        if (client.exists(opts).get() == null)
         {
           throw new UsageException("Bucket not found at " +
               Utils.getURI(client.getScheme(), getDestinationBucket(), ""));
@@ -450,9 +456,15 @@ class Main
         }
         else
         {
+          opts = client.getOptionsBuilderFactory()
+            .newExistsOptionsBuilder()
+            .setBucket(getSourceBucket())
+            .setObjectKey(getSourceObjectKey())
+            .createOptions();
+
           // We go for a direct key-to-key copy, so source object has
           // to be there.
-          if (client.exists(getSourceBucket(), getSourceObjectKey()).get() == null)
+          if (client.exists(opts).get() == null)
           {
             throw new UsageException("Object not found at " + getSourceURI());
           }
@@ -501,8 +513,8 @@ class Main
 
       CloudStoreClient client = createCloudStoreClient();
 
-      RenameOptions options = new RenameOptionsBuilder()
-          .setCloudStoreClient(client)
+      RenameOptions options = client.getOptionsBuilderFactory()
+          .newRenameOptionsBuilder()
           .setSourceBucket(getSourceBucket())
           .setSourceKey(getSourceObjectKey())
           .setDestinationBucket(getDestinationBucket())
@@ -510,7 +522,7 @@ class Main
           .setCannedAcl(cannedAcl)
           .setRecursive(recursive)
           .setDryRun(dryRun)
-          .createRenameOptions();
+          .createOptions();
 
       try
       {
@@ -580,15 +592,15 @@ class Main
             " should end with '/', since a directory is uploaded.");
       }
 
-      UploadOptionsBuilder uob = new UploadOptionsBuilder();
-      uob.setCloudStoreClient(client)
-          .setFile(f)
-          .setBucket(getBucket())
-          .setObjectKey(getObjectKey())
-          .setChunkSize(chunkSize)
-          .setEncKey(encKeyName)
-          .setAcl(cannedAcl)
-          .setDryRun(dryRun);
+      UploadOptionsBuilder uob = client.getOptionsBuilderFactory()
+        .newUploadOptionsBuilder()
+        .setFile(f)
+        .setBucket(getBucket())
+        .setObjectKey(getObjectKey())
+        .setChunkSize(chunkSize)
+        .setEncKey(encKeyName)
+        .setAcl(cannedAcl)
+        .setDryRun(dryRun);
       if (progress) {
         OverallProgressListenerFactory cplf = new
             ConsoleProgressListenerFactory();
@@ -598,9 +610,9 @@ class Main
       if(f.isFile()) {
         if (getObjectKey().endsWith("/"))
           uob.setObjectKey(getObjectKey() + f.getName());
-        client.upload(uob.createUploadOptions()).get();
+        client.upload(uob.createOptions()).get();
       } else if(f.isDirectory()) {
-        client.uploadDirectory(uob.createUploadOptions()).get();
+        client.uploadDirectory(uob.createOptions()).get();
       } else {
         throw new UsageException("File '" + file + "' is not a file or a " +
             "directory.");
@@ -629,15 +641,15 @@ class Main
     @Override
     public void invoke() throws Exception {
       CloudStoreClient client = createCloudStoreClient();
-      ListOptionsBuilder lob = new ListOptionsBuilder()
-          .setCloudStoreClient(client)
+      ListOptionsBuilder lob = client.getOptionsBuilderFactory()
+          .newListOptionsBuilder()
           .setBucket(getBucket())
           .setObjectKey(getObjectKey())
           .setRecursive(recursive)
           .setIncludeVersions(includeVersions)
           .setExcludeDirs(excludeDirs);
       try {
-        List<S3File> listCommandResults = client.listObjects(lob.createListOptions()).get();
+        List<S3File> listCommandResults = client.listObjects(lob.createOptions()).get();
         if (includeVersions) {
           String[][] table = new String[listCommandResults.size()][4];
           int[] max = new int[4];
@@ -696,14 +708,14 @@ class Main
         throw new UsageException("Object key should end with / to recursively delete a directory structure");
 
       CloudStoreClient client = createCloudStoreClient();
-      DeleteOptions opts = new DeleteOptionsBuilder()
-          .setCloudStoreClient(client)
+      DeleteOptions opts = client.getOptionsBuilderFactory()
+          .newDeleteOptionsBuilder()
           .setBucket(getBucket())
           .setObjectKey(getObjectKey())
           .setRecursive(recursive)
           .setDryRun(dryRun)
           .setForceDelete(forceDelete)
-          .createDeleteOptions();
+          .createOptions();
 
       try
       {
@@ -744,8 +756,8 @@ class Main
     @Override
     public void invoke() throws Exception {
       CloudStoreClient client = createCloudStoreClient();
-      ListOptionsBuilder lob = new ListOptionsBuilder()
-          .setCloudStoreClient(client)
+      ListOptionsBuilder lob = client.getOptionsBuilderFactory()
+          .newListOptionsBuilder()
           .setBucket(getBucket())
           .setObjectKey(getObjectKey())
           .setRecursive(true)
@@ -757,7 +769,7 @@ class Main
       String du = null;
       TreeMap<String, DirectoryNode> dirs = new TreeMap<String, DirectoryNode>();
       try {
-        List<S3File> result = client.listObjects(lob.createListOptions()).get();
+        List<S3File> result = client.listObjects(lob.createOptions()).get();
         for (S3File obj : result) {
           numberOfFiles += 1;
           totalSize += obj.getSize().orElse((long)0);
@@ -898,11 +910,11 @@ class Main
 
       try
       {
-        PendingUploadsOptions options = new PendingUploadsOptionsBuilder()
-          .setCloudStoreClient(client)
+        PendingUploadsOptions options = client.getOptionsBuilderFactory()
+          .newPendingUploadsOptionsBuilder()
           .setBucket(getBucket())
           .setObjectKey(getObjectKey())
-          .createPendingUploadsOptions();
+          .createOptions();
         List<Upload> pendingUploads = client.listPendingUploads(options).get();
 
         Collections.sort(pendingUploads, new Comparator<Upload>(){
@@ -991,13 +1003,13 @@ class Main
           DateFormat df = Utils.getDefaultDateFormat();
           date = df.parse(dateTimeStr);
         }
-        PendingUploadsOptions options = new PendingUploadsOptionsBuilder()
-          .setCloudStoreClient(client)
+        PendingUploadsOptions options = client.getOptionsBuilderFactory()
+          .newPendingUploadsOptionsBuilder()
           .setBucket(getBucket())
           .setObjectKey(getObjectKey())
           .setUploadId(id)
           .setDate(date)
-          .createPendingUploadsOptions();
+          .createOptions();
         client.abortPendingUploads(options).get();
       }
       catch(ExecutionException exc)
@@ -1071,8 +1083,8 @@ class Main
       File output = new File(file);
       ListenableFuture<?> result;
 
-      DownloadOptionsBuilder dob = new DownloadOptionsBuilder()
-          .setCloudStoreClient(client)
+      DownloadOptionsBuilder dob = client.getOptionsBuilderFactory()
+          .newDownloadOptionsBuilder()
           .setFile(output)
           .setBucket(getBucket())
           .setObjectKey(getObjectKey())
@@ -1088,13 +1100,13 @@ class Main
       }
 
       if(getObjectKey().endsWith("/") || getObjectKey().equals("")) {
-        result = client.downloadDirectory(dob.createDownloadOptions());
+        result = client.downloadDirectory(dob.createOptions());
       } else {
         if (output.isDirectory())
           output = new File(output,
               getObjectKey().substring(getObjectKey().lastIndexOf("/")+1));
         dob.setFile(output);
-        result = client.download(dob.createDownloadOptions());
+        result = client.download(dob.createOptions());
       }
 
       try
@@ -1129,16 +1141,22 @@ class Main
         }
         else
         {
-          if (client.exists(getBucket(), getObjectKey()).get() == null)
+          ExistsOptions opts = client.getOptionsBuilderFactory()
+            .newExistsOptionsBuilder()
+            .setBucket(getBucket())
+            .setObjectKey(getObjectKey())
+            .createOptions();
+
+          if (client.exists(opts).get() == null)
           {
             throw new UsageException("Object not found at " + getURI());
           }
-          EncryptionKeyOptions options = new EncryptionKeyOptionsBuilder()
-            .setCloudStoreClient(client)
+          EncryptionKeyOptions options = client.getOptionsBuilderFactory()
+            .newEncryptionKeyOptionsBuilder()
             .setBucket(getBucket())
             .setObjectKey(getObjectKey())
             .setEncryptionKey(encKeyName)
-            .createEncryptionKeyOptions();
+            .createOptions();
 
           client.addEncryptionKey(options).get();
         }
@@ -1173,16 +1191,22 @@ class Main
         }
         else
         {
-          if (client.exists(getBucket(), getObjectKey()).get() == null)
+          ExistsOptions opts = client.getOptionsBuilderFactory()
+            .newExistsOptionsBuilder()
+            .setBucket(getBucket())
+            .setObjectKey(getObjectKey())
+            .createOptions();
+
+          if (client.exists(opts).get() == null)
           {
             throw new UsageException("Object not found at " + getURI());
           }
-          EncryptionKeyOptions options = new EncryptionKeyOptionsBuilder()
-            .setCloudStoreClient(client)
+          EncryptionKeyOptions options = client.getOptionsBuilderFactory()
+            .newEncryptionKeyOptionsBuilder()
             .setBucket(getBucket())
             .setObjectKey(getObjectKey())
             .setEncryptionKey(encKeyName)
-            .createEncryptionKeyOptions();
+            .createOptions();
 
           client.removeEncryptionKey(options).get();
         }

@@ -23,6 +23,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.api.services.storage.Storage;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 public class Command
@@ -34,10 +35,16 @@ public class Command
   protected Key encKey;
   protected long fileLength;
   protected String scheme;
+  protected CloudStoreClient _client;
 
-  private AmazonS3Client _client = null;
+  private AmazonS3Client _s3Client = null;
 
-  private Storage _gcs_client = null;
+  private Storage _gcsClient = null;
+
+  public Command(CommandOptions options)
+  {
+    _client = options.getCloudStoreClient();
+  }
 
   public void setChunkSize(long chunkSize)
   {
@@ -59,6 +66,7 @@ public class Command
     _stubborn = retry;
   }
 
+  // TODO: It's provided by the CloudStoreClient. Drop it.
   public String getScheme()
   {
     return scheme;
@@ -76,22 +84,22 @@ public class Command
 
   public void setAmazonS3Client(AmazonS3Client client)
   {
-    _client = client;
+    _s3Client = client;
   }
 
   protected AmazonS3Client getAmazonS3Client()
   {
-    return _client;
+    return _s3Client;
   }
 
   public void setGCSClient(Storage client)
   {
-    _gcs_client = client;
+    _gcsClient = client;
   }
 
   protected Storage getGCSClient()
   {
-    return _gcs_client;
+    return _gcsClient;
   }
 
   protected static Key readKeyFromFile(String encKeyName, File encKeyFile) throws IOException, ClassNotFoundException

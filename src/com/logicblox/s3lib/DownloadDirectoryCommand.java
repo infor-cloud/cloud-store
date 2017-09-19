@@ -15,7 +15,6 @@ import java.util.concurrent.ExecutionException;
 public class DownloadDirectoryCommand extends Command
 {
   private DownloadOptions _options;
-  private CloudStoreClient _client;
   private File _destination;
   private List<ListenableFuture<S3File>> _futures;
   private java.util.Set<File> _filesToCleanup;
@@ -25,8 +24,8 @@ public class DownloadDirectoryCommand extends Command
 
   public DownloadDirectoryCommand(DownloadOptions options)
   {
+    super(options);
     _options = options;
-    _client = _options.getCloudStoreClient();
     _destination = _options.getFile();
     _futures = new ArrayList<>();
     _filesToCleanup = new java.util.HashSet<>();
@@ -97,14 +96,14 @@ public class DownloadDirectoryCommand extends Command
   private ListenableFuture<List<S3File>> querySourceFiles()
   {
     // find all files that need to be downloaded
-    ListOptionsBuilder lob = new ListOptionsBuilder()
-        .setCloudStoreClient(_options.getCloudStoreClient())
+    ListOptionsBuilder lob = _client.getOptionsBuilderFactory()
+        .newListOptionsBuilder()
         .setBucket(_options.getBucket())
         .setObjectKey(_options.getObjectKey())
         .setRecursive(_options.isRecursive())
         .setIncludeVersions(false)
         .setExcludeDirs(false);
-    return _client.listObjects(lob.createListOptions());
+    return _client.listObjects(lob.createOptions());
   }
 
 
@@ -216,14 +215,14 @@ public class DownloadDirectoryCommand extends Command
         {
           _filesToCleanup.add(outputFile);
 
-          DownloadOptions options = new DownloadOptionsBuilder()
-            .setCloudStoreClient(_options.getCloudStoreClient())
+          DownloadOptions options = _client.getOptionsBuilderFactory()
+            .newDownloadOptionsBuilder()
             .setFile(outputFile)
             .setBucket(_options.getBucket())
             .setObjectKey(src.getKey())
             .setOverallProgressListenerFactory(
               _options.getOverallProgressListenerFactory().orNull())
-            .createDownloadOptions();
+            .createOptions();
 
           _futures.add(_client.download(options));
         }

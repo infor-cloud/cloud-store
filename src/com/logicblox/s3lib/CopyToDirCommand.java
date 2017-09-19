@@ -14,13 +14,12 @@ import java.util.concurrent.ExecutionException;
 public class CopyToDirCommand extends Command
 {
   private CopyOptions _options;
-  private CloudStoreClient _client;
   private boolean _dryRun;
 
   public CopyToDirCommand(CopyOptions options)
   {
+    super(options);
     _options = options;
-    _client = _options.getCloudStoreClient();
     _dryRun = _options.isDryRun();
   }
 
@@ -77,15 +76,15 @@ public class CopyToDirCommand extends Command
       {
         String destKeyLastPart = obj.getKey().substring(baseDirPath.length());
         String destKey = _options.getDestinationKey() + destKeyLastPart;
-        CopyOptions options0 = new CopyOptionsBuilder()
-            .setCloudStoreClient(_options.getCloudStoreClient())
+        CopyOptions options0 = _client.getOptionsBuilderFactory()
+            .newCopyOptionsBuilder()
             .setSourceBucketName(_options.getSourceBucketName())
             .setSourceKey(obj.getKey())
             .setDestinationBucketName(_options.getDestinationBucketName())
             .setDestinationKey(destKey)
             .setCannedAcl(_options.getCannedAcl().orNull())
             .setStorageClass(_options.getStorageClass().orNull())
-            .createCopyOptions();
+            .createOptions();
 
         if(_dryRun)
         {

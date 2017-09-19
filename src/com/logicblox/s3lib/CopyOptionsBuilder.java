@@ -12,8 +12,7 @@ import java.util.Map;
  * destinationBucketName} and {@code destinationKey} is mandatory. All the
  * others are optional.
  */
-public class CopyOptionsBuilder {
-    private CloudStoreClient cloudStoreClient;
+public class CopyOptionsBuilder extends CommandOptionsBuilder {
     private String sourceBucketName;
     private String sourceKey;
     private String destinationBucketName;
@@ -30,10 +29,8 @@ public class CopyOptionsBuilder {
     private Optional<OverallProgressListenerFactory>
         overallProgressListenerFactory = Optional.absent();
 
-
-    public CopyOptionsBuilder setCloudStoreClient(CloudStoreClient client) {
-        this.cloudStoreClient = client;
-        return this;
+    CopyOptionsBuilder(CloudStoreClient client) {
+        _cloudStoreClient = client;
     }
 
     public CopyOptionsBuilder setSourceBucketName(String sourceBucketName) {
@@ -103,8 +100,9 @@ public class CopyOptionsBuilder {
     //        return this;
     //    }
 
-    public CopyOptions createCopyOptions() {
-        return new CopyOptions(cloudStoreClient, sourceBucketName, sourceKey,
+    @Override
+    public CopyOptions createOptions() {
+        return new CopyOptions(_cloudStoreClient, sourceBucketName, sourceKey,
             destinationBucketName, destinationKey, cannedAcl, s3Acl, storageClass,
             recursive, dryRun, ignoreAbortInjection, userMetadata, overallProgressListenerFactory);
     }

@@ -4,12 +4,10 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.api.services.storage.Storage;
-import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -111,7 +109,13 @@ public class GCSClient implements CloudStoreClient {
         return s3Client.getInternalExecutor();
     }
 
-    @Override
+  @Override
+  public OptionsBuilderFactory getOptionsBuilderFactory()
+  {
+    return new OptionsBuilderFactory(this);
+  }
+
+  @Override
     public KeyProvider getKeyProvider()
     {
         return s3Client.getKeyProvider();
@@ -150,9 +154,8 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<ObjectMetadata> exists(String bucket, String
-        object) {
-        return s3Client.exists(bucket, object);
+    public ListenableFuture<ObjectMetadata> exists(ExistsOptions options) {
+        return s3Client.exists(options);
     }
 
     @Override

@@ -14,12 +14,11 @@ import java.util.concurrent.ExecutionException;
 public class RenameDirectoryCommand extends Command
 {
   private RenameOptions _options;
-  private CloudStoreClient _client;
 
   public RenameDirectoryCommand(RenameOptions options)
   {
+    super(options);
     _options = options;
-    _client = _options.getCloudStoreClient();
   }
 
   public ListenableFuture<List<S3File>> run()
@@ -34,7 +33,14 @@ public class RenameDirectoryCommand extends Command
     final String bucket = _options.getDestinationBucket();
     final String key = stripSlash(_options.getDestinationKey());
        // exists command doesn't allow trailing slash
-    ListenableFuture<ObjectMetadata> destExists = _client.exists(bucket, key);
+
+    ExistsOptions opts = _client.getOptionsBuilderFactory()
+      .newExistsOptionsBuilder()
+      .setBucket(bucket)
+      .setObjectKey(key)
+      .createOptions();
+
+    ListenableFuture<ObjectMetadata> destExists = _client.exists(opts);
     return Futures.transform(
       destExists,
       new AsyncFunction<ObjectMetadata,List<S3File>>()
@@ -65,8 +71,8 @@ public class RenameDirectoryCommand extends Command
   private ListenableFuture<List<S3File>> copyThenDelete()
     throws InterruptedException, ExecutionException, IOException
   {
-    CopyOptions copyOpts = new CopyOptionsBuilder()
-       .setCloudStoreClient(_options.getCloudStoreClient())
+    CopyOptions copyOpts = _client.getOptionsBuilderFactory()
+       .newCopyOptionsBuilder()
        .setSourceBucketName(_options.getSourceBucket())
        .setSourceKey(_options.getSourceKey())
        .setDestinationBucketName(_options.getDestinationBucket())
@@ -74,7 +80,7 @@ public class RenameDirectoryCommand extends Command
        .setRecursive(_options.isRecursive())
        .setDryRun(_options.isDryRun())
        .setCannedAcl(_options.getCannedAcl().orNull())
-       .createCopyOptions();
+       .createOptions();
 
     // hack -- exceptions are a bit of a mess.  copyToDir throws all sorts of stuff that 
     //         should be collected into an ExecutionException?
@@ -88,13 +94,13 @@ public class RenameDirectoryCommand extends Command
         public ListenableFuture<List<S3File>> apply(final List<S3File> destFiles)
           throws InterruptedException, ExecutionException
         {
-          DeleteOptions delOpts = new DeleteOptionsBuilder()
-            .setCloudStoreClient((_options.getCloudStoreClient()))
+          DeleteOptions delOpts = _client.getOptionsBuilderFactory()
+            .newDeleteOptionsBuilder()
             .setBucket(_options.getSourceBucket())
             .setObjectKey(_options.getSourceKey())
             .setRecursive(_options.isRecursive())
             .setDryRun(_options.isDryRun())
-            .createDeleteOptions();
+            .createOptions();
 
           // need to return list of dest files
           return Futures.transform(

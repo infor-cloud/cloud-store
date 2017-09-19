@@ -4,9 +4,7 @@ import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.model.StorageObject;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,14 +14,11 @@ import java.util.concurrent.Callable;
 public class GCSCopyDirCommand extends Command
 {
   private CopyOptions _options;
-  private ListeningExecutorService _apiExecutor;
-  private ListeningScheduledExecutorService _executor;
 
   public GCSCopyDirCommand(CopyOptions options)
   {
+    super(options);
     _options = options;
-    _apiExecutor = _options.getCloudStoreClient().getApiExecutor();
-    _executor = _options.getCloudStoreClient().getInternalExecutor();
   }
 
   public ListenableFuture<List<S3File>> run()
@@ -88,11 +83,11 @@ public class GCSCopyDirCommand extends Command
   private ListenableFuture<S3File> wrapCopyWithRetry(
     final S3File src, final String destKey)
   {
-    return executeWithRetry(_executor, new Callable<ListenableFuture<S3File>>()
+    return executeWithRetry(_client.getInternalExecutor(), new Callable<ListenableFuture<S3File>>()
     {
       public ListenableFuture<S3File> call()
       {
-        return _apiExecutor.submit(new Callable<S3File>()
+        return _client.getApiExecutor().submit(new Callable<S3File>()
         {
           public S3File call() throws IOException
           {
@@ -123,14 +118,14 @@ public class GCSCopyDirCommand extends Command
   {
     // FIXME - if we gave commands a CloudStoreClient when they were created
     //         we could then use client.listObjects() instead of all this....
-    ListOptions listOpts = (new ListOptionsBuilder())
-      .setCloudStoreClient(_options.getCloudStoreClient())
+    ListOptions listOpts = _client.getOptionsBuilderFactory()
+      .newListOptionsBuilder()
       .setBucket(bucket)
       .setObjectKey(prefix)
       .setRecursive(isRecursive)
-      .createListOptions();
+      .createOptions();
 
-    return _options.getCloudStoreClient().listObjects(listOpts);
+    return _client.listObjects(listOpts);
   }
 
   private S3File createS3File(StorageObject obj, boolean includeVersion)

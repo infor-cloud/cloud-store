@@ -9,9 +9,8 @@ import com.google.common.base.Optional;
  * destinationBucket} and {@code destinationKey} is mandatory. All the
  * others are optional.
  */
-public class RenameOptionsBuilder
+public class RenameOptionsBuilder extends CommandOptionsBuilder
 {
-  private CloudStoreClient _cloudStoreClient;
   private String _sourceBucket;
   private String _sourceKey;
   private String _destinationBucket;
@@ -20,9 +19,9 @@ public class RenameOptionsBuilder
   private boolean _recursive = false;
   private boolean _dryRun = false;
 
-  public RenameOptionsBuilder setCloudStoreClient(CloudStoreClient client) {
+  RenameOptionsBuilder(CloudStoreClient client)
+  {
     _cloudStoreClient = client;
-    return this;
   }
 
   public RenameOptionsBuilder setSourceBucket(String sourceBucket)
@@ -67,7 +66,8 @@ public class RenameOptionsBuilder
     return this;
   }
 
-  public RenameOptions createRenameOptions()
+  @Override
+  public RenameOptions createOptions()
   {
     return new RenameOptions(_cloudStoreClient,
       _sourceBucket, _sourceKey, _destinationBucket, _destinationKey,

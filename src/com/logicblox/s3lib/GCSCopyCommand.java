@@ -4,9 +4,7 @@ import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.model.StorageObject;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -15,14 +13,11 @@ import java.util.concurrent.Callable;
 public class GCSCopyCommand extends Command
 {
   private CopyOptions _options;
-  private ListeningExecutorService _apiExecutor;
-  private ListeningScheduledExecutorService _executor;
 
   public GCSCopyCommand(CopyOptions options)
   {
+    super(options);
     _options = options;
-    _apiExecutor = _options.getCloudStoreClient().getApiExecutor();
-    _executor = _options.getCloudStoreClient().getInternalExecutor();
   }
 
   public ListenableFuture<S3File> run()
@@ -38,7 +33,7 @@ public class GCSCopyCommand extends Command
     else
     {
       ListenableFuture<S3File> future =
-        executeWithRetry(_executor, new Callable<ListenableFuture<S3File>>()
+        executeWithRetry(_client.getInternalExecutor(), new Callable<ListenableFuture<S3File>>()
         {
           public ListenableFuture<S3File> call()
           {
@@ -60,7 +55,7 @@ public class GCSCopyCommand extends Command
 
   private ListenableFuture<S3File> runActual()
   {
-    return _apiExecutor.submit(new Callable<S3File>()
+    return _client.getApiExecutor().submit(new Callable<S3File>()
     {
       public S3File call() throws IOException
       {

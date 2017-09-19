@@ -17,7 +17,6 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.ExecutionException;
 
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.BadPaddingException;
@@ -35,16 +34,11 @@ import com.google.common.base.Functions;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.FutureFallback;
 
 public class DownloadCommand extends Command
 {
   private DownloadOptions _options;
-  private CloudStoreClient _client;
-  private ListeningExecutorService _downloadExecutor;
-  private ListeningScheduledExecutorService _executor;
   private KeyProvider _encKeyProvider;
   private boolean _dryRun;
   private ConcurrentMap<Integer, byte[]> etags = new ConcurrentSkipListMap<>();
@@ -53,10 +47,8 @@ public class DownloadCommand extends Command
   public DownloadCommand(DownloadOptions options)
       throws IOException
   {
+    super(options);
     _options = options;
-    _client = _options.getCloudStoreClient();
-    _downloadExecutor = _client.getApiExecutor();
-    _executor = _client.getInternalExecutor();
     _encKeyProvider = _client.getKeyProvider();
     _dryRun = _options.isDryRun();
 
@@ -119,8 +111,13 @@ public class DownloadCommand extends Command
       return Futures.immediateFuture(null);
     }
 
-    ListenableFuture<ObjectMetadata> existsFuture = _client.exists(
-      _options.getBucket(), _options.getObjectKey());
+    ExistsOptions opts = _client.getOptionsBuilderFactory()
+      .newExistsOptionsBuilder()
+      .setBucket(_options.getBucket())
+      .setObjectKey(_options.getObjectKey())
+      .createOptions();
+
+    ListenableFuture<ObjectMetadata> existsFuture = _client.exists(opts);
     ListenableFuture<S3File> result = Futures.transform(
       existsFuture,
       new AsyncFunction<ObjectMetadata,S3File>()
@@ -184,7 +181,7 @@ public class DownloadCommand extends Command
   private ListenableFuture<AmazonDownload> startDownload()
   {
     return executeWithRetry(
-      _executor,
+      _client.getInternalExecutor(),
       new Callable<ListenableFuture<AmazonDownload>>()
       {
         public ListenableFuture<AmazonDownload> call()
@@ -206,7 +203,7 @@ public class DownloadCommand extends Command
 
   private ListenableFuture<AmazonDownload> startDownloadActual()
   {
-    AmazonDownloadFactory factory = new AmazonDownloadFactory(getAmazonS3Client(), _downloadExecutor);
+    AmazonDownloadFactory factory = new AmazonDownloadFactory(getAmazonS3Client(), _client.getApiExecutor());
 
     AsyncFunction<AmazonDownload, AmazonDownload> initDownload = new AsyncFunction<AmazonDownload, AmazonDownload>()
     {
@@ -425,7 +422,7 @@ public class DownloadCommand extends Command
     final int partNumber = (int) (position / chunkSize);
 
     return executeWithRetry(
-      _executor,
+      _client.getInternalExecutor(),
       new Callable<ListenableFuture<Integer>>()
       {
         public ListenableFuture<Integer> call()
@@ -612,7 +609,7 @@ public class DownloadCommand extends Command
   private ListenableFuture<AmazonDownload> validateChecksum(final AmazonDownload download)
   {
     ListenableFuture<AmazonDownload> result =
-        _executor.submit(new Callable<AmazonDownload>()
+        _client.getInternalExecutor().submit(new Callable<AmazonDownload>()
         {
           public AmazonDownload call() throws Exception
           {

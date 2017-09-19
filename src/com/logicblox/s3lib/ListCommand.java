@@ -4,8 +4,6 @@ import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,18 +12,15 @@ import java.util.concurrent.Callable;
 public class ListCommand extends Command {
 
   private ListOptions _options;
-  private ListeningExecutorService _httpExecutor;
-  private ListeningScheduledExecutorService _executor;
 
   public ListCommand(ListOptions options) {
+    super(options);
     _options = options;
-    _httpExecutor = _options.getCloudStoreClient().getApiExecutor();
-    _executor = _options.getCloudStoreClient().getInternalExecutor();
   }
 
   public ListenableFuture<List<S3File>> run() {
     ListenableFuture<List<S3File>> future =
-        executeWithRetry(_executor, new Callable<ListenableFuture<List<S3File>>>() {
+        executeWithRetry(_client.getInternalExecutor(), new Callable<ListenableFuture<List<S3File>>>() {
           public ListenableFuture<List<S3File>> call() {
             return runActual();
           }
@@ -40,7 +35,7 @@ public class ListCommand extends Command {
   }
   
   private ListenableFuture<List<S3File>> runActual() {
-    return _httpExecutor.submit(new Callable<List<S3File>>() {
+    return _client.getApiExecutor().submit(new Callable<List<S3File>>() {
 
       public List<S3File> call() {
         ListObjectsRequest req = new ListObjectsRequest()

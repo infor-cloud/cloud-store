@@ -51,7 +51,7 @@ public class UploadOptionsBuilder {
         return this;
     }
 
-    public UploadOptionsBuilder setCannedACL(String acl) {
+    public UploadOptionsBuilder setCannedAcl(String acl) {
         this.cannedAcl = acl;
         return this;
     }
@@ -87,8 +87,7 @@ public class UploadOptionsBuilder {
         }
 
         if (cannedAcl != null) {
-            if (!Utils.isValidCannedACLFor(
-              cloudStoreClient.getStorageService(), cannedAcl)); {
+            if (!cloudStoreClient.isCannedAclValid(cannedAcl)) {
                 throw new UsageException("Invalid canned ACL '" + cannedAcl + "'");
             }
         }

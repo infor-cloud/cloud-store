@@ -1,7 +1,5 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.services.s3.model.StorageClass;
-
 import java.util.Map;
 
 /**
@@ -52,7 +50,7 @@ public class CopyOptionsBuilder {
         return this;
     }
 
-    public CopyOptionsBuilder setCannedACL(String cannedAcl) {
+    public CopyOptionsBuilder setCannedAcl(String cannedAcl) {
         this.cannedAcl = cannedAcl;
         return this;
     }
@@ -111,36 +109,14 @@ public class CopyOptionsBuilder {
         }
 
         if (cannedAcl != null) {
-            if (!Utils.isValidCannedACLFor(
-              cloudStoreClient.getStorageService(), cannedAcl)); {
+            if (!cloudStoreClient.isCannedAclValid(cannedAcl)) {
                 throw new UsageException("Invalid canned ACL '" + cannedAcl + "'");
             }
         }
 
         if (storageClass != null) {
-            switch (cloudStoreClient.getStorageService())
-            {
-                case S3:
-                    try {
-                        StorageClass.fromValue(storageClass);
-                    }
-                    catch (IllegalArgumentException exc) {
-                        throw new UsageException(
-                          "Invalid storage class '" + storageClass + "'");
-                    }
-                    break;
-                case GCS:
-                    // TODO(geokollias): GCS does support something similar. Add support.
-                    throw new UsageException("Storage classes are not supported " +
-                                             "on GCS currently.");
-                default:
-                    throw new UsageException("Unknown storage service " +
-                                             cloudStoreClient.getStorageService());
-            }
-
-            if (cloudStoreClient.getStorageService() == CloudStoreClient.StorageService.GCS) {
-                throw new UsageException("Storage classes are not supported " +
-                                         "on GCS currently.");
+            if (!cloudStoreClient.isStorageClassValid(storageClass)) {
+                throw new UsageException("Invalid storage class '" + storageClass + "'");
             }
         }
 

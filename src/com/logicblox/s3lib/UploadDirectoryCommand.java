@@ -77,7 +77,7 @@ public class UploadDirectoryCommand extends Command
           .setObjectKey(key)
           .setChunkSize(_options.getChunkSize())
           .setEncKey(_options.getEncKey().orElse(null))
-          .setCannedACL(_options.getCannedACL().orElse(null))
+          .setCannedAcl(_options.getCannedAcl().orElse(null))
           .setOverallProgressListenerFactory(_options
             .getOverallProgressListenerFactory().orElse(null))
           .createUploadOptions();

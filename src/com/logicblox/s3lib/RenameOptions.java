@@ -65,7 +65,7 @@ public class RenameOptions
     return _destinationObjectKey;
   }
 
-  public Optional<String> getCannedACL()
+  public Optional<String> getCannedAcl()
   {
     return Optional.ofNullable(_cannedAcl);
   }

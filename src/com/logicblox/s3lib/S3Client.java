@@ -7,11 +7,14 @@ import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.AccessControlList;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
 
+import com.amazonaws.services.s3.model.StorageClass;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -182,23 +185,18 @@ public class S3Client implements CloudStoreClient {
   /**
    * Canned ACLs handling
    */
-  public static final List<String> allCannedACLs = initCannedACLs();
+  public static final List<String> allCannedAcls = initCannedAcls();
 
   /**
-   * {@code cannedACLsDescConst} has to be a compile-time String constant
-   * expression. That's why e.g. we cannot re-use {@code allCannedACLs} to
+   * {@code cannedAclsDescConst} has to be a compile-time String constant
+   * expression. That's why e.g. we cannot re-use {@code allCannedAcls} to
    * construct it.
    */
-  static final String cannedACLsDescConst = "For Amazon S3, choose one of: " +
+  static final String cannedAclsDescConst = "For Amazon S3, choose one of: " +
       "private, public-read, public-read-write, authenticated-read, " +
       "bucket-owner-read, bucket-owner-full-control.";
 
-  public static boolean isValidCannedACL(String aclStr)
-  {
-    return allCannedACLs.contains(aclStr);
-  }
-
-  private static List<String> initCannedACLs()
+  private static List<String> initCannedAcls()
   {
     List<String> l = new ArrayList<>();
     for (CannedAccessControlList acl : CannedAccessControlList.values())
@@ -257,9 +255,53 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public StorageService getStorageService()
+  public boolean isCannedAclValid(String cannedAcl)
   {
-    return StorageService.S3;
+    return allCannedAcls.contains(cannedAcl);
+  }
+
+  // returns null if the store does not support acl (like minio)
+  static AccessControlList getObjectAcl(
+    AmazonS3Client client, String bucket, String key)
+  throws AmazonS3Exception
+  {
+    AccessControlList acl = null;
+    try
+    {
+      acl = client.getObjectAcl(bucket, key);
+    }
+    catch(AmazonS3Exception ex)
+    {
+      if(!ex.getErrorCode().equalsIgnoreCase("NotImplemented"))
+        throw ex;
+    }
+    return acl;
+  }
+
+  static CannedAccessControlList getCannedAcl(String value)
+  {
+    for (CannedAccessControlList acl : CannedAccessControlList.values())
+    {
+      if (acl.toString().equals(value))
+      {
+        return acl;
+      }
+    }
+    return null;
+  }
+
+  @Override
+  public boolean isStorageClassValid(String storageClass)
+  {
+    try
+    {
+      StorageClass.fromValue(storageClass);
+    }
+    catch (IllegalArgumentException exc)
+    {
+      return false;
+    }
+    return true;
   }
 
   void configure(Command cmd)

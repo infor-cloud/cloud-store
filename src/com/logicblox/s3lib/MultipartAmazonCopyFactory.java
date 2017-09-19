@@ -8,7 +8,6 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
-import java.util.Map;
 import java.util.concurrent.Callable;
 
 class MultipartAmazonCopyFactory
@@ -78,14 +77,14 @@ class MultipartAmazonCopyFactory
 
       InitiateMultipartUploadRequest req = new InitiateMultipartUploadRequest
           (destinationBucketName, destinationObjectKey, metadata);
-      if (options.getCannedACL().isPresent())
+      if (options.getCannedAcl().isPresent())
       {
-        req.setCannedACL(Utils.getS3CannedACL(options.getCannedACL().get()));
+        req.setCannedACL(S3Client.getCannedAcl(options.getCannedAcl().get()));
       }
       else
       {
-        req.setAccessControlList(Utils.getS3ObjectACL(client, sourceBucketName,
-          sourceObjectKey));
+        req.setAccessControlList(
+          S3Client.getObjectAcl(client, sourceBucketName, sourceObjectKey));
       }
       // req.setStorageClass(StorageClass.fromValue(storageClass));
       InitiateMultipartUploadResult res = client.initiateMultipartUpload(req);

@@ -107,7 +107,7 @@ public class UploadOptions {
         return chunkSize;
     }
 
-    public Optional<String> getCannedACL() {
+    public Optional<String> getCannedAcl() {
         return Optional.ofNullable(acl);
     }
 

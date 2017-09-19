@@ -56,7 +56,8 @@ class MultipartAmazonUploadFactory implements UploadFactory
       metadata.setUserMetadata(meta);
       InitiateMultipartUploadRequest req = new InitiateMultipartUploadRequest(
         bucketName, key, metadata);
-      options.getCannedACL().ifPresent(ca -> req.setCannedACL(Utils.getS3CannedACL(ca)));
+      options.getCannedAcl().ifPresent(ca -> req.setCannedACL(
+        S3Client.getCannedAcl(ca)));
 
 
       InitiateMultipartUploadResult res = client.initiateMultipartUpload(req);

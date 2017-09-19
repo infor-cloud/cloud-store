@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.api.services.storage.Storage;
+import com.google.api.services.storage.model.StorageObject;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -11,6 +12,7 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 
@@ -54,23 +56,18 @@ public class GCSClient implements CloudStoreClient {
     /**
      * Canned ACLs handling
      */
-    public static final List<String> allCannedACLs = Arrays.asList(
+    public static final List<String> allCannedAcls = Arrays.asList(
         "projectPrivate", "private", "publicRead", "publicReadWrite",
         "authenticatedRead", "bucketOwnerRead", "bucketOwnerFullControl");
 
     /**
-     * {@code cannedACLsDescConst} has to be a compile-time String constant
-     * expression. That's why e.g. we cannot re-use {@code allCannedACLs} to
+     * {@code cannedAclsDescConst} has to be a compile-time String constant
+     * expression. That's why e.g. we cannot re-use {@code allCannedAcls} to
      * construct it.
      */
-    static final String cannedACLsDescConst = "For Google Cloud Storage, " +
+    static final String cannedAclsDescConst = "For Google Cloud Storage, " +
         "choose one of: projectPrivate, private, publicRead, publicReadWrite," +
         " authenticatedRead, bucketOwnerRead, bucketOwnerFullControl.";
-
-    public static boolean isValidCannedACL(String aclStr)
-    {
-        return allCannedACLs.contains(aclStr);
-    }
 
     @Override
     public void setRetryCount(int retryCount) {
@@ -111,13 +108,32 @@ public class GCSClient implements CloudStoreClient {
         return s3Client.getKeyProvider();
     }
 
-  @Override
-  public StorageService getStorageService()
-  {
-    return StorageService.GCS;
-  }
+    @Override
+    public boolean isCannedAclValid(String cannedAcl)
+    {
+        return allCannedAcls.contains(cannedAcl);
+    }
 
-  @Override
+    @Override
+    public boolean isStorageClassValid(String storageClass)
+    {
+        // TODO: GCS does support something similar. Add support.
+        throw new UsageException("Storage classes are not supported " +
+                                 "on GCS currently.");
+    }
+
+    static void patchMetaData(Storage gcsStorage, String bucket, String key,
+      Map<String, String> userMetadata)
+    throws IOException
+    {
+        StorageObject sobj = new StorageObject()
+          .setName(key)
+          .setMetadata(userMetadata);
+        Storage.Objects.Patch cmd = gcsStorage.objects().patch(bucket, key, sobj);
+        cmd.execute();
+    }
+
+    @Override
     public ListenableFuture<S3File> upload(UploadOptions options) throws IOException
     {
         return s3Client.upload(options);

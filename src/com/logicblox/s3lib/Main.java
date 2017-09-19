@@ -350,7 +350,7 @@ class Main
   class CopyCommandOptions extends TwoObjectsCommandOptions
   {
     @Parameter(names = "--canned-acl", description = "The canned ACL to use. "
-        + S3Client.cannedACLsDescConst)
+        + S3Client.cannedAclsDescConst)
     String cannedAcl;
 
     @Parameter(names = "--storage-class", description = "The storage class to" +
@@ -374,7 +374,7 @@ class Main
           .setSourceObjectKey(getSourceObjectKey())
           .setDestinationBucketName(getDestinationBucket())
           .setDestinationObjectKey(getDestinationObjectKey())
-          .setCannedACL(cannedAcl)
+          .setCannedAcl(cannedAcl)
           .setStorageClass(storageClass)
           .setRecursive(recursive)
           .setDryRun(dryRun)
@@ -428,7 +428,7 @@ class Main
   class RenameCommandOptions extends TwoObjectsCommandOptions
   {
     @Parameter(names = "--canned-acl", description = "The canned ACL to use. "
-        + S3Client.cannedACLsDescConst)
+        + S3Client.cannedAclsDescConst)
     String cannedAcl;
 
     @Parameter(names = {"-r", "--recursive"}, description = "Rename recursively")
@@ -447,7 +447,7 @@ class Main
           .setSourceObjectKey(getSourceObjectKey())
           .setDestinationBucketName(getDestinationBucket())
           .setDestinationObjectKey(getDestinationObjectKey())
-          .setCannedACL(cannedAcl)
+          .setCannedAcl(cannedAcl)
           .setRecursive(recursive)
           .setDryRun(dryRun)
           .createRenameOptions();
@@ -491,7 +491,7 @@ class Main
     boolean dryRun = false;
 
     @Parameter(names = "--canned-acl", description = "The canned ACL to use. "
-        + S3Client.cannedACLsDescConst + " " + GCSClient.cannedACLsDescConst)
+        + S3Client.cannedAclsDescConst + " " + GCSClient.cannedAclsDescConst)
     String cannedAcl;
 
     @Parameter(names = {"--chunk-size"},
@@ -517,7 +517,7 @@ class Main
           .setObjectKey(getObjectKey())
           .setChunkSize(chunkSize)
           .setEncKey(encKeyName)
-          .setCannedACL(cannedAcl)
+          .setCannedAcl(cannedAcl)
           .setDryRun(dryRun);
       if (progress) {
         OverallProgressListenerFactory cplf = new

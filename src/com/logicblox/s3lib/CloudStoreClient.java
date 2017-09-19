@@ -63,15 +63,9 @@ public interface CloudStoreClient {
      */
     KeyProvider getKeyProvider();
 
-    /**
-     * Enum values for backend storage service.
-     */
-    enum StorageService
-    {
-        S3, GCS
-    }
+    boolean isCannedAclValid(String cannedAcl);
 
-    StorageService getStorageService();
+    boolean isStorageClassValid(String storageClass);
 
     /**
      * Uploads a file according to {@code options}. For more details

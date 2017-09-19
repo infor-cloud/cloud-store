@@ -135,7 +135,7 @@ class GCSUpload implements Upload {
                 client.objects()
                     .insert(bucketName, objectMetadata, mediaContent);
 
-            options.getCannedACL().ifPresent(ac -> insertObject.setPredefinedAcl(ac));
+            options.getCannedAcl().ifPresent(ac -> insertObject.setPredefinedAcl(ac));
 
             insertObject.getMediaHttpUploader().setDisableGZipContent(true);
 //              .setDisableGZipContent(true).setDirectUploadEnabled(true);

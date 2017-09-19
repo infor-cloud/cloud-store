@@ -169,7 +169,7 @@ public class RenameCommand extends Command
       .setSourceObjectKey(_options.getSourceObjectKey())
       .setDestinationBucketName(_options.getDestinationBucketName())
       .setDestinationObjectKey(getDestKey())
-      .setCannedACL(_options.getCannedACL().orElse(null))
+      .setCannedAcl(_options.getCannedAcl().orElse(null))
       .createCopyOptions();
 
     return _client.copy(copyOpts);

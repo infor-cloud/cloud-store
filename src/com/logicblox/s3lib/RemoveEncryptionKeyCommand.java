@@ -233,7 +233,7 @@ public class RemoveEncryptionKeyCommand extends Command
                     public S3File call()
                     throws IOException
                     {
-                      Utils.patchMetaData(getGCSClient(), metadata.getBucket(),
+                      GCSClient.patchMetaData(getGCSClient(), metadata.getBucket(),
                         metadata.getKey(), metadata.getUserMetadata());
                       return new S3File(metadata.getBucket(), metadata.getKey());
                     }

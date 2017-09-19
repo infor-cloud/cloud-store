@@ -30,13 +30,8 @@ import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.auth.SystemPropertiesCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.AccessControlList;
-import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
-import com.google.api.services.storage.Storage;
-import com.google.api.services.storage.model.StorageObject;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -189,7 +184,16 @@ public class Utils
     return Pattern.compile(pattern).matcher(uri);
   }
 
-  static CloudStoreClient.StorageService detectStorageService(String endpoint, String scheme)
+
+  /**
+   * Enum values for backend storage service.
+   */
+  enum StorageService
+  {
+    S3, GCS
+  }
+
+  static StorageService detectStorageService(String endpoint, String scheme)
       throws URISyntaxException
   {
     // We consider endpoint (if exists) stronger evidence than URI
@@ -202,9 +206,9 @@ public class Utils
         endpointuri = new URI(endpoint);
 
       if (endpointuri.getHost().endsWith("amazonaws.com"))
-        return CloudStoreClient.StorageService.S3;
+        return StorageService.S3;
       else if (endpointuri.getHost().endsWith("googleapis.com"))
-        return CloudStoreClient.StorageService.GCS;
+        return StorageService.GCS;
     }
 
     if (scheme != null)
@@ -212,28 +216,14 @@ public class Utils
       switch (scheme)
       {
         case "s3":
-          return CloudStoreClient.StorageService.S3;
+          return StorageService.S3;
         case "gs":
-          return CloudStoreClient.StorageService.GCS;
+          return StorageService.GCS;
       }
     }
 
     throw new UsageException("Cannot detect storage service: (endpoint=" +
         endpoint +  ", scheme=" + scheme + ")");
-  }
-
-  public static boolean isValidCannedACLFor(CloudStoreClient.StorageService service,
-                                            String cannedACL)
-  {
-    switch (service)
-    {
-      case S3:
-        return S3Client.isValidCannedACL(cannedACL);
-      case GCS:
-        return GCSClient.isValidCannedACL(cannedACL);
-      default:
-        throw new UsageException("Unknown storage service " + service);
-    }
   }
 
   public static final List<String> defaultCredentialProvidersS3 = Arrays.asList(
@@ -419,10 +409,10 @@ public class Utils
     ListeningExecutorService uploadExecutor = 
       createApiExecutor(maxConcurrentConnections);
 
-    CloudStoreClient.StorageService service = detectStorageService(endpoint, scheme);
+    StorageService service = detectStorageService(endpoint, scheme);
 
     CloudStoreClient client;
-    if(service == CloudStoreClient.StorageService.GCS)
+    if(service == StorageService.GCS)
     {
       AWSCredentialsProvider gcsXMLProvider =
         getGCSXMLEnvironmentVariableCredentialsProvider();
@@ -499,47 +489,6 @@ public class Utils
        }
      }
      return created;
-  }
-
-  // returns null if the store does not support acl (like minio)
-  public static AccessControlList getS3ObjectACL(
-    AmazonS3Client client, String bucket, String key)
-      throws AmazonS3Exception
-  {
-    AccessControlList acl = null;
-    try
-    {
-      acl = client.getObjectAcl(bucket, key);
-    }
-    catch(AmazonS3Exception ex)
-    {
-      if(!ex.getErrorCode().equalsIgnoreCase("NotImplemented"))
-        throw ex;
-    }
-    return acl;
-  }
-
-  public static CannedAccessControlList getS3CannedACL(String value)
-  {
-    for (CannedAccessControlList acl : CannedAccessControlList.values())
-    {
-      if (acl.toString().equals(value))
-      {
-        return acl;
-      }
-    }
-    return null;
-  }
-
-  public static void patchMetaData(
-    Storage gcsStorage, String bucket, String key, Map<String,String> userMetadata)
-      throws IOException
-  {
-    StorageObject sobj = new StorageObject()
-      .setName(key)
-      .setMetadata(userMetadata);
-    Storage.Objects.Patch cmd = gcsStorage.objects().patch(bucket, key, sobj);
-    cmd.execute();
   }
 
   protected static void print(ObjectMetadata m)

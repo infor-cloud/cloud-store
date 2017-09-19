@@ -47,7 +47,7 @@ public class RenameOptionsBuilder
     return this;
   }
 
-  public RenameOptionsBuilder setCannedACL(String cannedAcl)
+  public RenameOptionsBuilder setCannedAcl(String cannedAcl)
   {
     _cannedAcl = cannedAcl;
     return this;
@@ -84,8 +84,7 @@ public class RenameOptionsBuilder
     }
 
     if (_cannedAcl != null) {
-      if (!Utils.isValidCannedACLFor(
-        _cloudStoreClient.getStorageService(), _cannedAcl)); {
+      if (!_cloudStoreClient.isCannedAclValid(_cannedAcl)) {
         throw new UsageException("Invalid canned ACL '" + _cannedAcl + "'");
       }
     }

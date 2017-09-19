@@ -99,7 +99,7 @@ public class CopyOptions {
         return destinationObjectKey;
     }
 
-    public Optional<String> getCannedACL() {
+    public Optional<String> getCannedAcl() {
         return Optional.ofNullable(cannedAcl);
     }
 

@@ -88,7 +88,6 @@ public class CopyOptionsBuilder {
       this.ignoreAbortInjection = ignore;
       return this;
     }
-  
 
     // Disabled progress listener since AWS S3 copy progress indicator doesn't
     // notify about the copied bytes.
@@ -99,7 +98,8 @@ public class CopyOptionsBuilder {
     //        return this;
     //    }
 
-    public CopyOptions createCopyOptions() {
+    private void validateOptions()
+    {
         if (cloudStoreClient == null) {
             throw new UsageException("CloudStoreClient has to be set");
         }
@@ -115,6 +115,10 @@ public class CopyOptionsBuilder {
         else if (destinationObjectKey == null) {
             throw new UsageException("Destination object key has to be set");
         }
+    }
+
+    public CopyOptions createCopyOptions() {
+        validateOptions();
 
         return new CopyOptions(cloudStoreClient, sourceBucketName, sourceObjectKey,
             destinationBucketName, destinationObjectKey, cannedAcl, s3Acl, storageClass,

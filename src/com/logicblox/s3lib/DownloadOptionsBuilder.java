@@ -66,7 +66,8 @@ public class DownloadOptionsBuilder {
         return this;
     }
 
-    public DownloadOptions createDownloadOptions() {
+    private void validateOptions()
+    {
         if (cloudStoreClient == null) {
             throw new UsageException("CloudStoreClient has to be set");
         }
@@ -79,6 +80,10 @@ public class DownloadOptionsBuilder {
         else if (objectKey == null) {
             throw new UsageException("Object key has to be set");
         }
+    }
+
+    public DownloadOptions createDownloadOptions() {
+        validateOptions();
 
         return new DownloadOptions(cloudStoreClient, file, bucket, objectKey,
           version, recursive, overwrite, dryRun, overallProgressListenerFactory);

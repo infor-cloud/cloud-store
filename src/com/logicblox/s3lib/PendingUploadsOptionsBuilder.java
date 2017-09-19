@@ -41,7 +41,7 @@ public class PendingUploadsOptionsBuilder
     return this;
   }
 
-  public PendingUploadsOptions createPendingUploadsOptions()
+  private void validateOptions()
   {
     if (_cloudStoreClient == null) {
       throw new UsageException("CloudStoreClient has to be set");
@@ -52,6 +52,11 @@ public class PendingUploadsOptionsBuilder
     else if (_objectKey == null) {
       throw new UsageException("Object key has to be set");
     }
+  }
+
+  public PendingUploadsOptions createPendingUploadsOptions()
+  {
+    validateOptions();
 
     return new PendingUploadsOptions(_cloudStoreClient, _bucket, _objectKey,
       _uploadId, _date);

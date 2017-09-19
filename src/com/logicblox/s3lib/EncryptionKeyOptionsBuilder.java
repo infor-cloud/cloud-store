@@ -32,7 +32,7 @@ public class EncryptionKeyOptionsBuilder
     return this;
   }
 
-  public EncryptionKeyOptions createEncryptionKeyOptions()
+  private void validateOptions()
   {
     if (_cloudStoreClient == null) {
       throw new UsageException("CloudStoreClient has to be set");
@@ -46,6 +46,11 @@ public class EncryptionKeyOptionsBuilder
     else if (_encryptionKey == null) {
       throw new UsageException("Encryption key has to be set");
     }
+  }
+
+  public EncryptionKeyOptions createEncryptionKeyOptions()
+  {
+    validateOptions();
 
     return new EncryptionKeyOptions(_cloudStoreClient, _bucket, _objectKey,
       _encryptionKey);

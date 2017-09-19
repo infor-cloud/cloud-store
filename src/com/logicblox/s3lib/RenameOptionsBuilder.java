@@ -65,7 +65,7 @@ public class RenameOptionsBuilder
     return this;
   }
 
-  public RenameOptions createRenameOptions()
+  private void validateOptions()
   {
     if (_cloudStoreClient == null) {
       throw new UsageException("CloudStoreClient has to be set");
@@ -82,6 +82,11 @@ public class RenameOptionsBuilder
     else if (_destinationObjectKey == null) {
       throw new UsageException("Destination object key has to be set");
     }
+  }
+
+  public RenameOptions createRenameOptions()
+  {
+    validateOptions();
 
     return new RenameOptions(_cloudStoreClient, _sourceBucketName,
       _sourceObjectKey, _destinationBucketName, _destinationObjectKey,

@@ -37,17 +37,21 @@ public class ListOptionsBuilder {
     this.excludeDirs = excludeDirs;
     return this;
   }
-  
-  public ListOptions createListOptions() {
+
+  private void validateOptions()
+  {
     if (cloudStoreClient == null) {
       throw new UsageException("CloudStoreClient has to be set");
     }
     else if (bucket == null) {
       throw new UsageException("Bucket has to be set");
     }
+  }
+
+  public ListOptions createListOptions() {
+    validateOptions();
 
     return new ListOptions(cloudStoreClient, bucket, objectKey, recursive,
       includeVersions, excludeDirs);
   }
-  
 }

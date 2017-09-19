@@ -72,7 +72,7 @@ public class UploadOptionsBuilder {
         return this;
     }
 
-    public UploadOptions createUploadOptions() {
+    private void validateOptions() {
         if (cloudStoreClient == null) {
             throw new UsageException("CloudStoreClient has to be set");
         }
@@ -85,6 +85,10 @@ public class UploadOptionsBuilder {
         else if (objectKey == null) {
             throw new UsageException("Object key has to be set");
         }
+    }
+
+    public UploadOptions createUploadOptions() {
+        validateOptions();
 
         return new UploadOptions(cloudStoreClient, file, bucket, objectKey,
           chunkSize, encKey, acl, dryRun, ignoreAbortInjection,

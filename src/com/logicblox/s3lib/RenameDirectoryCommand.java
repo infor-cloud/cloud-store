@@ -1,6 +1,5 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
@@ -21,13 +20,13 @@ public class RenameDirectoryCommand extends Command
     _options = options;
   }
 
-  public ListenableFuture<List<S3File>> run()
+  public ListenableFuture<List<StoreFile>> run()
     throws InterruptedException, ExecutionException, IOException
   {
     return startCopyThenDelete();
   }
 
-  private ListenableFuture<List<S3File>> startCopyThenDelete()
+  private ListenableFuture<List<StoreFile>> startCopyThenDelete()
     throws InterruptedException, ExecutionException, IOException
   {
     final String bucket = _options.getDestinationBucketName();
@@ -40,12 +39,12 @@ public class RenameDirectoryCommand extends Command
       .setObjectKey(key)
       .createOptions();
 
-    ListenableFuture<ObjectMetadata> destExists = _client.exists(opts);
+    ListenableFuture<Metadata> destExists = _client.exists(opts);
     return Futures.transform(
       destExists,
-      new AsyncFunction<ObjectMetadata,List<S3File>>()
+      new AsyncFunction<Metadata,List<StoreFile>>()
       {
-        public ListenableFuture<List<S3File>> apply(ObjectMetadata mdata)
+        public ListenableFuture<List<StoreFile>> apply(Metadata mdata)
           throws Exception
         {
           if(null != mdata)
@@ -68,7 +67,7 @@ public class RenameDirectoryCommand extends Command
   }
 
 
-  private ListenableFuture<List<S3File>> copyThenDelete()
+  private ListenableFuture<List<StoreFile>> copyThenDelete()
     throws InterruptedException, ExecutionException, IOException
   {
     CopyOptions copyOpts = _client.getOptionsBuilderFactory()
@@ -85,14 +84,14 @@ public class RenameDirectoryCommand extends Command
 
     // hack -- exceptions are a bit of a mess.  copyToDir throws all sorts of stuff that 
     //         should be collected into an ExecutionException?
-    ListenableFuture<List<S3File>> copyFuture = null;
+    ListenableFuture<List<StoreFile>> copyFuture = null;
     copyFuture = _client.copyToDir(copyOpts);
 
     return Futures.transform(
       copyFuture,
-      new AsyncFunction<List<S3File>, List<S3File>>()
+      new AsyncFunction<List<StoreFile>, List<StoreFile>>()
       {
-        public ListenableFuture<List<S3File>> apply(final List<S3File> destFiles)
+        public ListenableFuture<List<StoreFile>> apply(final List<StoreFile> destFiles)
           throws InterruptedException, ExecutionException
         {
           DeleteOptions delOpts = _client.getOptionsBuilderFactory()
@@ -106,9 +105,9 @@ public class RenameDirectoryCommand extends Command
           // need to return list of dest files
           return Futures.transform(
             _client.deleteDir(delOpts),
-            new Function<List<S3File>, List<S3File>>()
+            new Function<List<StoreFile>, List<StoreFile>>()
             {
-              public List<S3File> apply(List<S3File> deletedFiles)
+              public List<StoreFile> apply(List<StoreFile> deletedFiles)
               {
                 return destFiles;
               }

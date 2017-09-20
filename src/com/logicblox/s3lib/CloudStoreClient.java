@@ -1,7 +1,5 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -12,28 +10,32 @@ import java.util.concurrent.ExecutionException;
 
 /**
  * Provides the a general client API for accessing cloud stores like Amazon S3
- * or Google Cloud Storage.
- * <p>
- * Captures the full configuration independent of concrete operations like
- * uploads or downloads.
+ * or Google Cloud Storage.  This should be considered the primary public
+ * interface used by clients of the cloud-store library.
  */
 public interface CloudStoreClient {
     /**
-     * Sets the number of retries after a failure.
+     * Sets the number of retries after a failure before the operation will be cancelled.
      *
      * @param retryCount Number of retries
      */
     void setRetryCount(int retryCount);
 
+    /**
+     * By default, client-side errors (like HTTP 404) will not cause operations to be retried.
+     * Setting retryClientException to true will cause client-side errirs to be
+     * retried in the same manner as server-side errors.
+     */
     void setRetryClientException(boolean retry);
 
     /**
      * Sets the API endpoint this client should issue the requests to.
      * <p>
-     * This method is mostly useful if we would like to test different services
-     * with compatible APIs or for unit-testing purposes (e.g. mocks).
+     * This is mostly useful to test different cloud store services with compatible 
+     * APIs or for unit-testing purposes (e.g. mocks or minio).  Setting an endpoint
+     * is not necessary when using standard AWS S3 or GCS stores.
      *
-     * @param endpoint API endpoint
+     * @param endpoint API endpoint, i.e, "http://127.0.0.1:9000/"
      */
     void setEndpoint(String endpoint);
 
@@ -95,7 +97,7 @@ public interface CloudStoreClient {
      * @param options Upload options
      * @see UploadOptions
      */
-    ListenableFuture<S3File> upload(UploadOptions options)
+    ListenableFuture<StoreFile> upload(UploadOptions options)
         throws IOException;
 
     /**
@@ -110,7 +112,7 @@ public interface CloudStoreClient {
      * @param options Upload options
      * @see UploadOptions
      */
-    ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
+    ListenableFuture<List<StoreFile>> uploadDirectory(UploadOptions options)
         throws IOException, ExecutionException, InterruptedException;
 
     /**
@@ -118,17 +120,17 @@ public interface CloudStoreClient {
      *
      * @param opts DeleteOptions that specify what to delete
      */
-    ListenableFuture<S3File> delete(DeleteOptions opts);
+    ListenableFuture<StoreFile> delete(DeleteOptions opts);
 
     /**
      * Recursively delete objects from a cloud store service.
      *
      * @param opts DeleteOptions that specify what to delete
      */
-    ListenableFuture<List<S3File>> deleteDir(DeleteOptions opts)
+    ListenableFuture<List<StoreFile>> deleteDir(DeleteOptions opts)
       throws InterruptedException, ExecutionException;
 
-    /** Lists all buckets visible for this account. */
+    /** Lists all buckets visible for the current user. */
     ListenableFuture<List<Bucket>> listBuckets();
 
     /**
@@ -141,7 +143,7 @@ public interface CloudStoreClient {
      *
      * @param options ExistsOptions
      */
-    ListenableFuture<ObjectMetadata> exists(ExistsOptions options);
+    ListenableFuture<Metadata> exists(ExistsOptions options);
 
     /**
      * Downloads a file according to {@code options}. For more details
@@ -176,7 +178,7 @@ public interface CloudStoreClient {
      * @param options Download options
      * @see DownloadOptions
      */
-    ListenableFuture<S3File> download(DownloadOptions options)
+    ListenableFuture<StoreFile> download(DownloadOptions options)
         throws IOException;
 
     /**
@@ -195,7 +197,7 @@ public interface CloudStoreClient {
      *
      * @param options Download options
      */
-    ListenableFuture<List<S3File>> downloadDirectory(DownloadOptions options)
+    ListenableFuture<List<StoreFile>> downloadDirectory(DownloadOptions options)
         throws IOException, ExecutionException, InterruptedException;
 
     /**
@@ -210,7 +212,7 @@ public interface CloudStoreClient {
      * @see CloudStoreClient#copyToDir(CopyOptions)
      * @see CopyOptions
      */
-    ListenableFuture<S3File> copy(CopyOptions options);
+    ListenableFuture<StoreFile> copy(CopyOptions options);
 
     /**
      * Copies all keys that would be returned by the list operation on the
@@ -226,7 +228,7 @@ public interface CloudStoreClient {
      * @see CloudStoreClient#copy(CopyOptions)
      * @see CopyOptions
      */
-    ListenableFuture<List<S3File>> copyToDir(CopyOptions options) throws
+    ListenableFuture<List<StoreFile>> copyToDir(CopyOptions options) throws
         InterruptedException, ExecutionException, IOException;
 
     /**
@@ -242,7 +244,7 @@ public interface CloudStoreClient {
      * @see CloudStoreClient#renameDirectory(RenameOptions)
      * @see RenameOptions
      */
-    ListenableFuture<S3File> rename(RenameOptions options);
+    ListenableFuture<StoreFile> rename(RenameOptions options);
 
     /**
      * Renames all keys that share a prefix to have another prefix -- in other
@@ -260,7 +262,7 @@ public interface CloudStoreClient {
      * @see CloudStoreClient#rename(RenameOptions)
      * @see RenameOptions
      */
-    ListenableFuture<List<S3File>> renameDirectory(RenameOptions options)
+    ListenableFuture<List<StoreFile>> renameDirectory(RenameOptions options)
       throws InterruptedException, ExecutionException, IOException;
 
     /**
@@ -281,7 +283,7 @@ public interface CloudStoreClient {
      * @param lsOptions Class contains all needed options for ls command
      * @see CloudStoreClient#listObjects(ListOptions)
      */
-    ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions);
+    ListenableFuture<List<StoreFile>> listObjects(ListOptions lsOptions);
 
     /**
      * Returns a list of the pending uploads to object keys that start with
@@ -319,7 +321,7 @@ public interface CloudStoreClient {
      *
      * @param options EncryptionKeyOptions
      */
-    ListenableFuture<S3File> addEncryptionKey(EncryptionKeyOptions options)
+    ListenableFuture<StoreFile> addEncryptionKey(EncryptionKeyOptions options)
     throws IOException;
 
     /**
@@ -327,7 +329,7 @@ public interface CloudStoreClient {
      *
      * @param options EncryptionKeyOptions
      */
-    ListenableFuture<S3File> removeEncryptionKey(EncryptionKeyOptions options)
+    ListenableFuture<StoreFile> removeEncryptionKey(EncryptionKeyOptions options)
     throws IOException;
 
     /**

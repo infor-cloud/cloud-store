@@ -89,7 +89,7 @@ public class UploadCommand extends Command
   /**
    * Run ties Step 1, Step 2, and Step 3 together. The return result is the ETag of the upload.
    */
-  public ListenableFuture<S3File> run()
+  public ListenableFuture<StoreFile> run()
     throws FileNotFoundException
   {
     if (!file.exists())
@@ -108,17 +108,17 @@ public class UploadCommand extends Command
   }
   
 
-  private ListenableFuture<S3File> scheduleExecution()
+  private ListenableFuture<StoreFile> scheduleExecution()
   {
     final ListenableFuture<Upload> started = startUpload();
     ListenableFuture<Upload> uploaded = Futures.transform(started, startPartsAsyncFunction());
     ListenableFuture<String> completed = Futures.transform(uploaded, completeAsyncFunction());
-    ListenableFuture<S3File> res = Futures.transform(completed,
-      new Function<String, S3File>()
+    ListenableFuture<StoreFile> res = Futures.transform(completed,
+      new Function<String, StoreFile>()
       {
-        public S3File apply(String etag)
+        public StoreFile apply(String etag)
         {
-          S3File f = new S3File();
+          StoreFile f = new StoreFile();
           f.setLocalFile(file);
           f.setETag(etag);
           f.setBucketName(_options.getBucketName());
@@ -129,15 +129,15 @@ public class UploadCommand extends Command
 
     return Futures.withFallback(
       res,
-      new FutureFallback<S3File>()
+      new FutureFallback<StoreFile>()
       {
-        public ListenableFuture<S3File> create(final Throwable t)
+        public ListenableFuture<StoreFile> create(final Throwable t)
         {
           ListenableFuture<Void> aborted = Futures.transform(started, abortAsyncFunction());
-          ListenableFuture<S3File> res0 = Futures.transform(aborted,
-            new AsyncFunction<Void, S3File>()
+          ListenableFuture<StoreFile> res0 = Futures.transform(aborted,
+            new AsyncFunction<Void, StoreFile>()
             {
-              public ListenableFuture<S3File> apply(Void v)
+              public ListenableFuture<StoreFile> apply(Void v)
               {
                 return Futures.immediateFailedFuture(t);
               }

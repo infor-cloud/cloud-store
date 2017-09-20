@@ -54,7 +54,7 @@ public class RenameTests
     int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
     File toUpload = TestUtils.createTextFile(100);
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, dest);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
     Assert.assertEquals(
       originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -72,7 +72,7 @@ public class RenameTests
       .createOptions();
     f = _client.rename(opts).get();
     Assert.assertNull(f);
-    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
     Assert.assertEquals(originalCount + 1, objs.size());
     Assert.assertTrue(TestUtils.findObject(objs, Utils.getObjectKey(src)));
     Assert.assertFalse(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
@@ -97,7 +97,7 @@ try
     String rootPrefix = TestUtils.addPrefix("rename-dryrun-dir/");
     int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
     URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
     Assert.assertEquals(2, uploaded.size());
     Assert.assertEquals(
       originalCount + 2, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -114,9 +114,9 @@ try
       .setRecursive(false)
       .setDryRun(true)
       .createOptions();
-    List<S3File> files = _client.renameDirectory(opts).get();
+    List<StoreFile> files = _client.renameDirectory(opts).get();
     Assert.assertNull(files);
-    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
     Assert.assertEquals(originalCount + 2, objs.size());
 
     String topN = rootPrefix + top.getName() + "/";
@@ -162,7 +162,7 @@ while(count < retryCount)
       String rootPrefix = TestUtils.addPrefix("rename-dir-abort-one-on-copy-" + count + "/");
       int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
       URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-      List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+      List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
       Assert.assertEquals(3, uploaded.size());
       int uploadCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
       Assert.assertEquals(uploaded.size(), uploadCount);
@@ -195,13 +195,13 @@ while(count < retryCount)
       }
       
       // verify that nothing moved
-      List<S3File> destObjs = TestUtils.listObjects(_testBucket, destPrefix);
+      List<StoreFile> destObjs = TestUtils.listObjects(_testBucket, destPrefix);
       String topDestN = destPrefix + "subdir2/";
       Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + a.getName()));
       Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + b.getName()));
       Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + c.getName()));
 
-      List<S3File> srcObjs = TestUtils.listObjects(_testBucket, rootPrefix);
+      List<StoreFile> srcObjs = TestUtils.listObjects(_testBucket, rootPrefix);
       String topN = rootPrefix + top.getName() + "/";
       Assert.assertTrue(TestUtils.findObject(srcObjs, topN + a.getName()));
       Assert.assertTrue(TestUtils.findObject(srcObjs, topN + b.getName()));
@@ -253,7 +253,7 @@ while(count < retryCount)
       String rootPrefix = TestUtils.addPrefix("rename-dir-abort-one-on-delete-" + count + "/");
       int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
       URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-      List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+      List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
       Assert.assertEquals(3, uploaded.size());
       int uploadCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
       Assert.assertEquals(uploaded.size(), uploadCount);
@@ -294,8 +294,8 @@ while(count < retryCount)
       }
       
       // verify that nothing moved
-      List<S3File> destObjs = TestUtils.listObjects(_testBucket, destPrefix);
-      List<S3File> srcObjs = TestUtils.listObjects(_testBucket, rootPrefix);
+      List<StoreFile> destObjs = TestUtils.listObjects(_testBucket, destPrefix);
+      List<StoreFile> srcObjs = TestUtils.listObjects(_testBucket, rootPrefix);
 
       String topDestN = destPrefix + "subdir2/";
       Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + a.getName()));
@@ -344,7 +344,7 @@ while(count < retryCount)
       String rootPrefix = TestUtils.addPrefix("rename-dir-all-abort-on-delete-" + count + "/");
       int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
       URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-      List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+      List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
       Assert.assertEquals(2, uploaded.size());
       int uploadCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
       Assert.assertEquals(uploaded.size(), uploadCount);
@@ -380,12 +380,12 @@ while(count < retryCount)
       Assert.assertNull(msg);
       
       // verify that nothing moved
-      List<S3File> destObjs = TestUtils.listObjects(_testBucket, destPrefix);
+      List<StoreFile> destObjs = TestUtils.listObjects(_testBucket, destPrefix);
       String topDestN = destPrefix + "subdir2/";
       Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + a.getName()));
       Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + b.getName()));
 
-      List<S3File> srcObjs = TestUtils.listObjects(_testBucket, rootPrefix);
+      List<StoreFile> srcObjs = TestUtils.listObjects(_testBucket, rootPrefix);
       String topN = rootPrefix + top.getName();
       Assert.assertTrue(TestUtils.findObject(srcObjs, topN + "/" + a.getName()));
       Assert.assertTrue(TestUtils.findObject(srcObjs, topN + "/" + b.getName()));
@@ -431,7 +431,7 @@ while(count < retryCount)
       String rootPrefix = TestUtils.addPrefix("rename-dir-all-abort-on-copy-" + count + "/");
       int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
       URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-      List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+      List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
       Assert.assertEquals(2, uploaded.size());
       int uploadCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
       Assert.assertEquals(uploaded.size(), uploadCount);
@@ -467,12 +467,12 @@ while(count < retryCount)
       Assert.assertNull(msg);
       
       // verify that nothing moved
-      List<S3File> destObjs = TestUtils.listObjects(_testBucket, destPrefix);
+      List<StoreFile> destObjs = TestUtils.listObjects(_testBucket, destPrefix);
       String topDestN = destPrefix + "subdir2/";
       Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + a.getName()));
       Assert.assertFalse(TestUtils.findObject(destObjs, topDestN + b.getName()));
 
-      List<S3File> srcObjs = TestUtils.listObjects(_testBucket, rootPrefix);
+      List<StoreFile> srcObjs = TestUtils.listObjects(_testBucket, rootPrefix);
       String topN = rootPrefix + top.getName();
       Assert.assertTrue(TestUtils.findObject(srcObjs, topN + "/" + a.getName()));
       Assert.assertTrue(TestUtils.findObject(srcObjs, topN + "/" + b.getName()));
@@ -506,7 +506,7 @@ while(count < retryCount)
       int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
       File toUpload = TestUtils.createTextFile(100);
       URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-      S3File f = TestUtils.uploadFile(toUpload, dest);
+      StoreFile f = TestUtils.uploadFile(toUpload, dest);
       Assert.assertNotNull(f);
       Assert.assertEquals(
         originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -535,7 +535,7 @@ while(count < retryCount)
       Assert.assertEquals(abortCount, getRetryCount());
       Assert.assertNotNull(f);
       Assert.assertEquals(Utils.getObjectKey(dest), f.getKey());
-      List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+      List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
       Assert.assertTrue(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
       Assert.assertFalse(TestUtils.findObject(objs, Utils.getObjectKey(src)));
     }
@@ -560,7 +560,7 @@ while(count < retryCount)
       int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
       File toUpload = TestUtils.createTextFile(100);
       URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-      S3File f = TestUtils.uploadFile(toUpload, dest);
+      StoreFile f = TestUtils.uploadFile(toUpload, dest);
       Assert.assertNotNull(f);
       Assert.assertEquals(
         originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -589,7 +589,7 @@ while(count < retryCount)
       Assert.assertEquals(abortCount, getRetryCount());
       Assert.assertNotNull(f);
       Assert.assertEquals(Utils.getObjectKey(dest), f.getKey());
-      List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+      List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
       Assert.assertTrue(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
       Assert.assertFalse(TestUtils.findObject(objs, Utils.getObjectKey(src)));
     }
@@ -614,7 +614,7 @@ while(count < retryCount)
       int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
       File toUpload = TestUtils.createTextFile(100);
       URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-      S3File f = TestUtils.uploadFile(toUpload, dest);
+      StoreFile f = TestUtils.uploadFile(toUpload, dest);
       Assert.assertNotNull(f);
       Assert.assertEquals(
         originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -646,7 +646,7 @@ while(count < retryCount)
       Assert.assertNull(msg);
 
       // file should not be renamed since we aborted
-      List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+      List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
       Assert.assertFalse(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
       Assert.assertTrue(TestUtils.findObject(objs, Utils.getObjectKey(src)));
     }
@@ -670,7 +670,7 @@ while(count < retryCount)
       int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
       File toUpload = TestUtils.createTextFile(100);
       URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-      S3File f = TestUtils.uploadFile(toUpload, dest);
+      StoreFile f = TestUtils.uploadFile(toUpload, dest);
       Assert.assertNotNull(f);
       Assert.assertEquals(
         originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -702,7 +702,7 @@ while(count < retryCount)
       Assert.assertNull(msg);
 
       // file should not be renamed since we aborted
-      List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+      List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
       Assert.assertFalse(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
       Assert.assertTrue(TestUtils.findObject(objs, Utils.getObjectKey(src)));
     }
@@ -731,7 +731,7 @@ try
     int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
     File toUpload = TestUtils.createTextFile(100);
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, dest);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
     Assert.assertEquals(
       originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -760,7 +760,7 @@ try
       TestUtils.objectExists(Utils.getBucket(src), Utils.getObjectKey(src)));
     Assert.assertNotNull(
       TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest)));
-    List<S3File> objs = TestUtils.listObjects(_testBucket, newPrefix);
+    List<StoreFile> objs = TestUtils.listObjects(_testBucket, newPrefix);
     Assert.assertEquals(newCount + 1, objs.size());
     Assert.assertTrue(TestUtils.findObject(objs, newPrefix + "new-file.txt"));
     return;
@@ -790,7 +790,7 @@ try
     String rootPrefix = TestUtils.addPrefix("rename-dest-exists-" + count);
     File file1 = TestUtils.createTextFile(100);
     URI dest1 = TestUtils.getUri(_testBucket, file1, rootPrefix);
-    S3File f = TestUtils.uploadFile(file1, dest1);
+    StoreFile f = TestUtils.uploadFile(file1, dest1);
     Assert.assertNotNull(f);
 
     File file2 = TestUtils.createTextFile(100);
@@ -847,7 +847,7 @@ try
     String rootPrefix = TestUtils.addPrefix("rename-same-src-dest-" + count);
     File file = TestUtils.createTextFile(100);
     URI dest = TestUtils.getUri(_testBucket, file, rootPrefix);
-    S3File f = TestUtils.uploadFile(file, dest);
+    StoreFile f = TestUtils.uploadFile(file, dest);
     Assert.assertNotNull(f);
 
     // rename 
@@ -951,7 +951,7 @@ try
     int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
     File toUpload = TestUtils.createTextFile(100);
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, dest);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
     Assert.assertEquals(
       originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -981,7 +981,7 @@ try
       TestUtils.objectExists(Utils.getBucket(src), Utils.getObjectKey(src)));
     Assert.assertNotNull(
       TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest)));
-    List<S3File> objs = TestUtils.listObjects(bucket2, newPrefix);
+    List<StoreFile> objs = TestUtils.listObjects(bucket2, newPrefix);
     Assert.assertEquals(newCount + 1, objs.size());
     Assert.assertTrue(TestUtils.findObject(objs, newPrefix + "new-file.txt"));
     return;
@@ -1020,7 +1020,7 @@ try
     String rootPrefix = TestUtils.addPrefix("rename-directory-" + count + "/");
     int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
     URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
     Assert.assertEquals(5, uploaded.size());
     int uploadCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
     Assert.assertEquals(uploaded.size(), uploadCount);
@@ -1038,13 +1038,13 @@ try
       .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
       .setRecursive(false)
       .createOptions();
-    List<S3File> renamedFiles = _client.renameDirectory(opts).get();
+    List<StoreFile> renamedFiles = _client.renameDirectory(opts).get();
 
     // verify that top level objects moved (a and b), but others stayed
     Assert.assertEquals(2, renamedFiles.size());
-    for(S3File f : renamedFiles)
+    for(StoreFile f : renamedFiles)
       Assert.assertEquals(Utils.getBucket(dest), f.getBucketName());
-    List<S3File> newObjs = TestUtils.listObjects(_testBucket, newPrefix);
+    List<StoreFile> newObjs = TestUtils.listObjects(_testBucket, newPrefix);
     Assert.assertEquals(newCount + renamedFiles.size(), newObjs.size());
     Assert.assertEquals(
       uploadCount - renamedFiles.size(),
@@ -1090,7 +1090,7 @@ try
     String rootPrefix = TestUtils.addPrefix("rename-dir-recursive-" + count + "/");
     int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
     URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
     Assert.assertEquals(5, uploaded.size());
     int uploadCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
     Assert.assertEquals(uploaded.size(), uploadCount);
@@ -1108,13 +1108,13 @@ try
       .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
       .setRecursive(true)
       .createOptions();
-    List<S3File> renamedFiles = _client.renameDirectory(opts).get();
+    List<StoreFile> renamedFiles = _client.renameDirectory(opts).get();
 
     // verify that everything moved
     Assert.assertEquals(uploadCount, renamedFiles.size());
-    for(S3File f : renamedFiles)
+    for(StoreFile f : renamedFiles)
       Assert.assertEquals(Utils.getBucket(dest), f.getBucketName());
-    List<S3File> newObjs = TestUtils.listObjects(_testBucket, newPrefix);
+    List<StoreFile> newObjs = TestUtils.listObjects(_testBucket, newPrefix);
     Assert.assertEquals(newCount + renamedFiles.size(), newObjs.size());
     Assert.assertEquals(
       uploadCount - renamedFiles.size(),
@@ -1171,7 +1171,7 @@ try
     String rootPrefix = TestUtils.addPrefix("rename-dir-across-buckets-" + count + "/");
     int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
     URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
     Assert.assertEquals(5, uploaded.size());
     int uploadCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
     Assert.assertEquals(uploaded.size(), uploadCount);
@@ -1190,13 +1190,13 @@ try
       .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
       .setRecursive(true)
       .createOptions();
-    List<S3File> renamedFiles = _client.renameDirectory(opts).get();
+    List<StoreFile> renamedFiles = _client.renameDirectory(opts).get();
 
     // verify that everything moved
     Assert.assertEquals(uploadCount, renamedFiles.size());
-    for(S3File f : renamedFiles)
+    for(StoreFile f : renamedFiles)
       Assert.assertEquals(Utils.getBucket(dest), f.getBucketName());
-    List<S3File> newObjs = TestUtils.listObjects(bucket2, newPrefix);
+    List<StoreFile> newObjs = TestUtils.listObjects(bucket2, newPrefix);
     Assert.assertEquals(newCount + renamedFiles.size(), newObjs.size());
     Assert.assertEquals(
       uploadCount - renamedFiles.size(),
@@ -1285,7 +1285,7 @@ try
     int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
     File toUpload = TestUtils.createTextFile(100);
     URI destFile = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, destFile);
+    StoreFile f = TestUtils.uploadFile(toUpload, destFile);
     Assert.assertNotNull(f);
     Assert.assertEquals(
       originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -1295,7 +1295,7 @@ try
     File a = TestUtils.createTextFile(top, 100);
     File b = TestUtils.createTextFile(top, 100);
     URI destDir = TestUtils.getUri(_testBucket, top, rootPrefix);
-    List<S3File> uploaded = TestUtils.uploadDir(top, destDir);
+    List<StoreFile> uploaded = TestUtils.uploadDir(top, destDir);
     Assert.assertEquals(2, uploaded.size());
     int uploadCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
     Assert.assertEquals(uploaded.size() + 1, uploadCount);
@@ -1350,7 +1350,7 @@ try
     int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
     File toRename = TestUtils.createTextFile(100);
     URI destFile = TestUtils.getUri(_testBucket, toRename, rootPrefix);
-    S3File f = TestUtils.uploadFile(toRename, destFile);
+    StoreFile f = TestUtils.uploadFile(toRename, destFile);
     Assert.assertNotNull(f);
     Assert.assertEquals(
       originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -1360,7 +1360,7 @@ try
     File a = TestUtils.createTextFile(top, 100);
     File b = TestUtils.createTextFile(top, 100);
     URI destDir = TestUtils.getUri(_testBucket, top, rootPrefix);
-    List<S3File> uploaded = TestUtils.uploadDir(top, destDir);
+    List<StoreFile> uploaded = TestUtils.uploadDir(top, destDir);
     Assert.assertEquals(2, uploaded.size());
     int uploadCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
     Assert.assertEquals(uploaded.size() + 1, uploadCount);
@@ -1377,7 +1377,7 @@ try
       .createOptions();
     f = _client.rename(opts).get();
     Assert.assertNotNull(f);
-    List<S3File> newObjs = TestUtils.listObjects(_testBucket, rootPrefix);
+    List<StoreFile> newObjs = TestUtils.listObjects(_testBucket, rootPrefix);
     Assert.assertEquals(uploadCount, newObjs.size());
     String topN = rootPrefix + "/" + top.getName() + "/";
     Assert.assertTrue(TestUtils.findObject(newObjs, topN + a.getName()));

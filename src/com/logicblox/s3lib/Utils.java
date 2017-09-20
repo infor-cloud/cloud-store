@@ -30,7 +30,6 @@ import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.auth.SystemPropertiesCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -491,25 +490,4 @@ public class Utils
      return created;
   }
 
-  protected static void print(ObjectMetadata m)
-  {
-    System.out.println("Cache-Control: " + m.getCacheControl());
-    System.out.println("Content-Disposition: " + m.getContentDisposition());
-    System.out.println("Content-Encoding: " + m.getContentEncoding());
-    System.out.println("Content-Length: " + m.getContentLength());
-    System.out.println("Content-MD5: " + m.getContentMD5());
-    System.out.println("Content-Type: " + m.getContentType());
-    System.out.println("ETag: " + m.getETag());
-    System.out.println("Expiration-Time: " + m.getExpirationTime());
-    System.out.println("Expiration-Time-Rule-Id: " + m.getExpirationTimeRuleId());
-    System.out.println("Http-Expires: " + m.getHttpExpiresDate());
-    System.out.println("Last-Modified: " + m.getLastModified());
-    System.out.println("Server-Side-Encryption: " + m.getServerSideEncryption());
-    System.out.println("Version-Id: " + m.getVersionId());
-    System.out.println("");
-    for(Map.Entry<String, String> entry : m.getUserMetadata().entrySet())
-    {
-      System.out.println(entry.getKey() + ": " + entry.getValue());
-    }
-  }
 }

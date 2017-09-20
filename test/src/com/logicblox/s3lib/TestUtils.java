@@ -1,6 +1,5 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -305,12 +304,12 @@ public class TestUtils
     if((null != prefix) && !prefix.isEmpty())
       builder.setObjectKey(prefix);
     ListOptions lsOpts = builder.createOptions();
-    List<S3File> objs = _client.listObjects(lsOpts).get();
-    for(S3File f : objs)
+    List<StoreFile> objs = _client.listObjects(lsOpts).get();
+    for(StoreFile f : objs)
       deleteObject(bucket, f.getKey());
   }
 
-  public static S3File deleteObject(String bucket, String key)
+  public static StoreFile deleteObject(String bucket, String key)
     throws InterruptedException, ExecutionException
   {
     DeleteOptions opts = _client.getOptionsBuilderFactory()
@@ -321,7 +320,7 @@ public class TestUtils
     return _client.delete(opts).get();
   }
 
-  public static S3File deleteObject(URI uri)
+  public static StoreFile deleteObject(URI uri)
     throws InterruptedException, ExecutionException
   {
     DeleteOptions opts = _client.getOptionsBuilderFactory()
@@ -332,9 +331,9 @@ public class TestUtils
     return _client.delete(opts).get();
   }
   
-  public static boolean findObject(List<S3File> objs, String key)
+  public static boolean findObject(List<StoreFile> objs, String key)
   {
-    for(S3File o : objs)
+    for(StoreFile o : objs)
     {
       if(o.getKey().equals(key))
         return true;
@@ -342,7 +341,7 @@ public class TestUtils
     return false;
   }
 
-  public static ObjectMetadata objectExists(String bucket, String key)
+  public static Metadata objectExists(String bucket, String key)
     throws ExecutionException, InterruptedException
   {
     ExistsOptions opts = _client.getOptionsBuilderFactory()
@@ -355,7 +354,7 @@ public class TestUtils
   }
 
 
-  public static S3File updateObjectUserMetadata(String bucket, String key,
+  public static StoreFile updateObjectUserMetadata(String bucket, String key,
                                                 Map<String,String> userMetadata)
     throws InterruptedException, ExecutionException
   {
@@ -373,7 +372,7 @@ public class TestUtils
   }
 
 
-  public static S3File uploadFile(File src, URI dest)
+  public static StoreFile uploadFile(File src, URI dest)
     throws Throwable
   {
     UploadOptions upOpts = _client.getOptionsBuilderFactory()
@@ -386,7 +385,7 @@ public class TestUtils
   }
 
 
-  public static S3File uploadEncryptedFile(File src, URI dest, String keyName)
+  public static StoreFile uploadEncryptedFile(File src, URI dest, String keyName)
       throws Throwable
   {
     UploadOptions upOpts = _client.getOptionsBuilderFactory()
@@ -400,7 +399,7 @@ public class TestUtils
   }
 
 
-  public static List<S3File> uploadDir(File src, URI dest)
+  public static List<StoreFile> uploadDir(File src, URI dest)
     throws Throwable
   {
     UploadOptions upOpts = _client.getOptionsBuilderFactory()
@@ -413,14 +412,14 @@ public class TestUtils
   }
 
 
-  public static S3File downloadFile(URI src, File dest)
+  public static StoreFile downloadFile(URI src, File dest)
     throws Throwable
   {
     return downloadFile(src, dest, true);
   }
 
 
-  public static S3File downloadFile(URI src, File dest, boolean overwrite)
+  public static StoreFile downloadFile(URI src, File dest, boolean overwrite)
       throws Throwable
   {
 
@@ -436,7 +435,7 @@ public class TestUtils
   }
 
 
-  public static List<S3File> downloadDir(URI src, File dest, boolean recursive)
+  public static List<StoreFile> downloadDir(URI src, File dest, boolean recursive)
       throws Throwable
   {
     DownloadOptions dlOpts = _client.getOptionsBuilderFactory()
@@ -451,7 +450,7 @@ public class TestUtils
   }
 
 
-  public static List<S3File> downloadDir(URI src, File dest, boolean recursive, boolean overwrite)
+  public static List<StoreFile> downloadDir(URI src, File dest, boolean recursive, boolean overwrite)
       throws Throwable
   {
     DownloadOptions dlOpts = _client.getOptionsBuilderFactory()
@@ -466,21 +465,21 @@ public class TestUtils
   }
 
 
-  public static List<S3File> listTestBucketObjects()
+  public static List<StoreFile> listTestBucketObjects()
     throws Throwable
   {
     return listObjects(_testBucket, _prefix);
   }
 
   
-  public static List<S3File> listObjects(String bucket)
+  public static List<StoreFile> listObjects(String bucket)
     throws Throwable
   {
     return listObjects(bucket, null);
   }
 
 
-  public static List<S3File> listObjects(String bucket, String key)
+  public static List<StoreFile> listObjects(String bucket, String key)
     throws Throwable
   {
     ListOptionsBuilder builder = _client.getOptionsBuilderFactory()
@@ -861,10 +860,10 @@ public class TestUtils
         .setIncludeVersions(false)
         .setExcludeDirs(false)
         .setObjectKey(key);
-      List<S3File> matches =
+      List<StoreFile> matches =
         client.listObjects(builder.createOptions()).get();
       boolean found = false;
-      for(S3File f : matches)
+      for(StoreFile f : matches)
       {
         if(f.getKey().equals(key))
         {

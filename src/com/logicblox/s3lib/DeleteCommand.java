@@ -1,7 +1,6 @@
 package com.logicblox.s3lib;
 
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -20,7 +19,7 @@ public class DeleteCommand extends Command
   }
 
 
-  public ListenableFuture<S3File> run()
+  public ListenableFuture<StoreFile> run()
   {
     final String bucket = _options.getBucketName();
     final String key = _options.getObjectKey();
@@ -32,19 +31,19 @@ public class DeleteCommand extends Command
       .setObjectKey(key)
       .createOptions();
 
-    ListenableFuture<ObjectMetadata> existsFuture = _client.exists(opts);
+    ListenableFuture<Metadata> existsFuture = _client.exists(opts);
 
-    ListenableFuture<S3File> result = Futures.transform(
+    ListenableFuture<StoreFile> result = Futures.transform(
       existsFuture,
-      new AsyncFunction<ObjectMetadata,S3File>()
+      new AsyncFunction<Metadata,StoreFile>()
       {
-        public ListenableFuture<S3File> apply(ObjectMetadata mdata)
+        public ListenableFuture<StoreFile> apply(Metadata mdata)
           throws UsageException
         {
           if(null == mdata)
           {
             if(forceDelete)
-              return Futures.immediateFuture(new S3File());
+              return Futures.immediateFuture(new StoreFile());
             else
               throw new UsageException("Object not found at " + getUri(bucket, key));
           }
@@ -56,16 +55,16 @@ public class DeleteCommand extends Command
   }
 
 
-  private ListenableFuture<S3File> getDeleteFuture()
+  private ListenableFuture<StoreFile> getDeleteFuture()
   {
     final String bucket = _options.getBucketName();
     final String key = _options.getObjectKey();
 
-    ListenableFuture<S3File> deleteFuture = executeWithRetry(
+    ListenableFuture<StoreFile> deleteFuture = executeWithRetry(
       _client.getInternalExecutor(),
-      new Callable<ListenableFuture<S3File>>()
+      new Callable<ListenableFuture<StoreFile>>()
       {
-        public ListenableFuture<S3File> call()
+        public ListenableFuture<StoreFile> call()
         {
           return runActual();
         }
@@ -79,7 +78,7 @@ public class DeleteCommand extends Command
   }
 
 
-  private ListenableFuture<S3File> runActual()
+  private ListenableFuture<StoreFile> runActual()
   {
     final String srcUri = getUri(_options.getBucketName(), _options.getObjectKey());
     if(_options.isDryRun())
@@ -90,9 +89,9 @@ public class DeleteCommand extends Command
     else
     {
       return _client.getApiExecutor().submit(
-        new Callable<S3File>()
+        new Callable<StoreFile>()
         {
-          public S3File call()
+          public StoreFile call()
           {
             // support for testing failures
             _options.injectAbort(srcUri);
@@ -101,7 +100,7 @@ public class DeleteCommand extends Command
             String key = _options.getObjectKey();
             DeleteObjectRequest req = new DeleteObjectRequest(bucket, key);
             getAmazonS3Client().deleteObject(req);
-            S3File file = new S3File();
+            StoreFile file = new StoreFile();
             file.setBucketName(bucket);
             file.setKey(key);
             return file;

@@ -9,8 +9,6 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
 
@@ -316,7 +314,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> upload(UploadOptions options)
+  public ListenableFuture<StoreFile> upload(UploadOptions options)
       throws IOException
   {
     UploadCommand cmd = new UploadCommand(options);
@@ -325,7 +323,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
+  public ListenableFuture<List<StoreFile>> uploadDirectory(UploadOptions options)
       throws IOException, ExecutionException, InterruptedException {
     UploadDirectoryCommand cmd = new UploadDirectoryCommand(options);
     configure(cmd);
@@ -333,7 +331,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<List<S3File>> deleteDir(DeleteOptions options)
+  public ListenableFuture<List<StoreFile>> deleteDir(DeleteOptions options)
     throws InterruptedException, ExecutionException
   {
     DeleteDirCommand cmd = new DeleteDirCommand(options);
@@ -342,7 +340,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> delete(DeleteOptions options)
+  public ListenableFuture<StoreFile> delete(DeleteOptions options)
   {
     DeleteCommand cmd = new DeleteCommand(options);
     configure(cmd);
@@ -352,12 +350,20 @@ public class S3Client implements CloudStoreClient {
   @Override
   public ListenableFuture<List<Bucket>> listBuckets()
   {
-      List<Bucket> result = _client.listBuckets();
-      return Futures.immediateFuture(result);
+    List<com.amazonaws.services.s3.model.Bucket> s3Buckets = _client.listBuckets();
+    List<Bucket> buckets = new ArrayList<Bucket>();
+    for(com.amazonaws.services.s3.model.Bucket b : s3Buckets)
+    {
+      buckets.add(new Bucket(
+        b.getName(),
+        b.getCreationDate(),
+        new Owner(b.getOwner().getId(), b.getOwner().getDisplayName())));
+    }
+    return Futures.immediateFuture(buckets);
   }
 
   @Override
-  public ListenableFuture<ObjectMetadata> exists(ExistsOptions options)
+  public ListenableFuture<Metadata> exists(ExistsOptions options)
   {
     ExistsCommand cmd = new ExistsCommand(options);
     configure(cmd);
@@ -365,7 +371,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> download(DownloadOptions options)
+  public ListenableFuture<StoreFile> download(DownloadOptions options)
   throws IOException
   {
     DownloadCommand cmd = new DownloadCommand(options);
@@ -374,7 +380,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<List<S3File>> downloadDirectory(DownloadOptions
+  public ListenableFuture<List<StoreFile>> downloadDirectory(DownloadOptions
                                                                 options)
   throws IOException, ExecutionException, InterruptedException
   {
@@ -384,7 +390,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> copy(CopyOptions options)
+  public ListenableFuture<StoreFile> copy(CopyOptions options)
   {
     CopyCommand cmd = new CopyCommand(options);
     configure(cmd);
@@ -392,7 +398,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<List<S3File>> copyToDir(CopyOptions options) throws
+  public ListenableFuture<List<StoreFile>> copyToDir(CopyOptions options) throws
       InterruptedException, ExecutionException, IOException {
     CopyToDirCommand cmd = new CopyToDirCommand(options);
     configure(cmd);
@@ -400,7 +406,7 @@ public class S3Client implements CloudStoreClient {
   }
   
   @Override
-  public ListenableFuture<S3File> rename(RenameOptions options)
+  public ListenableFuture<StoreFile> rename(RenameOptions options)
   {
     RenameCommand cmd = new RenameCommand(options);
     configure(cmd);
@@ -408,7 +414,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<List<S3File>> renameDirectory(RenameOptions options)
+  public ListenableFuture<List<StoreFile>> renameDirectory(RenameOptions options)
     throws InterruptedException, ExecutionException, IOException
   {
     RenameDirectoryCommand cmd = new RenameDirectoryCommand(options);
@@ -417,8 +423,8 @@ public class S3Client implements CloudStoreClient {
   }
   
   @Override
-  public ListenableFuture<List<S3File>> listObjects(ListOptions options) {
-    ListenableFuture<List<S3File>> results = null;
+  public ListenableFuture<List<StoreFile>> listObjects(ListOptions options) {
+    ListenableFuture<List<StoreFile>> results = null;
     if (options.versionsIncluded()) {
       ListVersionsCommand cmd = new ListVersionsCommand(options);
       configure(cmd);
@@ -448,7 +454,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> addEncryptionKey(EncryptionKeyOptions options)
+  public ListenableFuture<StoreFile> addEncryptionKey(EncryptionKeyOptions options)
       throws IOException
   {
     AddEncryptionKeyCommand cmd = createAddKeyCommand(options);
@@ -464,7 +470,7 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<S3File> removeEncryptionKey(EncryptionKeyOptions options)
+  public ListenableFuture<StoreFile> removeEncryptionKey(EncryptionKeyOptions options)
     throws IOException
   {
     RemoveEncryptionKeyCommand cmd = createRemoveKeyCommand(options);

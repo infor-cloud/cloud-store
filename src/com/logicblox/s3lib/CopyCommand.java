@@ -28,7 +28,7 @@ public class CopyCommand extends Command
     _progressListenerFactory = options.getOverallProgressListenerFactory().orElse(null);
   }
 
-  public ListenableFuture<S3File> run()
+  public ListenableFuture<StoreFile> run()
   {
     if(_options.isDryRun())
     {
@@ -46,9 +46,9 @@ public class CopyCommand extends Command
         completeAsyncFunction());
       return Futures.transform(
         result,
-        new Function<String, S3File>() {
-          public S3File apply(String etag) {
-            S3File f = new S3File();
+        new Function<String, StoreFile>() {
+          public StoreFile apply(String etag) {
+            StoreFile f = new StoreFile();
             f.setLocalFile(null);
             f.setETag(etag);
             f.setBucketName(_options.getDestinationBucketName());

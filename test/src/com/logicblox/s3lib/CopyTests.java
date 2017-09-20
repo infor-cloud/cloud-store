@@ -1,6 +1,5 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import java.io.File;
 import java.net.URI;
 import java.util.List;
@@ -70,12 +69,12 @@ try
     File e = TestUtils.createTextFile(sub2, 100);
 
     String rootPrefix = TestUtils.addPrefix("copy-dir-retry/");
-    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
     int originalCount = objs.size();
 
     // upload the directory
     URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
     int uploadedSize = uploaded.size();
     Assert.assertEquals(5, uploadedSize);
     int currentSize = TestUtils.listObjects(_testBucket, rootPrefix).size();
@@ -104,7 +103,7 @@ try
       _client.setRetryCount(retryCount);
       CopyOptions.getAbortCounters().setInjectionCounter(abortCount);
 
-      List<S3File> copy = _client.copyToDir(copyOpts).get();
+      List<StoreFile> copy = _client.copyToDir(copyOpts).get();
       Assert.assertEquals(5, copy.size());
       Assert.assertEquals(abortCount, getRetryCount());
     }
@@ -120,7 +119,7 @@ try
     // verify the recursive copy
     String subN = copyTopN + sub.getName() + "/";
     String sub2N = subN + sub2.getName() + "/";
-    List<S3File> copyObjs = TestUtils.listObjects(_testBucket, rootPrefix);
+    List<StoreFile> copyObjs = TestUtils.listObjects(_testBucket, rootPrefix);
     int lastSize = copyObjs.size();
     Assert.assertEquals(currentSize + 5, lastSize);
        // previous size plus 5 copies
@@ -153,9 +152,9 @@ catch(Throwable t)
       int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
       File toUpload = TestUtils.createTextFile(100);
       URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-      S3File f = TestUtils.uploadFile(toUpload, dest);
+      StoreFile f = TestUtils.uploadFile(toUpload, dest);
       Assert.assertNotNull(f);
-      List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+      List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
       Assert.assertEquals(originalCount + 1, objs.size());
       Assert.assertTrue(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
 
@@ -175,7 +174,7 @@ catch(Throwable t)
        .setDestinationBucketName(_testBucket)
        .setDestinationObjectKey(f.getKey() + "-COPY")
        .createOptions();
-      S3File copy = _client.copy(copyOpts).get();
+      StoreFile copy = _client.copy(copyOpts).get();
       Assert.assertEquals(abortCount, getRetryCount());
 
       // check for the copy
@@ -207,7 +206,7 @@ catch(Throwable t)
     int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
     File toUpload = TestUtils.createTextFile(100);
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, dest);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
     Assert.assertEquals(
       originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -221,7 +220,7 @@ catch(Throwable t)
        .setDestinationObjectKey(f.getKey() + "-COPY")
        .setDryRun(true)
        .createOptions();
-    S3File copy = _client.copy(opts).get();
+    StoreFile copy = _client.copy(opts).get();
     Assert.assertNull(copy);
     Assert.assertEquals(
       originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -246,7 +245,7 @@ try
     String rootPrefix = TestUtils.addPrefix("copy-dryrun-dir/");
     int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
     URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
     Assert.assertEquals(2, uploaded.size());
     Assert.assertEquals(
       originalCount + 2, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -263,7 +262,7 @@ try
        .setRecursive(false)
        .setDryRun(true)
        .createOptions();
-    List<S3File> copy = _client.copyToDir(copyOpts).get();
+    List<StoreFile> copy = _client.copyToDir(copyOpts).get();
     Assert.assertNull(copy);
     Assert.assertEquals(
       originalCount + 2, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -283,7 +282,7 @@ catch(Throwable t)
   public void testSimpleCopy()
     throws Throwable
   {
-    List<S3File> objs = TestUtils.listTestBucketObjects();
+    List<StoreFile> objs = TestUtils.listTestBucketObjects();
     int originalCount = objs.size();
 
     // create test file and upload it
@@ -291,7 +290,7 @@ catch(Throwable t)
     File toUpload = TestUtils.createTextFile(fileSize);
     String rootPrefix = TestUtils.addPrefix("simple-copy");
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, dest);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
 
     // make sure file was uploaded
@@ -308,7 +307,7 @@ catch(Throwable t)
        .setDestinationBucketName(_testBucket)
        .setDestinationObjectKey(f.getKey() + "-COPY")
        .createOptions();
-    S3File copy = _client.copy(copyOpts).get();
+    StoreFile copy = _client.copy(copyOpts).get();
     String expectedKey = TestUtils.addPrefix("simple-copy/" + toUpload.getName() + "-COPY");
     Assert.assertEquals(expectedKey, copy.getKey());
 
@@ -326,9 +325,9 @@ catch(Throwable t)
     Assert.assertTrue(TestUtils.compareFiles(toUpload, f.getLocalFile()));
 
     // compare metadata
-    ObjectMetadata srcMeta = TestUtils.objectExists(Utils.getBucket(src), Utils.getObjectKey(src));
+    Metadata srcMeta = TestUtils.objectExists(Utils.getBucket(src), Utils.getObjectKey(src));
     Assert.assertNotNull(srcMeta);
-    ObjectMetadata destMeta = TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest));
+    Metadata destMeta = TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest));
     Assert.assertNotNull(destMeta);
 
     Assert.assertEquals(srcMeta.getContentLength(), destMeta.getContentLength());
@@ -360,14 +359,14 @@ catch(Throwable t)
     File file2 = TestUtils.createTextFile(fileSize);
     String rootPrefix = TestUtils.addPrefix("copy-overwrite-file");
     URI dest1 = TestUtils.getUri(_testBucket, file1, rootPrefix);
-    S3File f1 = TestUtils.uploadFile(file1, dest1);
+    StoreFile f1 = TestUtils.uploadFile(file1, dest1);
     Assert.assertNotNull(f1);
     URI dest2 = TestUtils.getUri(_testBucket, file2, rootPrefix);
-    S3File f2 = TestUtils.uploadFile(file2, dest2);
+    StoreFile f2 = TestUtils.uploadFile(file2, dest2);
     Assert.assertNotNull(f2);
 
     // make sure files were uploaded
-    List<S3File> objs = TestUtils.listTestBucketObjects();
+    List<StoreFile> objs = TestUtils.listTestBucketObjects();
     Assert.assertTrue(
       TestUtils.findObject(objs, Utils.getObjectKey(dest1)));
     Assert.assertTrue(
@@ -381,7 +380,7 @@ catch(Throwable t)
        .setDestinationBucketName(_testBucket)
        .setDestinationObjectKey(f2.getKey())
        .createOptions();
-    S3File copy = _client.copy(copyOpts).get();
+    StoreFile copy = _client.copy(copyOpts).get();
     String expectedKey = TestUtils.addPrefix("copy-overwrite-file/" + file2.getName());
     Assert.assertEquals(expectedKey, copy.getKey());
 
@@ -392,7 +391,7 @@ catch(Throwable t)
 
     // download and compare copy - should match file1
     File dlTemp = TestUtils.createTmpFile();
-    S3File f = TestUtils.downloadFile(dest2, dlTemp);
+    StoreFile f = TestUtils.downloadFile(dest2, dlTemp);
     Assert.assertNotNull(f.getLocalFile());
     Assert.assertTrue(TestUtils.compareFiles(file1, f.getLocalFile()));
   }
@@ -433,14 +432,14 @@ try
     // upload the directory
     String rootPrefix = TestUtils.addPrefix("copy-overwrite-dir-" + count + "/");
     URI topUri = TestUtils.getUri(_testBucket, top, rootPrefix);
-    List<S3File> uploaded = TestUtils.uploadDir(top, topUri);
+    List<StoreFile> uploaded = TestUtils.uploadDir(top, topUri);
     Assert.assertEquals(5, uploaded.size());
 
     // create test file and upload it
     int fileSize = 100;
     File toUpload = TestUtils.createTextFile(fileSize);
     URI fileUri = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, fileUri);
+    StoreFile f = TestUtils.uploadFile(toUpload, fileUri);
     Assert.assertNotNull(f);
 
     // validate files were uploaded
@@ -456,14 +455,14 @@ try
        .setDestinationBucketName(_testBucket)
        .setDestinationObjectKey(expectedKey)
        .createOptions();
-    S3File copy = _client.copy(copyOpts).get();
+    StoreFile copy = _client.copy(copyOpts).get();
     Assert.assertEquals(expectedKey, copy.getKey());
 
     // validate results, dest file should exist and original dir should be the same
     Assert.assertEquals(7 + originalCount, TestUtils.listTestBucketObjects().size());
     URI file = TestUtils.getUri(_testBucket, top.getName(), rootPrefix);
     Assert.assertNotNull(TestUtils.objectExists(Utils.getBucket(file), Utils.getObjectKey(file)));
-    List<S3File> objs = TestUtils.listObjects(_testBucket, Utils.getObjectKey(topUri));
+    List<StoreFile> objs = TestUtils.listObjects(_testBucket, Utils.getObjectKey(topUri));
     Assert.assertEquals(5, objs.size());
     return;
 }
@@ -503,14 +502,14 @@ try
     // upload the directory
     String rootPrefix = TestUtils.addPrefix("copy-overwrite-dir-" + count + "/");
     URI topUri = TestUtils.getUri(_testBucket, top, rootPrefix);
-    List<S3File> uploaded = TestUtils.uploadDir(top, topUri);
+    List<StoreFile> uploaded = TestUtils.uploadDir(top, topUri);
     Assert.assertEquals(5, uploaded.size());
 
     // create test file and upload it
     int fileSize = 100;
     File toUpload = TestUtils.createTextFile(fileSize);
     URI fileUri = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, fileUri);
+    StoreFile f = TestUtils.uploadFile(toUpload, fileUri);
     Assert.assertNotNull(f);
 
     // validate files were uploaded
@@ -526,12 +525,12 @@ try
        .setDestinationBucketName(_testBucket)
        .setDestinationObjectKey(expectedKey)
        .createOptions();
-    List<S3File> copy = _client.copyToDir(copyOpts).get();
+    List<StoreFile> copy = _client.copyToDir(copyOpts).get();
     Assert.assertEquals(1, copy.size());
 
     // validate results, original dir have one more file in it
     Assert.assertEquals(7 + originalCount, TestUtils.listTestBucketObjects().size());
-    List<S3File> objs = TestUtils.listObjects(_testBucket, Utils.getObjectKey(topUri));
+    List<StoreFile> objs = TestUtils.listObjects(_testBucket, Utils.getObjectKey(topUri));
     Assert.assertEquals(6, objs.size());
     return;
 }
@@ -556,7 +555,7 @@ catch(Throwable t)
     if(null != TestUtils.getPrefix())
        return;
     
-    List<S3File> objs = TestUtils.listTestBucketObjects();
+    List<StoreFile> objs = TestUtils.listTestBucketObjects();
     int originalCount = objs.size();
 
     // create test file and upload it
@@ -564,7 +563,7 @@ catch(Throwable t)
     File toUpload = TestUtils.createTextFile(fileSize);
     String rootPrefix = TestUtils.addPrefix("cross-bucket-copy");
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, dest);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
 
     // make sure file was uploaded
@@ -581,12 +580,12 @@ catch(Throwable t)
        .setDestinationBucketName(bucket2)
        .setDestinationObjectKey(f.getKey())
        .createOptions();
-    S3File copy = _client.copy(copyOpts).get();
+    StoreFile copy = _client.copy(copyOpts).get();
 
     // check for the copy in 1st bucket, should be the same
-    List<S3File> copyObjs = TestUtils.listTestBucketObjects();
+    List<StoreFile> copyObjs = TestUtils.listTestBucketObjects();
     Assert.assertEquals(objs.size(), copyObjs.size());
-    for(S3File sf : copyObjs)
+    for(StoreFile sf : copyObjs)
       Assert.assertTrue(TestUtils.findObject(objs, sf.getKey()));
 
     // check for the copy in 2nd bucket
@@ -634,12 +633,12 @@ try
     File e = TestUtils.createTextFile(sub2, 100);
 
     String rootPrefix = TestUtils.addPrefix("copy-dir/");
-    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
     int originalCount = objs.size();
 
     // upload the directory
     URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
     Assert.assertEquals(5, uploaded.size());
 
     // non-recursive copy
@@ -653,11 +652,11 @@ try
        .setDestinationObjectKey(copyTopN)
        .setRecursive(false)
        .createOptions();
-    List<S3File> copy = _client.copyToDir(copyOpts).get();
+    List<StoreFile> copy = _client.copyToDir(copyOpts).get();
     Assert.assertEquals(2, copy.size());
 
     // verify the non-recursive copy
-    List<S3File> copyObjs = TestUtils.listObjects(_testBucket, rootPrefix);
+    List<StoreFile> copyObjs = TestUtils.listObjects(_testBucket, rootPrefix);
     int currentSize = copyObjs.size();
     Assert.assertEquals(originalCount + 5 + 2, currentSize);
         // original files plus 5 uploaded plus 2 copied
@@ -723,12 +722,12 @@ try
     File a = TestUtils.createTextFile(top, 100);
 
     String rootPrefix = TestUtils.addPrefix("copy-missing-dest-bucket/");
-    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
     int originalCount = objs.size();
 
     // upload the directory
     URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
     Assert.assertEquals(1, uploaded.size());
 
     String missingBucketName = "MISSING-cloud-store-ut-bucket-" + System.currentTimeMillis();
@@ -792,17 +791,17 @@ try
     File e = TestUtils.createTextFile(sub2, 100);
 
     String rootPrefix = TestUtils.addPrefix("copy-dir-bucket/");
-    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
     int originalCount = objs.size();
 
     // upload the directory
     URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
     Assert.assertEquals(5, uploaded.size());
 
     // non-recursive copy
     String bucket2 = TestUtils.createTestBucket();
-    List<S3File> objs2 = TestUtils.listObjects(bucket2, rootPrefix);
+    List<StoreFile> objs2 = TestUtils.listObjects(bucket2, rootPrefix);
     int originalCount2 = objs2.size();
     String topN = rootPrefix + top.getName() + "/";
     CopyOptions copyOpts = _client.getOptionsBuilderFactory()
@@ -813,7 +812,7 @@ try
        .setDestinationObjectKey(topN)
        .setRecursive(false)
        .createOptions();
-    List<S3File> copy = _client.copyToDir(copyOpts).get();
+    List<StoreFile> copy = _client.copyToDir(copyOpts).get();
     Assert.assertEquals(2, copy.size());
 
     // verify the non-recursive copy
@@ -821,7 +820,7 @@ try
     Assert.assertEquals(originalCount + 5, objs.size());
        // original files plus 5 uploaded
 
-    List<S3File> copyObjs = TestUtils.listObjects(bucket2, rootPrefix);
+    List<StoreFile> copyObjs = TestUtils.listObjects(bucket2, rootPrefix);
     Assert.assertEquals(originalCount2 + 2, copyObjs.size());
        // original files plus 2 copied
     Assert.assertTrue(TestUtils.findObject(copyObjs, topN + a.getName()));

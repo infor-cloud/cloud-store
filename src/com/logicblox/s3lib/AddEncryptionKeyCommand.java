@@ -40,19 +40,19 @@ public class AddEncryptionKeyCommand extends Command
     _encKeyName = _options.getEncryptionKey();
   }
 
-  public ListenableFuture<S3File> run()
+  public ListenableFuture<StoreFile> run()
   {
     // TODO(geokollias): Handle versions?
     ListenableFuture<S3ObjectMetadata> objMeta = getMetadata();
     objMeta = Futures.transform(objMeta, addNewEncryptionKeyFn());
-    ListenableFuture<S3File> res = Futures.transform(objMeta,
+    ListenableFuture<StoreFile> res = Futures.transform(objMeta,
       updateObjectMetadataFn());
 
     return Futures.withFallback(
       res,
-      new FutureFallback<S3File>()
+      new FutureFallback<StoreFile>()
       {
-        public ListenableFuture<S3File> create(Throwable t)
+        public ListenableFuture<StoreFile> create(Throwable t)
         {
           if (t instanceof UsageException) {
             return Futures.immediateFailedFuture(t);
@@ -293,12 +293,12 @@ public class AddEncryptionKeyCommand extends Command
   /**
    * Step 3: Update object's metadata
    */
-  private AsyncFunction<S3ObjectMetadata, S3File> updateObjectMetadataFn()
+  private AsyncFunction<S3ObjectMetadata, StoreFile> updateObjectMetadataFn()
   {
-    AsyncFunction<S3ObjectMetadata, S3File> update = new
-      AsyncFunction<S3ObjectMetadata, S3File>()
+    AsyncFunction<S3ObjectMetadata, StoreFile> update = new
+      AsyncFunction<S3ObjectMetadata, StoreFile>()
       {
-        public ListenableFuture<S3File> apply(final S3ObjectMetadata metadata)
+        public ListenableFuture<StoreFile> apply(final S3ObjectMetadata metadata)
         throws IOException
         {
           if(null == getGCSClient())
@@ -323,18 +323,18 @@ public class AddEncryptionKeyCommand extends Command
           {
             return executeWithRetry(
               _client.getInternalExecutor(),
-              new Callable<ListenableFuture<S3File>>()
+              new Callable<ListenableFuture<StoreFile>>()
               {
-                public ListenableFuture<S3File> call()
+                public ListenableFuture<StoreFile> call()
                 {
-                  return _client.getApiExecutor().submit(new Callable<S3File>()
+                  return _client.getApiExecutor().submit(new Callable<StoreFile>()
                   {
-                    public S3File call()
+                    public StoreFile call()
                     throws IOException
                     {
                       GCSClient.patchMetaData(getGCSClient(), metadata.getBucket(),
                         metadata.getKey(), metadata.getUserMetadata());
-                      return new S3File(metadata.getBucket(), metadata.getKey());
+                      return new StoreFile(metadata.getBucket(), metadata.getKey());
                     }
                   });
                 }

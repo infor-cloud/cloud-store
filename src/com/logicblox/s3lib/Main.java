@@ -19,8 +19,6 @@ import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 
-import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.beust.jcommander.IValueValidator;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -322,10 +320,10 @@ class Main
         .setObjectKey(key)
         .createOptions();
 
-      ListenableFuture<ObjectMetadata> result = client.exists(opts);
+      ListenableFuture<Metadata> result = client.exists(opts);
 
       boolean exists = false;
-      ObjectMetadata metadata = result.get();
+      Metadata metadata = result.get();
       if(metadata == null)
       {
         if(_verbose)
@@ -337,7 +335,7 @@ class Main
         exists = true;
 
         if(_verbose)
-          Utils.print(metadata);
+          metadata.print(System.out);
       }
 
       client.shutdown();
@@ -591,13 +589,13 @@ class Main
           .setIncludeVersions(includeVersions)
           .setExcludeDirs(excludeDirs);
       try {
-        List<S3File> listCommandResults = client.listObjects(lob.createOptions()).get();
+        List<StoreFile> listCommandResults = client.listObjects(lob.createOptions()).get();
         if (includeVersions) {
           String[][] table = new String[listCommandResults.size()][4];
           int[] max = new int[4];
           DateFormat df = Utils.getDefaultDateFormat();
           for (int i = 0; i < listCommandResults.size(); i++) {
-            S3File obj = listCommandResults.get(i);
+            StoreFile obj = listCommandResults.get(i);
             table[i][0] = Utils.getURI(client.getScheme(), obj.getBucketName(), "") + obj.getKey();
             table[i][1] = obj.getVersionId().orElse("No Version Id");
             if (obj.getTimestamp().isPresent()) {
@@ -618,7 +616,7 @@ class Main
                 + "s%-" + (max[3] + 3) + "s\n", row[0], row[1], row[2], row[3]);
           }
         } else {
-          for (S3File obj : listCommandResults) {
+          for (StoreFile obj : listCommandResults) {
             System.out.println(Utils.getURI(client.getScheme(), obj.getBucketName(), "") + obj.getKey());
           }
         }
@@ -711,8 +709,8 @@ class Main
       String du = null;
       TreeMap<String, DirectoryNode> dirs = new TreeMap<String, DirectoryNode>();
       try {
-        List<S3File> result = client.listObjects(lob.createOptions()).get();
-        for (S3File obj : result) {
+        List<StoreFile> result = client.listObjects(lob.createOptions()).get();
+        for (StoreFile obj : result) {
           numberOfFiles += 1;
           totalSize += obj.getSize().orElse((long)0);
           if (maxDepth > 0) {

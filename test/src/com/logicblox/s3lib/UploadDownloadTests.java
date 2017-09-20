@@ -1,6 +1,5 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import java.io.File;
 import java.net.URI;
 import java.util.List;
@@ -85,7 +84,7 @@ public class UploadDownloadTests
       .setObjectKey(Utils.getObjectKey(dest))
       .setDryRun(true)
       .createOptions();
-    S3File f = _client.upload(opts).get();
+    StoreFile f = _client.upload(opts).get();
     Assert.assertNull(f);
     Assert.assertEquals(
       originalCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -119,7 +118,7 @@ try
       .setObjectKey(Utils.getObjectKey(dest))
       .setDryRun(true)
       .createOptions();
-    List<S3File> files = _client.uploadDirectory(opts).get();
+    List<StoreFile> files = _client.uploadDirectory(opts).get();
     Assert.assertNull(files);
     Assert.assertEquals(
       originalCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -144,7 +143,7 @@ catch(Throwable t)
     int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
     File toUpload = TestUtils.createTextFile(100);
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, dest);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
     Assert.assertEquals(
       originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -179,7 +178,7 @@ catch(Throwable t)
     File a = TestUtils.createTextFile(top, 100);
     File b = TestUtils.createTextFile(top, 100);
     URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
     Assert.assertEquals(2, uploaded.size());
     Assert.assertEquals(
       originalCount + uploaded.size(), TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -196,7 +195,7 @@ catch(Throwable t)
       .setOverwrite(true)
       .setDryRun(true)
       .createOptions();
-    List<S3File> files = _client.downloadDirectory(opts).get();
+    List<StoreFile> files = _client.downloadDirectory(opts).get();
     Assert.assertNull(files);
     Assert.assertEquals(0, dlDir.list().length);
   }
@@ -214,10 +213,10 @@ catch(Throwable t)
 
     // upload a file and verify it exists
     String rootPrefix = TestUtils.addPrefix("exists/a/b/");
-    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
     File toUpload = TestUtils.createTextFile(100);
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, dest);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
     Assert.assertNotNull(TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest)));
 
@@ -238,13 +237,13 @@ catch(Throwable t)
     throws Throwable
   {
     String rootPrefix = TestUtils.addPrefix("simple-upload/a/b/");
-    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
     int originalCount = objs.size();
 
     // create a small file and upload it
     File toUpload = TestUtils.createTextFile(100);
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, dest);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
 
     // make sure file was uploaded
@@ -282,7 +281,7 @@ catch(Throwable t)
       int retryCount = 3;
       _client.setRetryCount(retryCount);
       UploadOptions.getAbortCounters().setInjectionCounter(10);
-      List<S3File> objs = TestUtils.listTestBucketObjects();
+      List<StoreFile> objs = TestUtils.listTestBucketObjects();
       int originalCount = objs.size();
 
       // create test file - AWS requires a min 5M chunk size...
@@ -344,7 +343,7 @@ catch(Throwable t)
       int abortCount = 3;
       _client.setRetryCount(retryCount);
       UploadOptions.getAbortCounters().setInjectionCounter(abortCount);
-      List<S3File> objs = TestUtils.listTestBucketObjects();
+      List<StoreFile> objs = TestUtils.listTestBucketObjects();
       int originalCount = objs.size();
 
       // create test file - AWS requires a min 5M chunk size...
@@ -362,7 +361,7 @@ catch(Throwable t)
         .setObjectKey(Utils.getObjectKey(dest))
         .setChunkSize(chunkSize)
         .createOptions();
-      S3File f = _client.upload(upOpts).get();
+      StoreFile f = _client.upload(upOpts).get();
       Assert.assertNotNull(f);
       Assert.assertEquals(abortCount, getRetryCount());
 
@@ -406,7 +405,7 @@ catch(Throwable t)
     Assert.assertEquals(fileSize, toUpload.length());
     String rootPrefix = TestUtils.addPrefix("upload-attrs");
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, dest);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
     Assert.assertEquals(
       toUpload.getAbsolutePath(), f.getLocalFile().getAbsolutePath());
@@ -420,8 +419,8 @@ catch(Throwable t)
 //    Assert.assertTrue(f.getTimestamp().isPresent());
       // FIXME - this info is not being populated right now
 
-    List<S3File> objs = TestUtils.listTestBucketObjects();
-    for(S3File o : objs)
+    List<StoreFile> objs = TestUtils.listTestBucketObjects();
+    for(StoreFile o : objs)
     {
       if(o.getKey().equals(TestUtils.addPrefix(toUpload.getName())))
       {
@@ -437,7 +436,7 @@ catch(Throwable t)
       }
     }
 
-    ObjectMetadata meta = TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest));
+    Metadata meta = TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest));
     Assert.assertNotNull(meta.getLastModified());
     Assert.assertEquals(fileSize, meta.getContentLength());
     Assert.assertEquals(fileSize, meta.getInstanceLength());
@@ -458,7 +457,7 @@ catch(Throwable t)
 
     // now download it
     File dlTemp = TestUtils.createTmpFile();
-    S3File f = TestUtils.downloadFile(dest, dlTemp);
+    StoreFile f = TestUtils.downloadFile(dest, dlTemp);
     Assert.assertNotNull(f);
     Assert.assertEquals(
       dlTemp.getAbsolutePath(), f.getLocalFile().getAbsolutePath());
@@ -478,7 +477,7 @@ catch(Throwable t)
   public void testEmptyFile()
     throws Throwable
   {
-    List<S3File> objs = TestUtils.listTestBucketObjects();
+    List<StoreFile> objs = TestUtils.listTestBucketObjects();
     int originalCount = objs.size();
 
     // upload a file
@@ -486,7 +485,7 @@ catch(Throwable t)
     Assert.assertEquals(0, toUpload.length());
     String rootPrefix = TestUtils.addPrefix("upload-empty");
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, dest);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
 
     // make sure file was uploaded
@@ -515,7 +514,7 @@ catch(Throwable t)
     String privateKey = keys[0];
     String publicKey = keys[1];
 
-    List<S3File> objs = TestUtils.listTestBucketObjects();
+    List<StoreFile> objs = TestUtils.listTestBucketObjects();
     int originalCount = objs.size();
 
     // upload a file
@@ -523,7 +522,7 @@ catch(Throwable t)
     Assert.assertEquals(0, toUpload.length());
     String rootPrefix = TestUtils.addPrefix("upload-empty-encrypted");
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadEncryptedFile(toUpload, dest, keyName);
+    StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, keyName);
     Assert.assertNotNull(f);
 
     // make sure file was uploaded
@@ -548,7 +547,7 @@ catch(Throwable t)
     File toUpload = TestUtils.createTextFile(100);
     String rootPrefix = TestUtils.addPrefix("download-missing");
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, dest);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
 
     // test missing file
@@ -588,14 +587,14 @@ catch(Throwable t)
   public void testDownloadNoOverwriteFile()
     throws Throwable
   {
-    List<S3File> objs = TestUtils.listTestBucketObjects();
+    List<StoreFile> objs = TestUtils.listTestBucketObjects();
     int originalCount = objs.size();
 
     // upload a file
     File toUpload = TestUtils.createTextFile(100);
     String rootPrefix = TestUtils.addPrefix("download-no-overwrite");
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, dest);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
 
     // make sure file was uploaded
@@ -641,7 +640,7 @@ try
     File b = TestUtils.createTextFile(top, 100);
     String rootPrefix = TestUtils.addPrefix("dir-overwrite/");
     URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
     Assert.assertEquals(2, uploaded.size());
 
     // should fail if source doesn't exist
@@ -678,7 +677,7 @@ try
     Assert.assertNull(msg);
     
     // should succeed if dest is existing file with overwrite
-    List<S3File> downloaded = TestUtils.downloadDir(src, existingFile, true, true);
+    List<StoreFile> downloaded = TestUtils.downloadDir(src, existingFile, true, true);
     Assert.assertEquals(2, downloaded.size());
     Assert.assertTrue(existingFile.isDirectory());
     
@@ -745,12 +744,12 @@ try
     File e = TestUtils.createTextFile(sub2, 100);
 
     String rootPrefix = TestUtils.addPrefix("dir-ul-dl/");
-    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
     int originalCount = objs.size();
 
     // upload the directory
     URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-    List<S3File> uploaded = TestUtils.uploadDir(top, dest);
+    List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
     Assert.assertEquals(5, uploaded.size());
 
     // verify that the structure was replicated
@@ -767,7 +766,7 @@ try
 
     // non-recursive directory download
     File dlDir = TestUtils.createTmpDir(true);
-    List<S3File> downloaded = TestUtils.downloadDir(dest, dlDir, false);
+    List<StoreFile> downloaded = TestUtils.downloadDir(dest, dlDir, false);
     Assert.assertEquals(2, downloaded.size());
     Assert.assertEquals(2, dlDir.list().length);
     Assert.assertTrue(TestUtils.compareFiles(a, new File(dlDir, a.getName())));
@@ -807,7 +806,7 @@ catch(Throwable t)
   public void testMultipartUploadDownload()
     throws Throwable
   {
-    List<S3File> objs = TestUtils.listTestBucketObjects();
+    List<StoreFile> objs = TestUtils.listTestBucketObjects();
     int originalCount = objs.size();
 
     // create test file - AWS requires a min 5M chunk size...
@@ -827,7 +826,7 @@ catch(Throwable t)
       .setOverallProgressListenerFactory(this)
       .setChunkSize(chunkSize)
       .createOptions();
-    S3File f = _client.upload(upOpts).get();
+    StoreFile f = _client.upload(upOpts).get();
     Assert.assertNotNull(f);
 
     // validate the upload
@@ -865,7 +864,7 @@ catch(Throwable t)
     // files smaller than the minimum chunk size can still be uploaded using
     // multi-part protocol.  should just use a single part.
     
-    List<S3File> objs = TestUtils.listTestBucketObjects();
+    List<StoreFile> objs = TestUtils.listTestBucketObjects();
     int originalCount = objs.size();
 
     // create test file - AWS requires a min 5M chunk size...
@@ -885,7 +884,7 @@ catch(Throwable t)
       .setOverallProgressListenerFactory(this)
       .setChunkSize(chunkSize)
       .createOptions();
-    S3File f = _client.upload(upOpts).get();
+    StoreFile f = _client.upload(upOpts).get();
     Assert.assertNotNull(f);
 
     // validate the upload
@@ -930,7 +929,7 @@ catch(Throwable t)
 
     // capture files currently in test bucket
     String rootPrefix = TestUtils.addPrefix("encrypted-upload");
-    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
     int originalCount = objs.size();
 
     // create a small file
@@ -952,7 +951,7 @@ catch(Throwable t)
 
     // upload should succeed now
     TestUtils.setKeyProvider(keydir);
-    S3File f = TestUtils.uploadEncryptedFile(toUpload, dest, keyName);
+    StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, keyName);
     Assert.assertNotNull(f);
 
     // make sure file was uploaded

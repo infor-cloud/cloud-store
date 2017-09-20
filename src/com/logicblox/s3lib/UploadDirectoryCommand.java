@@ -24,7 +24,7 @@ public class UploadDirectoryCommand extends Command
     _options = options;
   }
 
-  public ListenableFuture<List<S3File>> run()
+  public ListenableFuture<List<StoreFile>> run()
   throws ExecutionException, InterruptedException, IOException
   {
     final IOFileFilter noSymlinks = new IOFileFilter()
@@ -61,7 +61,7 @@ public class UploadDirectoryCommand extends Command
 
     Collection<File> found = FileUtils.listFiles(_options.getFile(), noSymlinks, noSymlinks);
 
-    List<ListenableFuture<S3File>> files = new ArrayList<ListenableFuture<S3File>>();
+    List<ListenableFuture<StoreFile>> files = new ArrayList<ListenableFuture<StoreFile>>();
     for (File file : found)
     {
       String relPath = file.getPath().substring(_options.getFile().getPath().length()+1);

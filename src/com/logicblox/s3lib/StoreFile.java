@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.Optional;
 import java.util.Date;
 
-public class S3File {
+public class StoreFile {
   
   private File _localFile;
   private String _eTag;
@@ -14,11 +14,11 @@ public class S3File {
   private Optional<Long> _size = Optional.empty();
   private Optional<Date> _timestamp = Optional.empty();
 
-  public S3File()
+  public StoreFile()
   {
   }
   
-  public S3File(String bucket, String key)
+  public StoreFile(String bucket, String key)
   {
     _bucket = bucket;
     _key = key;

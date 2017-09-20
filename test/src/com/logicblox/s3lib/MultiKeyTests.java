@@ -6,7 +6,6 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import junit.framework.Assert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -62,13 +61,13 @@ public class MultiKeyTests
 
     // capture files currently in test bucket
     String rootPrefix = TestUtils.addPrefix("");
-    List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
+    List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
     int originalCount = objs.size();
 
     // create a small file and upload
     File toUpload = TestUtils.createTextFile(100);
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadEncryptedFile(toUpload, dest, keys[0]);
+    StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, keys[0]);
     Assert.assertNotNull(f);
 
     // make sure file was uploaded
@@ -184,7 +183,7 @@ public class MultiKeyTests
     // create a small file and upload
     File toUpload = TestUtils.createTextFile(100);
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadEncryptedFile(toUpload, dest, key1);
+    StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, key1);
     Assert.assertNotNull(f);
 
     // the private part of key1 & the public part of key2 should be
@@ -228,7 +227,7 @@ public class MultiKeyTests
     String rootPrefix = TestUtils.addPrefix("");
     String objKey = rootPrefix + toUpload.getName();
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadEncryptedFile(toUpload, dest, key1);
+    StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, key1);
     Assert.assertNotNull(f);
 
     // test adding a key that is already used by the file
@@ -264,7 +263,7 @@ public class MultiKeyTests
     String rootPrefix = TestUtils.addPrefix("");
     String objKey = rootPrefix + toUpload.getName();
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadEncryptedFile(toUpload, dest, key1);
+    StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, key1);
     Assert.assertNotNull(f);
 
     // test adding key that doesn't exist
@@ -301,7 +300,7 @@ public class MultiKeyTests
     String rootPrefix = TestUtils.addPrefix("");
     String objKey = rootPrefix + toUpload.getName();
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadEncryptedFile(toUpload, dest, key1);
+    StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, key1);
     Assert.assertNotNull(f);
 
     // test removing key that doesn't exist for encrypted file
@@ -336,7 +335,7 @@ public class MultiKeyTests
     String rootPrefix = TestUtils.addPrefix("");
     String objKey = rootPrefix + toUpload.getName();
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, dest);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
 
     // test add key for unencrypted file
@@ -371,7 +370,7 @@ public class MultiKeyTests
     String rootPrefix = TestUtils.addPrefix("");
     String objKey = rootPrefix + toUpload.getName();
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadFile(toUpload, dest);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
 
     // test removing key for unencrypted file
@@ -408,7 +407,7 @@ public class MultiKeyTests
     String rootPrefix = TestUtils.addPrefix("");
     String objKey = rootPrefix + toUpload.getName();
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadEncryptedFile(toUpload, dest, key1);
+    StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, key1);
     Assert.assertNotNull(f);
 
     // add the second key
@@ -459,7 +458,7 @@ public class MultiKeyTests
     String rootPrefix = TestUtils.addPrefix("");
     String objKey = rootPrefix + toUpload.getName();
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadEncryptedFile(toUpload, dest, keys[0]);
+    StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, keys[0]);
     Assert.assertNotNull(f);
 
     // should be OK
@@ -498,13 +497,13 @@ public class MultiKeyTests
     // create a small file and upload
     File toUpload = TestUtils.createTextFile(100);
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    S3File f = TestUtils.uploadEncryptedFile(toUpload, dest, key1);
+    StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, key1);
     Assert.assertNotNull(f);
 
     // remove "s3tool-pubkey-hash" from metadata to simulate files
     // uploaded by older cloud-store versions
     String objKey = rootPrefix + toUpload.getName();
-    ObjectMetadata destMeta = TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest));
+    Metadata destMeta = TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest));
     Assert.assertNotNull(destMeta);
     Map<String,String> destUserMeta = destMeta.getUserMetadata();
     Assert.assertNotNull(destUserMeta);

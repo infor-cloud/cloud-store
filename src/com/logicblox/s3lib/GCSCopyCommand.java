@@ -20,7 +20,7 @@ public class GCSCopyCommand extends Command
     _options = options;
   }
 
-  public ListenableFuture<S3File> run()
+  public ListenableFuture<StoreFile> run()
   {
     if(_options.isDryRun())
     {
@@ -32,10 +32,10 @@ public class GCSCopyCommand extends Command
     }
     else
     {
-      ListenableFuture<S3File> future =
-        executeWithRetry(_client.getInternalExecutor(), new Callable<ListenableFuture<S3File>>()
+      ListenableFuture<StoreFile> future =
+        executeWithRetry(_client.getInternalExecutor(), new Callable<ListenableFuture<StoreFile>>()
         {
-          public ListenableFuture<S3File> call()
+          public ListenableFuture<StoreFile> call()
           {
             return runActual();
           }
@@ -54,11 +54,11 @@ public class GCSCopyCommand extends Command
   }
   
 
-  private ListenableFuture<S3File> runActual()
+  private ListenableFuture<StoreFile> runActual()
   {
-    return _client.getApiExecutor().submit(new Callable<S3File>()
+    return _client.getApiExecutor().submit(new Callable<StoreFile>()
     {
-      public S3File call() throws IOException
+      public StoreFile call() throws IOException
       {
         // support for testing failures
         String srcUri = getUri(_options.getSourceBucketName(), _options.getSourceObjectKey());
@@ -96,14 +96,14 @@ public class GCSCopyCommand extends Command
         }
 
         StorageObject resp = cmd.execute();
-        return createS3File(resp, false);
+        return createStoreFile(resp, false);
       }
     });
   }
 
-  private S3File createS3File(StorageObject obj, boolean includeVersion)
+  private StoreFile createStoreFile(StorageObject obj, boolean includeVersion)
   {
-    S3File f = new S3File();
+    StoreFile f = new StoreFile();
     f.setKey(obj.getName());
     f.setETag(obj.getEtag());
     f.setBucketName(obj.getBucket());

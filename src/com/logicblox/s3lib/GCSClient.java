@@ -1,8 +1,6 @@
 package com.logicblox.s3lib;
 
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.model.StorageObject;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -142,13 +140,13 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<S3File> upload(UploadOptions options) throws IOException
+    public ListenableFuture<StoreFile> upload(UploadOptions options) throws IOException
     {
         return s3Client.upload(options);
     }
 
     @Override
-    public ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
+    public ListenableFuture<List<StoreFile>> uploadDirectory(UploadOptions options)
         throws IOException,
         ExecutionException, InterruptedException
     {
@@ -156,14 +154,14 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<List<S3File>> deleteDir(DeleteOptions opts)
+    public ListenableFuture<List<StoreFile>> deleteDir(DeleteOptions opts)
       throws InterruptedException, ExecutionException
     {
       return s3Client.deleteDir(opts);
     }
     
     @Override
-    public ListenableFuture<S3File> delete(DeleteOptions opts)
+    public ListenableFuture<StoreFile> delete(DeleteOptions opts)
     {
       return s3Client.delete(opts);
     }
@@ -174,18 +172,18 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<ObjectMetadata> exists(ExistsOptions options) {
+    public ListenableFuture<Metadata> exists(ExistsOptions options) {
         return s3Client.exists(options);
     }
 
     @Override
-    public ListenableFuture<S3File> download(DownloadOptions options) throws
+    public ListenableFuture<StoreFile> download(DownloadOptions options) throws
         IOException {
         return s3Client.download(options);
     }
 
     @Override
-    public ListenableFuture<List<S3File>> downloadDirectory(DownloadOptions
+    public ListenableFuture<List<StoreFile>> downloadDirectory(DownloadOptions
                                                                     options)
         throws
         IOException, ExecutionException, InterruptedException {
@@ -193,33 +191,33 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<S3File> copy(CopyOptions options)
+    public ListenableFuture<StoreFile> copy(CopyOptions options)
     {
         return s3Client.copy(options);
     }
 
     @Override
-    public ListenableFuture<List<S3File>> copyToDir(CopyOptions options)
+    public ListenableFuture<List<StoreFile>> copyToDir(CopyOptions options)
         throws InterruptedException, ExecutionException, IOException
     {
         return s3Client.copyToDir(options);
     }
 
     @Override
-    public ListenableFuture<S3File> rename(RenameOptions options)
+    public ListenableFuture<StoreFile> rename(RenameOptions options)
     {
         return s3Client.rename(options);
     }
 
     @Override
-    public ListenableFuture<List<S3File>> renameDirectory(RenameOptions options)
+    public ListenableFuture<List<StoreFile>> renameDirectory(RenameOptions options)
       throws InterruptedException, ExecutionException, IOException
     {
         return s3Client.renameDirectory(options);
     }
 
     @Override
-    public ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions) {
+    public ListenableFuture<List<StoreFile>> listObjects(ListOptions lsOptions) {
         return s3Client.listObjects(lsOptions);
     }
 
@@ -236,14 +234,14 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<S3File> addEncryptionKey(EncryptionKeyOptions options)
+    public ListenableFuture<StoreFile> addEncryptionKey(EncryptionKeyOptions options)
         throws IOException
     {
         return s3Client.addEncryptionKey(options);
     }
 
     @Override
-    public ListenableFuture<S3File> removeEncryptionKey(EncryptionKeyOptions options)
+    public ListenableFuture<StoreFile> removeEncryptionKey(EncryptionKeyOptions options)
         throws IOException
     {
         return s3Client.removeEncryptionKey(options);
@@ -277,7 +275,7 @@ public class GCSClient implements CloudStoreClient {
          * @param options Upload options
          */
         @Override
-        public ListenableFuture<S3File> upload(UploadOptions options)
+        public ListenableFuture<StoreFile> upload(UploadOptions options)
             throws IOException {
             GCSUploadCommand cmd = new GCSUploadCommand(options);
             s3Client.configure(cmd);
@@ -290,7 +288,7 @@ public class GCSClient implements CloudStoreClient {
          * @param options Upload options
          */
         @Override
-        public ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
+        public ListenableFuture<List<StoreFile>> uploadDirectory(UploadOptions options)
             throws IOException, ExecutionException, InterruptedException {
             UploadDirectoryCommand cmd = new UploadDirectoryCommand(options);
             s3Client.configure(cmd);
@@ -298,7 +296,7 @@ public class GCSClient implements CloudStoreClient {
         }
 
         @Override
-        public ListenableFuture<List<S3File>> listObjects(ListOptions options)
+        public ListenableFuture<List<StoreFile>> listObjects(ListOptions options)
         {
           GCSListCommand cmd = new GCSListCommand(options);
           configure(cmd);
@@ -306,7 +304,7 @@ public class GCSClient implements CloudStoreClient {
         }
 
         @Override
-        public ListenableFuture<S3File> copy(CopyOptions options)
+        public ListenableFuture<StoreFile> copy(CopyOptions options)
         {
           GCSCopyCommand cmd = new GCSCopyCommand(options);
           configure(cmd);
@@ -314,7 +312,7 @@ public class GCSClient implements CloudStoreClient {
         }
 
         @Override
-        public ListenableFuture<List<S3File>> copyToDir(CopyOptions options)
+        public ListenableFuture<List<StoreFile>> copyToDir(CopyOptions options)
           throws IOException
         {
           GCSCopyDirCommand cmd = new GCSCopyDirCommand(options);

@@ -1,6 +1,5 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.services.s3.model.Bucket;
 import java.net.URL;
 import java.util.List;
 import junit.framework.Assert;

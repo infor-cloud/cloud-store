@@ -16,7 +16,7 @@ public class DownloadDirectoryCommand extends Command
 {
   private DownloadOptions _options;
   private File _destination;
-  private List<ListenableFuture<S3File>> _futures;
+  private List<ListenableFuture<StoreFile>> _futures;
   private java.util.Set<File> _filesToCleanup;
   private List<File> _dirsToCleanup;
   private boolean _dryRun = false;
@@ -34,7 +34,7 @@ public class DownloadDirectoryCommand extends Command
 
   }
 
-  public ListenableFuture<List<S3File>> run()
+  public ListenableFuture<List<StoreFile>> run()
       throws ExecutionException, InterruptedException, IOException
   {
     _futures.clear();
@@ -51,12 +51,12 @@ public class DownloadDirectoryCommand extends Command
       throw ex;
     }
 
-    ListenableFuture<List<S3File>> listObjs = querySourceFiles();
-    ListenableFuture<List<S3File>> result = Futures.transform(
+    ListenableFuture<List<StoreFile>> listObjs = querySourceFiles();
+    ListenableFuture<List<StoreFile>> result = Futures.transform(
       listObjs,
-      new AsyncFunction<List<S3File>, List<S3File>>()
+      new AsyncFunction<List<StoreFile>, List<StoreFile>>()
       {
-        public ListenableFuture<List<S3File>> apply(List<S3File> srcFiles)
+        public ListenableFuture<List<StoreFile>> apply(List<StoreFile> srcFiles)
           throws IOException
         {
           prepareFutures(srcFiles);
@@ -74,17 +74,17 @@ public class DownloadDirectoryCommand extends Command
   }
 
 
-  private ListenableFuture<List<S3File>> scheduleExecution()
+  private ListenableFuture<List<StoreFile>> scheduleExecution()
   {
     // Don't see a way to have all peer futures in the list fail and clean up if any
     // one fails, even if explicitly cancelled.  This seems to be the only way
     // to clean up all the newly created files reliably.
-    ListenableFuture<List<S3File>> futureList = Futures.allAsList(_futures);
+    ListenableFuture<List<StoreFile>> futureList = Futures.allAsList(_futures);
     return Futures.withFallback(
       futureList,
-      new FutureFallback<List<S3File>>()
+      new FutureFallback<List<StoreFile>>()
       {
-        public ListenableFuture<List<S3File>> create(Throwable t)
+        public ListenableFuture<List<StoreFile>> create(Throwable t)
         {
            cleanup();
            return Futures.immediateFailedFuture(t);
@@ -93,7 +93,7 @@ public class DownloadDirectoryCommand extends Command
   }
 
 
-  private ListenableFuture<List<S3File>> querySourceFiles()
+  private ListenableFuture<List<StoreFile>> querySourceFiles()
   {
     // find all files that need to be downloaded
     ListOptionsBuilder lob = _client.getOptionsBuilderFactory()
@@ -160,11 +160,11 @@ public class DownloadDirectoryCommand extends Command
   }
   
   
-  private void prepareFutures(List<S3File> potentialFiles)
+  private void prepareFutures(List<StoreFile> potentialFiles)
       throws IOException
   {
     File destAbs = _destination.getAbsoluteFile();
-    for(S3File src : potentialFiles)
+    for(StoreFile src : potentialFiles)
     {
       String relFile = src.getKey().substring(_options.getObjectKey().length());
       File outputFile = new File(destAbs, relFile);
@@ -234,7 +234,7 @@ public class DownloadDirectoryCommand extends Command
   private void cleanup()
   {
     // cancel any futures that may still be trying to run
-    for(ListenableFuture<S3File> f : _futures)
+    for(ListenableFuture<StoreFile> f : _futures)
       f.cancel(true);
     _futures.clear();
 

@@ -853,7 +853,7 @@ public class TestUtils
 
       String key = Utils.getObjectKey(destUri) + "/";
       String bucket = Utils.getBucket(destUri);
-      ListOptionsBuilder builder = _client.getOptionsBuilderFactory()
+      ListOptionsBuilder builder = client.getOptionsBuilderFactory()
         .newListOptionsBuilder()
         .setBucketName(bucket)
         .setRecursive(false)

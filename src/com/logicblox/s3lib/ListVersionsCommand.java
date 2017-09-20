@@ -5,8 +5,6 @@ import com.amazonaws.services.s3.model.VersionListing;
 import com.amazonaws.services.s3.model.S3VersionSummary;
 import com.amazonaws.services.s3.model.ListVersionsRequest;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.amazonaws.services.s3.internal.Constants;
 
 import java.util.ArrayList;
@@ -16,18 +14,15 @@ import java.util.concurrent.Callable;
 public class ListVersionsCommand extends Command {
   
   private ListOptions _options;
-  private ListeningExecutorService _httpExecutor;
-  private ListeningScheduledExecutorService _executor;
 
   public ListVersionsCommand(ListOptions options) {
+    super(options);
     _options = options;
-    _httpExecutor = _options.getCloudStoreClient().getApiExecutor();
-    _executor = _options.getCloudStoreClient().getInternalExecutor();
   }
   
   public ListenableFuture<List<S3File>> run() {
     ListenableFuture<List<S3File>> future =
-        executeWithRetry(_executor, new Callable<ListenableFuture<List<S3File>>>() {
+        executeWithRetry(_client.getInternalExecutor(), new Callable<ListenableFuture<List<S3File>>>() {
           
           
           public ListenableFuture<List<S3File>> call() {
@@ -44,7 +39,7 @@ public class ListVersionsCommand extends Command {
   }
   
   private ListenableFuture<List<S3File>> runActual() {
-    return _httpExecutor.submit(new Callable<List<S3File>>() {
+    return _client.getApiExecutor().submit(new Callable<List<S3File>>() {
       
       
       public List<S3File> call() {

@@ -1,10 +1,8 @@
 package com.logicblox.s3lib;
 
-
 import java.util.Optional;
 
-public class ListOptions {
-  private CloudStoreClient cloudStoreClient;
+public class ListOptions extends CommandOptions {
   private String bucket;
   private String objectKey;
   private boolean recursive;
@@ -17,16 +15,12 @@ public class ListOptions {
               boolean recursive,
               boolean includeVersions,
               boolean excludeDirs) {
-    this.cloudStoreClient = cloudStoreClient;
+    super(cloudStoreClient);
     this.bucket = bucket;
     this.objectKey = objectKey;
     this.recursive = recursive;
     this.includeVersions = includeVersions;
     this.excludeDirs = excludeDirs;
-  }
-
-  public CloudStoreClient getCloudStoreClient() {
-    return cloudStoreClient;
   }
 
   public String getBucketName() {

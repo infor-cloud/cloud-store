@@ -6,8 +6,6 @@ import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import org.apache.commons.codec.digest.DigestUtils;
 
 import javax.crypto.BadPaddingException;
@@ -30,19 +28,14 @@ import java.util.concurrent.Callable;
 public class AddEncryptionKeyCommand extends Command
 {
   private EncryptionKeyOptions _options;
-  private CloudStoreClient _client;
-  private ListeningExecutorService _httpExecutor;
-  private ListeningScheduledExecutorService _executor;
   private String _encKeyName;
   private KeyProvider _encKeyProvider;
 
   public AddEncryptionKeyCommand(EncryptionKeyOptions options)
   throws IOException
   {
+    super(options);
     _options = options;
-    _client = _options.getCloudStoreClient();
-    _httpExecutor = _client.getApiExecutor();
-    _executor = _client.getInternalExecutor();
     _encKeyProvider = _client.getKeyProvider();
     _encKeyName = _options.getEncryptionKey();
   }
@@ -77,7 +70,7 @@ public class AddEncryptionKeyCommand extends Command
   private ListenableFuture<S3ObjectMetadata> getMetadata()
   {
     return executeWithRetry(
-      _executor,
+      _client.getInternalExecutor(),
       new Callable<ListenableFuture<S3ObjectMetadata>>()
       {
         public ListenableFuture<S3ObjectMetadata> call()
@@ -96,9 +89,9 @@ public class AddEncryptionKeyCommand extends Command
   private ListenableFuture<S3ObjectMetadata> getMetadataAsync()
   {
     S3ObjectMetadataFactory f = new S3ObjectMetadataFactory(getAmazonS3Client(),
-      _httpExecutor);
-    ListenableFuture<S3ObjectMetadata> metadataFactory = f.create(_options.getBucketName(), _options.getObjectKey(),
-      null);
+      _client.getApiExecutor());
+    ListenableFuture<S3ObjectMetadata> metadataFactory = f.create(
+      _options.getBucketName(), _options.getObjectKey(), null);
 
     AsyncFunction<S3ObjectMetadata, S3ObjectMetadata> checkMetadata = new
       AsyncFunction<S3ObjectMetadata, S3ObjectMetadata>()
@@ -141,7 +134,7 @@ public class AddEncryptionKeyCommand extends Command
           }
         };
 
-        return _executor.submit(addNewEncyptionKeyCall);
+        return _client.getInternalExecutor().submit(addNewEncyptionKeyCall);
       }
     };
   }
@@ -314,27 +307,27 @@ public class AddEncryptionKeyCommand extends Command
             // without re-uploading/copying the whole object. Here, we
             // copy the object to itself in order to add the new
             // user-metadata.
-            CopyOptions options = new CopyOptionsBuilder()
-              .setCloudStoreClient(_client)
+            CopyOptions options = _client.getOptionsBuilderFactory()
+              .newCopyOptionsBuilder()
               .setSourceBucketName(metadata.getBucket())
               .setSourceObjectKey(metadata.getKey())
               .setDestinationBucketName(metadata.getBucket())
               .setDestinationObjectKey(metadata.getKey())
               .setUserMetadata(metadata.getUserMetadata())
               .setKeepAcl(true)
-              .createCopyOptions();
+              .createOptions();
 
             return _client.copy(options);
           }
           else
           {
             return executeWithRetry(
-              _executor,
+              _client.getInternalExecutor(),
               new Callable<ListenableFuture<S3File>>()
               {
                 public ListenableFuture<S3File> call()
                 {
-                  return _httpExecutor.submit(new Callable<S3File>()
+                  return _client.getApiExecutor().submit(new Callable<S3File>()
                   {
                     public S3File call()
                     throws IOException

@@ -6,8 +6,6 @@ import com.google.common.base.Functions;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
@@ -19,16 +17,13 @@ import java.util.concurrent.Callable;
 
 public class CopyCommand extends Command
 {
-  private ListeningExecutorService _copyExecutor;
-  private ListeningScheduledExecutorService _executor;
   private CopyOptions _options;
   private OverallProgressListenerFactory _progressListenerFactory;
 
   public CopyCommand(CopyOptions options)
   {
+    super(options);
     _options = options;
-    _copyExecutor = _options.getCloudStoreClient().getApiExecutor();
-    _executor = _options.getCloudStoreClient().getInternalExecutor();
 
     _progressListenerFactory = options.getOverallProgressListenerFactory().orElse(null);
   }
@@ -71,7 +66,7 @@ public class CopyCommand extends Command
   private ListenableFuture<Copy> startCopy()
   {
     return executeWithRetry(
-      _executor,
+      _client.getInternalExecutor(),
       new Callable<ListenableFuture<Copy>>()
       {
         public ListenableFuture<Copy> call()
@@ -91,7 +86,7 @@ public class CopyCommand extends Command
   private ListenableFuture<Copy> startCopyActual()
   {
     MultipartAmazonCopyFactory factory = new MultipartAmazonCopyFactory(
-      getAmazonS3Client(), _copyExecutor);
+      getAmazonS3Client(), _client.getApiExecutor());
 
     return factory.startCopy(
       _options.getSourceBucketName(), _options.getSourceObjectKey(),
@@ -163,7 +158,7 @@ public class CopyCommand extends Command
     final int partNumber = (int) (position / chunkSize);
 
     return executeWithRetry(
-        _executor,
+        _client.getInternalExecutor(),
         new Callable<ListenableFuture<Void>>() {
           public ListenableFuture<Void> call() {
             return startPartCopyActual(copy, position, partNumber, opl);
@@ -243,7 +238,7 @@ public class CopyCommand extends Command
   private ListenableFuture<String> complete(final Copy copy,
                                             final int retryCount)
   {
-    return executeWithRetry(_executor,
+    return executeWithRetry(_client.getInternalExecutor(),
         new Callable<ListenableFuture<String>>()
         {
           public ListenableFuture<String> call()

@@ -29,8 +29,6 @@ import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import org.apache.commons.codec.digest.DigestUtils;
 
 public class UploadCommand extends Command
@@ -40,17 +38,14 @@ public class UploadCommand extends Command
   private OverallProgressListenerFactory progressListenerFactory;
   private String pubKeyHash;
 
-  private ListeningExecutorService _uploadExecutor;
-  private ListeningScheduledExecutorService _executor;
   private UploadOptions _options;
 
 
   public UploadCommand(UploadOptions options)
   throws IOException
   {
+    super(options);
     _options = options;
-    _uploadExecutor = _options.getCloudStoreClient().getApiExecutor();
-    _executor = _options.getCloudStoreClient().getInternalExecutor();
 
     this.file = _options.getFile();
     setChunkSize(_options.getChunkSize());
@@ -63,9 +58,9 @@ public class UploadCommand extends Command
       this.encKey = new SecretKeySpec(encKeyBytes, "AES");
       try
       {
-        if (_options.getCloudStoreClient().getKeyProvider() == null)
+        if (_client.getKeyProvider() == null)
           throw new UsageException("No encryption key provider is specified");
-        Key pubKey = _options.getCloudStoreClient().getKeyProvider().getPublicKey(this.encKeyName);
+        Key pubKey = _client.getKeyProvider().getPublicKey(this.encKeyName);
 
         this.pubKeyHash = DatatypeConverter.printBase64Binary(
           DigestUtils.sha256(pubKey.getEncoded()));
@@ -151,7 +146,7 @@ public class UploadCommand extends Command
           return res0;
         }
       },
-      _executor);
+      _client.getInternalExecutor());
   }
 
   /**
@@ -159,7 +154,7 @@ public class UploadCommand extends Command
    */
   private ListenableFuture<Upload> startUpload()
   {
-    return executeWithRetry(_executor,
+    return executeWithRetry(_client.getInternalExecutor(),
       new Callable<ListenableFuture<Upload>>()
       {
         public ListenableFuture<Upload> call()
@@ -177,7 +172,7 @@ public class UploadCommand extends Command
   private ListenableFuture<Upload> startUploadActual()
   {
     UploadFactory factory = new MultipartAmazonUploadFactory
-        (getAmazonS3Client(), _uploadExecutor);
+        (getAmazonS3Client(), _client.getApiExecutor());
 
     Map<String,String> meta = new HashMap<String,String>();
     meta.put("s3tool-version", String.valueOf(Version.CURRENT));
@@ -238,7 +233,7 @@ public class UploadCommand extends Command
                                                        final OverallProgressListener opl)
   {
     ListenableFuture<ListenableFuture<Void>> result =
-      _executor.submit(new Callable<ListenableFuture<Void>>()
+      _client.getInternalExecutor().submit(new Callable<ListenableFuture<Void>>()
         {
           public ListenableFuture<Void> call() throws Exception
           {
@@ -258,7 +253,7 @@ public class UploadCommand extends Command
   {
     final int partNumber = (int) (position / chunkSize);
 
-    return executeWithRetry(_executor,
+    return executeWithRetry(_client.getInternalExecutor(),
       new Callable<ListenableFuture<Void>>()
       {
         public ListenableFuture<Void> call() throws Exception
@@ -342,7 +337,7 @@ public class UploadCommand extends Command
    */
   private ListenableFuture<String> complete(final Upload upload, final int retryCount)
   {
-    return executeWithRetry(_executor,
+    return executeWithRetry(_client.getInternalExecutor(),
       new Callable<ListenableFuture<String>>()
       {
         public ListenableFuture<String> call()
@@ -382,7 +377,7 @@ public class UploadCommand extends Command
   private ListenableFuture<Void> abort(final Upload upload, final int
       retryCount)
   {
-    return executeWithRetry(_executor,
+    return executeWithRetry(_client.getInternalExecutor(),
         new Callable<ListenableFuture<Void>>() {
           public ListenableFuture<Void> call() {
             return abortActual(upload, retryCount);

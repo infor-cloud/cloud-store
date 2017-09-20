@@ -1,7 +1,5 @@
 package com.logicblox.s3lib;
 
-import java.util.Optional;
-
 /**
  * {@code RenameOptions} contains all the details needed by the rename operation.
  * The specified {@code sourceObjectKey}, under {@code sourceBucketName} bucket, is renamed
@@ -13,9 +11,8 @@ import java.util.Optional;
  * {@code RenameOptions} objects are meant to be built by {@code
  * RenameOptionsBuilder}. This class provides only public getter methods.
  */
-public class RenameOptions
+public class RenameOptions extends CommandOptions
 {
-  private final CloudStoreClient _cloudStoreClient;
   private final String _sourceBucketName;
   private final String _sourceObjectKey;
   private final String _destinationBucketName;
@@ -31,7 +28,7 @@ public class RenameOptions
     String cannedAcl, boolean keepAcl, boolean recursive,
     boolean dryRun)
   {
-    _cloudStoreClient = cloudStoreClient;
+    super(cloudStoreClient);
     _sourceBucketName = sourceBucketName;
     _sourceObjectKey = sourceObjectKey;
     _destinationBucketName = destinationBucket;
@@ -40,11 +37,6 @@ public class RenameOptions
     _cannedAcl = cannedAcl;
     _keepAcl = keepAcl;
     _dryRun = dryRun;
-  }
-
-  public CloudStoreClient getCloudStoreClient()
-  {
-    return _cloudStoreClient;
   }
 
   public String getSourceBucketName()

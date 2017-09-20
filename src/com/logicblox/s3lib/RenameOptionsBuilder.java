@@ -7,9 +7,8 @@ package com.logicblox.s3lib;
  * destinationBucket} and {@code destinationObjectKey} is mandatory. All the
  * others are optional.
  */
-public class RenameOptionsBuilder
+public class RenameOptionsBuilder extends CommandOptionsBuilder
 {
-  private CloudStoreClient _cloudStoreClient;
   private String _sourceBucketName;
   private String _sourceObjectKey;
   private String _destinationBucketName;
@@ -19,9 +18,9 @@ public class RenameOptionsBuilder
   private boolean _recursive = false;
   private boolean _dryRun = false;
 
-  public RenameOptionsBuilder setCloudStoreClient(CloudStoreClient client) {
+  RenameOptionsBuilder(CloudStoreClient client)
+  {
     _cloudStoreClient = client;
-    return this;
   }
 
   public RenameOptionsBuilder setSourceBucketName(String sourceBucketName)
@@ -71,7 +70,7 @@ public class RenameOptionsBuilder
     return this;
   }
 
-  public RenameOptions createRenameOptions()
+  private void validateOptions()
   {
     if (_cloudStoreClient == null) {
       throw new UsageException("CloudStoreClient has to be set");
@@ -88,6 +87,12 @@ public class RenameOptionsBuilder
     else if (_destinationObjectKey == null) {
       throw new UsageException("Destination object key has to be set");
     }
+  }
+
+  @Override
+  public RenameOptions createOptions()
+  {
+    validateOptions();
 
     if (_cannedAcl != null) {
       if (!_cloudStoreClient.getAclHandler().isCannedAclValid(_cannedAcl)) {

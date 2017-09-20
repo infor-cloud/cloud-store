@@ -9,8 +9,7 @@ import java.util.Map;
  * destinationBucketName} and {@code destinationObjectKey} is mandatory. All the
  * others are optional.
  */
-public class CopyOptionsBuilder {
-    private CloudStoreClient cloudStoreClient;
+public class CopyOptionsBuilder extends CommandOptionsBuilder {
     private String sourceBucketName;
     private String sourceObjectKey;
     private String destinationBucketName;
@@ -24,10 +23,8 @@ public class CopyOptionsBuilder {
     private boolean ignoreAbortInjection = false;
     private OverallProgressListenerFactory overallProgressListenerFactory;
 
-
-    public CopyOptionsBuilder setCloudStoreClient(CloudStoreClient client) {
-        this.cloudStoreClient = client;
-        return this;
+    CopyOptionsBuilder(CloudStoreClient client) {
+        _cloudStoreClient = client;
     }
 
     public CopyOptionsBuilder setSourceBucketName(String sourceBucketName) {
@@ -86,7 +83,6 @@ public class CopyOptionsBuilder {
       this.ignoreAbortInjection = ignore;
       return this;
     }
-  
 
     // Disabled progress listener since AWS S3 copy progress indicator doesn't
     // notify about the copied bytes.
@@ -97,8 +93,9 @@ public class CopyOptionsBuilder {
     //        return this;
     //    }
 
-    public CopyOptions createCopyOptions() {
-        if (cloudStoreClient == null) {
+    private void validateOptions()
+    {
+        if (_cloudStoreClient == null) {
             throw new UsageException("CloudStoreClient has to be set");
         }
         else if (sourceBucketName == null) {
@@ -115,21 +112,26 @@ public class CopyOptionsBuilder {
         }
 
         if (cannedAcl != null) {
-            if (!cloudStoreClient.getAclHandler().isCannedAclValid(cannedAcl)) {
+            if (!_cloudStoreClient.getAclHandler().isCannedAclValid(cannedAcl)) {
                 throw new UsageException("Invalid canned ACL '" + cannedAcl + "'");
             }
         }
         else {
-            cannedAcl = cloudStoreClient.getAclHandler().getDefaultAcl();
+            cannedAcl = _cloudStoreClient.getAclHandler().getDefaultAcl();
         }
 
         if (storageClass != null) {
-            if (!cloudStoreClient.getStorageClassHandler().isStorageClassValid(storageClass)) {
+            if (!_cloudStoreClient.getStorageClassHandler().isStorageClassValid(storageClass)) {
                 throw new UsageException("Invalid storage class '" + storageClass + "'");
             }
         }
+    }
 
-        return new CopyOptions(cloudStoreClient, sourceBucketName, sourceObjectKey,
+    @Override
+    public CopyOptions createOptions() {
+        validateOptions();
+
+        return new CopyOptions(_cloudStoreClient, sourceBucketName, sourceObjectKey,
             destinationBucketName, destinationObjectKey, cannedAcl, keepAcl, storageClass,
             recursive, dryRun, ignoreAbortInjection, userMetadata, overallProgressListenerFactory);
     }

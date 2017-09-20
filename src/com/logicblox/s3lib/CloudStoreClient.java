@@ -57,6 +57,8 @@ public interface CloudStoreClient {
      */
     ListeningScheduledExecutorService getInternalExecutor();
 
+    OptionsBuilderFactory getOptionsBuilderFactory();
+
     /**
      * Returns the provider of encryption key-pairs used to encrypt/decrypt
      * files during upload/download.
@@ -137,10 +139,9 @@ public interface CloudStoreClient {
      * Throws an exception if the metadata of the file could not be fetched for
      * different reasons.
      *
-     * @param bucket Bucket to check
-     * @param object Path in bucket to check
+     * @param options ExistsOptions
      */
-    ListenableFuture<ObjectMetadata> exists(String bucket, String object);
+    ListenableFuture<ObjectMetadata> exists(ExistsOptions options);
 
     /**
      * Downloads a file according to {@code options}. For more details

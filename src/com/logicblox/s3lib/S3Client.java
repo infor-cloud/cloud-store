@@ -254,6 +254,12 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
+  public OptionsBuilderFactory getOptionsBuilderFactory()
+  {
+    return new OptionsBuilderFactory(this);
+  }
+
+  @Override
   public KeyProvider getKeyProvider()
   {
     return _keyProvider;
@@ -351,11 +357,11 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<ObjectMetadata> exists(String bucket, String object)
+  public ListenableFuture<ObjectMetadata> exists(ExistsOptions options)
   {
-    ExistsCommand cmd = new ExistsCommand(_s3Executor, _executor);
+    ExistsCommand cmd = new ExistsCommand(options);
     configure(cmd);
-    return cmd.run(bucket, object);
+    return cmd.run();
   }
 
   @Override

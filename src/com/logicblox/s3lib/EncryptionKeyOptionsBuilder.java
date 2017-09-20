@@ -1,17 +1,14 @@
 package com.logicblox.s3lib;
 
-public class EncryptionKeyOptionsBuilder
+public class EncryptionKeyOptionsBuilder extends CommandOptionsBuilder
 {
-  private CloudStoreClient _cloudStoreClient;
   private String _bucket;
   private String _objectKey;
   private String _encryptionKey;
 
-
-  public EncryptionKeyOptionsBuilder setCloudStoreClient(CloudStoreClient client)
+  EncryptionKeyOptionsBuilder(CloudStoreClient client)
   {
     _cloudStoreClient = client;
-    return this;
   }
 
   public EncryptionKeyOptionsBuilder setBucketName(String bucket)
@@ -32,7 +29,7 @@ public class EncryptionKeyOptionsBuilder
     return this;
   }
 
-  public EncryptionKeyOptions createEncryptionKeyOptions()
+  private void validateOptions()
   {
     if (_cloudStoreClient == null) {
       throw new UsageException("CloudStoreClient has to be set");
@@ -46,6 +43,12 @@ public class EncryptionKeyOptionsBuilder
     else if (_encryptionKey == null) {
       throw new UsageException("Encryption key has to be set");
     }
+  }
+
+  @Override
+  public EncryptionKeyOptions createOptions()
+  {
+    validateOptions();
 
     return new EncryptionKeyOptions(_cloudStoreClient, _bucket, _objectKey,
       _encryptionKey);

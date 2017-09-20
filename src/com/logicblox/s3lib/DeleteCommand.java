@@ -5,25 +5,18 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.util.concurrent.Callable;
 
 
 public class DeleteCommand extends Command
 {
-  private ListeningExecutorService _httpExecutor;
-  private ListeningScheduledExecutorService _executor;
   private DeleteOptions _options;
-  private CloudStoreClient _client;
 
   public DeleteCommand(DeleteOptions options)
   {
+    super(options);
     _options = options;
-    _client = _options.getCloudStoreClient();
-    _httpExecutor = _client.getApiExecutor();
-    _executor = _client.getInternalExecutor();
   }
 
 
@@ -33,7 +26,13 @@ public class DeleteCommand extends Command
     final String key = _options.getObjectKey();
     final boolean forceDelete = _options.forceDelete();
 
-    ListenableFuture<ObjectMetadata> existsFuture = _client.exists(bucket, key);
+    ExistsOptions opts = _client.getOptionsBuilderFactory()
+      .newExistsOptionsBuilder()
+      .setBucketName(bucket)
+      .setObjectKey(key)
+      .createOptions();
+
+    ListenableFuture<ObjectMetadata> existsFuture = _client.exists(opts);
 
     ListenableFuture<S3File> result = Futures.transform(
       existsFuture,
@@ -63,7 +62,7 @@ public class DeleteCommand extends Command
     final String key = _options.getObjectKey();
 
     ListenableFuture<S3File> deleteFuture = executeWithRetry(
-      _executor,
+      _client.getInternalExecutor(),
       new Callable<ListenableFuture<S3File>>()
       {
         public ListenableFuture<S3File> call()
@@ -90,7 +89,7 @@ public class DeleteCommand extends Command
     }
     else
     {
-      return _httpExecutor.submit(
+      return _client.getApiExecutor().submit(
         new Callable<S3File>()
         {
           public S3File call()

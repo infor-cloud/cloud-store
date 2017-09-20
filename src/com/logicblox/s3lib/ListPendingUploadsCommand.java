@@ -4,8 +4,6 @@ import com.amazonaws.services.s3.model.ListMultipartUploadsRequest;
 import com.amazonaws.services.s3.model.MultipartUpload;
 import com.amazonaws.services.s3.model.MultipartUploadListing;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,23 +11,19 @@ import java.util.concurrent.Callable;
 
 public class ListPendingUploadsCommand extends Command
 {
-  private PendingUploadsOptions options;
-  private ListeningExecutorService _httpExecutor;
-  private ListeningScheduledExecutorService _executor;
   private PendingUploadsOptions _options;
 
   public ListPendingUploadsCommand(PendingUploadsOptions options)
   {
+    super(options);
     _options = options;
-    _httpExecutor = _options.getCloudStoreClient().getApiExecutor();
-    _executor = _options.getCloudStoreClient().getInternalExecutor();
   }
 
   public ListenableFuture<List<Upload>> run()
   {
     ListenableFuture<List<Upload>> future =
       executeWithRetry(
-        _executor,
+        _client.getInternalExecutor(),
         new Callable<ListenableFuture<List<Upload>>>()
         {
           public ListenableFuture<List<Upload>> call()
@@ -49,7 +43,7 @@ public class ListPendingUploadsCommand extends Command
 
   private ListenableFuture<List<Upload>> runActual()
   {
-    return _httpExecutor.submit(
+    return _client.getApiExecutor().submit(
       new Callable<List<Upload>>()
       {
         public List<Upload> call()
@@ -102,8 +96,8 @@ public class ListPendingUploadsCommand extends Command
         multipartUpload.getKey(),
         multipartUpload.getUploadId(),
         multipartUpload.getInitiated(),
-        _httpExecutor,
-        (new UploadOptionsBuilder()).createUploadOptions());
+        _client.getApiExecutor(),
+        _client.getOptionsBuilderFactory().newUploadOptionsBuilder().createOptions());
 
     return u;
   }

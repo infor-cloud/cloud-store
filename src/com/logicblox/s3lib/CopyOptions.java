@@ -18,8 +18,7 @@ import java.util.Optional;
  * {@code CopyOptions} objects are meant to be built by {@code
  * CopyOptionsBuilder}. This class provides only public getter methods.
  */
-public class CopyOptions {
-    private final CloudStoreClient cloudStoreClient;
+public class CopyOptions extends CommandOptions {
     private final String sourceBucketName;
     private final String sourceObjectKey;
     private final String destinationBucketName;
@@ -51,7 +50,7 @@ public class CopyOptions {
                 boolean ignoreAbortInjection,
                 Map<String,String> userMetadata,
                 OverallProgressListenerFactory overallProgressListenerFactory) {
-        this.cloudStoreClient = cloudStoreClient;
+        super(cloudStoreClient);
         this.sourceBucketName = sourceBucketName;
         this.sourceObjectKey = sourceObjectKey;
         this.destinationBucketName = destinationBucketName;
@@ -79,10 +78,6 @@ public class CopyOptions {
     static AbortCounters getAbortCounters()
     {
       return _abortCounters;
-    }
-
-    public CloudStoreClient getCloudStoreClient() {
-        return cloudStoreClient;
     }
 
     public String getSourceBucketName() {

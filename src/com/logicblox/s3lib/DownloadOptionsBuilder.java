@@ -9,8 +9,7 @@ import java.io.File;
  * Setting fields {@code file}, {@code bucket} and {@code objectKey} is
  * mandatory. All the others are optional.
  */
-public class DownloadOptionsBuilder {
-    private CloudStoreClient cloudStoreClient;
+public class DownloadOptionsBuilder extends CommandOptionsBuilder {
     private File file;
     private String bucket;
     private String objectKey;
@@ -20,9 +19,8 @@ public class DownloadOptionsBuilder {
     private boolean dryRun = false;
     private OverallProgressListenerFactory overallProgressListenerFactory;
 
-    public DownloadOptionsBuilder setCloudStoreClient(CloudStoreClient client) {
-        this.cloudStoreClient = client;
-        return this;
+    DownloadOptionsBuilder(CloudStoreClient client) {
+        _cloudStoreClient = client;
     }
 
     public DownloadOptionsBuilder setFile(File file) {
@@ -66,8 +64,9 @@ public class DownloadOptionsBuilder {
         return this;
     }
 
-    public DownloadOptions createDownloadOptions() {
-        if (cloudStoreClient == null) {
+    private void validateOptions()
+    {
+        if (_cloudStoreClient == null) {
             throw new UsageException("CloudStoreClient has to be set");
         }
         else if (file == null) {
@@ -79,8 +78,13 @@ public class DownloadOptionsBuilder {
         else if (objectKey == null) {
             throw new UsageException("Object key has to be set");
         }
+    }
 
-        return new DownloadOptions(cloudStoreClient, file, bucket, objectKey,
+    @Override
+    public DownloadOptions createOptions() {
+        validateOptions();
+
+        return new DownloadOptions(_cloudStoreClient, file, bucket, objectKey,
           version, recursive, overwrite, dryRun, overallProgressListenerFactory);
     }
 }

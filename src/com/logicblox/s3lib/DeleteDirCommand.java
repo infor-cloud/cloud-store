@@ -12,14 +12,12 @@ import java.util.concurrent.ExecutionException;
 public class DeleteDirCommand extends Command
 {
   private DeleteOptions _options;
-  private CloudStoreClient _client;
 
   public DeleteDirCommand(DeleteOptions options)
   {
+    super(options);
     _options = options;
-    _client = _options.getCloudStoreClient();
   }
-
 
   public ListenableFuture<List<S3File>> run()
     throws InterruptedException, ExecutionException
@@ -67,11 +65,11 @@ public class DeleteDirCommand extends Command
       }
       else
       {
-        DeleteOptions opts = new DeleteOptionsBuilder()
-          .setCloudStoreClient(_client)
+        DeleteOptions opts = _client.getOptionsBuilderFactory()
+          .newDeleteOptionsBuilder()
           .setBucketName(src.getBucketName())
           .setObjectKey(src.getKey())
-          .createDeleteOptions();
+          .createOptions();
         futures.add(_client.delete(opts));
       }
     }
@@ -82,12 +80,12 @@ public class DeleteDirCommand extends Command
   private ListenableFuture<List<S3File>> queryFiles()
   {
     // find all files that need to be deleted
-    ListOptions opts = new ListOptionsBuilder()
-        .setCloudStoreClient(_client)
+    ListOptions opts = _client.getOptionsBuilderFactory()
+        .newListOptionsBuilder()
         .setBucketName(_options.getBucketName())
         .setObjectKey(_options.getObjectKey())
         .setRecursive(_options.isRecursive())
-        .createListOptions();
+        .createOptions();
     return _client.listObjects(opts);
   }
 }

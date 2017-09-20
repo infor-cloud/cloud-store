@@ -11,9 +11,8 @@ package com.logicblox.s3lib;
  * {@code RenameOptions} objects are meant to be built by {@code
  * RenameOptionsBuilder}. This class provides only public getter methods.
  */
-public class RenameOptions
+public class RenameOptions extends CommandOptions
 {
-  private final CloudStoreClient _cloudStoreClient;
   private final String _sourceBucketName;
   private final String _sourceObjectKey;
   private final String _destinationBucketName;
@@ -28,7 +27,7 @@ public class RenameOptions
     String cannedAcl, boolean recursive,
     boolean dryRun)
   {
-    _cloudStoreClient = cloudStoreClient;
+    super(cloudStoreClient);
     _sourceBucketName = sourceBucketName;
     _sourceObjectKey = sourceObjectKey;
     _destinationBucketName = destinationBucket;
@@ -36,11 +35,6 @@ public class RenameOptions
     _recursive = recursive;
     _cannedAcl = cannedAcl;
     _dryRun = dryRun;
-  }
-
-  public CloudStoreClient getCloudStoreClient()
-  {
-    return _cloudStoreClient;
   }
 
   public String getSourceBucketName()
@@ -66,10 +60,10 @@ public class RenameOptions
   public String getCannedAcl()
   {
     if (_cannedAcl == null) {
-      if (_cloudStoreClient.getScheme().equals("s3")) {
+      if (getCloudStoreClient().getScheme().equals("s3")) {
         _cannedAcl = "bucket-owner-full-control";
       }
-      else if (_cloudStoreClient.getScheme().equals("gs")) {
+      else if (getCloudStoreClient().getScheme().equals("gs")) {
         _cannedAcl = "projectPrivate";
       }
     }

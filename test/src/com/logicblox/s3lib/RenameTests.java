@@ -62,14 +62,14 @@ public class RenameTests
     // dryrun the rename and make sure dest stays the same
     URI src = dest;
     dest = TestUtils.getUri(_testBucket, toUpload.getName() + "-RENAME", rootPrefix);
-    RenameOptions opts = new RenameOptionsBuilder()
-      .setCloudStoreClient(_client)
+    RenameOptions opts = _client.getOptionsBuilderFactory()
+      .newRenameOptionsBuilder()
       .setSourceBucketName(Utils.getBucket(src))
       .setSourceObjectKey(Utils.getObjectKey(src))
       .setDestinationBucketName(Utils.getBucket(dest))
       .setDestinationObjectKey(Utils.getObjectKey(dest))
       .setDryRun(true)
-      .createRenameOptions();
+      .createOptions();
     f = _client.rename(opts).get();
     Assert.assertNull(f);
     List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
@@ -105,15 +105,15 @@ try
     // dryrun the rename and make sure the dest doesn't change
     URI src = dest;
     dest = TestUtils.getUri(_testBucket, top.getName() + "-RENAME", rootPrefix);
-    RenameOptions opts = new RenameOptionsBuilder()
-      .setCloudStoreClient(_client)
+    RenameOptions opts = _client.getOptionsBuilderFactory()
+      .newRenameOptionsBuilder()
       .setSourceBucketName(Utils.getBucket(src))
       .setSourceObjectKey(Utils.getObjectKey(src))
       .setDestinationBucketName(Utils.getBucket(dest))
       .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
       .setRecursive(false)
       .setDryRun(true)
-      .createRenameOptions();
+      .createOptions();
     List<S3File> files = _client.renameDirectory(opts).get();
     Assert.assertNull(files);
     List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
@@ -173,14 +173,14 @@ while(count < retryCount)
         + count + "/subdir/");
       int newCount = TestUtils.listObjects(_testBucket, destPrefix).size();
       dest = TestUtils.getUri(_testBucket, "subdir2", destPrefix);
-      RenameOptions opts = new RenameOptionsBuilder()
-        .setCloudStoreClient(_client)
+      RenameOptions opts = _client.getOptionsBuilderFactory()
+        .newRenameOptionsBuilder()
         .setSourceBucketName(Utils.getBucket(src))
         .setSourceObjectKey(Utils.getObjectKey(src))
         .setDestinationBucketName(Utils.getBucket(dest))
         .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
         .setRecursive(true)
-        .createRenameOptions();
+        .createOptions();
       oldGlobalFlag = CopyOptions.getAbortCounters().useGlobalCounter(true);
       CopyOptions.getAbortCounters().setInjectionCounter(1);
          // abort first rename during copy phase
@@ -264,14 +264,14 @@ while(count < retryCount)
         + count + "/subdir/");
       int newCount = TestUtils.listObjects(_testBucket, destPrefix).size();
       dest = TestUtils.getUri(_testBucket, "subdir2", destPrefix);
-      RenameOptions opts = new RenameOptionsBuilder()
-        .setCloudStoreClient(_client)
+      RenameOptions opts = _client.getOptionsBuilderFactory()
+        .newRenameOptionsBuilder()
         .setSourceBucketName(Utils.getBucket(src))
         .setSourceObjectKey(Utils.getObjectKey(src))
         .setDestinationBucketName(Utils.getBucket(dest))
         .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
         .setRecursive(true)
-        .createRenameOptions();
+        .createOptions();
       boolean oldGlobalFlag = false;
       try
       {
@@ -355,14 +355,14 @@ while(count < retryCount)
         + count + "/subdir/");
       int newCount = TestUtils.listObjects(_testBucket, destPrefix).size();
       dest = TestUtils.getUri(_testBucket, "subdir2", destPrefix);
-      RenameOptions opts = new RenameOptionsBuilder()
-        .setCloudStoreClient(_client)
+      RenameOptions opts = _client.getOptionsBuilderFactory()
+        .newRenameOptionsBuilder()
         .setSourceBucketName(Utils.getBucket(src))
         .setSourceObjectKey(Utils.getObjectKey(src))
         .setDestinationBucketName(Utils.getBucket(dest))
         .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
         .setRecursive(true)
-        .createRenameOptions();
+        .createOptions();
       DeleteOptions.getAbortCounters().setInjectionCounter(1);
         // should be one more than retry count.  retries disabled by default
       String msg = null;
@@ -442,14 +442,14 @@ while(count < retryCount)
         + count + "/subdir/");
       int newCount = TestUtils.listObjects(_testBucket, destPrefix).size();
       dest = TestUtils.getUri(_testBucket, "subdir2", destPrefix);
-      RenameOptions opts = new RenameOptionsBuilder()
-        .setCloudStoreClient(_client)
+      RenameOptions opts = _client.getOptionsBuilderFactory()
+        .newRenameOptionsBuilder()
         .setSourceBucketName(Utils.getBucket(src))
         .setSourceObjectKey(Utils.getObjectKey(src))
         .setDestinationBucketName(Utils.getBucket(dest))
         .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
         .setRecursive(true)
-        .createRenameOptions();
+        .createOptions();
       CopyOptions.getAbortCounters().setInjectionCounter(1);
         // should be one more than retry count.  retries disabled by default
       String msg = null;
@@ -522,13 +522,13 @@ while(count < retryCount)
       // rename the file
       URI src = dest;
       dest = TestUtils.getUri(_testBucket, toUpload.getName() + "-RENAMED", rootPrefix);
-      RenameOptions opts = new RenameOptionsBuilder()
-        .setCloudStoreClient(_client)
+      RenameOptions opts = _client.getOptionsBuilderFactory()
+        .newRenameOptionsBuilder()
         .setSourceBucketName(Utils.getBucket(src))
         .setSourceObjectKey(Utils.getObjectKey(src))
         .setDestinationBucketName(Utils.getBucket(dest))
         .setDestinationObjectKey(Utils.getObjectKey(dest))
-        .createRenameOptions();
+        .createOptions();
       f = _client.rename(opts).get();
 
       // verify that the rename succeeded and we triggered the right number of retries
@@ -576,13 +576,13 @@ while(count < retryCount)
       // rename the file
       URI src = dest;
       dest = TestUtils.getUri(_testBucket, toUpload.getName() + "-RENAMED", rootPrefix);
-      RenameOptions opts = new RenameOptionsBuilder()
-        .setCloudStoreClient(_client)
+      RenameOptions opts = _client.getOptionsBuilderFactory()
+        .newRenameOptionsBuilder()
         .setSourceBucketName(Utils.getBucket(src))
         .setSourceObjectKey(Utils.getObjectKey(src))
         .setDestinationBucketName(Utils.getBucket(dest))
         .setDestinationObjectKey(Utils.getObjectKey(dest))
-        .createRenameOptions();
+        .createOptions();
       f = _client.rename(opts).get();
 
       // verify that the rename succeeded and we triggered the right number of retries
@@ -622,13 +622,13 @@ while(count < retryCount)
       // rename the file
       URI src = dest;
       dest = TestUtils.getUri(_testBucket, toUpload.getName() + "-RENAMED", rootPrefix);
-      RenameOptions opts = new RenameOptionsBuilder()
-        .setCloudStoreClient(_client)
+      RenameOptions opts = _client.getOptionsBuilderFactory()
+        .newRenameOptionsBuilder()
         .setSourceBucketName(Utils.getBucket(src))
         .setSourceObjectKey(Utils.getObjectKey(src))
         .setDestinationBucketName(Utils.getBucket(dest))
         .setDestinationObjectKey(Utils.getObjectKey(dest))
-        .createRenameOptions();
+        .createOptions();
       CopyOptions.getAbortCounters().setInjectionCounter(1);
         // should be one more than retry count.  retries disabled by default
       String msg = null;
@@ -678,13 +678,13 @@ while(count < retryCount)
       // rename the file
       URI src = dest;
       dest = TestUtils.getUri(_testBucket, toUpload.getName() + "-RENAMED", rootPrefix);
-      RenameOptions opts = new RenameOptionsBuilder()
-        .setCloudStoreClient(_client)
+      RenameOptions opts = _client.getOptionsBuilderFactory()
+        .newRenameOptionsBuilder()
         .setSourceBucketName(Utils.getBucket(src))
         .setSourceObjectKey(Utils.getObjectKey(src))
         .setDestinationBucketName(Utils.getBucket(dest))
         .setDestinationObjectKey(Utils.getObjectKey(dest))
-        .createRenameOptions();
+        .createOptions();
       DeleteOptions.getAbortCounters().setInjectionCounter(1);
          // should be one more than retry count.  retries disabled by default
       String msg = null;
@@ -741,13 +741,13 @@ try
     String newPrefix = TestUtils.addPrefix("rename-simple-dest-" + count + "/c/d/");
     int newCount = TestUtils.listObjects(_testBucket, newPrefix).size();
     dest = TestUtils.getUri(_testBucket, "new-file.txt", newPrefix);
-    RenameOptions opts = new RenameOptionsBuilder()
-      .setCloudStoreClient(_client)
+    RenameOptions opts = _client.getOptionsBuilderFactory()
+      .newRenameOptionsBuilder()
       .setSourceBucketName(Utils.getBucket(src))
       .setSourceObjectKey(Utils.getObjectKey(src))
       .setDestinationBucketName(Utils.getBucket(dest))
       .setDestinationObjectKey(Utils.getObjectKey(dest))
-      .createRenameOptions();
+      .createOptions();
     f = _client.rename(opts).get();
     Assert.assertNotNull(f);
     Assert.assertEquals(Utils.getObjectKey(dest), f.getKey());
@@ -757,9 +757,9 @@ try
     Assert.assertEquals(
       originalCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
     Assert.assertNull(
-      _client.exists(Utils.getBucket(src), Utils.getObjectKey(src)).get());
+      TestUtils.objectExists(Utils.getBucket(src), Utils.getObjectKey(src)));
     Assert.assertNotNull(
-      _client.exists(Utils.getBucket(dest), Utils.getObjectKey(dest)).get());
+      TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest)));
     List<S3File> objs = TestUtils.listObjects(_testBucket, newPrefix);
     Assert.assertEquals(newCount + 1, objs.size());
     Assert.assertTrue(TestUtils.findObject(objs, newPrefix + "new-file.txt"));
@@ -801,13 +801,13 @@ try
     // rename file1 to file2
     URI src = dest1;
     URI dest = dest2;
-    RenameOptions opts = new RenameOptionsBuilder()
-      .setCloudStoreClient(_client)
+    RenameOptions opts = _client.getOptionsBuilderFactory()
+      .newRenameOptionsBuilder()
       .setSourceBucketName(Utils.getBucket(src))
       .setSourceObjectKey(Utils.getObjectKey(src))
       .setDestinationBucketName(Utils.getBucket(dest))
       .setDestinationObjectKey(Utils.getObjectKey(dest))
-      .createRenameOptions();
+      .createOptions();
     String msg = null;
     try
     {
@@ -852,13 +852,13 @@ try
 
     // rename 
     URI src = dest;
-    RenameOptions opts = new RenameOptionsBuilder()
-      .setCloudStoreClient(_client)
+    RenameOptions opts = _client.getOptionsBuilderFactory()
+      .newRenameOptionsBuilder()
       .setSourceBucketName(Utils.getBucket(src))
       .setSourceObjectKey(Utils.getObjectKey(src))
       .setDestinationBucketName(Utils.getBucket(dest))
       .setDestinationObjectKey(Utils.getObjectKey(dest))
-      .createRenameOptions();
+      .createOptions();
     String msg = null;
     try
     {
@@ -898,13 +898,13 @@ try
     URI src = TestUtils.getUri(
       _testBucket, "rename-missing-file" + System.currentTimeMillis(), rootPrefix);
     URI dest = TestUtils.getUri(_testBucket, "dummy.txt", rootPrefix);
-    RenameOptions opts = new RenameOptionsBuilder()
-      .setCloudStoreClient(_client)
+    RenameOptions opts = _client.getOptionsBuilderFactory()
+      .newRenameOptionsBuilder()
       .setSourceBucketName(Utils.getBucket(src))
       .setSourceObjectKey(Utils.getObjectKey(src))
       .setDestinationBucketName(Utils.getBucket(dest))
       .setDestinationObjectKey(Utils.getObjectKey(dest))
-      .createRenameOptions();
+      .createOptions();
     String msg = null;
     try
     {
@@ -962,13 +962,13 @@ try
     String newPrefix = TestUtils.addPrefix("rename-move-obj-across-buckets-dest-" + count + "/c/d/");
     int newCount = TestUtils.listObjects(bucket2, newPrefix).size();
     dest = TestUtils.getUri(bucket2, "new-file.txt", newPrefix);
-    RenameOptions opts = new RenameOptionsBuilder()
-      .setCloudStoreClient(_client)
+    RenameOptions opts = _client.getOptionsBuilderFactory()
+      .newRenameOptionsBuilder()
       .setSourceBucketName(Utils.getBucket(src))
       .setSourceObjectKey(Utils.getObjectKey(src))
       .setDestinationBucketName(Utils.getBucket(dest))
       .setDestinationObjectKey(Utils.getObjectKey(dest))
-      .createRenameOptions();
+      .createOptions();
     f = _client.rename(opts).get();
     Assert.assertEquals(Utils.getObjectKey(dest), f.getKey());
     Assert.assertEquals(Utils.getBucket(dest), f.getBucketName());
@@ -978,9 +978,9 @@ try
     Assert.assertEquals(
       originalCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
     Assert.assertNull(
-      _client.exists(Utils.getBucket(src), Utils.getObjectKey(src)).get());
+      TestUtils.objectExists(Utils.getBucket(src), Utils.getObjectKey(src)));
     Assert.assertNotNull(
-      _client.exists(Utils.getBucket(dest), Utils.getObjectKey(dest)).get());
+      TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest)));
     List<S3File> objs = TestUtils.listObjects(bucket2, newPrefix);
     Assert.assertEquals(newCount + 1, objs.size());
     Assert.assertTrue(TestUtils.findObject(objs, newPrefix + "new-file.txt"));
@@ -1030,14 +1030,14 @@ try
     String newPrefix = TestUtils.addPrefix("rename-dir-dest-" + count + "/subdir/");
     int newCount = TestUtils.listObjects(_testBucket, newPrefix).size();
     dest = TestUtils.getUri(_testBucket, "subdir2", newPrefix);
-    RenameOptions opts = new RenameOptionsBuilder()
-      .setCloudStoreClient(_client)
+    RenameOptions opts = _client.getOptionsBuilderFactory()
+      .newRenameOptionsBuilder()
       .setSourceBucketName(Utils.getBucket(src))
       .setSourceObjectKey(Utils.getObjectKey(src))
       .setDestinationBucketName(Utils.getBucket(dest))
       .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
       .setRecursive(false)
-      .createRenameOptions();
+      .createOptions();
     List<S3File> renamedFiles = _client.renameDirectory(opts).get();
 
     // verify that top level objects moved (a and b), but others stayed
@@ -1100,14 +1100,14 @@ try
     String newPrefix = TestUtils.addPrefix("rename-dir-recursive-dest-" + count + "/subdir/");
     int newCount = TestUtils.listObjects(_testBucket, newPrefix).size();
     dest = TestUtils.getUri(_testBucket, "subdir2", newPrefix);
-    RenameOptions opts = new RenameOptionsBuilder()
-      .setCloudStoreClient(_client)
+    RenameOptions opts = _client.getOptionsBuilderFactory()
+      .newRenameOptionsBuilder()
       .setSourceBucketName(Utils.getBucket(src))
       .setSourceObjectKey(Utils.getObjectKey(src))
       .setDestinationBucketName(Utils.getBucket(dest))
       .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
       .setRecursive(true)
-      .createRenameOptions();
+      .createOptions();
     List<S3File> renamedFiles = _client.renameDirectory(opts).get();
 
     // verify that everything moved
@@ -1182,14 +1182,14 @@ try
     String newPrefix = TestUtils.addPrefix("rename-dir-across-buckets-dest-" + count + "/subdir/");
     int newCount = TestUtils.listObjects(bucket2, newPrefix).size();
     dest = TestUtils.getUri(bucket2, "subdir2", newPrefix);
-    RenameOptions opts = new RenameOptionsBuilder()
-      .setCloudStoreClient(_client)
+    RenameOptions opts = _client.getOptionsBuilderFactory()
+      .newRenameOptionsBuilder()
       .setSourceBucketName(Utils.getBucket(src))
       .setSourceObjectKey(Utils.getObjectKey(src))
       .setDestinationBucketName(Utils.getBucket(dest))
       .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
       .setRecursive(true)
-      .createRenameOptions();
+      .createOptions();
     List<S3File> renamedFiles = _client.renameDirectory(opts).get();
 
     // verify that everything moved
@@ -1238,13 +1238,13 @@ try
     URI src = TestUtils.getUri(
       _testBucket, "rename-missing-dir" + System.currentTimeMillis(), rootPrefix);
     URI dest = TestUtils.getUri(_testBucket, "subdir", rootPrefix);
-    RenameOptions opts = new RenameOptionsBuilder()
-      .setCloudStoreClient(_client)
+    RenameOptions opts = _client.getOptionsBuilderFactory()
+      .newRenameOptionsBuilder()
       .setSourceBucketName(Utils.getBucket(src))
       .setSourceObjectKey(Utils.getObjectKey(src))
       .setDestinationBucketName(Utils.getBucket(dest))
       .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
-      .createRenameOptions();
+      .createOptions();
     String msg = null;
     try
     {
@@ -1303,13 +1303,13 @@ try
     // attempt the rename -- should fail
     URI src = destDir;
     URI dest = destFile;
-    RenameOptions opts = new RenameOptionsBuilder()
-      .setCloudStoreClient(_client)
+    RenameOptions opts = _client.getOptionsBuilderFactory()
+      .newRenameOptionsBuilder()
       .setSourceBucketName(Utils.getBucket(src))
       .setSourceObjectKey(Utils.getObjectKey(src))
       .setDestinationBucketName(Utils.getBucket(dest))
       .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
-      .createRenameOptions();
+      .createOptions();
     String msg = null;
     try
     {
@@ -1368,13 +1368,13 @@ try
     // attempt the rename -- should move the file but leave previous files alone
     URI src = destFile;
     URI dest = destDir;
-    RenameOptions opts = new RenameOptionsBuilder()
-      .setCloudStoreClient(_client)
+    RenameOptions opts = _client.getOptionsBuilderFactory()
+      .newRenameOptionsBuilder()
       .setSourceBucketName(Utils.getBucket(src))
       .setSourceObjectKey(Utils.getObjectKey(src))
       .setDestinationBucketName(Utils.getBucket(dest))
       .setDestinationObjectKey(Utils.getObjectKey(dest))
-      .createRenameOptions();
+      .createOptions();
     f = _client.rename(opts).get();
     Assert.assertNotNull(f);
     List<S3File> newObjs = TestUtils.listObjects(_testBucket, rootPrefix);

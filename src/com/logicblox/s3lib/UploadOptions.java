@@ -26,8 +26,7 @@ import java.util.Optional;
  * {@code UploadOptions} objects are meant to be built by {@code
  * UploadOptionsBuilder}. This class provides only public getter methods.
  */
-public class UploadOptions {
-    private CloudStoreClient cloudStoreClient;
+public class UploadOptions extends CommandOptions {
     private File file;
     private String bucket;
     private String objectKey;
@@ -53,7 +52,7 @@ public class UploadOptions {
                   boolean ignoreAbortInjection,
                   OverallProgressListenerFactory
                     overallProgressListenerFactory) {
-        this.cloudStoreClient = cloudStoreClient;
+        super(cloudStoreClient);
         this.file = file;
         this.bucket = bucket;
         this.objectKey = objectKey;
@@ -81,10 +80,6 @@ public class UploadOptions {
       return _abortCounters;
     }
 
-    public CloudStoreClient getCloudStoreClient() {
-        return cloudStoreClient;
-    }
-
     public File getFile() {
         return file;
     }
@@ -109,10 +104,10 @@ public class UploadOptions {
 
     public String getAcl() {
         if (acl == null) {
-            if (cloudStoreClient.getScheme().equals("s3")) {
+            if (getCloudStoreClient().getScheme().equals("s3")) {
                 acl = "bucket-owner-full-control";
             }
-            else if (cloudStoreClient.getScheme().equals("gs")) {
+            else if (getCloudStoreClient().getScheme().equals("gs")) {
                 acl = "projectPrivate";
             }
         }

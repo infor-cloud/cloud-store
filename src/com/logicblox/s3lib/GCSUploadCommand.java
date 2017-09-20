@@ -5,8 +5,6 @@ import com.google.common.base.Functions;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -35,8 +33,6 @@ public class GCSUploadCommand extends Command {
     private String encryptedSymmetricKeyString;
     private String acl;
 
-    private ListeningExecutorService _uploadExecutor;
-    private ListeningScheduledExecutorService _executor;
     private UploadOptions _options;
 
     private String key;
@@ -49,9 +45,8 @@ public class GCSUploadCommand extends Command {
     public GCSUploadCommand(UploadOptions options)
       throws IOException
     {
+        super(options);
         _options = options;
-        _uploadExecutor = _options.getCloudStoreClient().getApiExecutor();
-        _executor = _options.getCloudStoreClient().getInternalExecutor();
 
         this.file = _options.getFile();
         setChunkSize(_options.getChunkSize());
@@ -66,7 +61,7 @@ public class GCSUploadCommand extends Command {
             new SecureRandom().nextBytes(encKeyBytes);
             this.encKey = new SecretKeySpec(encKeyBytes, "AES");
             try {
-                Key pubKey = _options.getCloudStoreClient().getKeyProvider().getPublicKey(this.encKeyName);
+                Key pubKey = _client.getKeyProvider().getPublicKey(this.encKeyName);
                 this.pubKeyHash = DatatypeConverter.printBase64Binary(
                   DigestUtils.sha256(pubKey.getEncoded()));
                 Cipher cipher = Cipher.getInstance("RSA");
@@ -135,7 +130,7 @@ public class GCSUploadCommand extends Command {
      * Step 1: Returns a future upload that is internally retried.
      */
     private ListenableFuture<Upload> startUpload() {
-        return executeWithRetry(_executor,
+        return executeWithRetry(_client.getInternalExecutor(),
                 new Callable<ListenableFuture<Upload>>() {
                     public ListenableFuture<Upload> call() {
                         return startUploadActual();
@@ -148,7 +143,7 @@ public class GCSUploadCommand extends Command {
     }
 
     private ListenableFuture<Upload> startUploadActual() {
-        UploadFactory factory = new GCSUploadFactory(getGCSClient(), _uploadExecutor);
+        UploadFactory factory = new GCSUploadFactory(getGCSClient(), _client.getApiExecutor());
 
         Map<String, String> meta = new HashMap<String, String>();
         meta.put("s3tool-version", String.valueOf(Version.CURRENT));
@@ -198,7 +193,7 @@ public class GCSUploadCommand extends Command {
     private ListenableFuture<Void> startPartUploadThread(final Upload upload,
                                                          final OverallProgressListener opl) {
         ListenableFuture<ListenableFuture<Void>> result =
-            _executor.submit(new Callable<ListenableFuture<Void>>() {
+            _client.getInternalExecutor().submit(new Callable<ListenableFuture<Void>>() {
                 public ListenableFuture<Void> call() throws Exception {
                     return GCSUploadCommand.this.startPartUpload(upload, opl);
                 }
@@ -214,7 +209,7 @@ public class GCSUploadCommand extends Command {
                                                    final OverallProgressListener opl) {
         final int partNumber = 0;
 
-        return executeWithRetry(_executor,
+        return executeWithRetry(_client.getInternalExecutor(),
                 new Callable<ListenableFuture<Void>>() {
                     public ListenableFuture<Void> call() throws Exception {
                         return startPartUploadActual(upload, opl);
@@ -279,7 +274,7 @@ public class GCSUploadCommand extends Command {
      * Execute completeActual with retry
      */
     private ListenableFuture<String> complete(final Upload upload, final int retryCount) {
-        return executeWithRetry(_executor,
+        return executeWithRetry(_client.getInternalExecutor(),
                 new Callable<ListenableFuture<String>>() {
                     public ListenableFuture<String> call() {
                         return completeActual(upload, retryCount);

@@ -1,16 +1,14 @@
 package com.logicblox.s3lib;
 
-public class ListOptionsBuilder {
-  private CloudStoreClient cloudStoreClient;
+public class ListOptionsBuilder extends CommandOptionsBuilder {
   private String bucket;
   private String objectKey;
   private boolean recursive;
   private boolean includeVersions;
   private boolean excludeDirs;
 
-  public ListOptionsBuilder setCloudStoreClient(CloudStoreClient client) {
-    this.cloudStoreClient = client;
-    return this;
+  ListOptionsBuilder(CloudStoreClient client) {
+    _cloudStoreClient = client;
   }
 
   public ListOptionsBuilder setBucketName(String bucket) {
@@ -40,7 +38,7 @@ public class ListOptionsBuilder {
 
   private void validateOptions()
   {
-    if (cloudStoreClient == null) {
+    if (_cloudStoreClient == null) {
       throw new UsageException("CloudStoreClient has to be set");
     }
     else if (bucket == null) {
@@ -48,10 +46,11 @@ public class ListOptionsBuilder {
     }
   }
 
-  public ListOptions createListOptions() {
+  @Override
+  public ListOptions createOptions() {
     validateOptions();
 
-    return new ListOptions(cloudStoreClient, bucket, objectKey, recursive,
+    return new ListOptions(_cloudStoreClient, bucket, objectKey, recursive,
       includeVersions, excludeDirs);
   }
 }

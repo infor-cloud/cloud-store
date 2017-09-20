@@ -1,8 +1,7 @@
 package com.logicblox.s3lib;
 
 
-public class DeleteOptions {
-  private CloudStoreClient _cloudStoreClient;
+public class DeleteOptions extends CommandOptions{
   private String _bucket;
   private String _objectKey;
   private boolean _recursive;
@@ -18,7 +17,7 @@ public class DeleteOptions {
                 String objectKey, boolean recursive, boolean dryRun,
                 boolean forceDelete,boolean ignoreAbortInjection)
   {
-    _cloudStoreClient = cloudStoreClient;
+    super(cloudStoreClient);
     _bucket = bucket;
     _objectKey = objectKey;
     _recursive = recursive;
@@ -37,16 +36,10 @@ public class DeleteOptions {
     }
   }
 
-    static AbortCounters getAbortCounters()
+  static AbortCounters getAbortCounters()
     {
       return _abortCounters;
     }
-
-
-  public CloudStoreClient getCloudStoreClient()
-  {
-    return _cloudStoreClient;
-  }
 
   public String getBucketName()
   {

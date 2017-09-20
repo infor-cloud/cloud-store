@@ -6,39 +6,35 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.util.concurrent.Callable;
 
 public class ExistsCommand extends Command
 {
-  private ListeningExecutorService _httpExecutor;
-  private ListeningScheduledExecutorService _executor;
+  private ExistsOptions _options;
 
-  public ExistsCommand(
-    ListeningExecutorService httpExecutor,
-    ListeningScheduledExecutorService internalExecutor)
+  public ExistsCommand(ExistsOptions options)
   {
-    _httpExecutor = httpExecutor;
-    _executor = internalExecutor;
+    super(options);
+    _options = options;
   }
 
-  public ListenableFuture<ObjectMetadata> run(final String bucket, final String key)
+  public ListenableFuture<ObjectMetadata> run()
   {
     ListenableFuture<ObjectMetadata> future =
       executeWithRetry(
-        _executor,
+        _client.getInternalExecutor(),
         new Callable<ListenableFuture<ObjectMetadata>>()
         {
           public ListenableFuture<ObjectMetadata> call()
           {
-            return runActual(bucket, key);
+            return runActual();
           }
             
             public String toString()
           {
-            return "check for existence of " + getUri(bucket, key);
+            return "check for existence of " + getUri(_options.getBucketName(),
+              _options.getObjectKey());
           }
         });
     
@@ -64,9 +60,9 @@ public class ExistsCommand extends Command
       });    
   }
   
-  private ListenableFuture<ObjectMetadata> runActual(final String bucket, final String key)
+  private ListenableFuture<ObjectMetadata> runActual()
   {
-    return _httpExecutor.submit(
+    return _client.getApiExecutor().submit(
       new Callable<ObjectMetadata>()
       {
         public ObjectMetadata call()
@@ -75,7 +71,8 @@ public class ExistsCommand extends Command
           // to make sure that the retry facility works when the
           // --stubborn option is used, which retries client
           // exceptions as well.
-          return getAmazonS3Client().getObjectMetadata(bucket, key);
+          return getAmazonS3Client().getObjectMetadata(_options.getBucketName(),
+            _options.getObjectKey());
         }
       });
   }

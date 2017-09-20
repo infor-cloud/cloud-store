@@ -2,19 +2,16 @@ package com.logicblox.s3lib;
 
 import java.util.Date;
 
-public class PendingUploadsOptionsBuilder
+public class PendingUploadsOptionsBuilder extends CommandOptionsBuilder
 {
-  private CloudStoreClient _cloudStoreClient;
   private String _bucket;
   private String _objectKey;
   private String _uploadId;
   private Date _date;
 
-
-  public PendingUploadsOptionsBuilder setCloudStoreClient(CloudStoreClient client)
+  PendingUploadsOptionsBuilder(CloudStoreClient client)
   {
     _cloudStoreClient = client;
-    return this;
   }
 
   public PendingUploadsOptionsBuilder setBucketName(String bucket)
@@ -54,7 +51,8 @@ public class PendingUploadsOptionsBuilder
     }
   }
 
-  public PendingUploadsOptions createPendingUploadsOptions()
+  @Override
+  public PendingUploadsOptions createOptions()
   {
     validateOptions();
 

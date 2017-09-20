@@ -109,7 +109,13 @@ public class GCSClient implements CloudStoreClient {
         return s3Client.getInternalExecutor();
     }
 
-    @Override
+  @Override
+  public OptionsBuilderFactory getOptionsBuilderFactory()
+  {
+    return new OptionsBuilderFactory(this);
+  }
+
+  @Override
     public KeyProvider getKeyProvider()
     {
         return s3Client.getKeyProvider();
@@ -148,9 +154,8 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<ObjectMetadata> exists(String bucket, String
-        object) {
-        return s3Client.exists(bucket, object);
+    public ListenableFuture<ObjectMetadata> exists(ExistsOptions options) {
+        return s3Client.exists(options);
     }
 
     @Override

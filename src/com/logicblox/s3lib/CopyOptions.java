@@ -19,8 +19,7 @@ import java.util.Optional;
  * {@code CopyOptions} objects are meant to be built by {@code
  * CopyOptionsBuilder}. This class provides only public getter methods.
  */
-public class CopyOptions {
-    private final CloudStoreClient cloudStoreClient;
+public class CopyOptions extends CommandOptions {
     private final String sourceBucketName;
     private final String sourceObjectKey;
     private final String destinationBucketName;
@@ -52,7 +51,7 @@ public class CopyOptions {
                 boolean ignoreAbortInjection,
                 Map<String,String> userMetadata,
                 OverallProgressListenerFactory overallProgressListenerFactory) {
-        this.cloudStoreClient = cloudStoreClient;
+        super(cloudStoreClient);
         this.sourceBucketName = sourceBucketName;
         this.sourceObjectKey = sourceObjectKey;
         this.destinationBucketName = destinationBucketName;
@@ -82,10 +81,6 @@ public class CopyOptions {
       return _abortCounters;
     }
 
-    public CloudStoreClient getCloudStoreClient() {
-        return cloudStoreClient;
-    }
-
     public String getSourceBucketName() {
         return sourceBucketName;
     }
@@ -104,10 +99,10 @@ public class CopyOptions {
 
     public String getCannedAcl() {
         if (cannedAcl == null) {
-            if (cloudStoreClient.getScheme().equals("s3")) {
+            if (getCloudStoreClient().getScheme().equals("s3")) {
                 cannedAcl = "bucket-owner-full-control";
             }
-            else if (cloudStoreClient.getScheme().equals("gs")) {
+            else if (getCloudStoreClient().getScheme().equals("gs")) {
                 cannedAcl = "projectPrivate";
             }
         }

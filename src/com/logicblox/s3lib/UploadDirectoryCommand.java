@@ -17,19 +17,16 @@ import java.util.concurrent.ExecutionException;
 public class UploadDirectoryCommand extends Command
 {
   private UploadOptions _options;
-  private CloudStoreClient _client;
-  private boolean _dryRun;
 
   public UploadDirectoryCommand(UploadOptions options)
   {
+    super(options);
     _options = options;
-    _client = _options.getCloudStoreClient();
   }
 
   public ListenableFuture<List<S3File>> run()
   throws ExecutionException, InterruptedException, IOException
   {
-    _dryRun = _options.isDryRun();
     final IOFileFilter noSymlinks = new IOFileFilter()
     {
       @Override
@@ -70,8 +67,8 @@ public class UploadDirectoryCommand extends Command
       String relPath = file.getPath().substring(_options.getFile().getPath().length()+1);
       String key = Paths.get(_options.getObjectKey(), relPath).toString();
 
-      UploadOptions options = new UploadOptionsBuilder()
-          .setCloudStoreClient(_options.getCloudStoreClient())
+      UploadOptions options = _client.getOptionsBuilderFactory()
+          .newUploadOptionsBuilder()
           .setFile(file)
           .setBucketName(_options.getBucketName())
           .setObjectKey(key)
@@ -80,9 +77,9 @@ public class UploadDirectoryCommand extends Command
           .setAcl(_options.getAcl())
           .setOverallProgressListenerFactory(_options
             .getOverallProgressListenerFactory().orElse(null))
-          .createUploadOptions();
+          .createOptions();
 
-      if(_dryRun)
+      if(_options.isDryRun())
       {
         System.out.println("<DRYRUN> uploading '" + file.getAbsolutePath()
                            + "' to '" + getUri(_options.getBucketName(), key) + "'");
@@ -93,7 +90,7 @@ public class UploadDirectoryCommand extends Command
       }
     }
 
-    if(_dryRun)
+    if(_options.isDryRun())
     {
       return Futures.immediateFuture(null);
     }

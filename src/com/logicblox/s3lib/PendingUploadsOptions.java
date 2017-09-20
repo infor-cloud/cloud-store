@@ -13,25 +13,27 @@ import java.util.Optional;
  * {@code PendingUploadsOptions} objects are meant to be built by {@code
  * PendingUploadsOptionsBuilder}. This class provides only public getter methods.
  */
-public class PendingUploadsOptions
+public class PendingUploadsOptions extends CommandOptions
 {
   private final String _bucket;
   private final String _objectKey;
   private final String _uploadId;
   private final Date _date;
 
-  PendingUploadsOptions(String bucket,
+  PendingUploadsOptions(CloudStoreClient cloudStoreClient,
+                        String bucket,
                         String objectKey,
                         String uploadId,
                         Date date)
   {
+    super(cloudStoreClient);
     _bucket = bucket;
     _objectKey = objectKey;
     _uploadId = uploadId;
     _date = date;
   }
 
-  public String getBucket()
+  public String getBucketName()
   {
     return _bucket;
   }

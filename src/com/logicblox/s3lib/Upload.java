@@ -4,7 +4,6 @@ import java.io.InputStream;
 import java.util.Date;
 import java.util.concurrent.Callable;
 
-import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ListenableFuture;
 
 interface Upload
@@ -12,7 +11,7 @@ interface Upload
   ListenableFuture<Void> uploadPart(int partNumber,
                                     long partSize,
                                     Callable<InputStream> streamCallable,
-                                    Optional<OverallProgressListener> opl);
+                                    OverallProgressListener opl);
 
   ListenableFuture<String> completeUpload();
 

@@ -3,9 +3,7 @@ package com.logicblox.s3lib;
 import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.model.Objects;
 import com.google.api.services.storage.model.StorageObject;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,32 +13,29 @@ import java.util.concurrent.Callable;
 public class GCSListCommand extends Command
 {
 
-  private ListeningExecutorService _s3Executor;
-  private ListeningScheduledExecutorService _executor;
+  private ListOptions _options;
 
-  public GCSListCommand(
-      ListeningExecutorService s3Executor,
-      ListeningScheduledExecutorService internalExecutor)
+  public GCSListCommand(ListOptions options)
   {
-    _s3Executor = s3Executor;
-    _executor = internalExecutor;
+    super(options);
+    _options = options;
   }
 
 
-  public ListenableFuture<List<S3File>> run(final ListOptions lsOptions)
+  public ListenableFuture<List<S3File>> run()
   {
     ListenableFuture<List<S3File>> future =
-        executeWithRetry(_executor, new Callable<ListenableFuture<List<S3File>>>()
+        executeWithRetry(_client.getInternalExecutor(), new Callable<ListenableFuture<List<S3File>>>()
         {
           public ListenableFuture<List<S3File>> call()
           {
-            return runActual(lsOptions);
+            return runActual();
           }
           
           public String toString()
           {
             return "listing objects and directories for "
-                + getUri(lsOptions.getBucket(), lsOptions.getObjectKey());
+                + getUri(_options.getBucketName(), _options.getObjectKey().orElse(""));
           }
         });
     
@@ -48,20 +43,20 @@ public class GCSListCommand extends Command
   }
   
 
-  private ListenableFuture<List<S3File>> runActual(final ListOptions lsOptions)
+  private ListenableFuture<List<S3File>> runActual()
   {
-    return _s3Executor.submit(new Callable<List<S3File>>()
+    return _client.getApiExecutor().submit(new Callable<List<S3File>>()
     {
       public List<S3File> call()
         throws IOException
       {
         List<S3File> s3files = new ArrayList<S3File>();
         List<StorageObject> allObjs = new ArrayList<StorageObject>();
-        Storage.Objects.List cmd = getGCSClient().objects().list(lsOptions.getBucket());
-        cmd.setPrefix(lsOptions.getObjectKey());
-        if(!lsOptions.isRecursive())
+        Storage.Objects.List cmd = getGCSClient().objects().list(_options.getBucketName());
+        cmd.setPrefix(_options.getObjectKey().orElse(null));
+        if(!_options.isRecursive())
           cmd.setDelimiter("/");
-        boolean ver = lsOptions.versionsIncluded();
+        boolean ver = _options.versionsIncluded();
         cmd.setVersions(ver);
         Objects objs;
         do

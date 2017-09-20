@@ -1,15 +1,11 @@
 package com.logicblox.s3lib;
 
 
-import com.amazonaws.services.s3.model.AccessControlList;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
-import com.google.common.base.Optional;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
@@ -21,47 +17,30 @@ import java.util.concurrent.Callable;
 
 public class CopyCommand extends Command
 {
-  private ListeningExecutorService _copyExecutor;
-  private ListeningScheduledExecutorService _executor;
   private CopyOptions _options;
-  private String _cannedAcl;
-  private AccessControlList _s3Acl;
-  private String _storageClass;
-  private Map<String, String> _userMetadata;
-  private Optional<OverallProgressListenerFactory> _progressListenerFactory;
+  private OverallProgressListenerFactory _progressListenerFactory;
 
-  public CopyCommand(
-      ListeningExecutorService copyExecutor,
-      ListeningScheduledExecutorService internalExecutor,
-      CopyOptions options)
+  public CopyCommand(CopyOptions options)
   {
-    _copyExecutor = copyExecutor;
-    _executor = internalExecutor;
+    super(options);
     _options = options;
 
-    _cannedAcl = _options.getCannedAcl().or("bucket-owner-full-control");
-    _s3Acl = _options.getS3Acl().orNull();
-    _storageClass = _options.getStorageClass().orNull();
-    _userMetadata = _options.getUserMetadata().orNull();
-    _progressListenerFactory = Optional.fromNullable(
-      options.getOverallProgressListenerFactory().orNull());
+    _progressListenerFactory = options.getOverallProgressListenerFactory().orElse(null);
   }
 
-  public ListenableFuture<S3File> run(final String sourceBucketName,
-                                      final String sourceKey,
-                                      final String destinationBucketName,
-                                      final String destinationKey)
+  public ListenableFuture<S3File> run()
   {
     if(_options.isDryRun())
     {
-      System.out.println("<DRYRUN> copying '" + getUri(sourceBucketName, sourceKey)
-        + "' to '" + getUri(destinationBucketName, destinationKey) + "'");
+      System.out.println("<DRYRUN> copying '" + getUri(
+        _options.getSourceBucketName(), _options.getSourceObjectKey()) +
+        "' to '" + getUri(_options.getDestinationBucketName(),
+        _options.getDestinationObjectKey()) + "'");
       return Futures.immediateFuture(null);
     }
     else
     {
-      ListenableFuture<Copy> copy = startCopy(sourceBucketName, sourceKey,
-        destinationBucketName, destinationKey);
+      ListenableFuture<Copy> copy = startCopy();
       copy = Futures.transform(copy, startPartsAsyncFunction());
       ListenableFuture<String> result = Futures.transform(copy,
         completeAsyncFunction());
@@ -72,8 +51,8 @@ public class CopyCommand extends Command
             S3File f = new S3File();
             f.setLocalFile(null);
             f.setETag(etag);
-            f.setBucketName(destinationBucketName);
-            f.setKey(destinationKey);
+            f.setBucketName(_options.getDestinationBucketName());
+            f.setKey(_options.getDestinationObjectKey());
             return f;
           }
         }
@@ -84,45 +63,35 @@ public class CopyCommand extends Command
   /**
    * Step 1: Start copy and fetch metadata.
    */
-  private ListenableFuture<Copy> startCopy(final String sourceBucketName,
-                                           final String sourceKey,
-                                           final String destinationBucketName,
-                                           final String destinationKey)
+  private ListenableFuture<Copy> startCopy()
   {
     return executeWithRetry(
-      _executor,
+      _client.getInternalExecutor(),
       new Callable<ListenableFuture<Copy>>()
       {
         public ListenableFuture<Copy> call()
         {
-          return startCopyActual(sourceBucketName, sourceKey,
-              destinationBucketName, destinationKey);
+          return startCopyActual();
         }
 
         public String toString()
         {
-          return "starting copy of " + getUri(sourceBucketName, sourceKey) +
-              " to " + getUri(destinationBucketName, destinationKey);
+          return "starting copy of " + getUri(
+            _options.getSourceBucketName(), _options.getSourceObjectKey()) + " to " + getUri(
+            _options.getDestinationBucketName(), _options.getDestinationObjectKey());
         }
       });
   }
 
-  private ListenableFuture<Copy> startCopyActual(final String sourceBucketName,
-                                                 final String sourceKey,
-                                                 final String destinationBucketName,
-                                                 final String destinationKey)
+  private ListenableFuture<Copy> startCopyActual()
   {
-    MultipartAmazonCopyFactory factory = new MultipartAmazonCopyFactory
-        (getAmazonS3Client(), _copyExecutor);
-    if (_s3Acl != null)
-    {
-      return factory.startCopy(sourceBucketName, sourceKey,
-        destinationBucketName, destinationKey, _s3Acl, _userMetadata,
-        _storageClass);
-    }
-    return factory.startCopy(sourceBucketName, sourceKey,
-      destinationBucketName, destinationKey, _cannedAcl, _userMetadata,
-      _storageClass);
+    MultipartAmazonCopyFactory factory = new MultipartAmazonCopyFactory(
+      getAmazonS3Client(), _client.getApiExecutor());
+
+    return factory.startCopy(
+      _options.getSourceBucketName(), _options.getSourceObjectKey(),
+      _options.getDestinationBucketName(), _options.getDestinationObjectKey(),
+      _options);
   }
 
   /**
@@ -142,8 +111,8 @@ public class CopyCommand extends Command
   private ListenableFuture<Copy> startParts(Copy copy)
     throws UsageException
   {
-    String srcUri = getUri(copy.getSourceBucket(), copy.getSourceKey());
-    String destUri = getUri(copy.getDestinationBucket(), copy.getDestinationKey());
+    String srcUri = getUri(copy.getSourceBucketName(), copy.getSourceObjectKey());
+    String destUri = getUri(copy.getDestinationBucketName(), copy.getDestinationObjectKey());
     
     Map<String,String> meta = copy.getMeta();
     String errPrefix = "Copy of " + srcUri + " to " + destUri + ": ";
@@ -160,11 +129,11 @@ public class CopyCommand extends Command
     setChunkSize(Long.valueOf(meta.get("s3tool-chunk-size")));
 
     OverallProgressListener opl = null;
-    if (_progressListenerFactory.isPresent()) {
-      opl = _progressListenerFactory.get().create(
+    if (_progressListenerFactory != null) {
+      opl = _progressListenerFactory.create(
           new ProgressOptionsBuilder()
-              .setObjectUri(getUri(copy.getDestinationBucket(),
-                  copy.getDestinationKey()))
+              .setObjectUri(getUri(copy.getDestinationBucketName(),
+                  copy.getDestinationObjectKey()))
               .setOperation("copy")
               .setFileSizeInBytes(fileLength)
               .createProgressOptions());
@@ -189,7 +158,7 @@ public class CopyCommand extends Command
     final int partNumber = (int) (position / chunkSize);
 
     return executeWithRetry(
-        _executor,
+        _client.getInternalExecutor(),
         new Callable<ListenableFuture<Void>>() {
           public ListenableFuture<Void> call() {
             return startPartCopyActual(copy, position, partNumber, opl);
@@ -207,7 +176,7 @@ public class CopyCommand extends Command
                                                      OverallProgressListener opl)
   {
     // support for testing failures
-    String srcUri = getUri(copy.getSourceBucket(), copy.getSourceKey());
+    String srcUri = getUri(copy.getSourceBucketName(), copy.getSourceObjectKey());
     _options.injectAbort(srcUri);
 
     Long start;
@@ -244,7 +213,7 @@ public class CopyCommand extends Command
     }
 
     ListenableFuture<Void> copyPartFuture = copy.copyPart(partNumber, start,
-        end, Optional.fromNullable(opl));
+        end, opl);
 
     return copyPartFuture;
   }
@@ -269,7 +238,7 @@ public class CopyCommand extends Command
   private ListenableFuture<String> complete(final Copy copy,
                                             final int retryCount)
   {
-    return executeWithRetry(_executor,
+    return executeWithRetry(_client.getInternalExecutor(),
         new Callable<ListenableFuture<String>>()
         {
           public ListenableFuture<String> call()

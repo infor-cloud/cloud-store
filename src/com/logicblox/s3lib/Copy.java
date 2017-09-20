@@ -1,6 +1,5 @@
 package com.logicblox.s3lib;
 
-import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.Map;
@@ -8,17 +7,17 @@ import java.util.Map;
 interface Copy
 {
   ListenableFuture<Void> copyPart(int partNumber, Long startByte, Long
-      endByte, Optional<OverallProgressListener> opl);
+      endByte, OverallProgressListener opl);
 
   ListenableFuture<String> completeCopy();
 
-  String getSourceBucket();
+  String getSourceBucketName();
 
-  String getSourceKey();
+  String getSourceObjectKey();
 
-  String getDestinationBucket();
+  String getDestinationBucketName();
 
-  String getDestinationKey();
+  String getDestinationObjectKey();
 
   Long getObjectSize();
 

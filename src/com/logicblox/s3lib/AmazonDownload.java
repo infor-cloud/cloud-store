@@ -5,7 +5,6 @@ import com.amazonaws.event.ProgressListener;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
@@ -40,11 +39,11 @@ class AmazonDownload
 
   public ListenableFuture<InputStream> getPart(long start, long end)
   {
-    return getPart(start, end, Optional.<OverallProgressListener>absent());
+    return getPart(start, end, null);
   }
 
   public ListenableFuture<InputStream> getPart(long start, long end,
-                                               Optional<OverallProgressListener>
+                                               OverallProgressListener
                                                    progressListener)
   {
     return executor.submit(new DownloadCallable(start, end, progressListener));
@@ -84,10 +83,10 @@ class AmazonDownload
   {
     private long start;
     private long end;
-    private Optional<OverallProgressListener> progressListener;
+    private OverallProgressListener progressListener;
 
     public DownloadCallable(long start, long end,
-                            Optional<OverallProgressListener> progressListener)
+                            OverallProgressListener progressListener)
     {
       this.start = start;
       this.end = end;
@@ -104,11 +103,10 @@ class AmazonDownload
         req = new GetObjectRequest(bucketName, key, version);
       }
       req.setRange(start, end);
-      if (progressListener.isPresent()) {
+      if (progressListener != null) {
         PartProgressEvent ppe = new PartProgressEvent(
             Long.toString(start) + ':' + Long.toString(end));
-        ProgressListener s3pl = new S3ProgressListener(progressListener.get(),
-            ppe);
+        ProgressListener s3pl = new S3ProgressListener(progressListener, ppe);
         req.setGeneralProgressListener(s3pl);
       }
 

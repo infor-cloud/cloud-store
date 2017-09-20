@@ -1,6 +1,5 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import com.google.common.base.Function;
@@ -8,39 +7,16 @@ import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-
-import java.io.IOException;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 
 
 public class RenameCommand extends Command
 {
-  private ListeningExecutorService _httpExecutor;
-  private ListeningScheduledExecutorService _executor;
-  private CloudStoreClient _client;
   private RenameOptions _options;
-  private String _acl;
 
-
-  public RenameCommand(
-    ListeningExecutorService httpExecutor,
-    ListeningScheduledExecutorService internalExecutor,
-    CloudStoreClient client,
-    RenameOptions opts)
+  public RenameCommand(RenameOptions options)
   {
-    if(httpExecutor == null)
-      throw new IllegalArgumentException("non-null http executor is required");
-    if(internalExecutor == null)
-      throw new IllegalArgumentException("non-null internal executor is required");
-
-    _httpExecutor = httpExecutor;
-    _executor = internalExecutor;
-    _client = client;
-    _options = opts;
-    _acl = opts.getCannedAcl().or("bucket-owner-full-control");
+    super(options);
+    _options = options;
   }
 
 
@@ -69,12 +45,13 @@ public class RenameCommand extends Command
     {
       public ListenableFuture<S3File> create(Throwable t)
       {
-        DeleteOptions deleteOpts = new DeleteOptionsBuilder()
-          .setBucket(_options.getDestinationBucket())
-          .setObjectKey(_options.getDestinationKey())
+        DeleteOptions deleteOpts = _client.getOptionsBuilderFactory()
+          .newDeleteOptionsBuilder()
+          .setBucketName(_options.getDestinationBucketName())
+          .setObjectKey(_options.getDestinationObjectKey())
           .setForceDelete(true)
           .setIgnoreAbortInjection(true)
-          .createDeleteOptions();
+          .createOptions();
         ListenableFuture<S3File> deleteFuture = _client.delete(deleteOpts);
 
         return Futures.transform(
@@ -95,8 +72,14 @@ public class RenameCommand extends Command
   // start by checking that source exists, then follow with dest check
   private ListenableFuture<S3File> buildFutureChain()
   {
-    ListenableFuture<ObjectMetadata> sourceExists = 
-      _client.exists(_options.getSourceBucket(), _options.getSourceKey());
+    ExistsOptions opts = _client.getOptionsBuilderFactory()
+      .newExistsOptionsBuilder()
+      .setBucketName(_options.getSourceBucketName())
+      .setObjectKey(_options.getSourceObjectKey())
+      .createOptions();
+
+    ListenableFuture<ObjectMetadata> sourceExists =
+      _client.exists(opts);
 
     return Futures.transform(
       sourceExists,
@@ -116,8 +99,14 @@ public class RenameCommand extends Command
   // follow dest check with copy op
   private ListenableFuture<S3File> checkDestExists()
   {
-    ListenableFuture<ObjectMetadata> destExists = 
-      _client.exists(_options.getDestinationBucket(), getDestKey());
+    ExistsOptions opts = _client.getOptionsBuilderFactory()
+      .newExistsOptionsBuilder()
+      .setBucketName(_options.getDestinationBucketName())
+      .setObjectKey(getDestKey())
+      .createOptions();
+
+    ListenableFuture<ObjectMetadata> destExists = _client.exists(opts);
+
     return Futures.transform(
       destExists,
       new AsyncFunction<ObjectMetadata,S3File>()
@@ -163,7 +152,7 @@ public class RenameCommand extends Command
         public S3File apply(S3File deletedFile)
         {
           return new S3File(
-            _options.getDestinationBucket(), getDestKey());
+            _options.getDestinationBucketName(), getDestKey());
         }
       }
     );
@@ -172,10 +161,11 @@ public class RenameCommand extends Command
 
   private ListenableFuture<S3File> getDeleteOp()
   {
-    DeleteOptions deleteOpts = new DeleteOptionsBuilder()
-      .setBucket(_options.getSourceBucket())
-      .setObjectKey(_options.getSourceKey())
-      .createDeleteOptions();
+    DeleteOptions deleteOpts = _client.getOptionsBuilderFactory()
+      .newDeleteOptionsBuilder()
+      .setBucketName(_options.getSourceBucketName())
+      .setObjectKey(_options.getSourceObjectKey())
+      .createOptions();
 
     return _client.delete(deleteOpts);
   }
@@ -183,13 +173,15 @@ public class RenameCommand extends Command
 
   private ListenableFuture<S3File> getCopyOp()
   {
-    CopyOptions copyOpts = new CopyOptionsBuilder()
-      .setSourceBucketName(_options.getSourceBucket())
-      .setSourceKey(_options.getSourceKey())
-      .setDestinationBucketName(_options.getDestinationBucket())
-      .setDestinationKey(getDestKey())
-      .setCannedAcl(_acl)
-      .createCopyOptions();
+    CopyOptions copyOpts = _client.getOptionsBuilderFactory()
+      .newCopyOptionsBuilder()
+      .setSourceBucketName(_options.getSourceBucketName())
+      .setSourceObjectKey(_options.getSourceObjectKey())
+      .setDestinationBucketName(_options.getDestinationBucketName())
+      .setDestinationObjectKey(getDestKey())
+      .setCannedAcl(_options.getCannedAcl())
+      .setKeepAcl(_options.doesKeepAcl())
+      .createOptions();
 
     return _client.copy(copyOpts);
   }
@@ -197,11 +189,11 @@ public class RenameCommand extends Command
 
   private String getDestKey()
   {
-    String key = _options.getDestinationKey();
+    String key = _options.getDestinationObjectKey();
     if(key.endsWith("/"))
     {
       // moving a file into a folder....
-      String src = _options.getSourceKey();
+      String src = _options.getSourceObjectKey();
       int idx = src.lastIndexOf("/");
       if(-1 != idx)
         key = key + src.substring(idx + 1);
@@ -212,13 +204,13 @@ public class RenameCommand extends Command
 
   private String getSourceUri()
   {
-    return getUri(_options.getSourceBucket(), _options.getSourceKey());
+    return getUri(_options.getSourceBucketName(), _options.getSourceObjectKey());
   }
 
 
   private String getDestUri()
   {
-    return getUri(_options.getDestinationBucket(), getDestKey());
+    return getUri(_options.getDestinationBucketName(), getDestKey());
   }
 
 }

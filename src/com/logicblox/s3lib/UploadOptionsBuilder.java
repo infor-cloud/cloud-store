@@ -1,7 +1,5 @@
 package com.logicblox.s3lib;
 
-import com.google.common.base.Optional;
-
 import java.io.File;
 
 
@@ -11,24 +9,27 @@ import java.io.File;
  * Setting fields {@code file}, {@code bucket} and {@code objectKey} is
  * mandatory. All the others are optional.
  */
-public class UploadOptionsBuilder {
+public class UploadOptionsBuilder extends CommandOptionsBuilder {
     private File file;
     private String bucket;
     private String objectKey;
     private long chunkSize = -1;
-    private Optional<String> encKey = Optional.absent();
-    private Optional<String> acl = Optional.absent();
-    private Optional<OverallProgressListenerFactory>
-        overallProgressListenerFactory = Optional.absent();
+    private String encKey;
+    private String cannedAcl;
+    private OverallProgressListenerFactory overallProgressListenerFactory;
     private boolean dryRun = false;
     private boolean ignoreAbortInjection = false;
+
+    UploadOptionsBuilder(CloudStoreClient client) {
+        _cloudStoreClient = client;
+     }
 
     public UploadOptionsBuilder setFile(File file) {
         this.file = file;
         return this;
     }
 
-    public UploadOptionsBuilder setBucket(String bucket) {
+    public UploadOptionsBuilder setBucketName(String bucket) {
         this.bucket = bucket;
         return this;
     }
@@ -44,19 +45,18 @@ public class UploadOptionsBuilder {
     }
 
     public UploadOptionsBuilder setEncKey(String encKey) {
-        this.encKey = Optional.fromNullable(encKey);
+        this.encKey = encKey;
         return this;
     }
 
-    public UploadOptionsBuilder setAcl(String acl) {
-        this.acl = Optional.fromNullable(acl);
+    public UploadOptionsBuilder setCannedAcl(String acl) {
+        this.cannedAcl = acl;
         return this;
     }
 
     public UploadOptionsBuilder setOverallProgressListenerFactory
         (OverallProgressListenerFactory overallProgressListenerFactory) {
-        this.overallProgressListenerFactory = Optional.fromNullable
-            (overallProgressListenerFactory);
+        this.overallProgressListenerFactory = overallProgressListenerFactory;
         return this;
     }
 
@@ -70,8 +70,36 @@ public class UploadOptionsBuilder {
         return this;
     }
 
-    public UploadOptions createUploadOptions() {
-        return new UploadOptions(file, bucket, objectKey, chunkSize, encKey,
-            acl, dryRun, ignoreAbortInjection, overallProgressListenerFactory);
+    private void validateOptions() {
+        if (_cloudStoreClient == null) {
+            throw new UsageException("CloudStoreClient has to be set");
+        }
+        else if (file == null) {
+            throw new UsageException("File has to be set");
+        }
+        else if (bucket == null) {
+            throw new UsageException("Bucket has to be set");
+        }
+        else if (objectKey == null) {
+            throw new UsageException("Object key has to be set");
+        }
+
+        if (cannedAcl != null) {
+            if (!_cloudStoreClient.getAclHandler().isCannedAclValid(cannedAcl)) {
+                throw new UsageException("Invalid canned ACL '" + cannedAcl + "'");
+            }
+        }
+        else {
+            cannedAcl = _cloudStoreClient.getAclHandler().getDefaultAcl();
+        }
+    }
+
+    @Override
+    public UploadOptions createOptions() {
+        validateOptions();
+
+        return new UploadOptions(_cloudStoreClient, file, bucket, objectKey,
+          chunkSize, encKey, cannedAcl, dryRun, ignoreAbortInjection,
+          overallProgressListenerFactory);
     }
 }

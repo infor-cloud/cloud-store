@@ -1,42 +1,23 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 
 public class DeleteDirCommand extends Command
 {
-  private ListeningExecutorService _httpExecutor;
-  private ListeningScheduledExecutorService _executor;
   private DeleteOptions _options;
-  private CloudStoreClient _client;
 
-  public DeleteDirCommand(
-    ListeningExecutorService httpExecutor,
-    ListeningScheduledExecutorService internalExecutor,
-    CloudStoreClient client,
-    DeleteOptions opts)
+  public DeleteDirCommand(DeleteOptions options)
   {
-    if(httpExecutor == null)
-      throw new IllegalArgumentException("non-null http executor is required");
-    if(internalExecutor == null)
-      throw new IllegalArgumentException("non-null internal executor is required");
-
-    _httpExecutor = httpExecutor;
-    _executor = internalExecutor;
-    _client = client;
-    _options = opts;
+    super(options);
+    _options = options;
   }
-
 
   public ListenableFuture<List<S3File>> run()
     throws InterruptedException, ExecutionException
@@ -57,7 +38,7 @@ public class DeleteDirCommand extends Command
           if(!_options.forceDelete() && matches.isEmpty())
           {
             throw new UsageException("No objects found that match '"
-              + getUri(_options.getBucket(), _options.getObjectKey()) + "'");
+                                     + getUri(_options.getBucketName(), _options.getObjectKey()) + "'");
           }
 
           List<ListenableFuture<S3File>> futures = prepareFutures(matches);
@@ -84,10 +65,11 @@ public class DeleteDirCommand extends Command
       }
       else
       {
-        DeleteOptions opts = new DeleteOptionsBuilder()
-          .setBucket(src.getBucketName())
+        DeleteOptions opts = _client.getOptionsBuilderFactory()
+          .newDeleteOptionsBuilder()
+          .setBucketName(src.getBucketName())
           .setObjectKey(src.getKey())
-          .createDeleteOptions();
+          .createOptions();
         futures.add(_client.delete(opts));
       }
     }
@@ -98,11 +80,12 @@ public class DeleteDirCommand extends Command
   private ListenableFuture<List<S3File>> queryFiles()
   {
     // find all files that need to be deleted
-    ListOptions opts = new ListOptionsBuilder()
-        .setBucket(_options.getBucket())
+    ListOptions opts = _client.getOptionsBuilderFactory()
+        .newListOptionsBuilder()
+        .setBucketName(_options.getBucketName())
         .setObjectKey(_options.getObjectKey())
         .setRecursive(_options.isRecursive())
-        .createListOptions();
+        .createOptions();
     return _client.listObjects(opts);
   }
 }

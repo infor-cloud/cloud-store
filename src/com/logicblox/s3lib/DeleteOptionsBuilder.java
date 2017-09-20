@@ -1,16 +1,20 @@
 package com.logicblox.s3lib;
 
-public class DeleteOptionsBuilder
+public class DeleteOptionsBuilder extends CommandOptionsBuilder
 {
-  
   private String _bucket = null;
   private String _objectKey = null;
   private boolean _recursive = false;
   private boolean _dryRun = false;
   private boolean _forceDelete = false;
   private boolean _ignoreAbortInjection = false;
-  
-  public DeleteOptionsBuilder setBucket(String bucket)
+
+  DeleteOptionsBuilder(CloudStoreClient client)
+  {
+    _cloudStoreClient = client;
+  }
+
+  public DeleteOptionsBuilder setBucketName(String bucket)
   {
     _bucket = bucket;
     return this;
@@ -45,11 +49,26 @@ public class DeleteOptionsBuilder
     _ignoreAbortInjection = ignore;
     return this;
   }
-  
-  public DeleteOptions createDeleteOptions()
+
+  private void validateOptions()
   {
-    return new DeleteOptions(_bucket, _objectKey, _recursive, _dryRun,
-      _forceDelete, _ignoreAbortInjection);
+    if (_cloudStoreClient == null) {
+      throw new UsageException("CloudStoreClient has to be set");
+    }
+    else if (_bucket == null) {
+      throw new UsageException("Bucket has to be set");
+    }
+    else if (_objectKey == null) {
+      throw new UsageException("Object key has to be set");
+    }
   }
-  
+
+  @Override
+  public DeleteOptions createOptions()
+  {
+    validateOptions();
+
+    return new DeleteOptions(_cloudStoreClient, _bucket, _objectKey,
+      _recursive, _dryRun, _forceDelete, _ignoreAbortInjection);
+  }
 }

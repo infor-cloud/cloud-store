@@ -2,8 +2,6 @@ package com.logicblox.s3lib;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,20 +13,11 @@ import java.util.concurrent.ExecutionException;
 
 public class AbortPendingUploadsCommand extends Command
 {
-  private ListeningExecutorService _httpExecutor;
-  private ListeningScheduledExecutorService _executor;
-  private CloudStoreClient _csClient;
   private PendingUploadsOptions _options;
 
-  public AbortPendingUploadsCommand(
-    ListeningExecutorService httpExecutor,
-    ListeningScheduledExecutorService internalExecutor,
-    CloudStoreClient csClient,
-    PendingUploadsOptions options)
+  public AbortPendingUploadsCommand(PendingUploadsOptions options)
   {
-    _httpExecutor = httpExecutor;
-    _executor = internalExecutor;
-    _csClient = csClient;
+    super(options);
     _options = options;
   }
 
@@ -37,7 +26,7 @@ public class AbortPendingUploadsCommand extends Command
     ListenableFuture<List<Void>> future;
     if (_options.getUploadId().isPresent() && _options.getDate().isPresent())
     {
-      ListenableFuture<Void> f = executeWithRetry(_executor,
+      ListenableFuture<Void> f = executeWithRetry(_client.getInternalExecutor(),
         new AbortByIdDate(_options.getUploadId().get(), _options.getDate().get()));
 
       List<ListenableFuture<Void>> aborts = new ArrayList<>(Arrays.asList(f));
@@ -45,7 +34,7 @@ public class AbortPendingUploadsCommand extends Command
     }
     else if (_options.getUploadId().isPresent())
     {
-      ListenableFuture<Void> f = executeWithRetry(_executor,
+      ListenableFuture<Void> f = executeWithRetry(_client.getInternalExecutor(),
         new AbortById(_options.getUploadId().get()));
 
       List<ListenableFuture<Void>> aborts = new ArrayList<>(Arrays.asList(f));
@@ -53,7 +42,7 @@ public class AbortPendingUploadsCommand extends Command
     }
     else if (_options.getDate().isPresent())
     {
-      future = executeWithRetry(_executor, new AbortByDate(_options.getDate().get()));
+      future = executeWithRetry(_client.getInternalExecutor(), new AbortByDate(_options.getDate().get()));
     }
     else
     {
@@ -80,15 +69,15 @@ public class AbortPendingUploadsCommand extends Command
     {
       Upload u = new MultipartAmazonUpload(
         getAmazonS3Client(),
-        _options.getBucket(),
+        _options.getBucketName(),
         _options.getObjectKey(),
         _uploadId,
         null,
-        _httpExecutor,
-        (new UploadOptionsBuilder()).createUploadOptions());
+        _client.getApiExecutor(),
+        _client.getOptionsBuilderFactory().newUploadOptionsBuilder().createOptions());
 
       if (u.getInitiationDate().before(_date)) {
-        return executeWithRetry(_executor, new AbortById(u.getId()));
+        return executeWithRetry(_client.getInternalExecutor(), new AbortById(u.getId()));
       }
 
       return Futures.immediateFuture(null);
@@ -96,7 +85,7 @@ public class AbortPendingUploadsCommand extends Command
 
     public String toString()
     {
-      return "aborting pending uploads of " + getUri(_options.getBucket(),
+      return "aborting pending uploads of " + getUri(_options.getBucketName(),
         _options.getObjectKey()) + ", initiated before " + _date;
     }
   }
@@ -114,19 +103,19 @@ public class AbortPendingUploadsCommand extends Command
     {
       Upload u = new MultipartAmazonUpload(
         getAmazonS3Client(),
-        _options.getBucket(),
+        _options.getBucketName(),
         _options.getObjectKey(),
         _uploadId,
         null,
-        _httpExecutor,
-        (new UploadOptionsBuilder()).createUploadOptions());
+        _client.getApiExecutor(),
+        _client.getOptionsBuilderFactory().newUploadOptionsBuilder().createOptions());
 
       return u.abort();
     }
 
     public String toString()
     {
-      return "aborting pending upload of " + getUri(_options.getBucket(),
+      return "aborting pending upload of " + getUri(_options.getBucketName(),
         _options.getObjectKey()) + ", with id " + _uploadId;
     }
   }
@@ -144,12 +133,12 @@ public class AbortPendingUploadsCommand extends Command
       throws ExecutionException, InterruptedException
     {
       // TODO(geokollias): It's a blocking call (similar case with DownloadDirectoryCommand)
-      List<Upload> pendingUploads = _csClient.listPendingUploads(_options).get();
+      List<Upload> pendingUploads = _client.listPendingUploads(_options).get();
 
       List<ListenableFuture<Void>> aborts = new ArrayList<>();
       for (Upload obj : pendingUploads) {
         if (obj.getInitiationDate().before(_date)) {
-          ListenableFuture<Void> abort = executeWithRetry(_executor,
+          ListenableFuture<Void> abort = executeWithRetry(_client.getInternalExecutor(),
             new AbortById(obj.getId()));
           aborts.add(abort);
         }
@@ -160,7 +149,7 @@ public class AbortPendingUploadsCommand extends Command
 
     public String toString()
     {
-      return "aborting pending uploads of " + getUri(_options.getBucket(),
+      return "aborting pending uploads of " + getUri(_options.getBucketName(),
         _options.getObjectKey()) + ", initiated before " + _date;
     }
   }

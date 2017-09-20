@@ -3,47 +3,23 @@ package com.logicblox.s3lib;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 
 public class RenameDirectoryCommand extends Command
 {
-  private ListeningExecutorService _httpExecutor;
-  private ListeningScheduledExecutorService _executor;
   private RenameOptions _options;
-  private CloudStoreClient _client;
 
-  public RenameDirectoryCommand(
-    ListeningExecutorService httpExecutor,
-    ListeningScheduledExecutorService internalExecutor,
-    CloudStoreClient client,
-    RenameOptions opts)
+  public RenameDirectoryCommand(RenameOptions options)
   {
-    if(httpExecutor == null)
-      throw new IllegalArgumentException("non-null http executor is required");
-    if(internalExecutor == null)
-      throw new IllegalArgumentException("non-null internal executor is required");
-
-    _httpExecutor = httpExecutor;
-    _executor = internalExecutor;
-    _client = client;
-    _options = opts;
+    super(options);
+    _options = options;
   }
-
 
   public ListenableFuture<List<S3File>> run()
     throws InterruptedException, ExecutionException, IOException
@@ -51,14 +27,20 @@ public class RenameDirectoryCommand extends Command
     return startCopyThenDelete();
   }
 
-
   private ListenableFuture<List<S3File>> startCopyThenDelete()
     throws InterruptedException, ExecutionException, IOException
   {
-    final String bucket = _options.getDestinationBucket();
-    final String key = stripSlash(_options.getDestinationKey());
+    final String bucket = _options.getDestinationBucketName();
+    final String key = stripSlash(_options.getDestinationObjectKey());
        // exists command doesn't allow trailing slash
-    ListenableFuture<ObjectMetadata> destExists = _client.exists(bucket, key);
+
+    ExistsOptions opts = _client.getOptionsBuilderFactory()
+      .newExistsOptionsBuilder()
+      .setBucketName(bucket)
+      .setObjectKey(key)
+      .createOptions();
+
+    ListenableFuture<ObjectMetadata> destExists = _client.exists(opts);
     return Futures.transform(
       destExists,
       new AsyncFunction<ObjectMetadata,List<S3File>>()
@@ -89,15 +71,17 @@ public class RenameDirectoryCommand extends Command
   private ListenableFuture<List<S3File>> copyThenDelete()
     throws InterruptedException, ExecutionException, IOException
   {
-    CopyOptions copyOpts = new CopyOptionsBuilder()
-       .setSourceBucketName(_options.getSourceBucket())
-       .setSourceKey(_options.getSourceKey())
-       .setDestinationBucketName(_options.getDestinationBucket())
-       .setDestinationKey(_options.getDestinationKey())
+    CopyOptions copyOpts = _client.getOptionsBuilderFactory()
+       .newCopyOptionsBuilder()
+       .setSourceBucketName(_options.getSourceBucketName())
+       .setSourceObjectKey(_options.getSourceObjectKey())
+       .setDestinationBucketName(_options.getDestinationBucketName())
+       .setDestinationObjectKey(_options.getDestinationObjectKey())
        .setRecursive(_options.isRecursive())
        .setDryRun(_options.isDryRun())
-       .setCannedAcl(_options.getCannedAcl().orNull())
-       .createCopyOptions();
+       .setCannedAcl(_options.getCannedAcl())
+       .setKeepAcl(_options.doesKeepAcl())
+       .createOptions();
 
     // hack -- exceptions are a bit of a mess.  copyToDir throws all sorts of stuff that 
     //         should be collected into an ExecutionException?
@@ -111,12 +95,13 @@ public class RenameDirectoryCommand extends Command
         public ListenableFuture<List<S3File>> apply(final List<S3File> destFiles)
           throws InterruptedException, ExecutionException
         {
-          DeleteOptions delOpts = new DeleteOptionsBuilder()
-            .setBucket(_options.getSourceBucket())
-            .setObjectKey(_options.getSourceKey())
+          DeleteOptions delOpts = _client.getOptionsBuilderFactory()
+            .newDeleteOptionsBuilder()
+            .setBucketName(_options.getSourceBucketName())
+            .setObjectKey(_options.getSourceObjectKey())
             .setRecursive(_options.isRecursive())
             .setDryRun(_options.isDryRun())
-            .createDeleteOptions();
+            .createOptions();
 
           // need to return list of dest files
           return Futures.transform(

@@ -78,12 +78,13 @@ public class UploadDownloadTests
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
 
     // dryrun the upload and make sure the dest doesn't change
-    UploadOptions opts = new UploadOptionsBuilder()
+    UploadOptions opts = _client.getOptionsBuilderFactory()
+      .newUploadOptionsBuilder()
       .setFile(toUpload)
-      .setBucket(Utils.getBucket(dest))
+      .setBucketName(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .setDryRun(true)
-      .createUploadOptions();
+      .createOptions();
     S3File f = _client.upload(opts).get();
     Assert.assertNull(f);
     Assert.assertEquals(
@@ -111,12 +112,13 @@ try
     URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
 
     // dryrun the upload and verify the dest didn't change
-    UploadOptions opts = new UploadOptionsBuilder()
+    UploadOptions opts = _client.getOptionsBuilderFactory()
+      .newUploadOptionsBuilder()
       .setFile(top)
-      .setBucket(Utils.getBucket(dest))
+      .setBucketName(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .setDryRun(true)
-      .createUploadOptions();
+      .createOptions();
     List<S3File> files = _client.uploadDirectory(opts).get();
     Assert.assertNull(files);
     Assert.assertEquals(
@@ -151,14 +153,15 @@ catch(Throwable t)
     URI src = dest;
     File dlTemp = TestUtils.createTmpFile();
     dlTemp.delete();
-    DownloadOptions opts = new DownloadOptionsBuilder()
+    DownloadOptions opts = _client.getOptionsBuilderFactory()
+      .newDownloadOptionsBuilder()
       .setFile(dlTemp)
-      .setBucket(Utils.getBucket(src))
+      .setBucketName(Utils.getBucket(src))
       .setObjectKey(Utils.getObjectKey(src))
       .setRecursive(false)
       .setOverwrite(true)
       .setDryRun(true)
-      .createDownloadOptions();
+      .createOptions();
     f = _client.download(opts).get();
     Assert.assertNull(f);
     Assert.assertFalse(dlTemp.exists());
@@ -184,14 +187,15 @@ catch(Throwable t)
     // dryrun the download and make sure nothing changes locally
     File dlDir = TestUtils.createTmpDir(true);
     URI src = dest;
-    DownloadOptions opts = new DownloadOptionsBuilder()
+    DownloadOptions opts = _client.getOptionsBuilderFactory()
+      .newDownloadOptionsBuilder()
       .setFile(dlDir)
-      .setBucket(Utils.getBucket(src))
+      .setBucketName(Utils.getBucket(src))
       .setObjectKey(Utils.getObjectKey(src))
       .setRecursive(true)
       .setOverwrite(true)
       .setDryRun(true)
-      .createDownloadOptions();
+      .createOptions();
     List<S3File> files = _client.downloadDirectory(opts).get();
     Assert.assertNull(files);
     Assert.assertEquals(0, dlDir.list().length);
@@ -207,7 +211,7 @@ catch(Throwable t)
     // keys.  Plus whether a folder "exists" or not in AWS or GCS depends
     // on whether it was created from the console or implicitly through
     // some upload.
-    
+
     // upload a file and verify it exists
     String rootPrefix = TestUtils.addPrefix("exists/a/b/");
     List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
@@ -215,17 +219,17 @@ catch(Throwable t)
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     S3File f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
-    Assert.assertNotNull(_client.exists(Utils.getBucket(dest), Utils.getObjectKey(dest)).get());
+    Assert.assertNotNull(TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest)));
 
     // check for missing file key
     URI src = TestUtils.getUri(
       _testBucket, toUpload, rootPrefix + "-missing-" + System.currentTimeMillis());
-    Assert.assertNull(_client.exists(Utils.getBucket(src), Utils.getObjectKey(src)).get());
+    Assert.assertNull(TestUtils.objectExists(Utils.getBucket(src), Utils.getObjectKey(src)));
     
     // bad bucket should fail
     src = TestUtils.getUri(
     _testBucket + "-missing-" + System.currentTimeMillis(), toUpload, rootPrefix);
-    Assert.assertNull(_client.exists(Utils.getBucket(src), Utils.getObjectKey(src)).get());
+    Assert.assertNull(TestUtils.objectExists(Utils.getBucket(src), Utils.getObjectKey(src)));
   }
 
 
@@ -256,13 +260,13 @@ catch(Throwable t)
     Assert.assertTrue(TestUtils.compareFiles(toUpload, f.getLocalFile()));
 
     // test a few other misc cloud-store functions
-    Assert.assertNotNull(_client.exists(Utils.getBucket(dest), Utils.getObjectKey(dest)).get());
-    Assert.assertNotNull(_client.exists(_testBucket, key).get());
+    Assert.assertNotNull(TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest)));
+    Assert.assertNotNull(TestUtils.objectExists(_testBucket, key));
     Assert.assertEquals(
       dest.toString(), Utils.getURI(_client.getScheme(), _testBucket, key).toString());
 
     Assert.assertNotNull(TestUtils.deleteObject(dest));
-    Assert.assertNull(_client.exists(Utils.getBucket(dest), Utils.getObjectKey(dest)).get());
+    Assert.assertNull(TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest)));
   }
 
 
@@ -290,12 +294,13 @@ catch(Throwable t)
 
       // upload file in multiple concurrent chunks
       clearParts();
-      UploadOptions upOpts = new UploadOptionsBuilder()
+      UploadOptions upOpts = _client.getOptionsBuilderFactory()
+        .newUploadOptionsBuilder()
         .setFile(toUpload)
-        .setBucket(Utils.getBucket(dest))
+        .setBucketName(Utils.getBucket(dest))
         .setObjectKey(Utils.getObjectKey(dest))
         .setChunkSize(chunkSize)
-        .createUploadOptions();
+        .createOptions();
       try
       {
         _client.upload(upOpts).get();
@@ -350,12 +355,13 @@ catch(Throwable t)
       URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
 
       // upload file in multiple concurrent chunks
-      UploadOptions upOpts = new UploadOptionsBuilder()
+      UploadOptions upOpts = _client.getOptionsBuilderFactory()
+        .newUploadOptionsBuilder()
         .setFile(toUpload)
-        .setBucket(Utils.getBucket(dest))
+        .setBucketName(Utils.getBucket(dest))
         .setObjectKey(Utils.getObjectKey(dest))
         .setChunkSize(chunkSize)
-        .createUploadOptions();
+        .createOptions();
       S3File f = _client.upload(upOpts).get();
       Assert.assertNotNull(f);
       Assert.assertEquals(abortCount, getRetryCount());
@@ -367,13 +373,14 @@ catch(Throwable t)
 
       // download the file and compare it with the original
       File dlTemp = TestUtils.createTmpFile();
-      DownloadOptions dlOpts = new DownloadOptionsBuilder()
+      DownloadOptions dlOpts = _client.getOptionsBuilderFactory()
+        .newDownloadOptionsBuilder()
         .setFile(dlTemp)
-        .setBucket(Utils.getBucket(dest))
+        .setBucketName(Utils.getBucket(dest))
         .setObjectKey(Utils.getObjectKey(dest))
         .setRecursive(false)
         .setOverwrite(true)
-        .createDownloadOptions();
+        .createOptions();
       f = _client.download(dlOpts).get();
       Assert.assertNotNull(f.getLocalFile());
       Assert.assertTrue(TestUtils.compareFiles(toUpload, f.getLocalFile()));
@@ -430,7 +437,7 @@ catch(Throwable t)
       }
     }
 
-    ObjectMetadata meta = _client.exists(Utils.getBucket(dest), Utils.getObjectKey(dest)).get();
+    ObjectMetadata meta = TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest));
     Assert.assertNotNull(meta.getLastModified());
     Assert.assertEquals(fileSize, meta.getContentLength());
     Assert.assertEquals(fileSize, meta.getInstanceLength());
@@ -812,13 +819,14 @@ catch(Throwable t)
 
     // upload file in multiple concurrent chunks
     clearParts();
-    UploadOptions upOpts = new UploadOptionsBuilder()
+    UploadOptions upOpts = _client.getOptionsBuilderFactory()
+      .newUploadOptionsBuilder()
       .setFile(toUpload)
-      .setBucket(Utils.getBucket(dest))
+      .setBucketName(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .setOverallProgressListenerFactory(this)
       .setChunkSize(chunkSize)
-      .createUploadOptions();
+      .createOptions();
     S3File f = _client.upload(upOpts).get();
     Assert.assertNotNull(f);
 
@@ -832,14 +840,15 @@ catch(Throwable t)
 
     // download the file and compare it with the original
     File dlTemp = TestUtils.createTmpFile();
-    DownloadOptions dlOpts = new DownloadOptionsBuilder()
+    DownloadOptions dlOpts = _client.getOptionsBuilderFactory()
+      .newDownloadOptionsBuilder()
       .setFile(dlTemp)
-      .setBucket(Utils.getBucket(dest))
+      .setBucketName(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .setRecursive(false)
       .setOverwrite(true)
       .setOverallProgressListenerFactory(this)
-      .createDownloadOptions();
+      .createOptions();
     clearParts();
     f = _client.download(dlOpts).get();
     partCount = getPartCount();
@@ -868,13 +877,14 @@ catch(Throwable t)
 
     // upload file in multiple concurrent chunks
     clearParts();
-    UploadOptions upOpts = new UploadOptionsBuilder()
+    UploadOptions upOpts = _client.getOptionsBuilderFactory()
+      .newUploadOptionsBuilder()
       .setFile(toUpload)
-      .setBucket(Utils.getBucket(dest))
+      .setBucketName(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .setOverallProgressListenerFactory(this)
       .setChunkSize(chunkSize)
-      .createUploadOptions();
+      .createOptions();
     S3File f = _client.upload(upOpts).get();
     Assert.assertNotNull(f);
 
@@ -888,14 +898,15 @@ catch(Throwable t)
 
     // download the file and compare it with the original
     File dlTemp = TestUtils.createTmpFile();
-    DownloadOptions dlOpts = new DownloadOptionsBuilder()
+    DownloadOptions dlOpts = _client.getOptionsBuilderFactory()
+      .newDownloadOptionsBuilder()
       .setFile(dlTemp)
-      .setBucket(Utils.getBucket(dest))
+      .setBucketName(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .setRecursive(false)
       .setOverwrite(true)
       .setOverallProgressListenerFactory(this)
-      .createDownloadOptions();
+      .createOptions();
     clearParts();
     f = _client.download(dlOpts).get();
     partCount = getPartCount();

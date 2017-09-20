@@ -1,55 +1,39 @@
 package com.logicblox.s3lib;
 
 
-import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.google.api.services.storage.Storage;
 import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
 public class RemoveEncryptionKeyCommand extends Command
 {
-  private CloudStoreClient _client;
-  private ListeningExecutorService _httpExecutor;
-  private ListeningScheduledExecutorService _executor;
+  private EncryptionKeyOptions _options;
   private String _encKeyName;
   private KeyProvider _encKeyProvider;
-  private Storage _gcsStorage = null;
 
-  public RemoveEncryptionKeyCommand(
-    ListeningExecutorService httpExecutor,
-    ListeningScheduledExecutorService internalExecutor,
-    CloudStoreClient client,
-    String encKeyName,
-    KeyProvider encKeyProvider)
+  public RemoveEncryptionKeyCommand(EncryptionKeyOptions options)
   throws IOException
   {
-    _httpExecutor = httpExecutor;
-    _executor = internalExecutor;
-    _client = client;
-    _encKeyName = encKeyName;
-    _encKeyProvider = encKeyProvider;
-
+    super(options);
+    _options = options;
+    _encKeyProvider = _client.getKeyProvider();
+    _encKeyName = _options.getEncryptionKey();
   }
 
-  public ListenableFuture<S3File> run(final String bucket,final String key,
-                                      final String version)
+  public ListenableFuture<S3File> run()
   {
     // TODO(geokollias): Handle versions?
-    ListenableFuture<S3ObjectMetadata> objMeta = getMetadata(bucket, key);
+    ListenableFuture<S3ObjectMetadata> objMeta = getMetadata();
     objMeta = Futures.transform(objMeta, removeEncryptionKeyFn());
     ListenableFuture<S3File> res = Futures.transform(objMeta,
       updateObjectMetadataFn());
@@ -64,7 +48,8 @@ public class RemoveEncryptionKeyCommand extends Command
             return Futures.immediateFailedFuture(t);
           }
           return Futures.immediateFailedFuture(new Exception("Error " +
-              "adding new encryption key to " + getUri(bucket, key)+ ".", t));
+                                                             "adding new encryption key to " +
+                                                             getUri(_options.getBucketName(), _options.getObjectKey()) + ".", t));
         }
       });
   }
@@ -72,34 +57,31 @@ public class RemoveEncryptionKeyCommand extends Command
   /**
    * Step 1: Fetch metadata.
    */
-  private ListenableFuture<S3ObjectMetadata> getMetadata(final String bucket,
-                                                         final String key)
+  private ListenableFuture<S3ObjectMetadata> getMetadata()
   {
     return executeWithRetry(
-      _executor,
+      _client.getInternalExecutor(),
       new Callable<ListenableFuture<S3ObjectMetadata>>()
       {
         public ListenableFuture<S3ObjectMetadata> call()
         {
-          return getMetadataAsync(bucket, key);
+          return getMetadataAsync();
         }
 
         public String toString()
         {
           return "Starting removal of existing encryption key to " +
-                 getUri(bucket, key);
+                 getUri(_options.getBucketName(), _options.getObjectKey());
         }
       });
   }
 
-  private ListenableFuture<S3ObjectMetadata> getMetadataAsync(final String
-                                                                bucket,
-                                                              final String key)
+  private ListenableFuture<S3ObjectMetadata> getMetadataAsync()
   {
     S3ObjectMetadataFactory f = new S3ObjectMetadataFactory(getAmazonS3Client(),
-      _httpExecutor);
-    ListenableFuture<S3ObjectMetadata> metadataFactory = f.create(bucket, key,
-      null);
+      _client.getApiExecutor());
+    ListenableFuture<S3ObjectMetadata> metadataFactory = f.create(
+      _options.getBucketName(), _options.getObjectKey(), null);
 
     AsyncFunction<S3ObjectMetadata, S3ObjectMetadata> checkMetadata = new
       AsyncFunction<S3ObjectMetadata, S3ObjectMetadata>()
@@ -141,7 +123,7 @@ public class RemoveEncryptionKeyCommand extends Command
           }
         };
 
-        return _executor.submit(removeEncyptionKeyCall);
+        return _client.getInternalExecutor().submit(removeEncyptionKeyCall);
       }
     };
   }
@@ -211,75 +193,48 @@ public class RemoveEncryptionKeyCommand extends Command
     AsyncFunction<S3ObjectMetadata, S3File> update = new
       AsyncFunction<S3ObjectMetadata, S3File>()
       {
-        public ListenableFuture<S3File> apply(final S3ObjectMetadata metadata)
+        public ListenableFuture<S3File> apply(S3ObjectMetadata metadata)
         throws IOException
         {
-          ListenableFuture<AccessControlList> acl = executeWithRetry(
-            _executor,
-            new Callable<ListenableFuture<AccessControlList>>()
-            {
-              public ListenableFuture<AccessControlList> call()
+          if(null == getGCSClient())
+          {
+            // It seems in AWS there is no way to update an object's metadata
+            // without re-uploading/copying the whole object. Here, we
+            // copy the object to itself in order to add the new
+            // user-metadata.
+            CopyOptions options = _client.getOptionsBuilderFactory()
+              .newCopyOptionsBuilder()
+              .setSourceBucketName(metadata.getBucket())
+              .setSourceObjectKey(metadata.getKey())
+              .setDestinationBucketName(metadata.getBucket())
+              .setDestinationObjectKey(metadata.getKey())
+              .setUserMetadata(metadata.getUserMetadata())
+              .setKeepAcl(true)
+              .createOptions();
+
+            return _client.copy(options);
+          }
+          else
+          {
+            return executeWithRetry(
+              _client.getInternalExecutor(),
+              new Callable<ListenableFuture<S3File>>()
               {
-                return _httpExecutor.submit(
-                  new Callable<AccessControlList>()
+                public ListenableFuture<S3File> call()
+                {
+                  return _client.getApiExecutor().submit(new Callable<S3File>()
                   {
-                    public AccessControlList call()
+                    public S3File call()
+                    throws IOException
                     {
-                      return Utils.getObjectAcl(
-                        getAmazonS3Client(), metadata.getBucket(), metadata.getKey());
+                      GCSClient.patchMetaData(getGCSClient(), metadata.getBucket(),
+                        metadata.getKey(), metadata.getUserMetadata());
+                      return new S3File(metadata.getBucket(), metadata.getKey());
                     }
                   });
-              }
-            });
-
-          AsyncFunction<AccessControlList, S3File> updateObj = new
-            AsyncFunction<AccessControlList, S3File>()
-            {
-              public ListenableFuture<S3File> apply(
-                AccessControlList acl) throws IOException
-              {
-                if(null == getGCSClient())
-                {
-                  // It seems in AWS there is no way to update an object's metadata
-                  // without re-uploading/copying the whole object. Here, we
-                  // copy the object to itself in order to add the new
-                  // user-metadata.
-                  CopyOptions options = new CopyOptionsBuilder()
-                    .setSourceBucketName(metadata.getBucket())
-                    .setSourceKey(metadata.getKey())
-                    .setDestinationBucketName(metadata.getBucket())
-                    .setDestinationKey(metadata.getKey())
-                    .setS3Acl(acl)
-                    .setUserMetadata(metadata.getUserMetadata())
-                    .createCopyOptions();
-
-                  return _client.copy(options);
                 }
-                else
-                {
-                  return executeWithRetry(
-                    _executor,
-                    new Callable<ListenableFuture<S3File>>()
-                    {
-                      public ListenableFuture<S3File> call()
-                      {
-                        return _httpExecutor.submit(new Callable<S3File>()
-                        {
-                          public S3File call()
-                            throws IOException
-                          {
-                            Utils.patchMetaData(getGCSClient(), metadata.getBucket(),
-                              metadata.getKey(), metadata.getUserMetadata());
-                            return new S3File(metadata.getBucket(), metadata.getKey());
-                          }
-                        });
-                      }
-                    });
-                }
-              }
-            };
-
-          return Futures.transform(acl, updateObj);
+              });
+          }
         }
       };
 

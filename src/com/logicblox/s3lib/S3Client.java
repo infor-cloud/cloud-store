@@ -1,20 +1,20 @@
 package com.logicblox.s3lib;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.services.codepipeline.model.EncryptionKey;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.AccessControlList;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
 
-import com.google.common.base.Optional;
+import com.amazonaws.services.s3.model.StorageClass;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -60,6 +60,9 @@ public class S3Client implements CloudStoreClient {
    */
   KeyProvider _keyProvider;
 
+  private S3AclHandler _aclHandler;
+  private S3StorageClassHandler _storageClassHandler;
+
   /** Whether or not to retry client side exception unconditionally. */
   boolean _retryClientException = false;
 
@@ -90,9 +93,9 @@ public class S3Client implements CloudStoreClient {
   public S3Client(AmazonS3Client s3Client)
   {
     this(s3Client,
-        Utils.getHttpExecutor(10),
-        Utils.getInternalExecutor(50),
-        Utils.getKeyProvider(Utils.getDefaultKeyDirectory()));
+        Utils.createApiExecutor(10),
+        Utils.createInternalExecutor(50),
+        Utils.createKeyProvider(Utils.getDefaultKeyDirectory()));
     this.setRetryCount(10);
   }
 
@@ -112,8 +115,8 @@ public class S3Client implements CloudStoreClient {
                   KeyProvider keyProvider)
   {
     this(s3Client,
-        Utils.getHttpExecutor(10),
-        Utils.getInternalExecutor(50),
+        Utils.createApiExecutor(10),
+        Utils.createInternalExecutor(50),
         keyProvider);
     this.setRetryCount(10);
   }
@@ -180,32 +183,25 @@ public class S3Client implements CloudStoreClient {
     _s3Executor = s3Executor;
     _keyProvider = keyProvider;
     _client = s3Client;
+    _aclHandler = new S3AclHandler();
+    _storageClassHandler = new S3StorageClassHandler();
   }
 
   /**
    * Canned ACLs handling
    */
-
-  public static final String defaultCannedACL = "bucket-owner-full-control";
-
-  public static final List<String> allCannedACLs = initCannedACLs();
+  public static final List<String> ALL_CANNED_ACLS = initCannedAcls();
 
   /**
-   * {@code cannedACLsDescConst} has to be a compile-time String constant
-   * expression. That's why e.g. we cannot re-use {@code allCannedACLs} to
+   * {@code CANNED_ACLS_DESC_CONST} has to be a compile-time String constant
+   * expression. That's why e.g. we cannot re-use {@code ALL_CANNED_ACLS} to
    * construct it.
    */
-  static final String cannedACLsDescConst = "For Amazon S3, choose one of: " +
+  static final String CANNED_ACLS_DESC_CONST = "For Amazon S3, choose one of: " +
       "private, public-read, public-read-write, authenticated-read, " +
-      "bucket-owner-read, bucket-owner-full-control (default: " +
-      "bucket-owner-full-control).";
+      "bucket-owner-read, bucket-owner-full-control.";
 
-  public static boolean isValidCannedACL(String aclStr)
-  {
-    return allCannedACLs.contains(aclStr);
-  }
-
-  private static List<String> initCannedACLs()
+  private static List<String> initCannedAcls()
   {
     List<String> l = new ArrayList<>();
     for (CannedAccessControlList acl : CannedAccessControlList.values())
@@ -214,11 +210,11 @@ public class S3Client implements CloudStoreClient {
   }
 
   /**
-   * {@code storageClassesDescConst} has to be a compile-time String constant
+   * {@code STORAGE_CLASSES_DESC_CONST} has to be a compile-time String constant
    * expression. That's why e.g. we cannot re-use {@code StorageClass.values()}
    * to construct it.
    */
-  static final String storageClassesDescConst = "For Amazon S3, choose one of: " +
+  static final String STORAGE_CLASSES_DESC_CONST = "For Amazon S3, choose one of: " +
       "STANDARD, REDUCED_REDUNDANCY, GLACIER, STANDARD_IA.";
 
   @Override
@@ -245,6 +241,72 @@ public class S3Client implements CloudStoreClient {
     return "s3";
   }
 
+  @Override
+  public ListeningExecutorService getApiExecutor()
+  {
+    return _s3Executor;
+  }
+
+  @Override
+  public ListeningScheduledExecutorService getInternalExecutor()
+  {
+    return _executor;
+  }
+
+  @Override
+  public OptionsBuilderFactory getOptionsBuilderFactory()
+  {
+    return new OptionsBuilderFactory(this);
+  }
+
+  @Override
+  public KeyProvider getKeyProvider()
+  {
+    return _keyProvider;
+  }
+
+  @Override
+  public AclHandler getAclHandler()
+  {
+    return _aclHandler;
+  }
+
+  @Override
+  public StorageClassHandler getStorageClassHandler()
+  {
+    return _storageClassHandler;
+  }
+
+  // returns null if the store does not support acl (like minio)
+  static AccessControlList getObjectAcl(
+    AmazonS3Client client, String bucket, String key)
+  throws AmazonS3Exception
+  {
+    AccessControlList acl = null;
+    try
+    {
+      acl = client.getObjectAcl(bucket, key);
+    }
+    catch(AmazonS3Exception ex)
+    {
+      if(!ex.getErrorCode().equalsIgnoreCase("NotImplemented"))
+        throw ex;
+    }
+    return acl;
+  }
+
+  static CannedAccessControlList getCannedAcl(String value)
+  {
+    for (CannedAccessControlList acl : CannedAccessControlList.values())
+    {
+      if (acl.toString().equals(value))
+      {
+        return acl;
+      }
+    }
+    return null;
+  }
+
   void configure(Command cmd)
   {
     cmd.setRetryClientException(_retryClientException);
@@ -257,53 +319,32 @@ public class S3Client implements CloudStoreClient {
   public ListenableFuture<S3File> upload(UploadOptions options)
       throws IOException
   {
-    Optional<OverallProgressListenerFactory> progressListenerFactory = options
-        .getOverallProgressListenerFactory();
-
-    UploadCommand cmd =
-        new UploadCommand(_s3Executor, _executor, _keyProvider, options,
-        progressListenerFactory);
-    configure(cmd);
-
-    return cmd.run(options.getBucket(), options.getObjectKey());
-  }
-
-  @Override
-  public ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
-      throws IOException, ExecutionException, InterruptedException {
-
-    File directory = options.getFile();
-    String bucket = options.getBucket();
-    String object = options.getObjectKey();
-    long chunkSize = options.getChunkSize();
-    String encKey = options.getEncKey().orNull();
-    String acl = options.getAcl().or("bucket-owner-full-control");
-    boolean dryRun = options.isDryRun();
-    OverallProgressListenerFactory progressListenerFactory = options
-        .getOverallProgressListenerFactory().orNull();
-
-    UploadDirectoryCommand cmd = new UploadDirectoryCommand(_s3Executor,
-        _executor, this);
-    configure(cmd);
-    return cmd.run(directory, bucket, object, chunkSize,  encKey, acl,
-      dryRun, progressListenerFactory);
-  }
-
-  @Override
-  public ListenableFuture<List<S3File>> deleteDir(DeleteOptions opts)
-    throws InterruptedException, ExecutionException
-  {
-    DeleteDirCommand cmd =
-      new DeleteDirCommand(_s3Executor, _executor, this, opts);
+    UploadCommand cmd = new UploadCommand(options);
     configure(cmd);
     return cmd.run();
   }
 
   @Override
-  public ListenableFuture<S3File> delete(DeleteOptions opts)
+  public ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
+      throws IOException, ExecutionException, InterruptedException {
+    UploadDirectoryCommand cmd = new UploadDirectoryCommand(options);
+    configure(cmd);
+    return cmd.run();
+  }
+
+  @Override
+  public ListenableFuture<List<S3File>> deleteDir(DeleteOptions options)
+    throws InterruptedException, ExecutionException
   {
-    DeleteCommand cmd =
-      new DeleteCommand(_s3Executor, _executor, this, opts);
+    DeleteDirCommand cmd = new DeleteDirCommand(options);
+    configure(cmd);
+    return cmd.run();
+  }
+
+  @Override
+  public ListenableFuture<S3File> delete(DeleteOptions options)
+  {
+    DeleteCommand cmd = new DeleteCommand(options);
     configure(cmd);
     return cmd.run();
   }
@@ -316,30 +357,20 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<ObjectMetadata> exists(String bucket, String object)
+  public ListenableFuture<ObjectMetadata> exists(ExistsOptions options)
   {
-    ExistsCommand cmd = new ExistsCommand(_s3Executor, _executor);
+    ExistsCommand cmd = new ExistsCommand(options);
     configure(cmd);
-    return cmd.run(bucket, object);
+    return cmd.run();
   }
 
   @Override
   public ListenableFuture<S3File> download(DownloadOptions options)
   throws IOException
   {
-    File file = options.getFile();
-    boolean overwrite = options.doesOverwrite();
-    boolean dryRun = options.isDryRun();
-    OverallProgressListenerFactory progressListenerFactory = options
-        .getOverallProgressListenerFactory().orNull();
-
-    DownloadCommand cmd = new DownloadCommand(this, _s3Executor, _executor, file,
-        overwrite, _keyProvider, dryRun, progressListenerFactory);
+    DownloadCommand cmd = new DownloadCommand(options);
     configure(cmd);
-    String bucket = options.getBucket();
-    String key = options.getObjectKey();
-    String version = options.getVersion();
-    return cmd.run(bucket, key, version);
+    return cmd.run();
   }
 
   @Override
@@ -347,47 +378,31 @@ public class S3Client implements CloudStoreClient {
                                                                 options)
   throws IOException, ExecutionException, InterruptedException
   {
-    DownloadDirectoryCommand cmd = new DownloadDirectoryCommand(_s3Executor,
-        _executor, this);
+    DownloadDirectoryCommand cmd = new DownloadDirectoryCommand(options);
     configure(cmd);
-
-    File directory = options.getFile();
-    String bucket = options.getBucket();
-    String object = options.getObjectKey();
-    boolean recursive = options.isRecursive();
-    boolean overwrite = options.doesOverwrite();
-    boolean dryRun = options.isDryRun();
-    OverallProgressListenerFactory progressListenerFactory = options
-        .getOverallProgressListenerFactory().orNull();
-
-    return cmd.run(directory, bucket, object, recursive, overwrite, dryRun,
-        progressListenerFactory);
+    return cmd.run();
   }
 
   @Override
   public ListenableFuture<S3File> copy(CopyOptions options)
   {
-    CopyCommand cmd = new CopyCommand(_s3Executor, _executor, options);
+    CopyCommand cmd = new CopyCommand(options);
     configure(cmd);
-    return cmd.run(options.getSourceBucketName(), options.getSourceKey(),
-        options.getDestinationBucketName(), options.getDestinationKey());
+    return cmd.run();
   }
 
   @Override
   public ListenableFuture<List<S3File>> copyToDir(CopyOptions options) throws
       InterruptedException, ExecutionException, IOException {
-    boolean dryRun = options.isDryRun();
-    CopyToDirCommand cmd = new CopyToDirCommand(_s3Executor, _executor, dryRun, this);
+    CopyToDirCommand cmd = new CopyToDirCommand(options);
     configure(cmd);
-
-    return cmd.run(options);
+    return cmd.run();
   }
   
   @Override
   public ListenableFuture<S3File> rename(RenameOptions options)
   {
-    RenameCommand cmd = new RenameCommand(
-      _s3Executor, _executor, this, options);
+    RenameCommand cmd = new RenameCommand(options);
     configure(cmd);
     return cmd.run();
   }
@@ -396,43 +411,38 @@ public class S3Client implements CloudStoreClient {
   public ListenableFuture<List<S3File>> renameDirectory(RenameOptions options)
     throws InterruptedException, ExecutionException, IOException
   {
-    RenameDirectoryCommand cmd = new RenameDirectoryCommand(
-      _s3Executor, _executor, this, options);
+    RenameDirectoryCommand cmd = new RenameDirectoryCommand(options);
     configure(cmd);
     return cmd.run();
   }
   
   @Override
-  public ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions) {
+  public ListenableFuture<List<S3File>> listObjects(ListOptions options) {
     ListenableFuture<List<S3File>> results = null;
-    if (lsOptions.versionsIncluded()) {
-      ListVersionsCommand cmd = new ListVersionsCommand(_s3Executor, _executor);
+    if (options.versionsIncluded()) {
+      ListVersionsCommand cmd = new ListVersionsCommand(options);
       configure(cmd);
-      results = cmd.run(lsOptions);
+      results = cmd.run();
     } else {
-      ListCommand cmd = new ListCommand(_s3Executor, _executor);
+      ListCommand cmd = new ListCommand(options);
       configure(cmd);
-      results = cmd.run(lsOptions);
+      results = cmd.run();
     }
     return results;
   }
 
   @Override
-  public ListenableFuture<List<Upload>> listPendingUploads(
-    PendingUploadsOptions options)
+  public ListenableFuture<List<Upload>> listPendingUploads(PendingUploadsOptions options)
   {
-      ListPendingUploadsCommand cmd =
-          new ListPendingUploadsCommand(_s3Executor, _executor, options);
+      ListPendingUploadsCommand cmd = new ListPendingUploadsCommand(options);
       configure(cmd);
       return cmd.run();
   }
 
   @Override
-  public ListenableFuture<List<Void>> abortPendingUploads(
-      PendingUploadsOptions options)
+  public ListenableFuture<List<Void>> abortPendingUploads(PendingUploadsOptions options)
   {
-      AbortPendingUploadsCommand cmd =
-          new AbortPendingUploadsCommand(_s3Executor, _executor, this, options);
+      AbortPendingUploadsCommand cmd = new AbortPendingUploadsCommand(options);
       configure(cmd);
       return cmd.run();
   }
@@ -441,15 +451,14 @@ public class S3Client implements CloudStoreClient {
   public ListenableFuture<S3File> addEncryptionKey(EncryptionKeyOptions options)
       throws IOException
   {
-    AddEncryptionKeyCommand cmd = createAddKeyCommand(options.getEncryptionKey());
-    return cmd.run(options.getBucket(), options.getObjectKey(), null);
+    AddEncryptionKeyCommand cmd = createAddKeyCommand(options);
+    return cmd.run();
   }
 
-  protected AddEncryptionKeyCommand createAddKeyCommand(String key)
+  protected AddEncryptionKeyCommand createAddKeyCommand(EncryptionKeyOptions options)
       throws IOException
   {
-    AddEncryptionKeyCommand cmd = new AddEncryptionKeyCommand(
-      _s3Executor, _executor, this, key, _keyProvider);
+    AddEncryptionKeyCommand cmd = new AddEncryptionKeyCommand(options);
     configure(cmd);
     return cmd;
   }
@@ -458,15 +467,14 @@ public class S3Client implements CloudStoreClient {
   public ListenableFuture<S3File> removeEncryptionKey(EncryptionKeyOptions options)
     throws IOException
   {
-    RemoveEncryptionKeyCommand cmd = createRemoveKeyCommand(options.getEncryptionKey());
-    return cmd.run(options.getBucket(), options.getObjectKey(), null);
+    RemoveEncryptionKeyCommand cmd = createRemoveKeyCommand(options);
+    return cmd.run();
   }
 
-  protected RemoveEncryptionKeyCommand createRemoveKeyCommand(String key)
+  protected RemoveEncryptionKeyCommand createRemoveKeyCommand(EncryptionKeyOptions options)
     throws IOException
   {
-    RemoveEncryptionKeyCommand cmd = new RemoveEncryptionKeyCommand(
-      _s3Executor, _executor, this, key, _keyProvider);
+    RemoveEncryptionKeyCommand cmd = new RemoveEncryptionKeyCommand(options);
     configure(cmd);
     return cmd;
   }

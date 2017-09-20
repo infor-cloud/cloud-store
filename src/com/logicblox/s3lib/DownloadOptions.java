@@ -1,8 +1,7 @@
 package com.logicblox.s3lib;
 
-import com.google.common.base.Optional;
-
 import java.io.File;
+import java.util.Optional;
 
 /**
  * {@code DownloadOptions} contains all the details needed by the download
@@ -21,7 +20,7 @@ import java.io.File;
  * {@code DownloadOptions} objects are meant to be built by {@code
  * DownloadOptionsBuilder}. This class provides only public getter methods.
  */
-public class DownloadOptions {
+public class DownloadOptions extends CommandOptions {
     private File file;
     private String bucket;
     private String objectKey;
@@ -29,18 +28,19 @@ public class DownloadOptions {
     private String version;
     private boolean overwrite;
     private boolean dryRun;
-    private Optional<OverallProgressListenerFactory>
-        overallProgressListenerFactory;
+    private OverallProgressListenerFactory overallProgressListenerFactory;
 
-    DownloadOptions(File file,
+    DownloadOptions(CloudStoreClient cloudStoreClient,
+                    File file,
                     String bucket,
                     String objectKey,
                     String version,
                     boolean recursive,
                     boolean overwrite,
                     boolean dryRun,
-                    Optional<OverallProgressListenerFactory>
+                    OverallProgressListenerFactory
                         overallProgressListenerFactory) {
+        super(cloudStoreClient);
         this.file = file;
         this.bucket = bucket;
         this.objectKey = objectKey;
@@ -55,7 +55,7 @@ public class DownloadOptions {
         return file;
     }
 
-    public String getBucket() {
+    public String getBucketName() {
         return bucket;
     }
 
@@ -67,8 +67,8 @@ public class DownloadOptions {
         return recursive;
     }
     
-    public String getVersion() {
-        return version;
+    public Optional<String> getVersion() {
+        return Optional.ofNullable(version);
     }
 
     public boolean doesOverwrite() {
@@ -81,6 +81,6 @@ public class DownloadOptions {
 
     public Optional<OverallProgressListenerFactory>
     getOverallProgressListenerFactory() {
-        return overallProgressListenerFactory;
+        return Optional.ofNullable(overallProgressListenerFactory);
     }
 }

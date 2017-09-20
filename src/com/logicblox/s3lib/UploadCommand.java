@@ -1,7 +1,6 @@
 package com.logicblox.s3lib;
 
 import java.io.InputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.BufferedInputStream;
@@ -26,49 +25,32 @@ import javax.xml.bind.DatatypeConverter;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
-import com.google.common.base.Optional;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import org.apache.commons.codec.digest.DigestUtils;
 
 public class UploadCommand extends Command
 {
   private String encKeyName;
   private String encryptedSymmetricKeyString;
-  private String acl;
-  private Optional<OverallProgressListenerFactory> progressListenerFactory;
+  private OverallProgressListenerFactory progressListenerFactory;
   private String pubKeyHash;
 
-  private ListeningExecutorService _uploadExecutor;
-  private ListeningScheduledExecutorService _executor;
   private UploadOptions _options;
 
 
-  public UploadCommand(
-    ListeningExecutorService uploadExecutor,
-    ListeningScheduledExecutorService internalExecutor,
-    KeyProvider encKeyProvider,
-    UploadOptions options,
-    Optional<OverallProgressListenerFactory> progressListenerFactory)
+  public UploadCommand(UploadOptions options)
   throws IOException
   {
+    super(options);
     _options = options;
-    if(uploadExecutor == null)
-      throw new IllegalArgumentException("non-null upload executor is required");
-    if(internalExecutor == null)
-      throw new IllegalArgumentException("non-null internal executor is required");
-
-    _uploadExecutor = uploadExecutor;
-    _executor = internalExecutor;
 
     this.file = _options.getFile();
     setChunkSize(_options.getChunkSize());
     setFileLength(this.file.length());
-    this.encKeyName = _options.getEncKey().orNull();
+    this.encKeyName = _options.getEncKey().orElse(null);
 
     if (this.encKeyName != null) {
       byte[] encKeyBytes = new byte[32];
@@ -76,9 +58,9 @@ public class UploadCommand extends Command
       this.encKey = new SecretKeySpec(encKeyBytes, "AES");
       try
       {
-        if (encKeyProvider == null)
+        if (_client.getKeyProvider() == null)
           throw new UsageException("No encryption key provider is specified");
-        Key pubKey = encKeyProvider.getPublicKey(this.encKeyName);
+        Key pubKey = _client.getKeyProvider().getPublicKey(this.encKeyName);
 
         this.pubKeyHash = DatatypeConverter.printBase64Binary(
           DigestUtils.sha256(pubKey.getEncoded()));
@@ -101,14 +83,13 @@ public class UploadCommand extends Command
       }
     }
 
-    this.acl = _options.getAcl().or("bucket-owner-full-control");
-    this.progressListenerFactory = progressListenerFactory;
+    this.progressListenerFactory = _options.getOverallProgressListenerFactory().orElse(null);
   }
 
   /**
    * Run ties Step 1, Step 2, and Step 3 together. The return result is the ETag of the upload.
    */
-  public ListenableFuture<S3File> run(String bucket, String key)
+  public ListenableFuture<S3File> run()
     throws FileNotFoundException
   {
     if (!file.exists())
@@ -117,19 +98,19 @@ public class UploadCommand extends Command
     if(_options.isDryRun())
     {
       System.out.println("<DRYRUN> uploading '" + this.file.getAbsolutePath()
-        + "' to '" + getUri(bucket, key) + "'");
+                         + "' to '" + getUri(_options.getBucketName(), _options.getObjectKey()) + "'");
       return Futures.immediateFuture(null);
     }
     else
     {
-      return scheduleExecution(bucket, key);
+      return scheduleExecution();
     }
   }
   
 
-  private ListenableFuture<S3File> scheduleExecution(final String bucket, final String key)
+  private ListenableFuture<S3File> scheduleExecution()
   {
-    final ListenableFuture<Upload> started = startUpload(bucket, key);
+    final ListenableFuture<Upload> started = startUpload();
     ListenableFuture<Upload> uploaded = Futures.transform(started, startPartsAsyncFunction());
     ListenableFuture<String> completed = Futures.transform(uploaded, completeAsyncFunction());
     ListenableFuture<S3File> res = Futures.transform(completed,
@@ -140,8 +121,8 @@ public class UploadCommand extends Command
           S3File f = new S3File();
           f.setLocalFile(file);
           f.setETag(etag);
-          f.setBucketName(bucket);
-          f.setKey(key);
+          f.setBucketName(_options.getBucketName());
+          f.setKey(_options.getObjectKey());
           return f;
         }
       });
@@ -165,33 +146,33 @@ public class UploadCommand extends Command
           return res0;
         }
       },
-      _executor);
+      _client.getInternalExecutor());
   }
 
   /**
    * Step 1: Returns a future upload that is internally retried.
    */
-  private ListenableFuture<Upload> startUpload(final String bucket, final String key)
+  private ListenableFuture<Upload> startUpload()
   {
-    return executeWithRetry(_executor,
+    return executeWithRetry(_client.getInternalExecutor(),
       new Callable<ListenableFuture<Upload>>()
       {
         public ListenableFuture<Upload> call()
         {
-          return startUploadActual(bucket, key);
+          return startUploadActual();
         }
 
         public String toString()
         {
-          return "starting upload " + bucket + "/" + key;
+          return "starting upload " + _options.getBucketName() + "/" + _options.getObjectKey();
         }
       });
   }
 
-  private ListenableFuture<Upload> startUploadActual(final String bucket, final String key)
+  private ListenableFuture<Upload> startUploadActual()
   {
     UploadFactory factory = new MultipartAmazonUploadFactory
-        (getAmazonS3Client(), _uploadExecutor);
+        (getAmazonS3Client(), _client.getApiExecutor());
 
     Map<String,String> meta = new HashMap<String,String>();
     meta.put("s3tool-version", String.valueOf(Version.CURRENT));
@@ -203,7 +184,7 @@ public class UploadCommand extends Command
     meta.put("s3tool-chunk-size", Long.toString(chunkSize));
     meta.put("s3tool-file-length", Long.toString(fileLength));
 
-    return factory.startUpload(bucket, key, meta, acl, _options);
+    return factory.startUpload(_options.getBucketName(), _options.getObjectKey(), meta, _options);
   }
 
   /**
@@ -223,8 +204,8 @@ public class UploadCommand extends Command
   private ListenableFuture<Upload> startParts(final Upload upload)
   {
     OverallProgressListener opl = null;
-    if (progressListenerFactory.isPresent()) {
-      opl = progressListenerFactory.get().create(
+    if (progressListenerFactory != null) {
+      opl = progressListenerFactory.create(
           new ProgressOptionsBuilder()
               .setObjectUri(getUri(upload.getBucket(), upload.getKey()))
               .setOperation("upload")
@@ -252,7 +233,7 @@ public class UploadCommand extends Command
                                                        final OverallProgressListener opl)
   {
     ListenableFuture<ListenableFuture<Void>> result =
-      _executor.submit(new Callable<ListenableFuture<Void>>()
+      _client.getInternalExecutor().submit(new Callable<ListenableFuture<Void>>()
         {
           public ListenableFuture<Void> call() throws Exception
           {
@@ -272,7 +253,7 @@ public class UploadCommand extends Command
   {
     final int partNumber = (int) (position / chunkSize);
 
-    return executeWithRetry(_executor,
+    return executeWithRetry(_client.getInternalExecutor(),
       new Callable<ListenableFuture<Void>>()
       {
         public ListenableFuture<Void> call() throws Exception
@@ -334,8 +315,7 @@ public class UploadCommand extends Command
       }
     };
 
-    return upload.uploadPart(partNumber, partSize, inputStreamCallable,
-        Optional.fromNullable(opl));
+    return upload.uploadPart(partNumber, partSize, inputStreamCallable, opl);
   }
 
   /**
@@ -357,7 +337,7 @@ public class UploadCommand extends Command
    */
   private ListenableFuture<String> complete(final Upload upload, final int retryCount)
   {
-    return executeWithRetry(_executor,
+    return executeWithRetry(_client.getInternalExecutor(),
       new Callable<ListenableFuture<String>>()
       {
         public ListenableFuture<String> call()
@@ -397,7 +377,7 @@ public class UploadCommand extends Command
   private ListenableFuture<Void> abort(final Upload upload, final int
       retryCount)
   {
-    return executeWithRetry(_executor,
+    return executeWithRetry(_client.getInternalExecutor(),
         new Callable<ListenableFuture<Void>>() {
           public ListenableFuture<Void> call() {
             return abortActual(upload, retryCount);

@@ -60,10 +60,11 @@ public class DeleteTests
       originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
 
     // delete the file
-    DeleteOptions opts = new DeleteOptionsBuilder()
-        .setBucket(Utils.getBucket(dest))
+    DeleteOptions opts = _client.getOptionsBuilderFactory()
+        .newDeleteOptionsBuilder()
+        .setBucketName(Utils.getBucket(dest))
         .setObjectKey(Utils.getObjectKey(dest))
-        .createDeleteOptions();
+        .createOptions();
     try
     {
       // set retry and abort options
@@ -123,11 +124,12 @@ try
       originalCount + uploaded.size(), TestUtils.listObjects(_testBucket, rootPrefix).size());
 
     // dryrun the delete and make sure the files still exist
-    DeleteOptions opts = new DeleteOptionsBuilder()
-        .setBucket(Utils.getBucket(dest))
+    DeleteOptions opts = _client.getOptionsBuilderFactory()
+        .newDeleteOptionsBuilder()
+        .setBucketName(Utils.getBucket(dest))
         .setObjectKey(Utils.getObjectKey(dest))
         .setRecursive(true)
-        .createDeleteOptions();
+        .createOptions();
     boolean oldGlobalFlag = false;
     try
     {
@@ -182,11 +184,12 @@ catch(Throwable t)
       originalCount + 1, TestUtils.listObjects(_testBucket, rootPrefix).size());
 
     // dryrun the delete and make sure file still exists
-    DeleteOptions opts = new DeleteOptionsBuilder()
-        .setBucket(Utils.getBucket(dest))
+    DeleteOptions opts = _client.getOptionsBuilderFactory()
+        .newDeleteOptionsBuilder()
+        .setBucketName(Utils.getBucket(dest))
         .setObjectKey(Utils.getObjectKey(dest))
         .setDryRun(true)
-        .createDeleteOptions();
+        .createOptions();
     f = _client.delete(opts).get();
     Assert.assertNull(f);
     List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
@@ -219,12 +222,13 @@ try
       originalCount + 2, TestUtils.listObjects(_testBucket, rootPrefix).size());
 
     // dryrun the delete and make sure the files still exist
-    DeleteOptions opts = new DeleteOptionsBuilder()
-        .setBucket(Utils.getBucket(dest))
+    DeleteOptions opts = _client.getOptionsBuilderFactory()
+        .newDeleteOptionsBuilder()
+        .setBucketName(Utils.getBucket(dest))
         .setObjectKey(Utils.getObjectKey(dest))
         .setRecursive(true)
         .setDryRun(true)
-        .createDeleteOptions();
+        .createOptions();
     List<S3File> files = _client.deleteDir(opts).get();
     Assert.assertNull(files);
     List<S3File> objs = TestUtils.listObjects(_testBucket, rootPrefix);
@@ -282,10 +286,11 @@ try
     URI uri = TestUtils.getUri(
       _testBucket, top.getName() + "/delete-basics-bad-" + System.currentTimeMillis(),
       rootPrefix);
-    DeleteOptions opts = new DeleteOptionsBuilder()
-        .setBucket(Utils.getBucket(uri))
+    DeleteOptions opts = _client.getOptionsBuilderFactory()
+        .newDeleteOptionsBuilder()
+        .setBucketName(Utils.getBucket(uri))
         .setObjectKey(Utils.getObjectKey(uri))
-        .createDeleteOptions();
+        .createOptions();
     String msg = null;
     try
     {
@@ -301,11 +306,12 @@ try
     Assert.assertEquals(uploadCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
 
     // non-existent key with force should be ok
-    opts = new DeleteOptionsBuilder()
-        .setBucket(Utils.getBucket(uri))
+    opts = _client.getOptionsBuilderFactory()
+        .newDeleteOptionsBuilder()
+        .setBucketName(Utils.getBucket(uri))
         .setObjectKey(Utils.getObjectKey(uri))
         .setForceDelete(true)
-        .createDeleteOptions();
+        .createOptions();
     S3File f = _client.delete(opts).get();
     Assert.assertNotNull(f);
     Assert.assertEquals(uploadCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -315,11 +321,12 @@ try
     uri = TestUtils.getUri(
      _testBucket, top.getName() + "-delete-basics-bad-dir-" + System.currentTimeMillis(),
      rootPrefix);
-    opts = new DeleteOptionsBuilder()
-        .setBucket(Utils.getBucket(uri))
+    opts = _client.getOptionsBuilderFactory()
+        .newDeleteOptionsBuilder()
+        .setBucketName(Utils.getBucket(uri))
         .setObjectKey(Utils.getObjectKey(uri))
         .setRecursive(true)
-        .createDeleteOptions();
+        .createOptions();
     try
     {
       _client.deleteDir(opts).get();
@@ -334,23 +341,25 @@ try
     Assert.assertEquals(uploadCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
 
     // non-existent directory with force should be OK
-    opts = new DeleteOptionsBuilder()
-        .setBucket(Utils.getBucket(uri))
+    opts = _client.getOptionsBuilderFactory()
+        .newDeleteOptionsBuilder()
+        .setBucketName(Utils.getBucket(uri))
         .setObjectKey(Utils.getObjectKey(uri))
         .setRecursive(true)
         .setForceDelete(true)
-        .createDeleteOptions();
+        .createOptions();
     List<S3File> files = _client.deleteDir(opts).get();
     Assert.assertTrue(files.isEmpty());
     Assert.assertEquals(uploadCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
     
     // delete folder that isn't empty without recursion should only delete top level files
     uri = TestUtils.getUri(_testBucket, top, rootPrefix);
-    opts = new DeleteOptionsBuilder()
-        .setBucket(Utils.getBucket(uri))
+    opts = _client.getOptionsBuilderFactory()
+        .newDeleteOptionsBuilder()
+        .setBucketName(Utils.getBucket(uri))
         .setObjectKey(Utils.getObjectKey(uri))
         .setRecursive(false)
-        .createDeleteOptions();
+        .createOptions();
     files = _client.deleteDir(opts).get();
     Assert.assertEquals(2, files.size());
     Assert.assertEquals(uploadCount - 2, TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -358,22 +367,24 @@ try
     // delete single exiting file
     uri = TestUtils.getUri(
       _testBucket, top.getName() + "/" + sub.getName() + "/" + c.getName(), rootPrefix);
-    opts = new DeleteOptionsBuilder()
-        .setBucket(Utils.getBucket(uri))
+    opts = _client.getOptionsBuilderFactory()
+        .newDeleteOptionsBuilder()
+        .setBucketName(Utils.getBucket(uri))
         .setObjectKey(Utils.getObjectKey(uri))
-        .createDeleteOptions();
+        .createOptions();
     f = _client.delete(opts).get();
     Assert.assertNotNull(f);
     Assert.assertEquals(uploadCount - 3, TestUtils.listObjects(_testBucket, rootPrefix).size());
-    Assert.assertNull(_client.exists(Utils.getBucket(uri), Utils.getObjectKey(uri)).get());
+    Assert.assertNull(TestUtils.objectExists(Utils.getBucket(uri), Utils.getObjectKey(uri)));
 
     // recursively delete the rest of the files (should just be two left by now)
     uri = TestUtils.getUri(_testBucket, top, rootPrefix);
-    opts = new DeleteOptionsBuilder()
-        .setBucket(Utils.getBucket(uri))
+    opts = _client.getOptionsBuilderFactory()
+        .newDeleteOptionsBuilder()
+        .setBucketName(Utils.getBucket(uri))
         .setObjectKey(Utils.getObjectKey(uri))
         .setRecursive(true)
-        .createDeleteOptions();
+        .createOptions();
     files = _client.deleteDir(opts).get();
     Assert.assertEquals(2, files.size());
     Assert.assertEquals(0, TestUtils.listObjects(_testBucket, rootPrefix).size());

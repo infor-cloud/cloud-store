@@ -3,6 +3,8 @@ package com.logicblox.s3lib;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.io.IOException;
 import java.util.List;
@@ -39,6 +41,33 @@ public interface CloudStoreClient {
      * Returns the scheme of the backend storage service (e.g. "s3" or "gs")
      */
     String getScheme();
+
+    /**
+     * Returns the executor responsible for issuing HTTP API calls
+     * against the backend storage service asynchronously. It, also,
+     * determines the level of parallelism of an operation, e.g. number of
+     * threads used for uploading/downloading a file.
+     */
+    ListeningExecutorService getApiExecutor();
+
+    /**
+     * Returns the executor responsible for executing internal cloud-store tasks
+     * asynchronously. Such tasks include file I/O, file encryption, file
+     * splitting and error handling.
+     */
+    ListeningScheduledExecutorService getInternalExecutor();
+
+    OptionsBuilderFactory getOptionsBuilderFactory();
+
+    /**
+     * Returns the provider of encryption key-pairs used to encrypt/decrypt
+     * files during upload/download.
+     */
+    KeyProvider getKeyProvider();
+
+    AclHandler getAclHandler();
+
+    StorageClassHandler getStorageClassHandler();
 
     /**
      * Uploads a file according to {@code options}. For more details
@@ -110,10 +139,9 @@ public interface CloudStoreClient {
      * Throws an exception if the metadata of the file could not be fetched for
      * different reasons.
      *
-     * @param bucket Bucket to check
-     * @param object Path in bucket to check
+     * @param options ExistsOptions
      */
-    ListenableFuture<ObjectMetadata> exists(String bucket, String object);
+    ListenableFuture<ObjectMetadata> exists(ExistsOptions options);
 
     /**
      * Downloads a file according to {@code options}. For more details
@@ -257,7 +285,7 @@ public interface CloudStoreClient {
 
     /**
      * Returns a list of the pending uploads to object keys that start with
-     * {@code options.getObjectKey()}, inside {@code options.getBucket()}.
+     * {@code options.getObjectKey()}, inside {@code options.getBucketName()}.
      * <p>
      * Returned uploads' {@code Upload#getId()} and {@code
      * Upload#getInitiationDate()} are useful to abort them via

@@ -2,8 +2,6 @@ package com.logicblox.s3lib;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 
@@ -18,33 +16,17 @@ import java.util.concurrent.ExecutionException;
 
 public class UploadDirectoryCommand extends Command
 {
-  private ListeningExecutorService _httpExecutor;
-  private ListeningScheduledExecutorService _executor;
-  private CloudStoreClient _client;
-  private boolean _dryRun;
+  private UploadOptions _options;
 
-  public UploadDirectoryCommand(
-          ListeningExecutorService httpExecutor,
-          ListeningScheduledExecutorService internalExecutor,
-          CloudStoreClient client)
+  public UploadDirectoryCommand(UploadOptions options)
   {
-    _httpExecutor = httpExecutor;
-    _executor = internalExecutor;
-    _client = client;
+    super(options);
+    _options = options;
   }
 
-  public ListenableFuture<List<S3File>> run(final File dir,
-                                            final String bucket,
-                                            final String object,
-                                            final long chunkSize,
-                                            final String encKey,
-                                            final String acl,
-                                            boolean dryRun,
-                                            OverallProgressListenerFactory
-                                                progressListenerFactory)
+  public ListenableFuture<List<S3File>> run()
   throws ExecutionException, InterruptedException, IOException
   {
-    _dryRun = dryRun;
     final IOFileFilter noSymlinks = new IOFileFilter()
     {
       @Override
@@ -77,28 +59,30 @@ public class UploadDirectoryCommand extends Command
       }
     };
 
-    Collection<File> found = FileUtils.listFiles(dir, noSymlinks, noSymlinks);
+    Collection<File> found = FileUtils.listFiles(_options.getFile(), noSymlinks, noSymlinks);
 
     List<ListenableFuture<S3File>> files = new ArrayList<ListenableFuture<S3File>>();
     for (File file : found)
     {
-      String relPath = file.getPath().substring(dir.getPath().length()+1);
-      String key = Paths.get(object, relPath).toString();
+      String relPath = file.getPath().substring(_options.getFile().getPath().length()+1);
+      String key = Paths.get(_options.getObjectKey(), relPath).toString();
 
-      UploadOptions options = new UploadOptionsBuilder()
+      UploadOptions options = _client.getOptionsBuilderFactory()
+          .newUploadOptionsBuilder()
           .setFile(file)
-          .setBucket(bucket)
+          .setBucketName(_options.getBucketName())
           .setObjectKey(key)
-          .setChunkSize(chunkSize)
-          .setEncKey(encKey)
-          .setAcl(acl)
-          .setOverallProgressListenerFactory(progressListenerFactory)
-          .createUploadOptions();
+          .setChunkSize(_options.getChunkSize())
+          .setEncKey(_options.getEncKey().orElse(null))
+          .setCannedAcl(_options.getCannedAcl())
+          .setOverallProgressListenerFactory(_options
+            .getOverallProgressListenerFactory().orElse(null))
+          .createOptions();
 
-      if(_dryRun)
+      if(_options.isDryRun())
       {
         System.out.println("<DRYRUN> uploading '" + file.getAbsolutePath()
-            + "' to '" + getUri(bucket, key) + "'");
+                           + "' to '" + getUri(_options.getBucketName(), key) + "'");
       }
       else
       {
@@ -106,7 +90,7 @@ public class UploadDirectoryCommand extends Command
       }
     }
 
-    if(_dryRun)
+    if(_options.isDryRun())
     {
       return Futures.immediateFuture(null);
     }

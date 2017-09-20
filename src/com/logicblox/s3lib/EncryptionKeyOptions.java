@@ -1,7 +1,5 @@
 package com.logicblox.s3lib;
 
-import java.util.Date;
-
 /**
  * {@code EncryptionKeyOptions} contains all the options needed for
  * adding/removing encryption keys.
@@ -9,22 +7,24 @@ import java.util.Date;
  * {@code EncryptionKeyOptions} objects are meant to be built by {@code
  * EncryptionKeyOptionsBuilder}. This class provides only public getter methods.
  */
-public class EncryptionKeyOptions
+public class EncryptionKeyOptions extends CommandOptions
 {
   private final String _bucket;
   private final String _objectKey;
   private final String _encryptionKey;
 
-  EncryptionKeyOptions(String bucket,
+  EncryptionKeyOptions(CloudStoreClient cloudStoreClient,
+                       String bucket,
                        String objectKey,
                        String encryptionKey)
   {
+    super(cloudStoreClient);
     _bucket = bucket;
     _objectKey = objectKey;
     _encryptionKey = encryptionKey;
   }
 
-  public String getBucket()
+  public String getBucketName()
   {
     return _bucket;
   }

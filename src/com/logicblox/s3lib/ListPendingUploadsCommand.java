@@ -4,8 +4,6 @@ import com.amazonaws.services.s3.model.ListMultipartUploadsRequest;
 import com.amazonaws.services.s3.model.MultipartUpload;
 import com.amazonaws.services.s3.model.MultipartUploadListing;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,17 +11,11 @@ import java.util.concurrent.Callable;
 
 public class ListPendingUploadsCommand extends Command
 {
-  private ListeningExecutorService _httpExecutor;
-  private ListeningScheduledExecutorService _executor;
   private PendingUploadsOptions _options;
 
-  public ListPendingUploadsCommand(
-      ListeningExecutorService httpExecutor,
-      ListeningScheduledExecutorService internalExecutor,
-      PendingUploadsOptions options)
+  public ListPendingUploadsCommand(PendingUploadsOptions options)
   {
-    _httpExecutor = httpExecutor;
-    _executor = internalExecutor;
+    super(options);
     _options = options;
   }
 
@@ -31,7 +23,7 @@ public class ListPendingUploadsCommand extends Command
   {
     ListenableFuture<List<Upload>> future =
       executeWithRetry(
-        _executor,
+        _client.getInternalExecutor(),
         new Callable<ListenableFuture<List<Upload>>>()
         {
           public ListenableFuture<List<Upload>> call()
@@ -41,7 +33,7 @@ public class ListPendingUploadsCommand extends Command
 
           public String toString()
           {
-            return "list pending uploads of " + getUri(_options.getBucket(),
+            return "list pending uploads of " + getUri(_options.getBucketName(),
               _options.getObjectKey());
           }
         });
@@ -51,13 +43,13 @@ public class ListPendingUploadsCommand extends Command
 
   private ListenableFuture<List<Upload>> runActual()
   {
-    return _httpExecutor.submit(
+    return _client.getApiExecutor().submit(
       new Callable<List<Upload>>()
       {
         public List<Upload> call()
         {
           ListMultipartUploadsRequest listMultipartUploadsRequest =
-              new ListMultipartUploadsRequest(_options.getBucket());
+              new ListMultipartUploadsRequest(_options.getBucketName());
 
           listMultipartUploadsRequest.setPrefix(_options.getObjectKey());
 
@@ -69,7 +61,7 @@ public class ListPendingUploadsCommand extends Command
           {
             appendMultipartUploadList(uploadsList,
                 multipartUploadListing.getMultipartUploads(),
-                _options.getBucket());
+                _options.getBucketName());
             listMultipartUploadsRequest.setKeyMarker(
                 multipartUploadListing.getNextKeyMarker());
             multipartUploadListing = getAmazonS3Client()
@@ -77,7 +69,7 @@ public class ListPendingUploadsCommand extends Command
           }
           appendMultipartUploadList(uploadsList,
               multipartUploadListing.getMultipartUploads(),
-              _options.getBucket());
+              _options.getBucketName());
 
           return uploadsList;
         }
@@ -104,8 +96,8 @@ public class ListPendingUploadsCommand extends Command
         multipartUpload.getKey(),
         multipartUpload.getUploadId(),
         multipartUpload.getInitiated(),
-        _httpExecutor,
-        (new UploadOptionsBuilder()).createUploadOptions());
+        _client.getApiExecutor(),
+        _client.getOptionsBuilderFactory().newUploadOptionsBuilder().createOptions());
 
     return u;
   }

@@ -1,11 +1,9 @@
 package com.logicblox.s3lib;
 
-import com.google.common.base.Optional;
-
 /**
  * {@code RenameOptions} contains all the details needed by the rename operation.
- * The specified {@code sourceKey}, under {@code sourceBucketName} bucket, is renamed
- * to {@code destinationKey}, under {@code destinationBucketName}.
+ * The specified {@code sourceObjectKey}, under {@code sourceBucketName} bucket, is renamed
+ * to {@code destinationObjectKey}, under {@code destinationBucketName}.
  * <p>
  * If {@code cannedAcl} is specified then it's applied to the destination
  * object.
@@ -13,53 +11,61 @@ import com.google.common.base.Optional;
  * {@code RenameOptions} objects are meant to be built by {@code
  * RenameOptionsBuilder}. This class provides only public getter methods.
  */
-public class RenameOptions
+public class RenameOptions extends CommandOptions
 {
-  private final String _sourceBucket;
-  private final String _sourceKey;
-  private final String _destinationBucket;
-  private final String _destinationKey;
+  private final String _sourceBucketName;
+  private final String _sourceObjectKey;
+  private final String _destinationBucketName;
+  private final String _destinationObjectKey;
   private final boolean _recursive;
   private final boolean _dryRun;
-  private final Optional<String> _cannedAcl;
+  private String _cannedAcl;
+  private boolean _keepAcl;
 
   RenameOptions(
-    String sourceBucket, String sourceKey, String destinationBucket,
-    String destinationKey, Optional<String> cannedAcl, boolean recursive,
+    CloudStoreClient cloudStoreClient, String sourceBucketName, String sourceObjectKey,
+    String destinationBucket, String destinationObjectKey,
+    String cannedAcl, boolean keepAcl, boolean recursive,
     boolean dryRun)
   {
-    _sourceBucket = sourceBucket;
-    _sourceKey = sourceKey;
-    _destinationBucket = destinationBucket;
-    _destinationKey = destinationKey;
+    super(cloudStoreClient);
+    _sourceBucketName = sourceBucketName;
+    _sourceObjectKey = sourceObjectKey;
+    _destinationBucketName = destinationBucket;
+    _destinationObjectKey = destinationObjectKey;
     _recursive = recursive;
     _cannedAcl = cannedAcl;
+    _keepAcl = keepAcl;
     _dryRun = dryRun;
   }
 
-  public String getSourceBucket()
+  public String getSourceBucketName()
   {
-    return _sourceBucket;
+    return _sourceBucketName;
   }
 
-  public String getSourceKey()
+  public String getSourceObjectKey()
   {
-    return _sourceKey;
+    return _sourceObjectKey;
   }
 
-  public String getDestinationBucket()
+  public String getDestinationBucketName()
   {
-    return _destinationBucket;
+    return _destinationBucketName;
   }
 
-  public String getDestinationKey()
+  public String getDestinationObjectKey()
   {
-    return _destinationKey;
+    return _destinationObjectKey;
   }
 
-  public Optional<String> getCannedAcl()
+  public String getCannedAcl()
   {
     return _cannedAcl;
+  }
+
+  public boolean doesKeepAcl() {
+    return _keepAcl;
   }
 
   public boolean isRecursive()

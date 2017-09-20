@@ -2,14 +2,9 @@ package com.logicblox.s3lib;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
-import com.google.common.base.Optional;
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -18,7 +13,6 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
 import java.io.BufferedInputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -37,47 +31,36 @@ import org.apache.commons.codec.digest.DigestUtils;
 public class GCSUploadCommand extends Command {
     private String encKeyName;
     private String encryptedSymmetricKeyString;
-    private String acl;
 
-    private ListeningExecutorService _uploadExecutor;
-    private ListeningScheduledExecutorService _executor;
     private UploadOptions _options;
 
     private String key;
     private String bucket;
 
-    private Optional<OverallProgressListenerFactory> progressListenerFactory;
+    private OverallProgressListenerFactory progressListenerFactory;
     private String pubKeyHash;
 
     
-    public GCSUploadCommand(
-            ListeningExecutorService uploadExecutor,
-            ListeningScheduledExecutorService internalExecutor,
-            KeyProvider encKeyProvider,
-            UploadOptions options,
-            Optional<OverallProgressListenerFactory> progressListenerFactory)
+    public GCSUploadCommand(UploadOptions options)
       throws IOException
     {
-        if (uploadExecutor == null)
-            throw new IllegalArgumentException("non-null upload executor is required");
-        if (internalExecutor == null)
-            throw new IllegalArgumentException("non-null internal executor is required");
-
-        _uploadExecutor = uploadExecutor;
-        _executor = internalExecutor;
+        super(options);
         _options = options;
 
         this.file = _options.getFile();
         setChunkSize(_options.getChunkSize());
         setFileLength(this.file.length());
-        this.encKeyName = _options.getEncKey().orNull();
+        this.encKeyName = _options.getEncKey().orElse(null);
+
+        this.bucket = _options.getBucketName();
+        this.key = _options.getObjectKey();
 
         if (this.encKeyName != null) {
             byte[] encKeyBytes = new byte[32];
             new SecureRandom().nextBytes(encKeyBytes);
             this.encKey = new SecretKeySpec(encKeyBytes, "AES");
             try {
-                Key pubKey = encKeyProvider.getPublicKey(this.encKeyName);
+                Key pubKey = _client.getKeyProvider().getPublicKey(this.encKeyName);
                 this.pubKeyHash = DatatypeConverter.printBase64Binary(
                   DigestUtils.sha256(pubKey.getEncoded()));
                 Cipher cipher = Cipher.getInstance("RSA");
@@ -98,21 +81,17 @@ public class GCSUploadCommand extends Command {
             }
         }
 
-        this.acl = _options.getAcl().or("projectPrivate");
-        this.progressListenerFactory = progressListenerFactory;
+        this.progressListenerFactory = _options.getOverallProgressListenerFactory().orElse(null);
     }
 
     /**
      * Run ties Step 1, Step 2, and Step 3 together. The return result is the ETag of the upload.
      */
-    public ListenableFuture<S3File> run(final String bucket, final String key)
+    public ListenableFuture<S3File> run()
       throws FileNotFoundException
     {
         if (!file.exists())
             throw new FileNotFoundException(file.getPath());
-
-        this.bucket = bucket;
-        this.key = key;
 
         if(_options.isDryRun())
         {
@@ -129,7 +108,7 @@ public class GCSUploadCommand extends Command {
     
     private ListenableFuture<S3File> scheduleExecution()
     {
-        ListenableFuture<Upload> upload = startUpload(bucket, key);
+        ListenableFuture<Upload> upload = startUpload();
         upload = Futures.transform(upload, startPartsAsyncFunction());
         ListenableFuture<String> result = Futures.transform(upload, completeAsyncFunction());
         return Futures.transform(result,
@@ -148,11 +127,11 @@ public class GCSUploadCommand extends Command {
     /**
      * Step 1: Returns a future upload that is internally retried.
      */
-    private ListenableFuture<Upload> startUpload(final String bucket, final String key) {
-        return executeWithRetry(_executor,
+    private ListenableFuture<Upload> startUpload() {
+        return executeWithRetry(_client.getInternalExecutor(),
                 new Callable<ListenableFuture<Upload>>() {
                     public ListenableFuture<Upload> call() {
-                        return startUploadActual(bucket, key);
+                        return startUploadActual();
                     }
 
                     public String toString() {
@@ -161,8 +140,8 @@ public class GCSUploadCommand extends Command {
                 });
     }
 
-    private ListenableFuture<Upload> startUploadActual(final String bucket, final String key) {
-        UploadFactory factory = new GCSUploadFactory(getGCSClient(), _uploadExecutor);
+    private ListenableFuture<Upload> startUploadActual() {
+        UploadFactory factory = new GCSUploadFactory(getGCSClient(), _client.getApiExecutor());
 
         Map<String, String> meta = new HashMap<String, String>();
         meta.put("s3tool-version", String.valueOf(Version.CURRENT));
@@ -175,7 +154,7 @@ public class GCSUploadCommand extends Command {
         meta.put("s3tool-chunk-size", Long.toString(fileLength));
         meta.put("s3tool-file-length", Long.toString(fileLength));
 
-        return factory.startUpload(bucket, key, meta, acl, _options);
+        return factory.startUpload(bucket, key, meta, _options);
     }
 
     /**
@@ -191,8 +170,8 @@ public class GCSUploadCommand extends Command {
 
     private ListenableFuture<Upload> startParts(final Upload upload) {
         OverallProgressListener opl = null;
-        if (progressListenerFactory.isPresent()) {
-            opl = progressListenerFactory.get().create(
+        if (progressListenerFactory != null) {
+            opl = progressListenerFactory.create(
                 new ProgressOptionsBuilder()
                     .setObjectUri(getUri(upload.getBucket(), upload.getKey()))
                     .setOperation("upload")
@@ -212,7 +191,7 @@ public class GCSUploadCommand extends Command {
     private ListenableFuture<Void> startPartUploadThread(final Upload upload,
                                                          final OverallProgressListener opl) {
         ListenableFuture<ListenableFuture<Void>> result =
-            _executor.submit(new Callable<ListenableFuture<Void>>() {
+            _client.getInternalExecutor().submit(new Callable<ListenableFuture<Void>>() {
                 public ListenableFuture<Void> call() throws Exception {
                     return GCSUploadCommand.this.startPartUpload(upload, opl);
                 }
@@ -228,7 +207,7 @@ public class GCSUploadCommand extends Command {
                                                    final OverallProgressListener opl) {
         final int partNumber = 0;
 
-        return executeWithRetry(_executor,
+        return executeWithRetry(_client.getInternalExecutor(),
                 new Callable<ListenableFuture<Void>>() {
                     public ListenableFuture<Void> call() throws Exception {
                         return startPartUploadActual(upload, opl);
@@ -275,8 +254,7 @@ public class GCSUploadCommand extends Command {
             }
         };
 
-        return upload.uploadPart(partNumber, partSize, inputStreamCallable,
-            Optional.fromNullable(opl));
+        return upload.uploadPart(partNumber, partSize, inputStreamCallable, opl);
     }
 
     /**
@@ -294,7 +272,7 @@ public class GCSUploadCommand extends Command {
      * Execute completeActual with retry
      */
     private ListenableFuture<String> complete(final Upload upload, final int retryCount) {
-        return executeWithRetry(_executor,
+        return executeWithRetry(_client.getInternalExecutor(),
                 new Callable<ListenableFuture<String>>() {
                     public ListenableFuture<String> call() {
                         return completeActual(upload, retryCount);

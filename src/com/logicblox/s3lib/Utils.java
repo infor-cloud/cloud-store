@@ -30,12 +30,8 @@ import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.auth.SystemPropertiesCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.AccessControlList;
-import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
-import com.google.api.services.storage.Storage;
-import com.google.api.services.storage.model.StorageObject;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -188,35 +184,16 @@ public class Utils
     return Pattern.compile(pattern).matcher(uri);
   }
 
-  public static boolean isStorageServiceURL(String url)
-  {
-    try
-    {
-      return getURI(url) != null;
-    }
-    catch (URISyntaxException e)
-    {
-      return false;
-    }
-    catch (UsageException e)
-    {
-      return false;
-    }
-  }
 
   /**
-   * Enum values for all supported storage services.
-   * <p>
-   * {@code UNKNOWN} value represents storage services that run on an unknown
-   * endpoint but provide an API compatible with one of the supported services
-   * (e.g. S3 or GCS-compatible API). It's mostly useful for testing purposes.
+   * Enum values for backend storage service.
    */
-  public enum StorageService
+  enum StorageService
   {
     S3, GCS
   }
 
-  public static StorageService detectStorageService(String endpoint, String scheme)
+  static StorageService detectStorageService(String endpoint, String scheme)
       throws URISyntaxException
   {
     // We consider endpoint (if exists) stronger evidence than URI
@@ -247,33 +224,6 @@ public class Utils
 
     throw new UsageException("Cannot detect storage service: (endpoint=" +
         endpoint +  ", scheme=" + scheme + ")");
-  }
-
-  public static String getDefaultCannedACLFor(StorageService service)
-  {
-    switch (service)
-    {
-      case S3:
-        return S3Client.defaultCannedACL;
-      case GCS:
-        return GCSClient.defaultCannedACL;
-      default:
-        throw new UsageException("Unknown storage service " + service);
-    }
-  }
-
-  public static boolean isValidCannedACLFor(StorageService service, String
-      cannedACL)
-  {
-    switch (service)
-    {
-      case S3:
-        return S3Client.isValidCannedACL(cannedACL);
-      case GCS:
-        return GCSClient.isValidCannedACL(cannedACL);
-      default:
-        throw new UsageException("Unknown storage service " + service);
-    }
   }
 
   public static final List<String> defaultCredentialProvidersS3 = Arrays.asList(
@@ -367,19 +317,19 @@ public class Utils
     return path.substring(1);
   }
 
-  public static ListeningExecutorService getHttpExecutor(int nThreads)
+  public static ListeningExecutorService createApiExecutor(int nThreads)
   {
     return MoreExecutors.listeningDecorator(
         Executors.newFixedThreadPool(nThreads));
   }
 
-  public static ListeningScheduledExecutorService getInternalExecutor(int poolSize)
+  public static ListeningScheduledExecutorService createInternalExecutor(int poolSize)
   {
     return MoreExecutors.listeningDecorator(
         Executors.newScheduledThreadPool(poolSize));
   }
 
-  public static KeyProvider getKeyProvider(String encKeyDirectory)
+  public static KeyProvider createKeyProvider(String encKeyDirectory)
   {
     File dir = new File(encKeyDirectory);
     if(!dir.exists() && !dir.mkdirs())
@@ -457,7 +407,7 @@ public class Utils
       throws URISyntaxException, GeneralSecurityException, IOException
   {
     ListeningExecutorService uploadExecutor = 
-      getHttpExecutor(maxConcurrentConnections);
+      createApiExecutor(maxConcurrentConnections);
 
     StorageService service = detectStorageService(endpoint, scheme);
 
@@ -476,7 +426,7 @@ public class Utils
       client = new GCSClientBuilder()
           .setInternalS3Client(s3Client)
           .setApiExecutor(uploadExecutor)
-          .setKeyProvider(getKeyProvider(encKeyDirectory))
+          .setKeyProvider(createKeyProvider(encKeyDirectory))
           .createGCSClient();
     }
     else
@@ -490,7 +440,7 @@ public class Utils
       client = new S3ClientBuilder()
           .setInternalS3Client(s3Client)
           .setApiExecutor(uploadExecutor)
-          .setKeyProvider(getKeyProvider(encKeyDirectory))
+          .setKeyProvider(createKeyProvider(encKeyDirectory))
           .createS3Client();
     }
 
@@ -539,35 +489,6 @@ public class Utils
        }
      }
      return created;
-  }
-
-  // returns null if the store does not support acl (like minio)
-  public static AccessControlList getObjectAcl(
-    AmazonS3Client client, String bucket, String key)
-      throws AmazonS3Exception
-  {
-    AccessControlList acl = null;
-    try
-    {
-      acl = client.getObjectAcl(bucket, key);
-    }
-    catch(AmazonS3Exception ex)
-    {
-      if(!ex.getErrorCode().equalsIgnoreCase("NotImplemented"))
-        throw ex;
-    }
-    return acl;
-  }
-
-  public static void patchMetaData(
-    Storage gcsStorage, String bucket, String key, Map<String,String> userMetadata)
-      throws IOException
-  {
-    StorageObject sobj = new StorageObject()
-      .setName(key)
-      .setMetadata(userMetadata);
-    Storage.Objects.Patch cmd = gcsStorage.objects().patch(bucket, key, sobj);
-    cmd.execute();
   }
 
   protected static void print(ObjectMetadata m)

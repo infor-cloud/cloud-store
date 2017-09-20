@@ -1,5 +1,7 @@
 package com.logicblox.s3lib;
 
+import com.amazonaws.services.s3.model.ObjectMetadata;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -294,14 +296,15 @@ public class TestUtils
     if(SKIP_CLEANUP)
       return;
       
-    ListOptionsBuilder builder = new ListOptionsBuilder()
-      .setBucket(bucket)
+    ListOptionsBuilder builder = _client.getOptionsBuilderFactory()
+      .newListOptionsBuilder()
+      .setBucketName(bucket)
       .setRecursive(true)
       .setIncludeVersions(false)
       .setExcludeDirs(false);
     if((null != prefix) && !prefix.isEmpty())
       builder.setObjectKey(prefix);
-    ListOptions lsOpts = builder.createListOptions();
+    ListOptions lsOpts = builder.createOptions();
     List<S3File> objs = _client.listObjects(lsOpts).get();
     for(S3File f : objs)
       deleteObject(bucket, f.getKey());
@@ -310,23 +313,24 @@ public class TestUtils
   public static S3File deleteObject(String bucket, String key)
     throws InterruptedException, ExecutionException
   {
-    DeleteOptions opts = new DeleteOptionsBuilder()
-      .setBucket(bucket)
+    DeleteOptions opts = _client.getOptionsBuilderFactory()
+      .newDeleteOptionsBuilder()
+      .setBucketName(bucket)
       .setObjectKey(key)
-      .createDeleteOptions();
+      .createOptions();
     return _client.delete(opts).get();
   }
 
   public static S3File deleteObject(URI uri)
     throws InterruptedException, ExecutionException
   {
-    DeleteOptions opts = new DeleteOptionsBuilder()
-      .setBucket(Utils.getBucket(uri))
+    DeleteOptions opts = _client.getOptionsBuilderFactory()
+      .newDeleteOptionsBuilder()
+      .setBucketName(Utils.getBucket(uri))
       .setObjectKey(Utils.getObjectKey(uri))
-      .createDeleteOptions();
+      .createOptions();
     return _client.delete(opts).get();
   }
-
   
   public static boolean findObject(List<S3File> objs, String key)
   {
@@ -338,19 +342,32 @@ public class TestUtils
     return false;
   }
 
+  public static ObjectMetadata objectExists(String bucket, String key)
+    throws ExecutionException, InterruptedException
+  {
+    ExistsOptions opts = _client.getOptionsBuilderFactory()
+      .newExistsOptionsBuilder()
+      .setBucketName(bucket)
+      .setObjectKey(key)
+      .createOptions();
+
+    return _client.exists(opts).get();
+  }
+
 
   public static S3File updateObjectUserMetadata(String bucket, String key,
                                                 Map<String,String> userMetadata)
     throws InterruptedException, ExecutionException
   {
-    CopyOptions options = new CopyOptionsBuilder()
+    CopyOptions options = _client.getOptionsBuilderFactory()
+      .newCopyOptionsBuilder()
       .setSourceBucketName(bucket)
-      .setSourceKey(key)
+      .setSourceObjectKey(key)
       .setDestinationBucketName(bucket)
-      .setDestinationKey(key)
+      .setDestinationObjectKey(key)
       // .setS3Acl(acl)
       .setUserMetadata(userMetadata)
-      .createCopyOptions();
+      .createOptions();
 
     return _client.copy(options).get();
   }
@@ -359,11 +376,12 @@ public class TestUtils
   public static S3File uploadFile(File src, URI dest)
     throws Throwable
   {
-    UploadOptions upOpts = new UploadOptionsBuilder()
+    UploadOptions upOpts = _client.getOptionsBuilderFactory()
+      .newUploadOptionsBuilder()
       .setFile(src)
-      .setBucket(Utils.getBucket(dest))
+      .setBucketName(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
-      .createUploadOptions();
+      .createOptions();
     return _client.upload(upOpts).get();
   }
 
@@ -371,12 +389,13 @@ public class TestUtils
   public static S3File uploadEncryptedFile(File src, URI dest, String keyName)
       throws Throwable
   {
-    UploadOptions upOpts = new UploadOptionsBuilder()
+    UploadOptions upOpts = _client.getOptionsBuilderFactory()
+      .newUploadOptionsBuilder()
       .setFile(src)
-      .setBucket(Utils.getBucket(dest))
+      .setBucketName(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .setEncKey(keyName)
-      .createUploadOptions();
+      .createOptions();
     return _client.upload(upOpts).get();
   }
 
@@ -384,11 +403,12 @@ public class TestUtils
   public static List<S3File> uploadDir(File src, URI dest)
     throws Throwable
   {
-    UploadOptions upOpts = new UploadOptionsBuilder()
+    UploadOptions upOpts = _client.getOptionsBuilderFactory()
+      .newUploadOptionsBuilder()
       .setFile(src)
-      .setBucket(Utils.getBucket(dest))
+      .setBucketName(Utils.getBucket(dest))
       .setObjectKey(Utils.getObjectKey(dest))
-      .createUploadOptions();
+      .createOptions();
     return _client.uploadDirectory(upOpts).get();
   }
 
@@ -404,13 +424,14 @@ public class TestUtils
       throws Throwable
   {
 
-    DownloadOptions dlOpts = new DownloadOptionsBuilder()
+    DownloadOptions dlOpts = _client.getOptionsBuilderFactory()
+      .newDownloadOptionsBuilder()
       .setFile(dest)
-      .setBucket(Utils.getBucket(src))
+      .setBucketName(Utils.getBucket(src))
       .setObjectKey(Utils.getObjectKey(src))
       .setRecursive(false)
       .setOverwrite(overwrite)
-      .createDownloadOptions();
+      .createOptions();
     return _client.download(dlOpts).get();
   }
 
@@ -418,13 +439,14 @@ public class TestUtils
   public static List<S3File> downloadDir(URI src, File dest, boolean recursive)
       throws Throwable
   {
-    DownloadOptions dlOpts = new DownloadOptionsBuilder()
+    DownloadOptions dlOpts = _client.getOptionsBuilderFactory()
+      .newDownloadOptionsBuilder()
       .setFile(dest)
-      .setBucket(Utils.getBucket(src))
+      .setBucketName(Utils.getBucket(src))
       .setObjectKey(Utils.getObjectKey(src))
       .setRecursive(recursive)
       .setOverwrite(true)
-      .createDownloadOptions();
+      .createOptions();
     return _client.downloadDirectory(dlOpts).get();
   }
 
@@ -432,13 +454,14 @@ public class TestUtils
   public static List<S3File> downloadDir(URI src, File dest, boolean recursive, boolean overwrite)
       throws Throwable
   {
-    DownloadOptions dlOpts = new DownloadOptionsBuilder()
+    DownloadOptions dlOpts = _client.getOptionsBuilderFactory()
+      .newDownloadOptionsBuilder()
       .setFile(dest)
-      .setBucket(Utils.getBucket(src))
+      .setBucketName(Utils.getBucket(src))
       .setObjectKey(Utils.getObjectKey(src))
       .setRecursive(recursive)
       .setOverwrite(overwrite)
-      .createDownloadOptions();
+      .createOptions();
     return _client.downloadDirectory(dlOpts).get();
   }
 
@@ -460,14 +483,15 @@ public class TestUtils
   public static List<S3File> listObjects(String bucket, String key)
     throws Throwable
   {
-    ListOptionsBuilder builder = new ListOptionsBuilder()
-      .setBucket(bucket)
+    ListOptionsBuilder builder = _client.getOptionsBuilderFactory()
+      .newListOptionsBuilder()
+      .setBucketName(bucket)
       .setRecursive(true)
       .setIncludeVersions(false)
       .setExcludeDirs(false);
     if(null != key)
       builder.setObjectKey(key);
-    ListOptions lsOpts = builder.createListOptions();
+    ListOptions lsOpts = builder.createOptions();
     return _client.listObjects(lsOpts).get();
   }
 
@@ -667,17 +691,18 @@ public class TestUtils
   {
     Class cls = _client.getClass();
     Method meth = cls.getDeclaredMethod("setKeyProvider", KeyProvider.class);
-    meth.invoke(_client, Utils.getKeyProvider(keydir.getAbsolutePath()));
+    meth.invoke(_client, Utils.createKeyProvider(keydir.getAbsolutePath()));
   }
 
   public static EncryptionKeyOptions buildEncryptionKeyOptions(
     String bucket, String objectKey, String encryptionKey)
   {
-    EncryptionKeyOptions options = new EncryptionKeyOptionsBuilder()
-      .setBucket(bucket)
+    EncryptionKeyOptions options = _client.getOptionsBuilderFactory()
+      .newEncryptionKeyOptionsBuilder()
+      .setBucketName(bucket)
       .setObjectKey(objectKey)
       .setEncryptionKey(encryptionKey)
-      .createEncryptionKeyOptions();
+      .createOptions();
 
     return options;
   }
@@ -829,14 +854,15 @@ public class TestUtils
 
       String key = Utils.getObjectKey(destUri) + "/";
       String bucket = Utils.getBucket(destUri);
-      ListOptionsBuilder builder = new ListOptionsBuilder()
-        .setBucket(bucket)
+      ListOptionsBuilder builder = _client.getOptionsBuilderFactory()
+        .newListOptionsBuilder()
+        .setBucketName(bucket)
         .setRecursive(false)
         .setIncludeVersions(false)
         .setExcludeDirs(false)
         .setObjectKey(key);
       List<S3File> matches =
-        client.listObjects(builder.createListOptions()).get();
+        client.listObjects(builder.createOptions()).get();
       boolean found = false;
       for(S3File f : matches)
       {

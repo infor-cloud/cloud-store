@@ -17,7 +17,6 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.ExecutionException;
 
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.BadPaddingException;
@@ -29,50 +28,35 @@ import javax.xml.bind.DatatypeConverter;
 import org.apache.commons.codec.digest.DigestUtils;
 
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.google.common.base.Optional;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.FutureFallback;
 
 public class DownloadCommand extends Command
 {
-  private CloudStoreClient _client;
-  private ListeningExecutorService _downloadExecutor;
-  private ListeningScheduledExecutorService _executor;
+  private DownloadOptions _options;
   private KeyProvider _encKeyProvider;
   private boolean _dryRun;
-  private ConcurrentMap<Integer, byte[]> etags = new ConcurrentSkipListMap<Integer, byte[]>();
-  private Optional<OverallProgressListenerFactory> progressListenerFactory;
+  private ConcurrentMap<Integer, byte[]> etags = new ConcurrentSkipListMap<>();
+  private OverallProgressListenerFactory progressListenerFactory;
 
-  public DownloadCommand(
-    CloudStoreClient client,
-    ListeningExecutorService downloadExecutor,
-    ListeningScheduledExecutorService internalExecutor,
-    File file,
-    boolean overwrite,
-    KeyProvider encKeyProvider,
-    boolean dryRun,
-    OverallProgressListenerFactory progressListenerFactory)
+  public DownloadCommand(DownloadOptions options)
       throws IOException
   {
-    _client = client;
-    _downloadExecutor = downloadExecutor;
-    _executor = internalExecutor;
-    _encKeyProvider = encKeyProvider;
-    _dryRun = dryRun;
+    super(options);
+    _options = options;
+    _encKeyProvider = _client.getKeyProvider();
+    _dryRun = _options.isDryRun();
 
-    this.file = file;
-    createNewFile(overwrite);
-    this.progressListenerFactory = Optional.fromNullable
-        (progressListenerFactory);
+    this.file = _options.getFile();
+    createNewFile();
+    this.progressListenerFactory = _options.getOverallProgressListenerFactory().orElse(null);
   }
 
-  private void createNewFile(boolean overwrite) throws IOException
+  private void createNewFile() throws IOException
   {
     file = file.getAbsoluteFile();
     File dir = file.getParentFile();
@@ -89,7 +73,7 @@ public class DownloadCommand extends Command
 
     if(file.exists())
     {
-      if(overwrite)
+      if(_options.doesOverwrite())
       {
         if(_dryRun)
         {
@@ -116,16 +100,23 @@ public class DownloadCommand extends Command
   }
 
   
-  public ListenableFuture<S3File> run(String bucket, String key, String version)
+  public ListenableFuture<S3File> run()
   {
     if(_dryRun)
     {
-      System.out.println("<DRYRUN> downloading '" + getUri(bucket, key)
+      System.out.println("<DRYRUN> downloading '" + getUri(
+        _options.getBucketName(), _options.getObjectKey())
         + "' to '" + this.file.getAbsolutePath() + "'");
       return Futures.immediateFuture(null);
     }
 
-    ListenableFuture<ObjectMetadata> existsFuture = _client.exists(bucket, key);
+    ExistsOptions opts = _client.getOptionsBuilderFactory()
+      .newExistsOptionsBuilder()
+      .setBucketName(_options.getBucketName())
+      .setObjectKey(_options.getObjectKey())
+      .createOptions();
+
+    ListenableFuture<ObjectMetadata> existsFuture = _client.exists(opts);
     ListenableFuture<S3File> result = Futures.transform(
       existsFuture,
       new AsyncFunction<ObjectMetadata,S3File>()
@@ -134,8 +125,9 @@ public class DownloadCommand extends Command
           throws UsageException
         {
           if(null == mdata)
-              throw new UsageException("Object not found at " + getUri(bucket, key));
-          return scheduleExecution(bucket, key, version);
+              throw new UsageException("Object not found at " + getUri(
+                _options.getBucketName(), _options.getObjectKey()));
+          return scheduleExecution();
         }
       });
 
@@ -143,10 +135,9 @@ public class DownloadCommand extends Command
   }
 
 
-  private ListenableFuture<S3File> scheduleExecution(
-    final String bucket, final String key, final String version)
+  private ListenableFuture<S3File> scheduleExecution()
   {
-    ListenableFuture<AmazonDownload> download = startDownload(bucket, key, version);
+    ListenableFuture<AmazonDownload> download = startDownload();
     download = Futures.transform(download, startPartsAsyncFunction());
     download = Futures.transform(download, validate());
     ListenableFuture<S3File> res = Futures.transform(
@@ -158,8 +149,8 @@ public class DownloadCommand extends Command
           S3File f = new S3File();
           f.setLocalFile(DownloadCommand.this.file);
           f.setETag(download.getETag());
-          f.setBucketName(bucket);
-          f.setKey(key);
+          f.setBucketName(_options.getBucketName());
+          f.setKey(_options.getObjectKey());
           return f;
         }
       }
@@ -178,7 +169,7 @@ public class DownloadCommand extends Command
             return Futures.immediateFailedFuture(t);
           }
           return Futures.immediateFailedFuture(new Exception("Error " +
-              "downloading " + getUri(bucket, key) + ".", t));
+                                                             "downloading " + getUri(_options.getBucketName(), _options.getObjectKey()) + ".", t));
         }
       });
   }
@@ -186,31 +177,32 @@ public class DownloadCommand extends Command
   /**
    * Step 1: Start download and fetch metadata.
    */
-  private ListenableFuture<AmazonDownload> startDownload(final String bucket, final String key, final String version )
+  private ListenableFuture<AmazonDownload> startDownload()
   {
     return executeWithRetry(
-      _executor,
+      _client.getInternalExecutor(),
       new Callable<ListenableFuture<AmazonDownload>>()
       {
         public ListenableFuture<AmazonDownload> call()
         {
-          return startDownloadActual(bucket, key, version);
+          return startDownloadActual();
         }
 
         public String toString()
         {
-          String toStringOutput = "starting download " + bucket + "/" + key;
-          if (version != null) {
-            return toStringOutput + " version id = " + version;
+          String toStringOutput = "starting download " + _options.getBucketName() +
+                                  "/" + _options.getObjectKey();
+          if (_options.getVersion().isPresent()) {
+            return toStringOutput + " version id = " + _options.getVersion().get();
           }
           return toStringOutput;
         }
       });
   }
 
-  private ListenableFuture<AmazonDownload> startDownloadActual(final String bucket, final String key, final String version)
+  private ListenableFuture<AmazonDownload> startDownloadActual()
   {
-    AmazonDownloadFactory factory = new AmazonDownloadFactory(getAmazonS3Client(), _downloadExecutor);
+    AmazonDownloadFactory factory = new AmazonDownloadFactory(getAmazonS3Client(), _client.getApiExecutor());
 
     AsyncFunction<AmazonDownload, AmazonDownload> initDownload = new AsyncFunction<AmazonDownload, AmazonDownload>()
     {
@@ -379,7 +371,9 @@ public class DownloadCommand extends Command
       }
     };
 
-    return Futures.transform(factory.startDownload(bucket, key, version), initDownload);
+    return Futures.transform(factory.startDownload(
+      _options.getBucketName(), _options.getObjectKey(), _options.getVersion()
+        .orElse(null)), initDownload);
   }
 
   /**
@@ -400,8 +394,8 @@ public class DownloadCommand extends Command
   throws IOException, UsageException
   {
     OverallProgressListener opl = null;
-    if (progressListenerFactory.isPresent()) {
-      opl = progressListenerFactory.get().create(
+    if (progressListenerFactory != null) {
+      opl = progressListenerFactory.create(
           new ProgressOptionsBuilder()
               .setObjectUri(getUri(download.getBucket(), download.getKey()))
               .setOperation("download")
@@ -428,7 +422,7 @@ public class DownloadCommand extends Command
     final int partNumber = (int) (position / chunkSize);
 
     return executeWithRetry(
-      _executor,
+      _client.getInternalExecutor(),
       new Callable<ListenableFuture<Integer>>()
       {
         public ListenableFuture<Integer> call()
@@ -478,7 +472,7 @@ public class DownloadCommand extends Command
     }
 
     ListenableFuture<InputStream> getPartFuture = download.getPart(start,
-        start + partSize - 1, Optional.fromNullable(opl));
+        start + partSize - 1, opl);
 
     AsyncFunction<InputStream, Integer> readDownloadFunction = new AsyncFunction<InputStream, Integer>()
     {
@@ -615,7 +609,7 @@ public class DownloadCommand extends Command
   private ListenableFuture<AmazonDownload> validateChecksum(final AmazonDownload download)
   {
     ListenableFuture<AmazonDownload> result =
-        _executor.submit(new Callable<AmazonDownload>()
+        _client.getInternalExecutor().submit(new Callable<AmazonDownload>()
         {
           public AmazonDownload call() throws Exception
           {

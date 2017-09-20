@@ -1,15 +1,13 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.services.s3.model.AccessControlList;
-import com.google.common.base.Optional;
 import java.util.Map;
-
+import java.util.Optional;
 
 /**
  * {@code CopyOptions} contains all the details needed by the copy operation.
- * The specified {@code sourceKey}, under {@code sourceBucketName} bucket, is
+ * The specified {@code sourceObjectKey}, under {@code sourceBucketName} bucket, is
  * copied
- * to {@code destinationKey}, under {@code destinationBucketName}.
+ * to {@code destinationObjectKey}, under {@code destinationBucketName}.
  * <p>
  * If {@code cannedAcl} is specified then it's applied to the destination
  * object.
@@ -20,47 +18,46 @@ import java.util.Map;
  * {@code CopyOptions} objects are meant to be built by {@code
  * CopyOptionsBuilder}. This class provides only public getter methods.
  */
-public class CopyOptions {
+public class CopyOptions extends CommandOptions {
     private final String sourceBucketName;
-    private final String sourceKey;
+    private final String sourceObjectKey;
     private final String destinationBucketName;
-    private final String destinationKey;
+    private final String destinationObjectKey;
     private final boolean recursive;
     private final boolean dryRun;
     private final boolean ignoreAbortInjection;
-    // TODO(geo): Revise use of Optionals. E.g. it's not a good idea to use them
-    // as fields.
-    private final Optional<String> cannedAcl;
-    private final Optional<AccessControlList> s3Acl;
+    private String cannedAcl;
+    private boolean keepAcl;
     private final String storageClass;
-    private final Optional<Map<String,String>> userMetadata;
-    private final Optional<OverallProgressListenerFactory>
+    private final Map<String,String> userMetadata;
+    private final OverallProgressListenerFactory
         overallProgressListenerFactory;
 
     // for testing injection of aborts during a copy
     private static AbortCounters _abortCounters = new AbortCounters();
 
 
-    CopyOptions(String sourceBucketName,
-                String sourceKey,
+    CopyOptions(CloudStoreClient cloudStoreClient,
+                String sourceBucketName,
+                String sourceObjectKey,
                 String destinationBucketName,
-                String destinationKey,
-                Optional<String> cannedAcl,
-                Optional<AccessControlList> s3Acl,
+                String destinationObjectKey,
+                String cannedAcl,
+                boolean keepAcl,
                 String storageClass,
                 boolean recursive,
                 boolean dryRun,
                 boolean ignoreAbortInjection,
-                Optional<Map<String,String>> userMetadata,
-                Optional<OverallProgressListenerFactory>
-                    overallProgressListenerFactory) {
+                Map<String,String> userMetadata,
+                OverallProgressListenerFactory overallProgressListenerFactory) {
+        super(cloudStoreClient);
         this.sourceBucketName = sourceBucketName;
-        this.sourceKey = sourceKey;
+        this.sourceObjectKey = sourceObjectKey;
         this.destinationBucketName = destinationBucketName;
-        this.destinationKey = destinationKey;
+        this.destinationObjectKey = destinationObjectKey;
         this.recursive = recursive;
         this.cannedAcl = cannedAcl;
-        this.s3Acl = s3Acl;
+        this.keepAcl = keepAcl;
         this.storageClass = storageClass;
         this.dryRun = dryRun;
         this.ignoreAbortInjection = ignoreAbortInjection;
@@ -83,33 +80,32 @@ public class CopyOptions {
       return _abortCounters;
     }
 
-
     public String getSourceBucketName() {
         return sourceBucketName;
     }
 
-    public String getSourceKey() {
-        return sourceKey;
+    public String getSourceObjectKey() {
+        return sourceObjectKey;
     }
 
     public String getDestinationBucketName() {
         return destinationBucketName;
     }
 
-    public String getDestinationKey() {
-        return destinationKey;
+    public String getDestinationObjectKey() {
+        return destinationObjectKey;
     }
 
-    public Optional<String> getCannedAcl() {
+    public String getCannedAcl() {
         return cannedAcl;
     }
 
-    public Optional<String> getStorageClass() {
-        return Optional.fromNullable(storageClass);
+    public boolean doesKeepAcl() {
+        return keepAcl;
     }
 
-    public Optional<AccessControlList> getS3Acl() {
-        return s3Acl;
+    public Optional<String> getStorageClass() {
+        return Optional.ofNullable(storageClass);
     }
 
     public boolean isRecursive() {
@@ -121,11 +117,11 @@ public class CopyOptions {
     }
 
     public Optional<Map<String,String>> getUserMetadata() {
-        return userMetadata;
+        return Optional.ofNullable(userMetadata);
     }
 
     public Optional<OverallProgressListenerFactory>
     getOverallProgressListenerFactory() {
-        return overallProgressListenerFactory;
+        return Optional.ofNullable(overallProgressListenerFactory);
     }
 }

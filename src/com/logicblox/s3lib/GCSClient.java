@@ -4,15 +4,15 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.api.services.storage.Storage;
-import com.google.common.base.Optional;
+import com.google.api.services.storage.model.StorageObject;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 
@@ -33,6 +33,8 @@ public class GCSClient implements CloudStoreClient {
 
     private final Storage gcsClient;
     private final S3ClientDelegatee s3Client;
+    private final GCSAclHandler _aclHandler;
+    private final GCSStorageClassHandler _storageClassHandler;
 
     /**
      * @param internalGCSClient Low-level GCS-client
@@ -51,32 +53,25 @@ public class GCSClient implements CloudStoreClient {
             internalExecutor, keyProvider);
         gcsClient = internalGCSClient;
         setEndpoint(GCS_XML_API_ENDPOINT);
+        _aclHandler = new GCSAclHandler();
+        _storageClassHandler = new GCSStorageClassHandler();
     }
 
     /**
      * Canned ACLs handling
      */
-
-    public static final String defaultCannedACL = "projectPrivate";
-
-    public static final List<String> allCannedACLs = Arrays.asList(
+    public static final List<String> ALL_CANNED_ACLS = Arrays.asList(
         "projectPrivate", "private", "publicRead", "publicReadWrite",
         "authenticatedRead", "bucketOwnerRead", "bucketOwnerFullControl");
 
     /**
-     * {@code cannedACLsDescConst} has to be a compile-time String constant
-     * expression. That's why e.g. we cannot re-use {@code allCannedACLs} to
+     * {@code CANNED_ACLS_DESC_CONST} has to be a compile-time String constant
+     * expression. That's why e.g. we cannot re-use {@code ALL_CANNED_ACLS} to
      * construct it.
      */
-    static final String cannedACLsDescConst = "For Google Cloud Storage, " +
+    static final String CANNED_ACLS_DESC_CONST = "For Google Cloud Storage, " +
         "choose one of: projectPrivate, private, publicRead, publicReadWrite," +
-        " authenticatedRead,bucketOwnerRead, bucketOwnerFullControl (default:" +
-        " projectPrivate).";
-
-    public static boolean isValidCannedACL(String aclStr)
-    {
-        return allCannedACLs.contains(aclStr);
-    }
+        " authenticatedRead, bucketOwnerRead, bucketOwnerFullControl.";
 
     @Override
     public void setRetryCount(int retryCount) {
@@ -97,6 +92,53 @@ public class GCSClient implements CloudStoreClient {
     public String getScheme()
     {
         return "gs";
+    }
+
+    @Override
+    public ListeningExecutorService getApiExecutor()
+    {
+        return s3Client.getApiExecutor();
+    }
+
+    @Override
+    public ListeningScheduledExecutorService getInternalExecutor()
+    {
+        return s3Client.getInternalExecutor();
+    }
+
+  @Override
+  public OptionsBuilderFactory getOptionsBuilderFactory()
+  {
+    return new OptionsBuilderFactory(this);
+  }
+
+  @Override
+    public KeyProvider getKeyProvider()
+    {
+        return s3Client.getKeyProvider();
+    }
+
+    @Override
+    public AclHandler getAclHandler()
+    {
+        return _aclHandler;
+    }
+
+    @Override
+    public StorageClassHandler getStorageClassHandler()
+    {
+        return _storageClassHandler;
+    }
+
+    static void patchMetaData(Storage gcsStorage, String bucket, String key,
+      Map<String, String> userMetadata)
+    throws IOException
+    {
+        StorageObject sobj = new StorageObject()
+          .setName(key)
+          .setMetadata(userMetadata);
+        Storage.Objects.Patch cmd = gcsStorage.objects().patch(bucket, key, sobj);
+        cmd.execute();
     }
 
     @Override
@@ -132,9 +174,8 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public ListenableFuture<ObjectMetadata> exists(String bucket, String
-        object) {
-        return s3Client.exists(bucket, object);
+    public ListenableFuture<ObjectMetadata> exists(ExistsOptions options) {
+        return s3Client.exists(options);
     }
 
     @Override
@@ -238,14 +279,9 @@ public class GCSClient implements CloudStoreClient {
         @Override
         public ListenableFuture<S3File> upload(UploadOptions options)
             throws IOException {
-            Optional<OverallProgressListenerFactory> progressListenerFactory =
-                options.getOverallProgressListenerFactory();
-
-            GCSUploadCommand cmd =
-                new GCSUploadCommand(_s3Executor, _executor, _keyProvider, options,
-                    progressListenerFactory);
+            GCSUploadCommand cmd = new GCSUploadCommand(options);
             s3Client.configure(cmd);
-            return cmd.run(options.getBucket(), options.getObjectKey());
+            return cmd.run();
         }
 
         /**
@@ -256,62 +292,50 @@ public class GCSClient implements CloudStoreClient {
         @Override
         public ListenableFuture<List<S3File>> uploadDirectory(UploadOptions options)
             throws IOException, ExecutionException, InterruptedException {
-            File directory = options.getFile();
-            String bucket = options.getBucket();
-            String object = options.getObjectKey();
-            long chunkSize = options.getChunkSize();
-            String encKey = options.getEncKey().orNull();
-            String acl = options.getAcl().or(GCSClient.defaultCannedACL);
-            boolean dryRun = options.isDryRun();
-            OverallProgressListenerFactory progressListenerFactory = options
-                .getOverallProgressListenerFactory().orNull();
-
-            UploadDirectoryCommand cmd = new UploadDirectoryCommand(_s3Executor,
-                _executor, this);
+            UploadDirectoryCommand cmd = new UploadDirectoryCommand(options);
             s3Client.configure(cmd);
-            return cmd.run(directory, bucket, object, chunkSize, encKey, acl, dryRun,
-                progressListenerFactory);
+            return cmd.run();
         }
 
         @Override
-        public ListenableFuture<List<S3File>> listObjects(ListOptions lsOptions)
+        public ListenableFuture<List<S3File>> listObjects(ListOptions options)
         {
-          GCSListCommand cmd = new GCSListCommand(_s3Executor, _executor);
+          GCSListCommand cmd = new GCSListCommand(options);
           configure(cmd);
-          return cmd.run(lsOptions);
+          return cmd.run();
         }
 
         @Override
         public ListenableFuture<S3File> copy(CopyOptions options)
         {
-          GCSCopyCommand cmd = new GCSCopyCommand(_s3Executor, _executor);
+          GCSCopyCommand cmd = new GCSCopyCommand(options);
           configure(cmd);
-          return cmd.run(options);
+          return cmd.run();
         }
 
         @Override
         public ListenableFuture<List<S3File>> copyToDir(CopyOptions options)
           throws IOException
         {
-          GCSCopyDirCommand cmd = new GCSCopyDirCommand(_s3Executor, _executor);
+          GCSCopyDirCommand cmd = new GCSCopyDirCommand(options);
           configure(cmd);
-          return cmd.run(options);
+          return cmd.run();
         }
 
         @Override
-        protected AddEncryptionKeyCommand createAddKeyCommand(String key)
+        protected AddEncryptionKeyCommand createAddKeyCommand(EncryptionKeyOptions options)
             throws IOException
         {
-           AddEncryptionKeyCommand cmd = super.createAddKeyCommand(key);
+           AddEncryptionKeyCommand cmd = super.createAddKeyCommand(options);
            configure(cmd);
            return cmd;
         }
 
         @Override
-        protected RemoveEncryptionKeyCommand createRemoveKeyCommand(String key)
+        protected RemoveEncryptionKeyCommand createRemoveKeyCommand(EncryptionKeyOptions options)
             throws IOException
         {
-           RemoveEncryptionKeyCommand cmd = super.createRemoveKeyCommand(key);
+           RemoveEncryptionKeyCommand cmd = super.createRemoveKeyCommand(options);
            configure(cmd);
            return cmd;
         }

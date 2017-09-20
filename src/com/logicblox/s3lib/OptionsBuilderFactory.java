@@ -1,6 +1,6 @@
 package com.logicblox.s3lib;
 
-class OptionsBuilderFactory
+public class OptionsBuilderFactory
 {
   private final CloudStoreClient _client;
 
@@ -9,47 +9,47 @@ class OptionsBuilderFactory
     _client = client;
   }
 
-  CopyOptionsBuilder newCopyOptionsBuilder()
+  public CopyOptionsBuilder newCopyOptionsBuilder()
   {
     return new CopyOptionsBuilder(_client);
   }
 
-  DeleteOptionsBuilder newDeleteOptionsBuilder()
+  public DeleteOptionsBuilder newDeleteOptionsBuilder()
   {
     return new DeleteOptionsBuilder(_client);
   }
 
-  DownloadOptionsBuilder newDownloadOptionsBuilder()
+  public DownloadOptionsBuilder newDownloadOptionsBuilder()
   {
     return new DownloadOptionsBuilder(_client);
   }
 
-  EncryptionKeyOptionsBuilder newEncryptionKeyOptionsBuilder()
+  public EncryptionKeyOptionsBuilder newEncryptionKeyOptionsBuilder()
   {
     return new EncryptionKeyOptionsBuilder(_client);
   }
 
-  ExistsOptionsBuilder newExistsOptionsBuilder()
+  public ExistsOptionsBuilder newExistsOptionsBuilder()
   {
     return new ExistsOptionsBuilder(_client);
   }
 
-  ListOptionsBuilder newListOptionsBuilder()
+  public ListOptionsBuilder newListOptionsBuilder()
   {
     return new ListOptionsBuilder(_client);
   }
 
-  PendingUploadsOptionsBuilder newPendingUploadsOptionsBuilder()
+  public PendingUploadsOptionsBuilder newPendingUploadsOptionsBuilder()
   {
     return new PendingUploadsOptionsBuilder(_client);
   }
 
-  RenameOptionsBuilder newRenameOptionsBuilder()
+  public RenameOptionsBuilder newRenameOptionsBuilder()
   {
     return new RenameOptionsBuilder(_client);
   }
 
-  UploadOptionsBuilder newUploadOptionsBuilder()
+  public UploadOptionsBuilder newUploadOptionsBuilder()
   {
     return new UploadOptionsBuilder(_client);
   }

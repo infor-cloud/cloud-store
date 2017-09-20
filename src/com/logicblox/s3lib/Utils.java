@@ -115,6 +115,22 @@ public class Utils
     return 10;
   }
 
+  public static boolean isStorageServiceURL(String url)
+  {
+    try
+    {
+      return getURI(url) != null;
+    }
+    catch (URISyntaxException e)
+    {
+      return false;
+    }
+    catch (UsageException e)
+    {
+      return false;
+    }
+  }
+
   public static URI getURI(String s) throws URISyntaxException
   {
     URI uri = new URI(s);

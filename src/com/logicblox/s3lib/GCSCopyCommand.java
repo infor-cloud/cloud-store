@@ -80,10 +80,14 @@ public class GCSCopyCommand extends Command
 
           objectMetadata = new StorageObject()
             .setMetadata(ImmutableMap.copyOf(userMetadata))
-            .setContentType(sourceObject.getContentType())
-            .setAcl(sourceObject.getAcl());
+            .setContentType(sourceObject.getContentType());
             // .setContentDisposition(sourceObject.getContentDisposition())
             // other metadata to be set?
+
+          if (_options.doesKeepAcl())
+          {
+            objectMetadata.setAcl(sourceObject.getAcl());
+          }
         }
 
         Storage.Objects.Copy cmd = getGCSClient().objects().copy(
@@ -91,7 +95,10 @@ public class GCSCopyCommand extends Command
           _options.getDestinationBucketName(), _options.getDestinationObjectKey(),
           objectMetadata);
 
-        _options.getCannedAcl().ifPresent(ca -> cmd.setDestinationPredefinedAcl(ca));
+        if (!_options.doesKeepAcl())
+        {
+            cmd.setDestinationPredefinedAcl(_options.getCannedAcl());
+        }
 
         StorageObject resp = cmd.execute();
         return createS3File(resp, false);

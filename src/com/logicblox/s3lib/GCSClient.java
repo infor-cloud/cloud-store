@@ -33,6 +33,8 @@ public class GCSClient implements CloudStoreClient {
 
     private final Storage gcsClient;
     private final S3ClientDelegatee s3Client;
+    private final GCSAclHandler _aclHandler;
+    private final GCSStorageClassHandler _storageClassHandler;
 
     /**
      * @param internalGCSClient Low-level GCS-client
@@ -51,6 +53,8 @@ public class GCSClient implements CloudStoreClient {
             internalExecutor, keyProvider);
         gcsClient = internalGCSClient;
         setEndpoint(GCS_XML_API_ENDPOINT);
+        _aclHandler = new GCSAclHandler();
+        _storageClassHandler = new GCSStorageClassHandler();
     }
 
     /**
@@ -109,17 +113,15 @@ public class GCSClient implements CloudStoreClient {
     }
 
     @Override
-    public boolean isCannedAclValid(String cannedAcl)
+    public AclHandler getAclHandler()
     {
-        return ALL_CANNED_ACLS.contains(cannedAcl);
+        return _aclHandler;
     }
 
     @Override
-    public boolean isStorageClassValid(String storageClass)
+    public StorageClassHandler getStorageClassHandler()
     {
-        // TODO: GCS does support something similar. Add support.
-        throw new UsageException("Storage classes are not supported " +
-                                 "on GCS currently.");
+        return _storageClassHandler;
     }
 
     static void patchMetaData(Storage gcsStorage, String bucket, String key,

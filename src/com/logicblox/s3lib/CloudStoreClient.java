@@ -63,9 +63,9 @@ public interface CloudStoreClient {
      */
     KeyProvider getKeyProvider();
 
-    boolean isCannedAclValid(String cannedAcl);
+    AclHandler getAclHandler();
 
-    boolean isStorageClassValid(String storageClass);
+    StorageClassHandler getStorageClassHandler();
 
     /**
      * Uploads a file according to {@code options}. For more details

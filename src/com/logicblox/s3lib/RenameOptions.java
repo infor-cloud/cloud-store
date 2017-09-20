@@ -23,11 +23,12 @@ public class RenameOptions
   private final boolean _recursive;
   private final boolean _dryRun;
   private String _cannedAcl;
+  private boolean _keepAcl;
 
   RenameOptions(
     CloudStoreClient cloudStoreClient, String sourceBucketName, String sourceObjectKey,
     String destinationBucket, String destinationObjectKey,
-    String cannedAcl, boolean recursive,
+    String cannedAcl, boolean keepAcl, boolean recursive,
     boolean dryRun)
   {
     _cloudStoreClient = cloudStoreClient;
@@ -37,6 +38,7 @@ public class RenameOptions
     _destinationObjectKey = destinationObjectKey;
     _recursive = recursive;
     _cannedAcl = cannedAcl;
+    _keepAcl = keepAcl;
     _dryRun = dryRun;
   }
 
@@ -65,9 +67,13 @@ public class RenameOptions
     return _destinationObjectKey;
   }
 
-  public Optional<String> getCannedAcl()
+  public String getCannedAcl()
   {
-    return Optional.ofNullable(_cannedAcl);
+    return _cannedAcl;
+  }
+
+  public boolean doesKeepAcl() {
+    return _keepAcl;
   }
 
   public boolean isRecursive()

@@ -1,6 +1,5 @@
 package com.logicblox.s3lib;
 
-import com.amazonaws.services.s3.model.AccessControlList;
 import java.util.Map;
 import java.util.Optional;
 
@@ -29,6 +28,7 @@ public class CopyOptions {
     private final boolean dryRun;
     private final boolean ignoreAbortInjection;
     private String cannedAcl;
+    private boolean keepAcl;
     private final String storageClass;
     private final Map<String,String> userMetadata;
     private final OverallProgressListenerFactory
@@ -44,6 +44,7 @@ public class CopyOptions {
                 String destinationBucketName,
                 String destinationObjectKey,
                 String cannedAcl,
+                boolean keepAcl,
                 String storageClass,
                 boolean recursive,
                 boolean dryRun,
@@ -57,6 +58,7 @@ public class CopyOptions {
         this.destinationObjectKey = destinationObjectKey;
         this.recursive = recursive;
         this.cannedAcl = cannedAcl;
+        this.keepAcl = keepAcl;
         this.storageClass = storageClass;
         this.dryRun = dryRun;
         this.ignoreAbortInjection = ignoreAbortInjection;
@@ -99,8 +101,12 @@ public class CopyOptions {
         return destinationObjectKey;
     }
 
-    public Optional<String> getCannedAcl() {
-        return Optional.ofNullable(cannedAcl);
+    public String getCannedAcl() {
+        return cannedAcl;
+    }
+
+    public boolean doesKeepAcl() {
+        return keepAcl;
     }
 
     public Optional<String> getStorageClass() {

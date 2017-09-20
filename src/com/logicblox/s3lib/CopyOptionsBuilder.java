@@ -18,6 +18,7 @@ public class CopyOptionsBuilder {
     private String storageClass;
     private boolean recursive = false;
     private String cannedAcl;
+    private boolean keepAcl = false;
     private Map<String,String> userMetadata;
     private boolean dryRun = false;
     private boolean ignoreAbortInjection = false;
@@ -52,6 +53,11 @@ public class CopyOptionsBuilder {
 
     public CopyOptionsBuilder setCannedAcl(String cannedAcl) {
         this.cannedAcl = cannedAcl;
+        return this;
+    }
+
+    public CopyOptionsBuilder setKeepAcl(boolean keepAcl) {
+        this.keepAcl = keepAcl;
         return this;
     }
 
@@ -109,19 +115,22 @@ public class CopyOptionsBuilder {
         }
 
         if (cannedAcl != null) {
-            if (!cloudStoreClient.isCannedAclValid(cannedAcl)) {
+            if (!cloudStoreClient.getAclHandler().isCannedAclValid(cannedAcl)) {
                 throw new UsageException("Invalid canned ACL '" + cannedAcl + "'");
             }
         }
+        else {
+            cannedAcl = cloudStoreClient.getAclHandler().getDefaultAcl();
+        }
 
         if (storageClass != null) {
-            if (!cloudStoreClient.isStorageClassValid(storageClass)) {
+            if (!cloudStoreClient.getStorageClassHandler().isStorageClassValid(storageClass)) {
                 throw new UsageException("Invalid storage class '" + storageClass + "'");
             }
         }
 
         return new CopyOptions(cloudStoreClient, sourceBucketName, sourceObjectKey,
-            destinationBucketName, destinationObjectKey, cannedAcl, storageClass,
+            destinationBucketName, destinationObjectKey, cannedAcl, keepAcl, storageClass,
             recursive, dryRun, ignoreAbortInjection, userMetadata, overallProgressListenerFactory);
     }
 }

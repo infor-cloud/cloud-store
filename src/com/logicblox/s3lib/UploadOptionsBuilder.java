@@ -87,9 +87,12 @@ public class UploadOptionsBuilder {
         }
 
         if (cannedAcl != null) {
-            if (!cloudStoreClient.isCannedAclValid(cannedAcl)) {
+            if (!cloudStoreClient.getAclHandler().isCannedAclValid(cannedAcl)) {
                 throw new UsageException("Invalid canned ACL '" + cannedAcl + "'");
             }
+        }
+        else {
+            cannedAcl = cloudStoreClient.getAclHandler().getDefaultAcl();
         }
 
         return new UploadOptions(cloudStoreClient, file, bucket, objectKey,

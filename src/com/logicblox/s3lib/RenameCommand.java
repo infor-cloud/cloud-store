@@ -14,7 +14,6 @@ public class RenameCommand extends Command
   private CloudStoreClient _client;
   private RenameOptions _options;
 
-
   public RenameCommand(RenameOptions options)
   {
     _options = options;
@@ -169,7 +168,8 @@ public class RenameCommand extends Command
       .setSourceObjectKey(_options.getSourceObjectKey())
       .setDestinationBucketName(_options.getDestinationBucketName())
       .setDestinationObjectKey(getDestKey())
-      .setCannedAcl(_options.getCannedAcl().orElse(null))
+      .setCannedAcl(_options.getCannedAcl())
+      .setKeepAcl(_options.doesKeepAcl())
       .createCopyOptions();
 
     return _client.copy(copyOpts);

@@ -60,6 +60,9 @@ public class S3Client implements CloudStoreClient {
    */
   KeyProvider _keyProvider;
 
+  private S3AclHandler _aclHandler;
+  private S3StorageClassHandler _storageClassHandler;
+
   /** Whether or not to retry client side exception unconditionally. */
   boolean _retryClientException = false;
 
@@ -180,6 +183,8 @@ public class S3Client implements CloudStoreClient {
     _s3Executor = s3Executor;
     _keyProvider = keyProvider;
     _client = s3Client;
+    _aclHandler = new S3AclHandler();
+    _storageClassHandler = new S3StorageClassHandler();
   }
 
   /**
@@ -255,9 +260,15 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public boolean isCannedAclValid(String cannedAcl)
+  public AclHandler getAclHandler()
   {
-    return ALL_CANNED_ACLS.contains(cannedAcl);
+    return _aclHandler;
+  }
+
+  @Override
+  public StorageClassHandler getStorageClassHandler()
+  {
+    return _storageClassHandler;
   }
 
   // returns null if the store does not support acl (like minio)
@@ -288,20 +299,6 @@ public class S3Client implements CloudStoreClient {
       }
     }
     return null;
-  }
-
-  @Override
-  public boolean isStorageClassValid(String storageClass)
-  {
-    try
-    {
-      StorageClass.fromValue(storageClass);
-    }
-    catch (IllegalArgumentException exc)
-    {
-      return false;
-    }
-    return true;
   }
 
   void configure(Command cmd)

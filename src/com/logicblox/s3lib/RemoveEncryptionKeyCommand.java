@@ -216,6 +216,7 @@ public class RemoveEncryptionKeyCommand extends Command
               .setDestinationBucketName(metadata.getBucket())
               .setDestinationObjectKey(metadata.getKey())
               .setUserMetadata(metadata.getUserMetadata())
+              .setKeepAcl(true)
               .createCopyOptions();
 
             return _client.copy(options);

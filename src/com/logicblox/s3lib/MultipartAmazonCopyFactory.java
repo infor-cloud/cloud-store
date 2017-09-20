@@ -77,14 +77,14 @@ class MultipartAmazonCopyFactory
 
       InitiateMultipartUploadRequest req = new InitiateMultipartUploadRequest
           (destinationBucketName, destinationObjectKey, metadata);
-      if (options.getCannedAcl().isPresent())
-      {
-        req.setCannedACL(S3Client.getCannedAcl(options.getCannedAcl().get()));
-      }
-      else
+      if (options.doesKeepAcl())
       {
         req.setAccessControlList(
           S3Client.getObjectAcl(client, sourceBucketName, sourceObjectKey));
+      }
+      else
+      {
+        req.setCannedACL(S3Client.getCannedAcl(options.getCannedAcl()));
       }
       // req.setStorageClass(StorageClass.fromValue(storageClass));
       InitiateMultipartUploadResult res = client.initiateMultipartUpload(req);

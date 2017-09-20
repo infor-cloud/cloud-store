@@ -14,7 +14,7 @@ import java.util.Optional;
  * not {@code null}, then no check will take place and any possible failure due
  * to more than 10000 parts will happen later.
  * <p>
- * The specified {@code acl} is applied to the uploaded file.
+ * The specified {@code cannedAcl} is applied to the uploaded file.
  * <p>
  * If the {@code enckey} is present, the {@code keyProvider} will be asked to
  * provide a public key with that name. This key will be used to encrypt the
@@ -33,7 +33,7 @@ public class UploadOptions {
     private String objectKey;
     private long chunkSize = -1;
     private String encKey;
-    private String acl;
+    private String cannedAcl;
     private boolean dryRun;
     private boolean ignoreAbortInjection;
     private OverallProgressListenerFactory overallProgressListenerFactory;
@@ -48,7 +48,7 @@ public class UploadOptions {
                   String objectKey,
                   long chunkSize,
                   String encKey,
-                  String acl,
+                  String cannedAcl,
                   boolean dryRun,
                   boolean ignoreAbortInjection,
                   OverallProgressListenerFactory
@@ -59,7 +59,7 @@ public class UploadOptions {
         this.objectKey = objectKey;
         this.chunkSize = chunkSize;
         this.encKey = encKey;
-        this.acl = acl;
+        this.cannedAcl = cannedAcl;
         this.dryRun = dryRun;
         this.ignoreAbortInjection = ignoreAbortInjection;
         this.overallProgressListenerFactory = overallProgressListenerFactory;
@@ -107,8 +107,8 @@ public class UploadOptions {
         return chunkSize;
     }
 
-    public Optional<String> getCannedAcl() {
-        return Optional.ofNullable(acl);
+    public String getCannedAcl() {
+        return cannedAcl;
     }
 
     public boolean isDryRun() {

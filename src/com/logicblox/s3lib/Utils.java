@@ -451,7 +451,7 @@ public class Utils
       ClientConfiguration config = new ClientConfiguration();
       config.setSignerOverride("S3SignerType");
 
-      S3ClientForGCS s3Client = new S3ClientForGCS(gcsXMLProvider, config);
+      AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(gcsXMLProvider, config);
 
       client = new GCSClientBuilder()
           .setInternalS3Client(s3Client)

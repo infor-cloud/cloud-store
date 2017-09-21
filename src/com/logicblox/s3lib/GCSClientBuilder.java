@@ -72,11 +72,11 @@ public class GCSClientBuilder {
      * Signature Version 4 signing process which is not supported by the GCS XML
      * API (only Version 2 is supported). This means all operations that use GET
      * requests, e.g. download, are going to fail with the default
-     * AmazonS3Client. As a solution, we provide the S3ClientForGCS
+     * AmazonS3Client. As a solution, we provide the AmazonS3ClientForGCS
      * subclass which provides the correct signer object.
      * <p>
      * If you don't set any internal S3 client at all, then it will be set to an
-     * S3ClientForGCS object by default.
+     * AmazonS3ClientForGCS object by default.
      *
      * @param s3Client Internal S3 client used for talking to GCS interoperable
      *                 XML API
@@ -251,7 +251,7 @@ public class GCSClientBuilder {
             setInternalGCSClient(getDefaultInternalGCSClient());
         }
         if (s3Client == null) {
-            setInternalS3Client(new S3ClientForGCS());
+            setInternalS3Client(new AmazonS3ClientForGCS());
         }
         if (apiExecutor == null) {
             setApiExecutor(Utils.createApiExecutor(10));

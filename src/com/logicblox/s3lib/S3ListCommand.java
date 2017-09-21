@@ -9,11 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-public class ListCommand extends Command {
+public class S3ListCommand extends Command {
 
   private ListOptions _options;
 
-  public ListCommand(ListOptions options) {
+  public S3ListCommand(ListOptions options) {
     super(options);
     _options = options;
   }
@@ -46,19 +46,19 @@ public class ListCommand extends Command {
         }
 
         List<StoreFile> all = new ArrayList<StoreFile>();
-        ObjectListing current = getAmazonS3Client().listObjects(req);
+        ObjectListing current = getS3Client().listObjects(req);
         appendS3ObjectSummaryList(all, current.getObjectSummaries());
         if (! _options.dirsExcluded()) {
           appendS3DirStringList(all, current.getCommonPrefixes(), _options.getBucketName());
         }
-        current = getAmazonS3Client().listNextBatchOfObjects(current);
+        current = getS3Client().listNextBatchOfObjects(current);
         
         while (current.isTruncated()) {
           appendS3ObjectSummaryList(all, current.getObjectSummaries());
           if (! _options.dirsExcluded()) {
             appendS3DirStringList(all, current.getCommonPrefixes(), _options.getBucketName());
           }
-          current = getAmazonS3Client().listNextBatchOfObjects(current);
+          current = getS3Client().listNextBatchOfObjects(current);
         }
         appendS3ObjectSummaryList(all, current.getObjectSummaries());
         if (! _options.dirsExcluded()) {

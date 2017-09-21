@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 
-class MultipartAmazonCopy implements Copy
+class S3MultipartCopy implements Copy
 {
   private ConcurrentMap<Integer, PartETag> etags = new ConcurrentSkipListMap<Integer, PartETag>();
   private AmazonS3 client;
@@ -33,12 +33,12 @@ class MultipartAmazonCopy implements Copy
   private ObjectMetadata meta;
   private ListeningExecutorService executor;
 
-  public MultipartAmazonCopy(AmazonS3 client,
-                             String sourceBucketName, String sourceObjectKey,
-                             String destinationBucketName, String destinationObjectKey,
-                             String uploadId,
-                             ObjectMetadata meta,
-                             ListeningExecutorService executor)
+  public S3MultipartCopy(AmazonS3 client,
+                         String sourceBucketName, String sourceObjectKey,
+                         String destinationBucketName, String destinationObjectKey,
+                         String uploadId,
+                         ObjectMetadata meta,
+                         ListeningExecutorService executor)
   {
     this.sourceBucketName = sourceBucketName;
     this.sourceObjectKey = sourceObjectKey;

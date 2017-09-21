@@ -12,7 +12,6 @@ import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
 
-import com.amazonaws.services.s3.model.StorageClass;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -309,7 +308,7 @@ public class S3Client implements CloudStoreClient {
   {
     cmd.setRetryClientException(_retryClientException);
     cmd.setRetryCount(_retryCount);
-    cmd.setAmazonS3Client(_client);
+    cmd.setS3Client(_client);
     cmd.setScheme("s3://");
   }
 
@@ -317,7 +316,7 @@ public class S3Client implements CloudStoreClient {
   public ListenableFuture<StoreFile> upload(UploadOptions options)
       throws IOException
   {
-    UploadCommand cmd = new UploadCommand(options);
+    S3UploadCommand cmd = new S3UploadCommand(options);
     configure(cmd);
     return cmd.run();
   }
@@ -342,7 +341,7 @@ public class S3Client implements CloudStoreClient {
   @Override
   public ListenableFuture<StoreFile> delete(DeleteOptions options)
   {
-    DeleteCommand cmd = new DeleteCommand(options);
+    S3DeleteCommand cmd = new S3DeleteCommand(options);
     configure(cmd);
     return cmd.run();
   }
@@ -365,7 +364,7 @@ public class S3Client implements CloudStoreClient {
   @Override
   public ListenableFuture<Metadata> exists(ExistsOptions options)
   {
-    ExistsCommand cmd = new ExistsCommand(options);
+    S3ExistsCommand cmd = new S3ExistsCommand(options);
     configure(cmd);
     return cmd.run();
   }
@@ -374,7 +373,7 @@ public class S3Client implements CloudStoreClient {
   public ListenableFuture<StoreFile> download(DownloadOptions options)
   throws IOException
   {
-    DownloadCommand cmd = new DownloadCommand(options);
+    S3DownloadCommand cmd = new S3DownloadCommand(options);
     configure(cmd);
     return cmd.run();
   }
@@ -392,7 +391,7 @@ public class S3Client implements CloudStoreClient {
   @Override
   public ListenableFuture<StoreFile> copy(CopyOptions options)
   {
-    CopyCommand cmd = new CopyCommand(options);
+    S3CopyCommand cmd = new S3CopyCommand(options);
     configure(cmd);
     return cmd.run();
   }
@@ -400,7 +399,7 @@ public class S3Client implements CloudStoreClient {
   @Override
   public ListenableFuture<List<StoreFile>> copyToDir(CopyOptions options) throws
       InterruptedException, ExecutionException, IOException {
-    CopyToDirCommand cmd = new CopyToDirCommand(options);
+    S3CopyDirCommand cmd = new S3CopyDirCommand(options);
     configure(cmd);
     return cmd.run();
   }
@@ -426,11 +425,11 @@ public class S3Client implements CloudStoreClient {
   public ListenableFuture<List<StoreFile>> listObjects(ListOptions options) {
     ListenableFuture<List<StoreFile>> results = null;
     if (options.versionsIncluded()) {
-      ListVersionsCommand cmd = new ListVersionsCommand(options);
+      S3ListVersionsCommand cmd = new S3ListVersionsCommand(options);
       configure(cmd);
       results = cmd.run();
     } else {
-      ListCommand cmd = new ListCommand(options);
+      S3ListCommand cmd = new S3ListCommand(options);
       configure(cmd);
       results = cmd.run();
     }
@@ -440,7 +439,7 @@ public class S3Client implements CloudStoreClient {
   @Override
   public ListenableFuture<List<Upload>> listPendingUploads(PendingUploadsOptions options)
   {
-      ListPendingUploadsCommand cmd = new ListPendingUploadsCommand(options);
+      S3ListPendingUploadsCommand cmd = new S3ListPendingUploadsCommand(options);
       configure(cmd);
       return cmd.run();
   }
@@ -448,7 +447,7 @@ public class S3Client implements CloudStoreClient {
   @Override
   public ListenableFuture<List<Void>> abortPendingUploads(PendingUploadsOptions options)
   {
-      AbortPendingUploadsCommand cmd = new AbortPendingUploadsCommand(options);
+      S3AbortPendingUploadsCommand cmd = new S3AbortPendingUploadsCommand(options);
       configure(cmd);
       return cmd.run();
   }
@@ -457,14 +456,14 @@ public class S3Client implements CloudStoreClient {
   public ListenableFuture<StoreFile> addEncryptionKey(EncryptionKeyOptions options)
       throws IOException
   {
-    AddEncryptionKeyCommand cmd = createAddKeyCommand(options);
+    S3AddEncryptionKeyCommand cmd = createAddKeyCommand(options);
     return cmd.run();
   }
 
-  protected AddEncryptionKeyCommand createAddKeyCommand(EncryptionKeyOptions options)
+  protected S3AddEncryptionKeyCommand createAddKeyCommand(EncryptionKeyOptions options)
       throws IOException
   {
-    AddEncryptionKeyCommand cmd = new AddEncryptionKeyCommand(options);
+    S3AddEncryptionKeyCommand cmd = new S3AddEncryptionKeyCommand(options);
     configure(cmd);
     return cmd;
   }
@@ -473,14 +472,14 @@ public class S3Client implements CloudStoreClient {
   public ListenableFuture<StoreFile> removeEncryptionKey(EncryptionKeyOptions options)
     throws IOException
   {
-    RemoveEncryptionKeyCommand cmd = createRemoveKeyCommand(options);
+    S3RemoveEncryptionKeyCommand cmd = createRemoveKeyCommand(options);
     return cmd.run();
   }
 
-  protected RemoveEncryptionKeyCommand createRemoveKeyCommand(EncryptionKeyOptions options)
+  protected S3RemoveEncryptionKeyCommand createRemoveKeyCommand(EncryptionKeyOptions options)
     throws IOException
   {
-    RemoveEncryptionKeyCommand cmd = new RemoveEncryptionKeyCommand(options);
+    S3RemoveEncryptionKeyCommand cmd = new S3RemoveEncryptionKeyCommand(options);
     configure(cmd);
     return cmd;
   }

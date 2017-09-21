@@ -12,7 +12,7 @@ import java.io.InputStream;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-class AmazonDownload
+class S3Download
 {
   private AmazonS3 client;
   private ListeningExecutorService executor;
@@ -21,7 +21,7 @@ class AmazonDownload
   private String bucketName;
   private String version;
 
-  public AmazonDownload(
+  public S3Download(
     AmazonS3 client,
     String key,
     String bucketName,

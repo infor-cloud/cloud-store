@@ -7,27 +7,26 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.AmazonWebServiceRequest;
 import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
 
-class AmazonDownloadFactory
+class S3DownloadFactory
 {
   private ListeningExecutorService executor;
   private AmazonS3 client;
 
-  public AmazonDownloadFactory(AmazonS3 client, ListeningExecutorService
+  public S3DownloadFactory(AmazonS3 client, ListeningExecutorService
       executor)
   {
     this.client = client;
     this.executor = executor;
   }
 
-  public ListenableFuture<AmazonDownload> startDownload(String bucketName, String key, String version)
+  public ListenableFuture<S3Download> startDownload(String bucketName, String key, String version)
   {
     return executor.submit(new StartCallable(bucketName, key, version));
   }
 
-  private class StartCallable implements Callable<AmazonDownload>
+  private class StartCallable implements Callable<S3Download>
   {
     private String bucketName;
     private String key;
@@ -40,11 +39,11 @@ class AmazonDownloadFactory
       this.version = version;
     }
 
-    public AmazonDownload call()
+    public S3Download call()
     {
       GetObjectMetadataRequest metareq = new GetObjectMetadataRequest(bucketName, key, version);
       ObjectMetadata data = client.getObjectMetadata(metareq);
-      return new AmazonDownload(client, key, bucketName,version, data, executor);
+      return new S3Download(client, key, bucketName,version, data, executor);
     }
   }
 }

@@ -15,13 +15,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-public class RemoveEncryptionKeyCommand extends Command
+public class S3RemoveEncryptionKeyCommand extends Command
 {
   private EncryptionKeyOptions _options;
   private String _encKeyName;
   private KeyProvider _encKeyProvider;
 
-  public RemoveEncryptionKeyCommand(EncryptionKeyOptions options)
+  public S3RemoveEncryptionKeyCommand(EncryptionKeyOptions options)
   throws IOException
   {
     super(options);
@@ -78,7 +78,7 @@ public class RemoveEncryptionKeyCommand extends Command
 
   private ListenableFuture<S3ObjectMetadata> getMetadataAsync()
   {
-    S3ObjectMetadataFactory f = new S3ObjectMetadataFactory(getAmazonS3Client(),
+    S3ObjectMetadataFactory f = new S3ObjectMetadataFactory(getS3Client(),
       _client.getApiExecutor());
     ListenableFuture<S3ObjectMetadata> metadataFactory = f.create(
       _options.getBucketName(), _options.getObjectKey(), null);

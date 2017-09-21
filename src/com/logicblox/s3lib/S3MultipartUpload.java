@@ -24,7 +24,7 @@ import com.amazonaws.services.s3.model.UploadPartResult;
 import com.amazonaws.services.s3.model.PartETag;
 import org.apache.commons.codec.digest.DigestUtils;
 
-class MultipartAmazonUpload implements Upload
+class S3MultipartUpload implements Upload
 {
   private ConcurrentMap<Integer, PartETag> etags = new ConcurrentSkipListMap<Integer, PartETag>();
   private AmazonS3 client;
@@ -36,9 +36,9 @@ class MultipartAmazonUpload implements Upload
   private UploadOptions options;
 
 
-  public MultipartAmazonUpload(AmazonS3 client, String bucketName, String key,
-    String uploadId, Date initiated, ListeningExecutorService executor,
-    UploadOptions options)
+  public S3MultipartUpload(AmazonS3 client, String bucketName, String key,
+                           String uploadId, Date initiated, ListeningExecutorService executor,
+                           UploadOptions options)
   {
     this.bucketName = bucketName;
     this.key = key;

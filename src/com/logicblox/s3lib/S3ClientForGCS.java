@@ -10,35 +10,35 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.internal.S3Signer;
 
 
-public class AmazonS3ClientForGCS extends AmazonS3Client {
-    public AmazonS3ClientForGCS() {
+public class S3ClientForGCS extends AmazonS3Client {
+    public S3ClientForGCS() {
     }
 
-    public AmazonS3ClientForGCS(AWSCredentials awsCredentials) {
+    public S3ClientForGCS(AWSCredentials awsCredentials) {
         super(awsCredentials);
     }
 
-    public AmazonS3ClientForGCS(AWSCredentials awsCredentials,
-                                ClientConfiguration clientConfiguration) {
+    public S3ClientForGCS(AWSCredentials awsCredentials,
+                          ClientConfiguration clientConfiguration) {
         super(awsCredentials, clientConfiguration);
     }
 
-    public AmazonS3ClientForGCS(AWSCredentialsProvider credentialsProvider) {
+    public S3ClientForGCS(AWSCredentialsProvider credentialsProvider) {
         super(credentialsProvider);
     }
 
-    public AmazonS3ClientForGCS(AWSCredentialsProvider credentialsProvider,
-                                ClientConfiguration clientConfiguration) {
+    public S3ClientForGCS(AWSCredentialsProvider credentialsProvider,
+                          ClientConfiguration clientConfiguration) {
         super(credentialsProvider, clientConfiguration);
     }
 
-    public AmazonS3ClientForGCS(AWSCredentialsProvider credentialsProvider,
-                                ClientConfiguration clientConfiguration,
-                                RequestMetricCollector requestMetricCollector) {
+    public S3ClientForGCS(AWSCredentialsProvider credentialsProvider,
+                          ClientConfiguration clientConfiguration,
+                          RequestMetricCollector requestMetricCollector) {
         super(credentialsProvider, clientConfiguration, requestMetricCollector);
     }
 
-    public AmazonS3ClientForGCS(ClientConfiguration clientConfiguration) {
+    public S3ClientForGCS(ClientConfiguration clientConfiguration) {
         super(clientConfiguration);
     }
 

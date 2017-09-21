@@ -11,11 +11,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-public class ListVersionsCommand extends Command {
+public class S3ListVersionsCommand extends Command {
   
   private ListOptions _options;
 
-  public ListVersionsCommand(ListOptions options) {
+  public S3ListVersionsCommand(ListOptions options) {
     super(options);
     _options = options;
   }
@@ -51,19 +51,19 @@ public class ListVersionsCommand extends Command {
         }
         
         List<StoreFile> all = new ArrayList<StoreFile>();
-        VersionListing current = getAmazonS3Client().listVersions(req);
+        VersionListing current = getS3Client().listVersions(req);
         appendVersionSummaryList(all, current.getVersionSummaries());
         if (! _options.dirsExcluded()) {
           appendVersionsDirStringList(all, current.getCommonPrefixes(), _options.getBucketName());
         }
-        current = getAmazonS3Client().listNextBatchOfVersions(current);
+        current = getS3Client().listNextBatchOfVersions(current);
         
         while (current.isTruncated()) {
           appendVersionSummaryList(all, current.getVersionSummaries());
           if (! _options.dirsExcluded()) {
             appendVersionsDirStringList(all, current.getCommonPrefixes(), _options.getBucketName());
           }
-          current = getAmazonS3Client().listNextBatchOfVersions(current);
+          current = getS3Client().listNextBatchOfVersions(current);
         }
         appendVersionSummaryList(all, current.getVersionSummaries());
         if (! _options.dirsExcluded()) {

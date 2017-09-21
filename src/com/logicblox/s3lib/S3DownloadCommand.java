@@ -34,7 +34,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.FutureFallback;
 
-public class DownloadCommand extends Command
+public class S3DownloadCommand extends Command
 {
   private DownloadOptions _options;
   private KeyProvider _encKeyProvider;
@@ -42,7 +42,7 @@ public class DownloadCommand extends Command
   private ConcurrentMap<Integer, byte[]> etags = new ConcurrentSkipListMap<>();
   private OverallProgressListenerFactory progressListenerFactory;
 
-  public DownloadCommand(DownloadOptions options)
+  public S3DownloadCommand(DownloadOptions options)
       throws IOException
   {
     super(options);
@@ -136,17 +136,17 @@ public class DownloadCommand extends Command
 
   private ListenableFuture<StoreFile> scheduleExecution()
   {
-    ListenableFuture<AmazonDownload> download = startDownload();
+    ListenableFuture<S3Download> download = startDownload();
     download = Futures.transform(download, startPartsAsyncFunction());
     download = Futures.transform(download, validate());
     ListenableFuture<StoreFile> res = Futures.transform(
       download,
-      new Function<AmazonDownload, StoreFile>()
+      new Function<S3Download, StoreFile>()
       {
-        public StoreFile apply(AmazonDownload download)
+        public StoreFile apply(S3Download download)
         {
           StoreFile f = new StoreFile();
-          f.setLocalFile(DownloadCommand.this.file);
+          f.setLocalFile(S3DownloadCommand.this.file);
           f.setETag(download.getETag());
           f.setBucketName(_options.getBucketName());
           f.setKey(_options.getObjectKey());
@@ -161,8 +161,8 @@ public class DownloadCommand extends Command
       {
         public ListenableFuture<StoreFile> create(Throwable t)
         {
-          if(DownloadCommand.this.file.exists())
-            DownloadCommand.this.file.delete();
+          if(S3DownloadCommand.this.file.exists())
+            S3DownloadCommand.this.file.delete();
 
           if (t instanceof UsageException) {
             return Futures.immediateFailedFuture(t);
@@ -176,13 +176,13 @@ public class DownloadCommand extends Command
   /**
    * Step 1: Start download and fetch metadata.
    */
-  private ListenableFuture<AmazonDownload> startDownload()
+  private ListenableFuture<S3Download> startDownload()
   {
     return executeWithRetry(
       _client.getInternalExecutor(),
-      new Callable<ListenableFuture<AmazonDownload>>()
+      new Callable<ListenableFuture<S3Download>>()
       {
-        public ListenableFuture<AmazonDownload> call()
+        public ListenableFuture<S3Download> call()
         {
           return startDownloadActual();
         }
@@ -199,13 +199,14 @@ public class DownloadCommand extends Command
       });
   }
 
-  private ListenableFuture<AmazonDownload> startDownloadActual()
+  private ListenableFuture<S3Download> startDownloadActual()
   {
-    AmazonDownloadFactory factory = new AmazonDownloadFactory(getAmazonS3Client(), _client.getApiExecutor());
+    S3DownloadFactory factory = new S3DownloadFactory(
+      getS3Client(), _client.getApiExecutor());
 
-    AsyncFunction<AmazonDownload, AmazonDownload> initDownload = new AsyncFunction<AmazonDownload, AmazonDownload>()
+    AsyncFunction<S3Download, S3Download> initDownload = new AsyncFunction<S3Download, S3Download>()
     {
-      public ListenableFuture<AmazonDownload> apply(AmazonDownload download)
+      public ListenableFuture<S3Download> apply(S3Download download)
       {
         Map<String, String> meta = download.getMeta();
 
@@ -378,18 +379,18 @@ public class DownloadCommand extends Command
   /**
    * Step 2: Start downloading parts
    */
-  private AsyncFunction<AmazonDownload, AmazonDownload> startPartsAsyncFunction()
+  private AsyncFunction<S3Download, S3Download> startPartsAsyncFunction()
   {
-    return new AsyncFunction<AmazonDownload, AmazonDownload>()
+    return new AsyncFunction<S3Download, S3Download>()
     {
-      public ListenableFuture<AmazonDownload> apply(AmazonDownload download) throws Exception
+      public ListenableFuture<S3Download> apply(S3Download download) throws Exception
       {
         return startParts(download);
       }
     };
   }
 
-  private ListenableFuture<AmazonDownload> startParts(AmazonDownload download)
+  private ListenableFuture<S3Download> startParts(S3Download download)
   throws IOException, UsageException
   {
     OverallProgressListener opl = null;
@@ -413,7 +414,7 @@ public class DownloadCommand extends Command
     return Futures.transform(Futures.allAsList(parts), Functions.constant(download));
   }
 
-  private ListenableFuture<Integer> startPartDownload(final AmazonDownload
+  private ListenableFuture<Integer> startPartDownload(final S3Download
                                                           download,
                                                       final long position,
                                                       final OverallProgressListener opl)
@@ -436,7 +437,7 @@ public class DownloadCommand extends Command
       });
   }
 
-  private ListenableFuture<Integer> startPartDownloadActual(final AmazonDownload download,
+  private ListenableFuture<Integer> startPartDownloadActual(final S3Download download,
                                                             final long position,
                                                             OverallProgressListener opl)
   {
@@ -495,7 +496,7 @@ public class DownloadCommand extends Command
     return Futures.transform(getPartFuture, readDownloadFunction);
   }
 
-  private void readDownload(AmazonDownload download, InputStream inStream, long position, int partNumber)
+  private void readDownload(S3Download download, InputStream inStream, long position, int partNumber)
   throws Exception
   {
     HashingInputStream stream = new HashingInputStream(inStream);
@@ -594,23 +595,23 @@ public class DownloadCommand extends Command
     }
   }
 
-  private AsyncFunction<AmazonDownload, AmazonDownload> validate()
+  private AsyncFunction<S3Download, S3Download> validate()
   {
-    return new AsyncFunction<AmazonDownload, AmazonDownload>()
+    return new AsyncFunction<S3Download, S3Download>()
     {
-      public ListenableFuture<AmazonDownload> apply(AmazonDownload download)
+      public ListenableFuture<S3Download> apply(S3Download download)
       {
         return validateChecksum(download);
       }
     };
   }
 
-  private ListenableFuture<AmazonDownload> validateChecksum(final AmazonDownload download)
+  private ListenableFuture<S3Download> validateChecksum(final S3Download download)
   {
-    ListenableFuture<AmazonDownload> result =
-        _client.getInternalExecutor().submit(new Callable<AmazonDownload>()
+    ListenableFuture<S3Download> result =
+        _client.getInternalExecutor().submit(new Callable<S3Download>()
         {
-          public AmazonDownload call() throws Exception
+          public S3Download call() throws Exception
           {
             String remoteEtag = download.getETag();
             String localDigest = "";

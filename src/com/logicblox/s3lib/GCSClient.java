@@ -264,7 +264,7 @@ public class GCSClient implements CloudStoreClient {
         void configure(Command cmd) {
             cmd.setRetryClientException(_retryClientException);
             cmd.setRetryCount(_retryCount);
-            cmd.setAmazonS3Client(_client);
+            cmd.setS3Client(_client);
             cmd.setGCSClient(gcsClient);
             cmd.setScheme("gs://");
         }
@@ -321,19 +321,19 @@ public class GCSClient implements CloudStoreClient {
         }
 
         @Override
-        protected AddEncryptionKeyCommand createAddKeyCommand(EncryptionKeyOptions options)
+        protected S3AddEncryptionKeyCommand createAddKeyCommand(EncryptionKeyOptions options)
             throws IOException
         {
-           AddEncryptionKeyCommand cmd = super.createAddKeyCommand(options);
+           S3AddEncryptionKeyCommand cmd = super.createAddKeyCommand(options);
            configure(cmd);
            return cmd;
         }
 
         @Override
-        protected RemoveEncryptionKeyCommand createRemoveKeyCommand(EncryptionKeyOptions options)
+        protected S3RemoveEncryptionKeyCommand createRemoveKeyCommand(EncryptionKeyOptions options)
             throws IOException
         {
-           RemoveEncryptionKeyCommand cmd = super.createRemoveKeyCommand(options);
+           S3RemoveEncryptionKeyCommand cmd = super.createRemoveKeyCommand(options);
            configure(cmd);
            return cmd;
         }

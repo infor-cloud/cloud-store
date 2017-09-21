@@ -82,12 +82,12 @@ public class Command
     this.scheme = scheme;
   }
 
-  public void setAmazonS3Client(AmazonS3Client client)
+  public void setS3Client(AmazonS3Client client)
   {
     _s3Client = client;
   }
 
-  protected AmazonS3Client getAmazonS3Client()
+  protected AmazonS3Client getS3Client()
   {
     return _s3Client;
   }

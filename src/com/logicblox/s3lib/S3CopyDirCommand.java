@@ -11,12 +11,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-public class CopyToDirCommand extends Command
+public class S3CopyDirCommand extends Command
 {
   private CopyOptions _options;
   private boolean _dryRun;
 
-  public CopyToDirCommand(CopyOptions options)
+  public S3CopyDirCommand(CopyOptions options)
   {
     super(options);
     _options = options;
@@ -43,14 +43,14 @@ public class CopyToDirCommand extends Command
       .withPrefix(_options.getSourceObjectKey());
     if (!_options.isRecursive()) req.setDelimiter("/");
 
-    ObjectListing current = getAmazonS3Client().listObjects(req);
+    ObjectListing current = getS3Client().listObjects(req);
     files.addAll(copyBatch(current.getObjectSummaries(), baseDirPath));
-    current = getAmazonS3Client().listNextBatchOfObjects(current);
+    current = getS3Client().listNextBatchOfObjects(current);
 
     while (current.isTruncated())
     {
       files.addAll(copyBatch(current.getObjectSummaries(), baseDirPath));
-      current = getAmazonS3Client().listNextBatchOfObjects(current);
+      current = getS3Client().listNextBatchOfObjects(current);
     }
     files.addAll(copyBatch(current.getObjectSummaries(), baseDirPath));
 

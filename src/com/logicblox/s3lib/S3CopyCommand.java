@@ -15,12 +15,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-public class CopyCommand extends Command
+public class S3CopyCommand extends Command
 {
   private CopyOptions _options;
   private OverallProgressListenerFactory _progressListenerFactory;
 
-  public CopyCommand(CopyOptions options)
+  public S3CopyCommand(CopyOptions options)
   {
     super(options);
     _options = options;
@@ -85,8 +85,8 @@ public class CopyCommand extends Command
 
   private ListenableFuture<Copy> startCopyActual()
   {
-    MultipartAmazonCopyFactory factory = new MultipartAmazonCopyFactory(
-      getAmazonS3Client(), _client.getApiExecutor());
+    S3MultipartCopyFactory factory = new S3MultipartCopyFactory(
+      getS3Client(), _client.getApiExecutor());
 
     return factory.startCopy(
       _options.getSourceBucketName(), _options.getSourceObjectKey(),

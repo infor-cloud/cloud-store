@@ -12,13 +12,13 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
 
-class MultipartAmazonUploadFactory implements UploadFactory
+class S3MultipartUploadFactory implements UploadFactory
 {
   private AmazonS3 client;
   private ListeningExecutorService executor;
 
-  public MultipartAmazonUploadFactory(AmazonS3 client,
-                                      ListeningExecutorService executor)
+  public S3MultipartUploadFactory(AmazonS3 client,
+                                  ListeningExecutorService executor)
   {
     if(client == null)
       throw new IllegalArgumentException("non-null client is required");
@@ -59,7 +59,7 @@ class MultipartAmazonUploadFactory implements UploadFactory
       req.setCannedACL(S3Client.getCannedAcl(options.getCannedAcl()));
 
       InitiateMultipartUploadResult res = client.initiateMultipartUpload(req);
-      return new MultipartAmazonUpload(client, bucketName, key,
+      return new S3MultipartUpload(client, bucketName, key,
           res.getUploadId(), new Date(), executor, options);
     }
   }

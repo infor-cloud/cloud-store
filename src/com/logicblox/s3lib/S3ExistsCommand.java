@@ -8,11 +8,11 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.concurrent.Callable;
 
-public class ExistsCommand extends Command
+public class S3ExistsCommand extends Command
 {
   private ExistsOptions _options;
 
-  public ExistsCommand(ExistsOptions options)
+  public S3ExistsCommand(ExistsOptions options)
   {
     super(options);
     _options = options;
@@ -70,7 +70,7 @@ public class ExistsCommand extends Command
           // to make sure that the retry facility works when the
           // --stubborn option is used, which retries client
           // exceptions as well.
-          return new Metadata(getAmazonS3Client().getObjectMetadata(
+          return new Metadata(getS3Client().getObjectMetadata(
 	    _options.getBucketName(), _options.getObjectKey()));
         }
       });

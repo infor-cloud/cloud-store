@@ -10,13 +10,13 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 
 import java.util.concurrent.Callable;
 
-class MultipartAmazonCopyFactory
+class S3MultipartCopyFactory
 {
   private AmazonS3Client client;
   private ListeningExecutorService executor;
 
-  public MultipartAmazonCopyFactory(AmazonS3Client client,
-                                    ListeningExecutorService executor)
+  public S3MultipartCopyFactory(AmazonS3Client client,
+                                ListeningExecutorService executor)
   {
     if(client == null)
       throw new IllegalArgumentException("non-null client is required");
@@ -88,7 +88,7 @@ class MultipartAmazonCopyFactory
       }
       // req.setStorageClass(StorageClass.fromValue(storageClass));
       InitiateMultipartUploadResult res = client.initiateMultipartUpload(req);
-      return new MultipartAmazonCopy(client, sourceBucketName, sourceObjectKey,
+      return new S3MultipartCopy(client, sourceBucketName, sourceObjectKey,
           destinationBucketName, destinationObjectKey, res.getUploadId(), metadata,
           executor);
     }

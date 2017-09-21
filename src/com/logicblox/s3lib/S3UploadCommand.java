@@ -31,7 +31,7 @@ import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.commons.codec.digest.DigestUtils;
 
-public class UploadCommand extends Command
+public class S3UploadCommand extends Command
 {
   private String encKeyName;
   private String encryptedSymmetricKeyString;
@@ -41,7 +41,7 @@ public class UploadCommand extends Command
   private UploadOptions _options;
 
 
-  public UploadCommand(UploadOptions options)
+  public S3UploadCommand(UploadOptions options)
   throws IOException
   {
     super(options);
@@ -171,8 +171,8 @@ public class UploadCommand extends Command
 
   private ListenableFuture<Upload> startUploadActual()
   {
-    UploadFactory factory = new MultipartAmazonUploadFactory
-        (getAmazonS3Client(), _client.getApiExecutor());
+    UploadFactory factory = new S3MultipartUploadFactory
+        (getS3Client(), _client.getApiExecutor());
 
     Map<String,String> meta = new HashMap<String,String>();
     meta.put("s3tool-version", String.valueOf(Version.CURRENT));
@@ -237,7 +237,7 @@ public class UploadCommand extends Command
         {
           public ListenableFuture<Void> call() throws Exception
           {
-            return UploadCommand.this.startPartUpload(upload, position, opl);
+            return S3UploadCommand.this.startPartUpload(upload, position, opl);
           }
         });
 

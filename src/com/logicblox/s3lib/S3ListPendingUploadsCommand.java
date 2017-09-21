@@ -9,11 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-public class ListPendingUploadsCommand extends Command
+public class S3ListPendingUploadsCommand extends Command
 {
   private PendingUploadsOptions _options;
 
-  public ListPendingUploadsCommand(PendingUploadsOptions options)
+  public S3ListPendingUploadsCommand(PendingUploadsOptions options)
   {
     super(options);
     _options = options;
@@ -53,7 +53,7 @@ public class ListPendingUploadsCommand extends Command
 
           listMultipartUploadsRequest.setPrefix(_options.getObjectKey());
 
-          MultipartUploadListing multipartUploadListing = getAmazonS3Client()
+          MultipartUploadListing multipartUploadListing = getS3Client()
               .listMultipartUploads(listMultipartUploadsRequest);
           List<Upload> uploadsList = new ArrayList<Upload>();
 
@@ -64,7 +64,7 @@ public class ListPendingUploadsCommand extends Command
                 _options.getBucketName());
             listMultipartUploadsRequest.setKeyMarker(
                 multipartUploadListing.getNextKeyMarker());
-            multipartUploadListing = getAmazonS3Client()
+            multipartUploadListing = getS3Client()
                 .listMultipartUploads(listMultipartUploadsRequest);
           }
           appendMultipartUploadList(uploadsList,
@@ -90,8 +90,8 @@ public class ListPendingUploadsCommand extends Command
   private Upload S3MultipartUploadToUpload(MultipartUpload multipartUpload,
                                            String bucket)
   {
-    Upload u = new MultipartAmazonUpload(
-        getAmazonS3Client(),
+    Upload u = new S3MultipartUpload(
+        getS3Client(),
         bucket,
         multipartUpload.getKey(),
         multipartUpload.getUploadId(),

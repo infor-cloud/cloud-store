@@ -25,13 +25,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-public class AddEncryptionKeyCommand extends Command
+public class S3AddEncryptionKeyCommand extends Command
 {
   private EncryptionKeyOptions _options;
   private String _encKeyName;
   private KeyProvider _encKeyProvider;
 
-  public AddEncryptionKeyCommand(EncryptionKeyOptions options)
+  public S3AddEncryptionKeyCommand(EncryptionKeyOptions options)
   throws IOException
   {
     super(options);
@@ -88,7 +88,7 @@ public class AddEncryptionKeyCommand extends Command
 
   private ListenableFuture<S3ObjectMetadata> getMetadataAsync()
   {
-    S3ObjectMetadataFactory f = new S3ObjectMetadataFactory(getAmazonS3Client(),
+    S3ObjectMetadataFactory f = new S3ObjectMetadataFactory(getS3Client(),
       _client.getApiExecutor());
     ListenableFuture<S3ObjectMetadata> metadataFactory = f.create(
       _options.getBucketName(), _options.getObjectKey(), null);

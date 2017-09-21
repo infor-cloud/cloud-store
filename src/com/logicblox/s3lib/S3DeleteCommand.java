@@ -8,11 +8,11 @@ import com.google.common.util.concurrent.ListenableFuture;
 import java.util.concurrent.Callable;
 
 
-public class DeleteCommand extends Command
+public class S3DeleteCommand extends Command
 {
   private DeleteOptions _options;
 
-  public DeleteCommand(DeleteOptions options)
+  public S3DeleteCommand(DeleteOptions options)
   {
     super(options);
     _options = options;
@@ -99,7 +99,7 @@ public class DeleteCommand extends Command
             String bucket = _options.getBucketName();
             String key = _options.getObjectKey();
             DeleteObjectRequest req = new DeleteObjectRequest(bucket, key);
-            getAmazonS3Client().deleteObject(req);
+            getS3Client().deleteObject(req);
             StoreFile file = new StoreFile();
             file.setBucketName(bucket);
             file.setKey(key);

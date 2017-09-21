@@ -11,11 +11,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 
-public class AbortPendingUploadsCommand extends Command
+public class S3AbortPendingUploadsCommand extends Command
 {
   private PendingUploadsOptions _options;
 
-  public AbortPendingUploadsCommand(PendingUploadsOptions options)
+  public S3AbortPendingUploadsCommand(PendingUploadsOptions options)
   {
     super(options);
     _options = options;
@@ -67,8 +67,8 @@ public class AbortPendingUploadsCommand extends Command
     public ListenableFuture<Void> call()
     throws ExecutionException, InterruptedException
     {
-      Upload u = new MultipartAmazonUpload(
-        getAmazonS3Client(),
+      Upload u = new S3MultipartUpload(
+        getS3Client(),
         _options.getBucketName(),
         _options.getObjectKey(),
         _uploadId,
@@ -101,8 +101,8 @@ public class AbortPendingUploadsCommand extends Command
 
     public ListenableFuture<Void> call()
     {
-      Upload u = new MultipartAmazonUpload(
-        getAmazonS3Client(),
+      Upload u = new S3MultipartUpload(
+        getS3Client(),
         _options.getBucketName(),
         _options.getObjectKey(),
         _uploadId,

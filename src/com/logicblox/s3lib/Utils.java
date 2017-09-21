@@ -12,7 +12,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
@@ -436,7 +435,7 @@ public class Utils
       ClientConfiguration config = new ClientConfiguration();
       config.setSignerOverride("S3SignerType");
 
-      AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(gcsXMLProvider, config);
+      S3ClientForGCS s3Client = new S3ClientForGCS(gcsXMLProvider, config);
 
       client = new GCSClientBuilder()
           .setInternalS3Client(s3Client)

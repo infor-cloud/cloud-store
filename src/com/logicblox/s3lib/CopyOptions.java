@@ -27,7 +27,6 @@ public class CopyOptions extends CommandOptions {
     private final boolean dryRun;
     private final boolean ignoreAbortInjection;
     private String cannedAcl;
-    private boolean keepAcl;
     private final String storageClass;
     private final Map<String,String> userMetadata;
     private final OverallProgressListenerFactory
@@ -43,7 +42,6 @@ public class CopyOptions extends CommandOptions {
                 String destinationBucketName,
                 String destinationObjectKey,
                 String cannedAcl,
-                boolean keepAcl,
                 String storageClass,
                 boolean recursive,
                 boolean dryRun,
@@ -57,7 +55,6 @@ public class CopyOptions extends CommandOptions {
         this.destinationObjectKey = destinationObjectKey;
         this.recursive = recursive;
         this.cannedAcl = cannedAcl;
-        this.keepAcl = keepAcl;
         this.storageClass = storageClass;
         this.dryRun = dryRun;
         this.ignoreAbortInjection = ignoreAbortInjection;
@@ -96,12 +93,8 @@ public class CopyOptions extends CommandOptions {
         return destinationObjectKey;
     }
 
-    public String getCannedAcl() {
-        return cannedAcl;
-    }
-
-    public boolean doesKeepAcl() {
-        return keepAcl;
+    public Optional<String> getCannedAcl() {
+        return Optional.ofNullable(cannedAcl);
     }
 
     public Optional<String> getStorageClass() {

@@ -357,10 +357,6 @@ class Main
         + S3Client.CANNED_ACLS_DESC_CONST)
     String cannedAcl;
 
-    @Parameter(names = "--keep-acl", description = "Keep source object's ACL." +
-        " If set, --canned-acl flag is ignored.")
-    boolean keepAcl = false;
-
     @Parameter(names = "--storage-class", description = "The storage class to" +
         " use. Source object's storage class will be used by default. " +
         S3Client.STORAGE_CLASSES_DESC_CONST)
@@ -383,7 +379,6 @@ class Main
           .setDestinationBucketName(getDestinationBucket())
           .setDestinationObjectKey(getDestinationObjectKey())
           .setCannedAcl(cannedAcl)
-          .setKeepAcl(keepAcl)
           .setStorageClass(storageClass)
           .setRecursive(recursive)
           .setDryRun(dryRun)

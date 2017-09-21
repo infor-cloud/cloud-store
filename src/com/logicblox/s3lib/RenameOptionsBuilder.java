@@ -14,7 +14,6 @@ public class RenameOptionsBuilder extends CommandOptionsBuilder
   private String _destinationBucketName;
   private String _destinationObjectKey;
   private String _cannedAcl;
-  private boolean _keepAcl = true;
   private boolean _recursive = false;
   private boolean _dryRun = false;
 
@@ -53,11 +52,6 @@ public class RenameOptionsBuilder extends CommandOptionsBuilder
     return this;
   }
 
-  public RenameOptionsBuilder setKeepAcl(boolean keepAcl) {
-    _keepAcl = keepAcl;
-    return this;
-  }
-
   public RenameOptionsBuilder setRecursive(boolean recursive)
   {
     _recursive = recursive;
@@ -87,6 +81,12 @@ public class RenameOptionsBuilder extends CommandOptionsBuilder
     else if (_destinationObjectKey == null) {
       throw new UsageException("Destination object key has to be set");
     }
+
+    if (_cannedAcl != null) {
+      if (!_cloudStoreClient.getAclHandler().isCannedAclValid(_cannedAcl)) {
+        throw new UsageException("Invalid canned ACL '" + _cannedAcl + "'");
+      }
+    }
   }
 
   @Override
@@ -94,17 +94,8 @@ public class RenameOptionsBuilder extends CommandOptionsBuilder
   {
     validateOptions();
 
-    if (_cannedAcl != null) {
-      if (!_cloudStoreClient.getAclHandler().isCannedAclValid(_cannedAcl)) {
-        throw new UsageException("Invalid canned ACL '" + _cannedAcl + "'");
-      }
-    }
-    else {
-      _cannedAcl = _cloudStoreClient.getAclHandler().getDefaultAcl();
-    }
-
     return new RenameOptions(_cloudStoreClient, _sourceBucketName,
       _sourceObjectKey, _destinationBucketName, _destinationObjectKey,
-      _cannedAcl, _keepAcl, _recursive, _dryRun);
+      _cannedAcl, _recursive, _dryRun);
   }
 }

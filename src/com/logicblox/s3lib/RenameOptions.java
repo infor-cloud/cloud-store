@@ -1,5 +1,7 @@
 package com.logicblox.s3lib;
 
+import java.util.Optional;
+
 /**
  * {@code RenameOptions} contains all the details needed by the rename operation.
  * The specified {@code sourceObjectKey}, under {@code sourceBucketName} bucket, is renamed
@@ -20,13 +22,11 @@ public class RenameOptions extends CommandOptions
   private final boolean _recursive;
   private final boolean _dryRun;
   private String _cannedAcl;
-  private boolean _keepAcl;
 
   RenameOptions(
     CloudStoreClient cloudStoreClient, String sourceBucketName, String sourceObjectKey,
     String destinationBucket, String destinationObjectKey,
-    String cannedAcl, boolean keepAcl, boolean recursive,
-    boolean dryRun)
+    String cannedAcl, boolean recursive, boolean dryRun)
   {
     super(cloudStoreClient);
     _sourceBucketName = sourceBucketName;
@@ -35,7 +35,6 @@ public class RenameOptions extends CommandOptions
     _destinationObjectKey = destinationObjectKey;
     _recursive = recursive;
     _cannedAcl = cannedAcl;
-    _keepAcl = keepAcl;
     _dryRun = dryRun;
   }
 
@@ -59,13 +58,9 @@ public class RenameOptions extends CommandOptions
     return _destinationObjectKey;
   }
 
-  public String getCannedAcl()
+  public Optional<String> getCannedAcl()
   {
-    return _cannedAcl;
-  }
-
-  public boolean doesKeepAcl() {
-    return _keepAcl;
+    return Optional.ofNullable(_cannedAcl);
   }
 
   public boolean isRecursive()

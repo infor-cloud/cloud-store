@@ -82,8 +82,7 @@ public class CopyToDirCommand extends Command
             .setSourceObjectKey(obj.getKey())
             .setDestinationBucketName(_options.getDestinationBucketName())
             .setDestinationObjectKey(destKey)
-            .setCannedAcl(_options.getCannedAcl())
-            .setKeepAcl(_options.doesKeepAcl())
+            .setCannedAcl(_options.getCannedAcl().orElse(null))
             .setStorageClass(_options.getStorageClass().orElse(null))
             .createOptions();
 

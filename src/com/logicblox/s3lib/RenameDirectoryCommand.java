@@ -78,8 +78,7 @@ public class RenameDirectoryCommand extends Command
        .setDestinationObjectKey(_options.getDestinationObjectKey())
        .setRecursive(_options.isRecursive())
        .setDryRun(_options.isDryRun())
-       .setCannedAcl(_options.getCannedAcl())
-       .setKeepAcl(_options.doesKeepAcl())
+       .setCannedAcl(_options.getCannedAcl().orElse(null))
        .createOptions();
 
     // hack -- exceptions are a bit of a mess.  copyToDir throws all sorts of stuff that 

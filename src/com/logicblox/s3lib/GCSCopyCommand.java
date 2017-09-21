@@ -79,7 +79,7 @@ public class GCSCopyCommand extends Command
             // .setContentDisposition(sourceObject.getContentDisposition())
             // other metadata to be set?
 
-          if (_options.doesKeepAcl())
+          if (!_options.getCannedAcl().isPresent())
           {
             objectMetadata.setAcl(sourceObject.getAcl());
           }
@@ -90,10 +90,7 @@ public class GCSCopyCommand extends Command
           _options.getDestinationBucketName(), _options.getDestinationObjectKey(),
           objectMetadata);
 
-        if (!_options.doesKeepAcl())
-        {
-            cmd.setDestinationPredefinedAcl(_options.getCannedAcl());
-        }
+        _options.getCannedAcl().ifPresent(cmd::setDestinationPredefinedAcl);
 
         StorageObject resp = cmd.execute();
         return createStoreFile(resp, false);

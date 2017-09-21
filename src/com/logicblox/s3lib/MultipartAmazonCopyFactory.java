@@ -61,7 +61,7 @@ class MultipartAmazonCopyFactory
       ObjectMetadata metadata = client.getObjectMetadata(sourceBucketName,
         sourceObjectKey);
 
-      options.getUserMetadata().ifPresent(um -> metadata.setUserMetadata(um));
+      options.getUserMetadata().ifPresent(metadata::setUserMetadata);
 
       if (metadata.getUserMetaDataOf("s3tool-version") == null)
       {
@@ -77,14 +77,14 @@ class MultipartAmazonCopyFactory
 
       InitiateMultipartUploadRequest req = new InitiateMultipartUploadRequest
           (destinationBucketName, destinationObjectKey, metadata);
-      if (options.doesKeepAcl())
+      if (options.getCannedAcl().isPresent())
       {
-        req.setAccessControlList(
-          S3Client.getObjectAcl(client, sourceBucketName, sourceObjectKey));
+        req.setCannedACL(S3Client.getCannedAcl(options.getCannedAcl().get()));
       }
       else
       {
-        req.setCannedACL(S3Client.getCannedAcl(options.getCannedAcl()));
+        req.setAccessControlList(
+          S3Client.getObjectAcl(client, sourceBucketName, sourceObjectKey));
       }
       // req.setStorageClass(StorageClass.fromValue(storageClass));
       InitiateMultipartUploadResult res = client.initiateMultipartUpload(req);

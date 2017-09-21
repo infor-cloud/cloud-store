@@ -314,7 +314,6 @@ public class AddEncryptionKeyCommand extends Command
               .setDestinationBucketName(metadata.getBucket())
               .setDestinationObjectKey(metadata.getKey())
               .setUserMetadata(metadata.getUserMetadata())
-              .setKeepAcl(true)
               .createOptions();
 
             return _client.copy(options);

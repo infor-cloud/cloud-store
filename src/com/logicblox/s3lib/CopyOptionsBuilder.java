@@ -17,7 +17,6 @@ public class CopyOptionsBuilder extends CommandOptionsBuilder {
     private String storageClass;
     private boolean recursive = false;
     private String cannedAcl;
-    private boolean keepAcl = false;
     private Map<String,String> userMetadata;
     private boolean dryRun = false;
     private boolean ignoreAbortInjection = false;
@@ -50,11 +49,6 @@ public class CopyOptionsBuilder extends CommandOptionsBuilder {
 
     public CopyOptionsBuilder setCannedAcl(String cannedAcl) {
         this.cannedAcl = cannedAcl;
-        return this;
-    }
-
-    public CopyOptionsBuilder setKeepAcl(boolean keepAcl) {
-        this.keepAcl = keepAcl;
         return this;
     }
 
@@ -116,9 +110,6 @@ public class CopyOptionsBuilder extends CommandOptionsBuilder {
                 throw new UsageException("Invalid canned ACL '" + cannedAcl + "'");
             }
         }
-        else {
-            cannedAcl = _cloudStoreClient.getAclHandler().getDefaultAcl();
-        }
 
         if (storageClass != null) {
             if (!_cloudStoreClient.getStorageClassHandler().isStorageClassValid(storageClass)) {
@@ -132,7 +123,7 @@ public class CopyOptionsBuilder extends CommandOptionsBuilder {
         validateOptions();
 
         return new CopyOptions(_cloudStoreClient, sourceBucketName, sourceObjectKey,
-            destinationBucketName, destinationObjectKey, cannedAcl, keepAcl, storageClass,
+            destinationBucketName, destinationObjectKey, cannedAcl, storageClass,
             recursive, dryRun, ignoreAbortInjection, userMetadata, overallProgressListenerFactory);
     }
 }

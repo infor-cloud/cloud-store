@@ -84,7 +84,6 @@ jar(
    java_version = "1.7")
 
 bin_program('cloud-store')
-bin_program('s3tool')
 
 install_files(deps + test_deps, '$(prefix)/lib/java')
 

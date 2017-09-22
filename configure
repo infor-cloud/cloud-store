@@ -10,7 +10,7 @@ moduledir = dirname(abspath(__file__))
 depdir = os.getenv('LB_UNIVERSE_DEPS', '/opt/logicblox/lb-universe-deps')
 
 parse_arguments(
-  prefix='/opt/logicblox/cloudstore',
+  prefix='/opt/logicblox/s3lib',
   deps = { 
            'guava' : depdir,
            'jcommander' : depdir,
@@ -60,7 +60,7 @@ jar(
    srcdirs = ['src'],
    classpath = deps,
    javadoc =
-     {'title' : "cloudstore $(version) API Documentation"},
+     {'title' : "cloud-store $(version) API Documentation"},
    manifest = {'add_classpath': True,
                'main_class': "com.logicblox.cloudstore.Main",
                'package_version': [('Name', "com.logicblox.cloudstore"),

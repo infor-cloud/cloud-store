@@ -17,6 +17,20 @@
 package com.logicblox.cloudstore;
 
 
+import com.google.common.base.Function;
+import com.google.common.base.Functions;
+import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.FutureFallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import org.apache.commons.codec.digest.DigestUtils;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.SecretKeySpec;
+import javax.xml.bind.DatatypeConverter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -34,22 +48,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.Cipher;
-import javax.crypto.spec.SecretKeySpec;
-import javax.xml.bind.DatatypeConverter;
-
-import org.apache.commons.codec.digest.DigestUtils;
-
-import com.google.common.base.Function;
-import com.google.common.base.Functions;
-import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.FutureFallback;
-
 public class S3DownloadCommand extends Command
 {
   private DownloadOptions _options;
@@ -59,7 +57,7 @@ public class S3DownloadCommand extends Command
   private OverallProgressListenerFactory progressListenerFactory;
 
   public S3DownloadCommand(DownloadOptions options)
-      throws IOException
+  throws IOException
   {
     super(options);
     _options = options;
@@ -71,57 +69,61 @@ public class S3DownloadCommand extends Command
     this.progressListenerFactory = _options.getOverallProgressListenerFactory().orElse(null);
   }
 
-  private void createNewFile() throws IOException
+  private void createNewFile()
+  throws IOException
   {
     file = file.getAbsoluteFile();
     File dir = file.getParentFile();
-    if(!dir.exists())
+    if (!dir.exists())
     {
       List<File> newDirs = Utils.mkdirs(dir, _dryRun);
-      if(_dryRun)
+      if (_dryRun)
       {
-        for(File f : newDirs)
-          System.out.println("<DRYRUN> creating missing directory '"
-            + f.getAbsolutePath() + "'");
+        for (File f : newDirs)
+          System.out.println("<DRYRUN> creating missing directory '" + f.getAbsolutePath() + "'");
       }
     }
 
-    if(file.exists())
+    if (file.exists())
     {
-      if(_options.doesOverwrite())
+      if (_options.doesOverwrite())
       {
-        if(_dryRun)
+        if (_dryRun)
         {
           System.out.println("<DRYRUN> overwrite existing file '" + file.getAbsolutePath() + "'");
         }
         else
         {
-          if(!file.delete())
+          if (!file.delete())
+          {
             throw new UsageException("Could not delete existing file '" + file + "'");
+          }
         }
       }
       else
       {
-        throw new UsageException("File '" + file 
-          + "' already exists.  Please delete or use --overwrite");
+        throw new UsageException(
+          "File '" + file + "' already exists.  Please delete or use --overwrite");
       }
     }
 
-    if(!_dryRun)
+    if (!_dryRun)
     {
-      if(!file.createNewFile())
+      if (!file.createNewFile())
+      {
         throw new IOException("File '" + file + "' already exists");
+      }
     }
   }
 
-  
+
   public ListenableFuture<StoreFile> run()
   {
-    if(_dryRun)
+    if (_dryRun)
     {
-      System.out.println("<DRYRUN> downloading '" + getUri(
-        _options.getBucketName(), _options.getObjectKey())
-        + "' to '" + this.file.getAbsolutePath() + "'");
+      System.out.println(
+        "<DRYRUN> downloading '" + getUri(_options.getBucketName(), _options.getObjectKey()) +
+          "' to '" + this.file.getAbsolutePath() + "'");
       return Futures.immediateFuture(null);
     }
 
@@ -132,21 +134,22 @@ public class S3DownloadCommand extends Command
       .createOptions();
 
     ListenableFuture<Metadata> existsFuture = _client.exists(opts);
-    ListenableFuture<StoreFile> result = Futures.transform(
-      existsFuture,
-      new AsyncFunction<Metadata,StoreFile>()
+    ListenableFuture<StoreFile> result =
+      Futures.transform(existsFuture, new AsyncFunction<Metadata, StoreFile>()
       {
         public ListenableFuture<StoreFile> apply(Metadata mdata)
-          throws UsageException
+        throws UsageException
         {
-          if(null == mdata)
-              throw new UsageException("Object not found at " + getUri(
-                _options.getBucketName(), _options.getObjectKey()));
+          if (null == mdata)
+          {
+            throw new UsageException(
+              "Object not found at " + getUri(_options.getBucketName(), _options.getObjectKey()));
+          }
           return scheduleExecution();
         }
       });
 
-      return result;
+    return result;
   }
 
 
@@ -155,9 +158,8 @@ public class S3DownloadCommand extends Command
     ListenableFuture<S3Download> download = startDownload();
     download = Futures.transform(download, startPartsAsyncFunction());
     download = Futures.transform(download, validate());
-    ListenableFuture<StoreFile> res = Futures.transform(
-      download,
-      new Function<S3Download, StoreFile>()
+    ListenableFuture<StoreFile> res =
+      Futures.transform(download, new Function<S3Download, StoreFile>()
       {
         public StoreFile apply(S3Download download)
         {
@@ -168,25 +170,26 @@ public class S3DownloadCommand extends Command
           f.setKey(_options.getObjectKey());
           return f;
         }
-      }
-    );
-
-    return Futures.withFallback(
-      res,
-      new FutureFallback<StoreFile>()
-      {
-        public ListenableFuture<StoreFile> create(Throwable t)
-        {
-          if(S3DownloadCommand.this.file.exists())
-            S3DownloadCommand.this.file.delete();
-
-          if (t instanceof UsageException) {
-            return Futures.immediateFailedFuture(t);
-          }
-          return Futures.immediateFailedFuture(new Exception("Error " +
-                                                             "downloading " + getUri(_options.getBucketName(), _options.getObjectKey()) + ".", t));
-        }
       });
+
+    return Futures.withFallback(res, new FutureFallback<StoreFile>()
+    {
+      public ListenableFuture<StoreFile> create(Throwable t)
+      {
+        if (S3DownloadCommand.this.file.exists())
+        {
+          S3DownloadCommand.this.file.delete();
+        }
+
+        if (t instanceof UsageException)
+        {
+          return Futures.immediateFailedFuture(t);
+        }
+        return Futures.immediateFailedFuture(new Exception(
+          "Error " + "downloading " + getUri(_options.getBucketName(), _options.getObjectKey()) +
+            ".", t));
+      }
+    });
   }
 
   /**
@@ -194,8 +197,7 @@ public class S3DownloadCommand extends Command
    */
   private ListenableFuture<S3Download> startDownload()
   {
-    return executeWithRetry(
-      _client.getInternalExecutor(),
+    return executeWithRetry(_client.getInternalExecutor(),
       new Callable<ListenableFuture<S3Download>>()
       {
         public ListenableFuture<S3Download> call()
@@ -205,9 +207,10 @@ public class S3DownloadCommand extends Command
 
         public String toString()
         {
-          String toStringOutput = "starting download " + _options.getBucketName() +
-                                  "/" + _options.getObjectKey();
-          if (_options.getVersion().isPresent()) {
+          String toStringOutput =
+            "starting download " + _options.getBucketName() + "/" + _options.getObjectKey();
+          if (_options.getVersion().isPresent())
+          {
             return toStringOutput + " version id = " + _options.getVersion().get();
           }
           return toStringOutput;
@@ -217,8 +220,7 @@ public class S3DownloadCommand extends Command
 
   private ListenableFuture<S3Download> startDownloadActual()
   {
-    S3DownloadFactory factory = new S3DownloadFactory(
-      getS3Client(), _client.getApiExecutor());
+    S3DownloadFactory factory = new S3DownloadFactory(getS3Client(), _client.getApiExecutor());
 
     AsyncFunction<S3Download, S3Download> initDownload = new AsyncFunction<S3Download, S3Download>()
     {
@@ -236,18 +238,18 @@ public class S3DownloadCommand extends Command
           if (!String.valueOf(Version.CURRENT).equals(objectVersion))
           {
             throw new UsageException(
-                errPrefix + "file uploaded with unsupported version: " +
-                    objectVersion + ", should be " + Version.CURRENT);
+              errPrefix + "file uploaded with unsupported version: " + objectVersion +
+                ", should be " + Version.CURRENT);
           }
           if (meta.containsKey("s3tool-key-name"))
           {
             if (_encKeyProvider == null)
-              throw new UsageException(errPrefix + "No encryption key " +
-                                       "provider is specified");
+            {
+              throw new UsageException(errPrefix + "No encryption key " + "provider is specified");
+            }
             String keyName = meta.get("s3tool-key-name");
             String keyNamesStr = meta.get("s3tool-key-name");
-            List<String> keyNames = new ArrayList<>(Arrays.asList(
-              keyNamesStr.split(",")));
+            List<String> keyNames = new ArrayList<>(Arrays.asList(keyNamesStr.split(",")));
             String symKeyStr;
             PrivateKey privKey = null;
             if (keyNames.size() == 1)
@@ -262,22 +264,22 @@ public class S3DownloadCommand extends Command
                 {
                   String pubKeyHashHeader = meta.get("s3tool-pubkey-hash");
                   PublicKey pubKey = Command.getPublicKey(privKey);
-                  String pubKeyHashLocal = DatatypeConverter.printBase64Binary(
-                    DigestUtils.sha256(pubKey.getEncoded())).substring(0, 8);
+                  String pubKeyHashLocal =
+                    DatatypeConverter.printBase64Binary(DigestUtils.sha256(pubKey.getEncoded()))
+                      .substring(0, 8);
 
                   if (!pubKeyHashLocal.equals(pubKeyHashHeader))
                   {
                     throw new UsageException(
-                      "Public-key checksums do not match. " +
-                      "Calculated hash: " + pubKeyHashLocal +
-                      ", Expected hash: " + pubKeyHashHeader);
+                      "Public-key checksums do not match. " + "Calculated hash: " +
+                        pubKeyHashLocal + ", Expected hash: " + pubKeyHashHeader);
                   }
                 }
               }
               catch (NoSuchKeyException e)
               {
-                throw new UsageException(errPrefix + "private key '" + keyName
-                    + "' is not available to decrypt");
+                throw new UsageException(
+                  errPrefix + "private key '" + keyName + "' is not available to decrypt");
               }
               symKeyStr = meta.get("s3tool-symmetric-key");
             }
@@ -288,13 +290,13 @@ public class S3DownloadCommand extends Command
               // requirement.
               if (!meta.containsKey("s3tool-pubkey-hash"))
               {
-                throw new UsageException(errPrefix + " public key hashes are " +
-                                         "required when object has multiple " +
-                                         "encryption keys");
+                throw new UsageException(
+                  errPrefix + " public key hashes are " + "required when object has multiple " +
+                    "encryption keys");
               }
               String pubKeyHashHeadersStr = meta.get("s3tool-pubkey-hash");
-              List<String> pubKeyHashHeaders = new ArrayList<>(Arrays.asList(
-                pubKeyHashHeadersStr.split(",")));
+              List<String> pubKeyHashHeaders =
+                new ArrayList<>(Arrays.asList(pubKeyHashHeadersStr.split(",")));
               int privKeyIndex = -1;
               boolean privKeyFound = false;
               for (String kn : keyNames)
@@ -313,8 +315,9 @@ public class S3DownloadCommand extends Command
                 try
                 {
                   PublicKey pubKey = Command.getPublicKey(privKey);
-                  String pubKeyHashLocal = DatatypeConverter.printBase64Binary(
-                    DigestUtils.sha256(pubKey.getEncoded())).substring(0, 8);
+                  String pubKeyHashLocal =
+                    DatatypeConverter.printBase64Binary(DigestUtils.sha256(pubKey.getEncoded()))
+                      .substring(0, 8);
 
                   if (pubKeyHashLocal.equals(pubKeyHashHeaders.get(privKeyIndex)))
                   {
@@ -325,20 +328,19 @@ public class S3DownloadCommand extends Command
                 }
                 catch (NoSuchKeyException e)
                 {
-                  throw new UsageException(errPrefix + "Cannot generate the " +
-                                           "public key out of the private one" +
-                                           " for " + kn);
+                  throw new UsageException(
+                    errPrefix + "Cannot generate the " + "public key out of the private one" +
+                      " for " + kn);
                 }
               }
 
               if (privKey == null || !privKeyFound)
               {
                 // No private key found
-                throw new UsageException(errPrefix + "No eligible private key" +
-                                         " found");
+                throw new UsageException(errPrefix + "No eligible private key" + " found");
               }
-              List<String> symKeys = new ArrayList<>(Arrays.asList(
-                meta.get("s3tool-symmetric-key").split(",")));
+              List<String> symKeys =
+                new ArrayList<>(Arrays.asList(meta.get("s3tool-symmetric-key").split(",")));
               symKeyStr = symKeys.get(privKeyIndex);
             }
 
@@ -348,8 +350,7 @@ public class S3DownloadCommand extends Command
             {
               cipher = Cipher.getInstance("RSA");
               cipher.init(Cipher.DECRYPT_MODE, privKey);
-              encKeyBytes = cipher.doFinal(DatatypeConverter.parseBase64Binary(
-                symKeyStr));
+              encKeyBytes = cipher.doFinal(DatatypeConverter.parseBase64Binary(symKeyStr));
             }
             catch (NoSuchAlgorithmException e)
             {
@@ -381,15 +382,17 @@ public class S3DownloadCommand extends Command
 
         setFileLength(len);
         if (cs == 0)
+        {
           cs = Utils.getDefaultChunkSize(len);
+        }
         setChunkSize(cs);
         return Futures.immediateFuture(download);
       }
     };
 
-    return Futures.transform(factory.startDownload(
-      _options.getBucketName(), _options.getObjectKey(), _options.getVersion()
-        .orElse(null)), initDownload);
+    return Futures.transform(
+      factory.startDownload(_options.getBucketName(), _options.getObjectKey(),
+        _options.getVersion().orElse(null)), initDownload);
   }
 
   /**
@@ -399,7 +402,8 @@ public class S3DownloadCommand extends Command
   {
     return new AsyncFunction<S3Download, S3Download>()
     {
-      public ListenableFuture<S3Download> apply(S3Download download) throws Exception
+      public ListenableFuture<S3Download> apply(S3Download download)
+      throws Exception
       {
         return startParts(download);
       }
@@ -410,18 +414,17 @@ public class S3DownloadCommand extends Command
   throws IOException, UsageException
   {
     OverallProgressListener opl = null;
-    if (progressListenerFactory != null) {
+    if (progressListenerFactory != null)
+    {
       opl = progressListenerFactory.create(
-          new ProgressOptionsBuilder()
-              .setObjectUri(getUri(download.getBucket(), download.getKey()))
-              .setOperation("download")
-              .setFileSizeInBytes(fileLength)
-              .createProgressOptions());
+        new ProgressOptionsBuilder().setObjectUri(getUri(download.getBucket(), download.getKey()))
+          .setOperation("download")
+          .setFileSizeInBytes(fileLength)
+          .createProgressOptions());
     }
 
     List<ListenableFuture<Integer>> parts = new ArrayList<ListenableFuture<Integer>>();
-    for (long position = 0;
-         position < fileLength || (position == 0 && fileLength == 0);
+    for (long position = 0; position < fileLength || (position == 0 && fileLength == 0);
          position += chunkSize)
     {
       parts.add(startPartDownload(download, position, opl));
@@ -430,27 +433,24 @@ public class S3DownloadCommand extends Command
     return Futures.transform(Futures.allAsList(parts), Functions.constant(download));
   }
 
-  private ListenableFuture<Integer> startPartDownload(final S3Download
-                                                          download,
+  private ListenableFuture<Integer> startPartDownload(final S3Download download,
                                                       final long position,
                                                       final OverallProgressListener opl)
   {
     final int partNumber = (int) (position / chunkSize);
 
-    return executeWithRetry(
-      _client.getInternalExecutor(),
-      new Callable<ListenableFuture<Integer>>()
+    return executeWithRetry(_client.getInternalExecutor(), new Callable<ListenableFuture<Integer>>()
+    {
+      public ListenableFuture<Integer> call()
       {
-        public ListenableFuture<Integer> call()
-        {
-          return startPartDownloadActual(download, position, opl);
-        }
+        return startPartDownloadActual(download, position, opl);
+      }
 
-        public String toString()
-        {
-          return "downloading part " + (partNumber + 1);
-        }
-      });
+      public String toString()
+      {
+        return "downloading part " + (partNumber + 1);
+      }
+    });
   }
 
   private ListenableFuture<Integer> startPartDownloadActual(final S3Download download,
@@ -478,8 +478,8 @@ public class S3DownloadCommand extends Command
       }
 
       long postCryptSize = Math.min(fileLength - position, chunkSize);
-      start = partNumber * blockSize * (chunkSize/blockSize + 2);
-      partSize = blockSize * (postCryptSize/blockSize + 2);
+      start = partNumber * blockSize * (chunkSize / blockSize + 2);
+      partSize = blockSize * (postCryptSize / blockSize + 2);
     }
     else
     {
@@ -487,32 +487,41 @@ public class S3DownloadCommand extends Command
       partSize = Math.min(fileLength - position, chunkSize);
     }
 
-    ListenableFuture<InputStream> getPartFuture = download.getPart(start,
-        start + partSize - 1, opl);
+    ListenableFuture<InputStream> getPartFuture =
+      download.getPart(start, start + partSize - 1, opl);
 
-    AsyncFunction<InputStream, Integer> readDownloadFunction = new AsyncFunction<InputStream, Integer>()
-    {
-      public ListenableFuture<Integer> apply(InputStream stream) throws Exception
+    AsyncFunction<InputStream, Integer> readDownloadFunction =
+      new AsyncFunction<InputStream, Integer>()
       {
-        try
+        public ListenableFuture<Integer> apply(InputStream stream)
+        throws Exception
         {
-          readDownload(download, stream, position, partNumber);
-          return Futures.immediateFuture(partNumber);
-        } finally {
-          // make sure that the stream is always closed
           try
           {
-            stream.close();
+            readDownload(download, stream, position, partNumber);
+            return Futures.immediateFuture(partNumber);
           }
-          catch (IOException e) {}
+          finally
+          {
+            // make sure that the stream is always closed
+            try
+            {
+              stream.close();
+            }
+            catch (IOException e)
+            {
+            }
+          }
         }
-      }
-    };
+      };
 
     return Futures.transform(getPartFuture, readDownloadFunction);
   }
 
-  private void readDownload(S3Download download, InputStream inStream, long position, int partNumber)
+  private void readDownload(S3Download download,
+                            InputStream inStream,
+                            long position,
+                            int partNumber)
   throws Exception
   {
     HashingInputStream stream = new HashingInputStream(inStream);
@@ -536,15 +545,16 @@ public class S3DownloadCommand extends Command
     int offset = 0;
     byte[] buf = new byte[bufSize];
 
-    Runnable cleanup = () ->
+    Runnable cleanup = () -> {
+      try
       {
-        try
-        {
-          out.close();
-          stream.close();
-        }
-        catch (IOException ignored) {}
-      };
+        out.close();
+        stream.close();
+      }
+      catch (IOException ignored)
+      {
+      }
+    };
 
     // Handle empty encrypted file, offset == postCryptSize is implied
     if (encKey != null && postCryptSize == 0)
@@ -579,8 +589,7 @@ public class S3DownloadCommand extends Command
     etags.put(partNumber, stream.getDigest());
   }
 
-  private int readSafe(InputStream in, byte[] buf, int offset, int len,
-                       Runnable cleanup)
+  private int readSafe(InputStream in, byte[] buf, int offset, int len, Runnable cleanup)
   throws IOException
   {
     int result;
@@ -596,8 +605,7 @@ public class S3DownloadCommand extends Command
     return result;
   }
 
-  private void writeSafe(RandomAccessFile out, byte[] buf, int offset, int len,
-                         Runnable cleanup)
+  private void writeSafe(RandomAccessFile out, byte[] buf, int offset, int len, Runnable cleanup)
   throws IOException
   {
     try
@@ -625,84 +633,93 @@ public class S3DownloadCommand extends Command
   private ListenableFuture<S3Download> validateChecksum(final S3Download download)
   {
     ListenableFuture<S3Download> result =
-        _client.getInternalExecutor().submit(new Callable<S3Download>()
+      _client.getInternalExecutor().submit(new Callable<S3Download>()
+      {
+        public S3Download call()
+        throws Exception
         {
-          public S3Download call() throws Exception
+          String remoteEtag = download.getETag();
+          String localDigest = "";
+          String fn = "'s3://" + download.getBucket() + "/" + download.getKey() + "'";
+
+          if (null == remoteEtag)
           {
-            String remoteEtag = download.getETag();
-            String localDigest = "";
-            String fn = "'s3://" + download.getBucket() + "/" + download.getKey() + "'";
+            System.err.println(
+              "Warning: Skipped checksum validation for " + fn + ".  No etag attached to object.");
+            return download;
+          }
 
-            if(null == remoteEtag)
+          if ((remoteEtag.length() > 32) && (remoteEtag.charAt(32) == '-'))
+          {
+            // Object has been uploaded using S3's multipart upload protocol,
+            // so it has a special Etag documented here:
+            // http://permalink.gmane.org/gmane.comp.file-systems.s3.s3tools/583
+
+            // Since, the Etag value depends on the value of the chuck size (and
+            // the number of the chucks) we cannot validate robustly checksums for
+            // files uploaded with tool other than s3tool.
+            Map<String, String> meta = download.getMeta();
+            if (!meta.containsKey("s3tool-version"))
             {
-              System.err.println("Warning: Skipped checksum validation for " + 
-                fn + ".  No etag attached to object.");
+              System.err.println(
+                "Warning: Skipped checksum " + "validation for " + fn + ". It was uploaded using " +
+                  "other tool's multipart protocol.");
               return download;
             }
 
-            if ((remoteEtag.length() > 32) &&
-                (remoteEtag.charAt(32) == '-')) {
-              // Object has been uploaded using S3's multipart upload protocol,
-              // so it has a special Etag documented here:
-              // http://permalink.gmane.org/gmane.comp.file-systems.s3.s3tools/583
-              
-              // Since, the Etag value depends on the value of the chuck size (and 
-              // the number of the chucks) we cannot validate robustly checksums for
-              // files uploaded with tool other than s3tool.
-              Map<String,String> meta = download.getMeta();
-              if (!meta.containsKey("s3tool-version")) {
-                System.err.println("Warning: Skipped checksum " +
-                    "validation for " + fn + ". It was uploaded using " +
-                    "other tool's multipart protocol.");
-                return download;
-              }
+            int expectedPartsNum =
+              fileLength == 0 ? 1 : (int) Math.ceil(fileLength / (double) chunkSize);
+            int actualPartsNum = Integer.parseInt(remoteEtag.substring(33));
 
-              int expectedPartsNum = fileLength == 0 ? 1 :
-                  (int) Math.ceil(fileLength / (double) chunkSize);
-              int actualPartsNum = Integer.parseInt(remoteEtag.substring(33));
-
-              if (expectedPartsNum != actualPartsNum) {
-                System.err.println("Warning: Skipped checksum validation for " + fn +
-                    ". Actual number of parts: "  + actualPartsNum +
-                    ", Expected number of parts: " + expectedPartsNum + 
-                    ". Probably the ETag was changed by using another tool.");
-                return download;
-              }
-                
-              ByteArrayOutputStream os = new ByteArrayOutputStream();
-              for (Integer pNum : etags.keySet()) {
-                os.write(etags.get(pNum));
-              }
-
-              localDigest = DigestUtils.md5Hex(os.toByteArray()) + "-" + etags.size();
-            }
-            else {
-              // Object has been uploaded using S3's simple upload protocol,
-              // so its Etag should be equal to object's MD5.
-              // Same should hold for objects uploaded to GCS (if "compose" operation
-              // wasn't used).
-              if (etags.size() == 1) {
-                // Single-part download (1 range GET).
-                localDigest = DatatypeConverter.printHexBinary(etags.get(0)).toLowerCase();
-              }
-              else {
-                // Multi-part download (>1 range GETs).
-                System.err.println("Warning: Skipped checksum validation for " + fn +
-                    ". No efficient way to compute MD5 on multipart downloads of files with singlepart ETag.");
-                return download;
-              }
-            }
-            if(remoteEtag.equals(localDigest)) {
+            if (expectedPartsNum != actualPartsNum)
+            {
+              System.err.println(
+                "Warning: Skipped checksum validation for " + fn + ". Actual number of parts: " +
+                  actualPartsNum + ", Expected number of parts: " + expectedPartsNum +
+                  ". Probably the ETag was changed by using another tool.");
               return download;
             }
-            else {
-              throw new BadHashException("Failed checksum validation for " +
-                  download.getBucket() + "/" + download.getKey() + ". " +
-                  "Calculated MD5: " + localDigest +
-                  ", Expected MD5: " + remoteEtag);
+
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            for (Integer pNum : etags.keySet())
+            {
+              os.write(etags.get(pNum));
+            }
+
+            localDigest = DigestUtils.md5Hex(os.toByteArray()) + "-" + etags.size();
+          }
+          else
+          {
+            // Object has been uploaded using S3's simple upload protocol,
+            // so its Etag should be equal to object's MD5.
+            // Same should hold for objects uploaded to GCS (if "compose" operation
+            // wasn't used).
+            if (etags.size() == 1)
+            {
+              // Single-part download (1 range GET).
+              localDigest = DatatypeConverter.printHexBinary(etags.get(0)).toLowerCase();
+            }
+            else
+            {
+              // Multi-part download (>1 range GETs).
+              System.err.println("Warning: Skipped checksum validation for " + fn +
+                ". No efficient way to compute MD5 on multipart downloads of files with " +
+                "singlepart ETag.");
+              return download;
             }
           }
-        });
+          if (remoteEtag.equals(localDigest))
+          {
+            return download;
+          }
+          else
+          {
+            throw new BadHashException(
+              "Failed checksum validation for " + download.getBucket() + "/" + download.getKey() +
+                ". " + "Calculated MD5: " + localDigest + ", Expected MD5: " + remoteEtag);
+          }
+        }
+      });
 
     return result;
   }

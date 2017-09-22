@@ -17,20 +17,20 @@
 package com.logicblox.cloudstore;
 
 import com.amazonaws.services.s3.model.ObjectMetadata;
+
 import java.io.PrintStream;
 import java.util.Date;
 import java.util.Map;
 
 
 /**
- * Provides an abstract interface to object metadata used by various cloud
- * store services
+ * Provides an abstract interface to object metadata used by various cloud store services
  */
 public class Metadata
 {
   protected ObjectMetadata _s3Metadata = null;
 
-  
+
   Metadata(ObjectMetadata s3Data)
   {
     _s3Metadata = s3Data;
@@ -38,8 +38,8 @@ public class Metadata
 
 
   /**
-   * Gets the optional Cache-Control HTTP header which allows the user to 
-   * specify caching behavior along the HTTP request/reply chain.
+   * Gets the optional Cache-Control HTTP header which allows the user to specify caching behavior
+   * along the HTTP request/reply chain.
    */
   public String getCacheControl()
   {
@@ -47,9 +47,8 @@ public class Metadata
   }
 
   /**
-   * Gets the optional Content-Disposition HTTP header, which specifies 
-   * presentation information for the object such as the recommended 
-   * filename for the object to be saved as.
+   * Gets the optional Content-Disposition HTTP header, which specifies presentation information for
+   * the object such as the recommended filename for the object to be saved as.
    */
   public String getContentDisposition()
   {
@@ -57,10 +56,9 @@ public class Metadata
   }
 
   /**
-   * Gets the optional Content-Encoding HTTP header specifying what content 
-   * encodings have been applied to the object and what decoding mechanisms 
-   * must be applied in order to obtain the media-type referenced by the 
-   * Content-Type field.
+   * Gets the optional Content-Encoding HTTP header specifying what content encodings have been
+   * applied to the object and what decoding mechanisms must be applied in order to obtain the
+   * media-type referenced by the Content-Type field.
    */
   public String getContentEncoding()
   {
@@ -68,8 +66,8 @@ public class Metadata
   }
 
   /**
-   * Gets the Content-Language HTTP header, which describes the natural 
-   * language(s) of the intended audience for the enclosed entity.
+   * Gets the Content-Language HTTP header, which describes the natural language(s) of the intended
+   * audience for the enclosed entity.
    */
   public String getContentLanguage()
   {
@@ -77,8 +75,7 @@ public class Metadata
   }
 
   /**
-   * Gets the Content-Length HTTP header indicating the size of the 
-   * associated object in bytes.
+   * Gets the Content-Length HTTP header indicating the size of the associated object in bytes.
    */
   public long getContentLength()
   {
@@ -86,8 +83,8 @@ public class Metadata
   }
 
   /**
-   * Gets the base64 encoded 128-bit MD5 digest of the associated object 
-   * (content - not including headers) according to RFC 1864.
+   * Gets the base64 encoded 128-bit MD5 digest of the associated object (content - not including
+   * headers) according to RFC 1864.
    */
   public String getContentMD5()
   {
@@ -95,8 +92,7 @@ public class Metadata
   }
 
   /**
-   * Returns the content range of the object if response contains the 
-   * Content-Range header.
+   * Returns the content range of the object if response contains the Content-Range header.
    */
   public Long[] getContentRange()
   {
@@ -104,8 +100,8 @@ public class Metadata
   }
 
   /**
-   * Gets the Content-Type HTTP header, which indicates the type of content 
-   * stored in the associated object.
+   * Gets the Content-Type HTTP header, which indicates the type of content stored in the associated
+   * object.
    */
   public String getContentType()
   {
@@ -113,8 +109,7 @@ public class Metadata
   }
 
   /**
-   * Gets the hex encoded 128-bit MD5 digest of the associated object 
-   * according to RFC 1864.
+   * Gets the hex encoded 128-bit MD5 digest of the associated object according to RFC 1864.
    */
   public String getETag()
   {
@@ -122,8 +117,7 @@ public class Metadata
   }
 
   /**
-   * Returns the time this object will expire and be completely removed 
-   * from the store.
+   * Returns the time this object will expire and be completely removed from the store.
    */
   public Date getExpirationTime()
   {
@@ -131,8 +125,7 @@ public class Metadata
   }
 
   /**
-   * Returns the store-specific rule ID for this object's expiration, or 
-   * null if it doesn't expire.
+   * Returns the store-specific rule ID for this object's expiration, or null if it doesn't expire.
    */
   public String getExpirationTimeRuleId()
   {
@@ -156,9 +149,8 @@ public class Metadata
   }
 
   /**
-   * Gets the value of the Last-Modified header, indicating the date and 
-   * time at which the store last recorded a modification to the associated 
-   * object.
+   * Gets the value of the Last-Modified header, indicating the date and time at which the store
+   * last recorded a modification to the associated object.
    */
   public Date getLastModified()
   {
@@ -166,8 +158,7 @@ public class Metadata
   }
 
   /**
-   * Returns the boolean value which indicates whether there is ongoing 
-   * restore request.
+   * Returns the boolean value which indicates whether there is ongoing restore request.
    */
   public Boolean getOngoingRestore()
   {
@@ -185,7 +176,7 @@ public class Metadata
   /**
    * Gets a map of the raw metadata/headers for the associated object.
    */
-  public Map<String,Object> getRawMetadata()
+  public Map<String, Object> getRawMetadata()
   {
     return _s3Metadata.getRawMetadata();
   }
@@ -199,9 +190,9 @@ public class Metadata
   }
 
   /**
-   * Returns the time at which an object that has been temporarily restored 
-   * from a long term backing store (i.e. AWS Glacier) will expire, and will
-   * need to be restored again in order to be accessed.
+   * Returns the time at which an object that has been temporarily restored from a long term backing
+   * store (i.e. AWS Glacier) will expire, and will need to be restored again in order to be
+   * accessed.
    */
   public Date getRestoreExpirationTime()
   {
@@ -209,8 +200,8 @@ public class Metadata
   }
 
   /**
-   * Returns the server-side encryption algorithm when encrypting the object
-   * using keys managed by the store.
+   * Returns the server-side encryption algorithm when encrypting the object using keys managed by
+   * the store.
    */
   public String getSSEAlgorithm()
   {
@@ -218,8 +209,8 @@ public class Metadata
   }
 
   /**
-   * Returns the server-side encryption algorithm if the object is encrypted
-   * using customer-provided keys.
+   * Returns the server-side encryption algorithm if the object is encrypted using customer-provided
+   * keys.
    */
   public String getSSECustomerAlgorithm()
   {
@@ -237,7 +228,7 @@ public class Metadata
   /**
    * Gets the custom user-metadata for the associated object.
    */
-  public Map<String,String> getUserMetadata()
+  public Map<String, String> getUserMetadata()
   {
     return _s3Metadata.getUserMetadata();
   }
@@ -251,15 +242,14 @@ public class Metadata
   }
 
   /**
-   * Returns true if the user has enabled Requester Pays option when 
-   * conducting this operation from Requester Pays Bucket; else false.
+   * Returns true if the user has enabled Requester Pays option when conducting this operation from
+   * Requester Pays Bucket; else false.
    */
   public boolean isRequesterCharged()
   {
     return _s3Metadata.isRequesterCharged();
   }
 
-  
 
   // only used internally
   void print(PrintStream stream)
@@ -278,10 +268,10 @@ public class Metadata
     stream.println("Server-Side-Encryption: " + getSSEAlgorithm());
     stream.println("Version-Id: " + getVersionId());
     stream.println("");
-    for(Map.Entry<String, String> entry : getUserMetadata().entrySet())
+    for (Map.Entry<String, String> entry : getUserMetadata().entrySet())
     {
       stream.println(entry.getKey() + ": " + entry.getValue());
     }
   }
-  
+
 }

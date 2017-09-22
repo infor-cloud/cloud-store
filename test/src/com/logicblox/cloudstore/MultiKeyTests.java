@@ -16,16 +16,16 @@
 
 package com.logicblox.cloudstore;
 
+import junit.framework.Assert;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.io.File;
 import java.net.URI;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
-
-import junit.framework.Assert;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 
 public class MultiKeyTests
@@ -36,7 +36,7 @@ public class MultiKeyTests
 
   @BeforeClass
   public static void setUp()
-    throws Throwable
+  throws Throwable
   {
     TestUtils.setUp();
     _testBucket = TestUtils.getTestBucket();
@@ -46,7 +46,7 @@ public class MultiKeyTests
 
   @AfterClass
   public static void tearDown()
-    throws Throwable
+  throws Throwable
   {
     TestUtils.tearDown();
     _testBucket = null;
@@ -54,24 +54,24 @@ public class MultiKeyTests
 
 
   private void createKey(String keyName, File keyDir)
-    throws Throwable
+  throws Throwable
   {
     KeyGenCommand kgc = new KeyGenCommand("RSA", 2048);
     File kf = new File(keyDir, keyName + ".pem");
     kgc.savePemKeypair(kf);
   }
-  
+
 
   @Test
   public void testBasicOperation()
-    throws Throwable
+  throws Throwable
   {
     // generate 2 new public/private key pairs
     File keydir = TestUtils.createTmpDir(true);
-    String[] keys = {"cloud-store-ut-1", "cloud-store-ut-2",
-                     "cloud-store-ut-3", "cloud-store-ut-4"};
+    String[] keys =
+      {"cloud-store-ut-1", "cloud-store-ut-2", "cloud-store-ut-3", "cloud-store-ut-4"};
 
-    for(String key : keys)
+    for (String key : keys)
       createKey(key, keydir);
     TestUtils.setKeyProvider(keydir);
 
@@ -101,19 +101,20 @@ public class MultiKeyTests
     dlTemp.delete();
 
     // add the rest of the keys to the file
-    for(int i = 1; i < keys.length; i++)
+    for (int i = 1; i < keys.length; i++)
     {
-      f = _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(
-        _testBucket, objKey, keys[i])).get();
+      f =
+        _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(_testBucket, objKey, keys[i]))
+          .get();
       Assert.assertNotNull(f);
     }
 
     // hide all .pem files
     File hidden = TestUtils.createTmpDir(true);
-    for(String key : keys)
+    for (String key : keys)
     {
-        String fn = key + ".pem";
-        TestUtils.moveFile(fn, keydir, hidden);
+      String fn = key + ".pem";
+      TestUtils.moveFile(fn, keydir, hidden);
     }
 
     // dl should fail
@@ -124,7 +125,7 @@ public class MultiKeyTests
       TestUtils.downloadFile(dest, dlTemp);
       msg = "Expected download error (key not found)";
     }
-    catch(Throwable t)
+    catch (Throwable t)
     {
       // expected
       Assert.assertTrue(t.getMessage().contains("No eligible private key found"));
@@ -132,8 +133,8 @@ public class MultiKeyTests
     Assert.assertNull(msg);
     Assert.assertFalse(dlTemp.exists());
 
-    int []keyOrder = {2, 0, 3};
-    for(int ki : keyOrder)
+    int[] keyOrder = {2, 0, 3};
+    for (int ki : keyOrder)
     {
       // bring back specific .pem file, dl should succeed
       String fn = keys[ki] + ".pem";
@@ -146,8 +147,8 @@ public class MultiKeyTests
       dlTemp.delete();
 
       // remove key from the file, dl should fail
-      f = _client.removeEncryptionKey(TestUtils.buildEncryptionKeyOptions(
-        _testBucket, objKey, keys[ki])).get();
+      f = _client.removeEncryptionKey(
+        TestUtils.buildEncryptionKeyOptions(_testBucket, objKey, keys[ki])).get();
       Assert.assertNotNull(f);
       dlTemp = TestUtils.createTmpFile();
       try
@@ -155,13 +156,17 @@ public class MultiKeyTests
         TestUtils.downloadFile(dest, dlTemp);
         msg = "Expected download error (key not found)";
       }
-      catch(Throwable t)
+      catch (Throwable t)
       {
         // expected
         if (ki == 3)
+        {
           Assert.assertTrue(t.getMessage().contains("is not available to decrypt"));
+        }
         else
+        {
           Assert.assertTrue(t.getMessage().contains("No eligible private key found"));
+        }
       }
       Assert.assertNull(msg);
       Assert.assertFalse(dlTemp.exists());
@@ -180,7 +185,7 @@ public class MultiKeyTests
 
   @Test
   public void testPartialKeys()
-    throws Throwable
+  throws Throwable
   {
     // generate a new public/private key pair
     String key1 = "cloud-store-ut-1";
@@ -211,8 +216,8 @@ public class MultiKeyTests
     TestUtils.writeToFile(publicKey2, new File(keydir, key2FileName));
 
     String objKey = rootPrefix + toUpload.getName();
-    f = _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(
-      _testBucket, objKey, key2)).get();
+    f = _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(_testBucket, objKey, key2))
+      .get();
     Assert.assertNotNull(f);
 
     // try to decrypt with key2's private part
@@ -230,7 +235,7 @@ public class MultiKeyTests
 
   @Test
   public void testDuplicateKey()
-    throws Throwable
+  throws Throwable
   {
     // generate public/private key
     File keydir = TestUtils.createTmpDir(true);
@@ -250,11 +255,11 @@ public class MultiKeyTests
     String msg = null;
     try
     {
-      _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(
-        _testBucket, objKey, key1)).get();
+      _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(_testBucket, objKey, key1))
+        .get();
       msg = "Expected error adding key";
     }
-    catch(Throwable t)
+    catch (Throwable t)
     {
       // expected
       Assert.assertTrue(t.getMessage().contains("already exists"));
@@ -265,7 +270,7 @@ public class MultiKeyTests
 
   @Test
   public void testAddMissingKey()
-    throws Throwable
+  throws Throwable
   {
     // generate public/private key
     File keydir = TestUtils.createTmpDir(true);
@@ -286,11 +291,11 @@ public class MultiKeyTests
     String msg = null;
     try
     {
-      _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(
-        _testBucket, objKey, key2)).get();
+      _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(_testBucket, objKey, key2))
+        .get();
       msg = "Expected error adding key";
     }
-    catch(Throwable t)
+    catch (Throwable t)
     {
       // expected
       Assert.assertTrue(t.getMessage().contains("Missing encryption key"));
@@ -301,7 +306,7 @@ public class MultiKeyTests
 
   @Test
   public void testRemoveMissingKey()
-    throws Throwable
+  throws Throwable
   {
     // generate public/private key
     File keydir = TestUtils.createTmpDir(true);
@@ -323,11 +328,11 @@ public class MultiKeyTests
     String msg = null;
     try
     {
-      _client.removeEncryptionKey(TestUtils.buildEncryptionKeyOptions(
-        _testBucket, objKey, key2)).get();
+      _client.removeEncryptionKey(TestUtils.buildEncryptionKeyOptions(_testBucket, objKey, key2))
+        .get();
       msg = "Expected error removing key";
     }
-    catch(Throwable t)
+    catch (Throwable t)
     {
       // expected
       Assert.assertTrue(t.getMessage().contains("Cannot remove the last remaining key"));
@@ -338,7 +343,7 @@ public class MultiKeyTests
 
   @Test
   public void testUnencryptedAddKey()
-    throws Throwable
+  throws Throwable
   {
     // generate public/private key
     File keydir = TestUtils.createTmpDir(true);
@@ -358,11 +363,11 @@ public class MultiKeyTests
     String msg = null;
     try
     {
-      _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(
-        _testBucket, objKey, key1)).get();
+      _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(_testBucket, objKey, key1))
+        .get();
       msg = "Expected exception";
     }
-    catch(Throwable t)
+    catch (Throwable t)
     {
       // expected
       Assert.assertTrue(t.getMessage().contains("Object doesn't seem to be encrypted"));
@@ -373,7 +378,7 @@ public class MultiKeyTests
 
   @Test
   public void testUnencryptedRemoveKey()
-    throws Throwable
+  throws Throwable
   {
     // generate public/private key
     File keydir = TestUtils.createTmpDir(true);
@@ -393,11 +398,11 @@ public class MultiKeyTests
     String msg = null;
     try
     {
-      _client.removeEncryptionKey(TestUtils.buildEncryptionKeyOptions(
-        _testBucket, objKey, key1)).get();
+      _client.removeEncryptionKey(TestUtils.buildEncryptionKeyOptions(_testBucket, objKey, key1))
+        .get();
       msg = "Expected error removing key";
     }
-    catch(Throwable t)
+    catch (Throwable t)
     {
       // expected
       Assert.assertTrue(t.getMessage().contains("Object doesn't seem to be encrypted"));
@@ -408,7 +413,7 @@ public class MultiKeyTests
 
   @Test
   public void testRemoveLastKey()
-    throws Throwable
+  throws Throwable
   {
     // generate public/private keys
     File keydir = TestUtils.createTmpDir(true);
@@ -427,24 +432,24 @@ public class MultiKeyTests
     Assert.assertNotNull(f);
 
     // add the second key
-    f = _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(
-      _testBucket, objKey, key2)).get();
+    f = _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(_testBucket, objKey, key2))
+      .get();
     Assert.assertNotNull(f);
 
     // removing first key should be OK
-    f = _client.removeEncryptionKey(TestUtils.buildEncryptionKeyOptions(
-      _testBucket, objKey, key1)).get();
+    f = _client.removeEncryptionKey(TestUtils.buildEncryptionKeyOptions(_testBucket, objKey, key1))
+      .get();
     Assert.assertNotNull(f);
 
     // removing last key should fail
     String msg = null;
     try
     {
-      _client.removeEncryptionKey(TestUtils.buildEncryptionKeyOptions(
-        _testBucket, objKey, key2)).get();
+      _client.removeEncryptionKey(TestUtils.buildEncryptionKeyOptions(_testBucket, objKey, key2))
+        .get();
       msg = "Expected error removing key";
     }
-    catch(Throwable t)
+    catch (Throwable t)
     {
       // expected
       Assert.assertTrue(t.getMessage().contains("Cannot remove the last remaining key"));
@@ -455,14 +460,14 @@ public class MultiKeyTests
 
   @Test
   public void testMaxKeys()
-    throws Throwable
+  throws Throwable
   {
     // generate public/private keys
     File keydir = TestUtils.createTmpDir(true);
     int maxKeys = 4;
     int keyCount = maxKeys + 1;
     String[] keys = new String[keyCount];
-    for(int i = 0; i < keyCount; ++i)
+    for (int i = 0; i < keyCount; ++i)
     {
       keys[i] = "cloud-store-ut-" + i;
       createKey(keys[i], keydir);
@@ -478,19 +483,19 @@ public class MultiKeyTests
     Assert.assertNotNull(f);
 
     // should be OK
-    for(int i = 1; i < maxKeys; ++i)
-      _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(
-        _testBucket, objKey, keys[i])).get();
+    for (int i = 1; i < maxKeys; ++i)
+      _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(_testBucket, objKey, keys[i]))
+        .get();
 
     // one more should fail
     String msg = null;
     try
     {
-      _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(
-        _testBucket, objKey, keys[maxKeys])).get();
+      _client.addEncryptionKey(
+        TestUtils.buildEncryptionKeyOptions(_testBucket, objKey, keys[maxKeys])).get();
       msg = "Expected exception";
     }
-    catch(Throwable t)
+    catch (Throwable t)
     {
       // expected
       Assert.assertTrue(t.getMessage().contains("No more than 4 keys are allowed"));
@@ -501,7 +506,7 @@ public class MultiKeyTests
 
   @Test
   public void testDownloadNoPubkeyHash()
-    throws Throwable
+  throws Throwable
   {
     // generate 2 new public/private key pairs
     File keydir = TestUtils.createTmpDir(true);
@@ -521,7 +526,7 @@ public class MultiKeyTests
     String objKey = rootPrefix + toUpload.getName();
     Metadata destMeta = TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest));
     Assert.assertNotNull(destMeta);
-    Map<String,String> destUserMeta = destMeta.getUserMetadata();
+    Map<String, String> destUserMeta = destMeta.getUserMetadata();
     Assert.assertNotNull(destUserMeta);
     Assert.assertTrue(destUserMeta.containsKey("s3tool-pubkey-hash"));
     destUserMeta.remove("s3tool-pubkey-hash");

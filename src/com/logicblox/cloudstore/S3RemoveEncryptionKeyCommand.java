@@ -51,23 +51,21 @@ public class S3RemoveEncryptionKeyCommand extends Command
     // TODO(geokollias): Handle versions?
     ListenableFuture<S3ObjectMetadata> objMeta = getMetadata();
     objMeta = Futures.transform(objMeta, removeEncryptionKeyFn());
-    ListenableFuture<StoreFile> res = Futures.transform(objMeta,
-      updateObjectMetadataFn());
+    ListenableFuture<StoreFile> res = Futures.transform(objMeta, updateObjectMetadataFn());
 
-    return Futures.withFallback(
-      res,
-      new FutureFallback<StoreFile>()
+    return Futures.withFallback(res, new FutureFallback<StoreFile>()
+    {
+      public ListenableFuture<StoreFile> create(Throwable t)
       {
-        public ListenableFuture<StoreFile> create(Throwable t)
+        if (t instanceof UsageException)
         {
-          if (t instanceof UsageException) {
-            return Futures.immediateFailedFuture(t);
-          }
-          return Futures.immediateFailedFuture(new Exception("Error " +
-                                                             "adding new encryption key to " +
-                                                             getUri(_options.getBucketName(), _options.getObjectKey()) + ".", t));
+          return Futures.immediateFailedFuture(t);
         }
-      });
+        return Futures.immediateFailedFuture(new Exception(
+          "Error " + "adding new encryption key to " +
+            getUri(_options.getBucketName(), _options.getObjectKey()) + ".", t));
+      }
+    });
   }
 
   /**
@@ -75,8 +73,7 @@ public class S3RemoveEncryptionKeyCommand extends Command
    */
   private ListenableFuture<S3ObjectMetadata> getMetadata()
   {
-    return executeWithRetry(
-      _client.getInternalExecutor(),
+    return executeWithRetry(_client.getInternalExecutor(),
       new Callable<ListenableFuture<S3ObjectMetadata>>()
       {
         public ListenableFuture<S3ObjectMetadata> call()
@@ -87,20 +84,20 @@ public class S3RemoveEncryptionKeyCommand extends Command
         public String toString()
         {
           return "Starting removal of existing encryption key to " +
-                 getUri(_options.getBucketName(), _options.getObjectKey());
+            getUri(_options.getBucketName(), _options.getObjectKey());
         }
       });
   }
 
   private ListenableFuture<S3ObjectMetadata> getMetadataAsync()
   {
-    S3ObjectMetadataFactory f = new S3ObjectMetadataFactory(getS3Client(),
-      _client.getApiExecutor());
-    ListenableFuture<S3ObjectMetadata> metadataFactory = f.create(
-      _options.getBucketName(), _options.getObjectKey(), null);
+    S3ObjectMetadataFactory f =
+      new S3ObjectMetadataFactory(getS3Client(), _client.getApiExecutor());
+    ListenableFuture<S3ObjectMetadata> metadataFactory =
+      f.create(_options.getBucketName(), _options.getObjectKey(), null);
 
-    AsyncFunction<S3ObjectMetadata, S3ObjectMetadata> checkMetadata = new
-      AsyncFunction<S3ObjectMetadata, S3ObjectMetadata>()
+    AsyncFunction<S3ObjectMetadata, S3ObjectMetadata> checkMetadata =
+      new AsyncFunction<S3ObjectMetadata, S3ObjectMetadata>()
       {
         public ListenableFuture<S3ObjectMetadata> apply(S3ObjectMetadata metadata)
         {
@@ -110,10 +107,10 @@ public class S3RemoveEncryptionKeyCommand extends Command
           {
             throw new UsageException("Object doesn't seem to be encrypted");
           }
-           if (!userMetadata.containsKey("s3tool-pubkey-hash"))
+          if (!userMetadata.containsKey("s3tool-pubkey-hash"))
           {
-            throw new UsageException("Public key hashes are required when " +
-                                     "object has multiple encryption keys");
+            throw new UsageException(
+              "Public key hashes are required when " + "object has multiple encryption keys");
           }
           return Futures.immediateFuture(metadata);
         }
@@ -149,33 +146,33 @@ public class S3RemoveEncryptionKeyCommand extends Command
     String errPrefix = getUri(metadata.getBucket(), metadata.getKey()) + ": ";
     if (_encKeyProvider == null)
     {
-      throw new UsageException(errPrefix + "No encryption key provider is " +
-                               "specified");
+      throw new UsageException(errPrefix + "No encryption key provider is " + "specified");
     }
     if (_encKeyName == null)
     {
-      throw new UsageException(errPrefix + "No encryption key name is " +
-                                 "specified");
+      throw new UsageException(errPrefix + "No encryption key name is " + "specified");
     }
     Map<String, String> userMetadata = metadata.getUserMetadata();
     String keyNamesStr = userMetadata.get("s3tool-key-name");
     List<String> keyNames;
-    if(null == keyNamesStr)
+    if (null == keyNamesStr)
+    {
       keyNames = new ArrayList<String>();
+    }
     else
+    {
       keyNames = new ArrayList<>(Arrays.asList(keyNamesStr.split(",")));
+    }
 
     if (keyNames.size() == 1)
     {
-      throw new UsageException(errPrefix + "Cannot remove the last remaining " +
-                               "key.");
+      throw new UsageException(errPrefix + "Cannot remove the last remaining " + "key.");
     }
 
     int removedKeyIndex = keyNames.indexOf(_encKeyName);
     if (removedKeyIndex == -1)
     {
-      throw new UsageException(errPrefix + "Encryption key " +
-                               _encKeyName + " doesn't exist");
+      throw new UsageException(errPrefix + "Encryption key " + _encKeyName + " doesn't exist");
     }
 
     // Update user-metadata
@@ -185,18 +182,14 @@ public class S3RemoveEncryptionKeyCommand extends Command
     allMeta.addUserMetadata("s3tool-key-name", Joiner.on(",").join(keyNames));
 
     String symKeysStr = userMetadata.get("s3tool-symmetric-key");
-    List<String> symKeys = new ArrayList<>(Arrays.asList(
-      symKeysStr.split(",")));
+    List<String> symKeys = new ArrayList<>(Arrays.asList(symKeysStr.split(",")));
     symKeys.remove(removedKeyIndex);
-    allMeta.addUserMetadata("s3tool-symmetric-key",
-      Joiner.on(",").join(symKeys));
+    allMeta.addUserMetadata("s3tool-symmetric-key", Joiner.on(",").join(symKeys));
 
     String pubKeyHashesStr = userMetadata.get("s3tool-pubkey-hash");
-    List<String> pubKeyHashes = new ArrayList<>(Arrays.asList(
-      pubKeyHashesStr.split(",")));
+    List<String> pubKeyHashes = new ArrayList<>(Arrays.asList(pubKeyHashesStr.split(",")));
     pubKeyHashes.remove(removedKeyIndex);
-    allMeta.addUserMetadata("s3tool-pubkey-hash",
-      Joiner.on(",").join(pubKeyHashes));
+    allMeta.addUserMetadata("s3tool-pubkey-hash", Joiner.on(",").join(pubKeyHashes));
 
     return metadata;
   }
@@ -206,13 +199,13 @@ public class S3RemoveEncryptionKeyCommand extends Command
    */
   private AsyncFunction<S3ObjectMetadata, StoreFile> updateObjectMetadataFn()
   {
-    AsyncFunction<S3ObjectMetadata, StoreFile> update = new
-      AsyncFunction<S3ObjectMetadata, StoreFile>()
+    AsyncFunction<S3ObjectMetadata, StoreFile> update =
+      new AsyncFunction<S3ObjectMetadata, StoreFile>()
       {
         public ListenableFuture<StoreFile> apply(S3ObjectMetadata metadata)
         throws IOException
         {
-          if(null == getGCSClient())
+          if (null == getGCSClient())
           {
             // It seems in AWS there is no way to update an object's metadata
             // without re-uploading/copying the whole object. Here, we
@@ -231,8 +224,7 @@ public class S3RemoveEncryptionKeyCommand extends Command
           }
           else
           {
-            return executeWithRetry(
-              _client.getInternalExecutor(),
+            return executeWithRetry(_client.getInternalExecutor(),
               new Callable<ListenableFuture<StoreFile>>()
               {
                 public ListenableFuture<StoreFile> call()

@@ -36,13 +36,9 @@ public class RenameCommand extends Command
 
   public ListenableFuture<StoreFile> run()
   {
-    if(_options.isDryRun())
+    if (_options.isDryRun())
     {
-      System.out.println("<DRYRUN> renaming '"
-        + getSourceUri()
-        + "' to '"
-        + getDestUri()
-        + "'");
+      System.out.println("<DRYRUN> renaming '" + getSourceUri() + "' to '" + getDestUri() + "'");
       return Futures.immediateFuture(null);
     }
 
@@ -68,10 +64,9 @@ public class RenameCommand extends Command
           .createOptions();
         ListenableFuture<StoreFile> deleteFuture = _client.delete(deleteOpts);
 
-        return Futures.transform(
-          deleteFuture,
+        return Futures.transform(deleteFuture,
 
-          new AsyncFunction<StoreFile,StoreFile>()
+          new AsyncFunction<StoreFile, StoreFile>()
           {
             public ListenableFuture<StoreFile> apply(StoreFile f)
             {
@@ -92,23 +87,22 @@ public class RenameCommand extends Command
       .setObjectKey(_options.getSourceObjectKey())
       .createOptions();
 
-    ListenableFuture<Metadata> sourceExists =
-      _client.exists(opts);
+    ListenableFuture<Metadata> sourceExists = _client.exists(opts);
 
-    return Futures.transform(
-      sourceExists,
-      new AsyncFunction<Metadata,StoreFile>()
+    return Futures.transform(sourceExists, new AsyncFunction<Metadata, StoreFile>()
+    {
+      public ListenableFuture<StoreFile> apply(Metadata mdata)
+      throws UsageException
       {
-        public ListenableFuture<StoreFile> apply(Metadata mdata)
-          throws UsageException
+        if (null == mdata)
         {
-          if(null == mdata)
-            throw new UsageException("Source object '" + getSourceUri() + "' does not exist");
-          return checkDestExists();
+          throw new UsageException("Source object '" + getSourceUri() + "' does not exist");
         }
-      });
+        return checkDestExists();
+      }
+    });
   }
-  
+
 
   // follow dest check with copy op
   private ListenableFuture<StoreFile> checkDestExists()
@@ -121,37 +115,31 @@ public class RenameCommand extends Command
 
     ListenableFuture<Metadata> destExists = _client.exists(opts);
 
-    return Futures.transform(
-      destExists,
-      new AsyncFunction<Metadata,StoreFile>()
+    return Futures.transform(destExists, new AsyncFunction<Metadata, StoreFile>()
+    {
+      public ListenableFuture<StoreFile> apply(Metadata mdata)
+      throws UsageException
       {
-        public ListenableFuture<StoreFile> apply(Metadata mdata)
-          throws UsageException
+        if (null != mdata)
         {
-          if(null != mdata)
-          {
-            throw new UsageException("Cannot overwrite existing destination object '"
-              + getDestUri());
-          }
-          return copyObject();
+          throw new UsageException("Cannot overwrite existing destination object '" + getDestUri());
         }
-      });
+        return copyObject();
+      }
+    });
   }
 
 
   // copy is followed by delete
   private ListenableFuture<StoreFile> copyObject()
   {
-    return Futures.transform(
-      getCopyOp(),
-      new AsyncFunction<StoreFile,StoreFile>()
+    return Futures.transform(getCopyOp(), new AsyncFunction<StoreFile, StoreFile>()
+    {
+      public ListenableFuture<StoreFile> apply(StoreFile srcFile)
       {
-        public ListenableFuture<StoreFile> apply(StoreFile srcFile)
-        {
-          return deleteObject();
-        }
+        return deleteObject();
       }
-    );
+    });
 
   }
 
@@ -159,17 +147,13 @@ public class RenameCommand extends Command
   // delete is followed by return of the dest file
   private ListenableFuture<StoreFile> deleteObject()
   {
-    return Futures.transform(
-      getDeleteOp(),
-      new Function<StoreFile, StoreFile>()
+    return Futures.transform(getDeleteOp(), new Function<StoreFile, StoreFile>()
+    {
+      public StoreFile apply(StoreFile deletedFile)
       {
-        public StoreFile apply(StoreFile deletedFile)
-        {
-          return new StoreFile(
-            _options.getDestinationBucketName(), getDestKey());
-        }
+        return new StoreFile(_options.getDestinationBucketName(), getDestKey());
       }
-    );
+    });
   }
 
 
@@ -203,13 +187,15 @@ public class RenameCommand extends Command
   private String getDestKey()
   {
     String key = _options.getDestinationObjectKey();
-    if(key.endsWith("/"))
+    if (key.endsWith("/"))
     {
       // moving a file into a folder....
       String src = _options.getSourceObjectKey();
       int idx = src.lastIndexOf("/");
-      if(-1 != idx)
+      if (-1 != idx)
+      {
         key = key + src.substring(idx + 1);
+      }
     }
     return key;
   }

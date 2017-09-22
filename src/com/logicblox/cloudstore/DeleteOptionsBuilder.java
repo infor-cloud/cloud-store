@@ -35,31 +35,31 @@ public class DeleteOptionsBuilder extends CommandOptionsBuilder
     _bucket = bucket;
     return this;
   }
-  
+
   public DeleteOptionsBuilder setObjectKey(String objectKey)
   {
     _objectKey = objectKey;
     return this;
   }
-  
+
   public DeleteOptionsBuilder setRecursive(boolean recursive)
   {
     _recursive = recursive;
     return this;
   }
-  
+
   public DeleteOptionsBuilder setDryRun(boolean dryRun)
   {
     _dryRun = dryRun;
     return this;
   }
-  
+
   public DeleteOptionsBuilder setForceDelete(boolean force)
   {
     _forceDelete = force;
     return this;
   }
-  
+
   public DeleteOptionsBuilder setIgnoreAbortInjection(boolean ignore)
   {
     _ignoreAbortInjection = ignore;
@@ -68,13 +68,16 @@ public class DeleteOptionsBuilder extends CommandOptionsBuilder
 
   private void validateOptions()
   {
-    if (_cloudStoreClient == null) {
+    if (_cloudStoreClient == null)
+    {
       throw new UsageException("CloudStoreClient has to be set");
     }
-    else if (_bucket == null) {
+    else if (_bucket == null)
+    {
       throw new UsageException("Bucket has to be set");
     }
-    else if (_objectKey == null) {
+    else if (_objectKey == null)
+    {
       throw new UsageException("Object key has to be set");
     }
   }
@@ -84,7 +87,7 @@ public class DeleteOptionsBuilder extends CommandOptionsBuilder
   {
     validateOptions();
 
-    return new DeleteOptions(_cloudStoreClient, _bucket, _objectKey,
-      _recursive, _dryRun, _forceDelete, _ignoreAbortInjection);
+    return new DeleteOptions(_cloudStoreClient, _bucket, _objectKey, _recursive, _dryRun,
+      _forceDelete, _ignoreAbortInjection);
   }
 }

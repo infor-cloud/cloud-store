@@ -58,12 +58,12 @@ public class S3AbortPendingUploadsCommand extends Command
     }
     else if (_options.getDate().isPresent())
     {
-      future = executeWithRetry(_client.getInternalExecutor(), new AbortByDate(_options.getDate().get()));
+      future =
+        executeWithRetry(_client.getInternalExecutor(), new AbortByDate(_options.getDate().get()));
     }
     else
     {
-      throw new UsageException("At least one of upload id or date should be " +
-                               "defined");
+      throw new UsageException("At least one of upload id or date should be " + "defined");
     }
 
     return future;
@@ -83,16 +83,13 @@ public class S3AbortPendingUploadsCommand extends Command
     public ListenableFuture<Void> call()
     throws ExecutionException, InterruptedException
     {
-      Upload u = new S3MultipartUpload(
-        getS3Client(),
-        _options.getBucketName(),
-        _options.getObjectKey(),
-        _uploadId,
-        null,
-        _client.getApiExecutor(),
-        _client.getOptionsBuilderFactory().newUploadOptionsBuilder().createOptions());
+      Upload u =
+        new S3MultipartUpload(getS3Client(), _options.getBucketName(), _options.getObjectKey(),
+          _uploadId, null, _client.getApiExecutor(),
+          _client.getOptionsBuilderFactory().newUploadOptionsBuilder().createOptions());
 
-      if (u.getInitiationDate().before(_date)) {
+      if (u.getInitiationDate().before(_date))
+      {
         return executeWithRetry(_client.getInternalExecutor(), new AbortById(u.getId()));
       }
 
@@ -101,8 +98,8 @@ public class S3AbortPendingUploadsCommand extends Command
 
     public String toString()
     {
-      return "aborting pending uploads of " + getUri(_options.getBucketName(),
-        _options.getObjectKey()) + ", initiated before " + _date;
+      return "aborting pending uploads of " +
+        getUri(_options.getBucketName(), _options.getObjectKey()) + ", initiated before " + _date;
     }
   }
 
@@ -117,22 +114,18 @@ public class S3AbortPendingUploadsCommand extends Command
 
     public ListenableFuture<Void> call()
     {
-      Upload u = new S3MultipartUpload(
-        getS3Client(),
-        _options.getBucketName(),
-        _options.getObjectKey(),
-        _uploadId,
-        null,
-        _client.getApiExecutor(),
-        _client.getOptionsBuilderFactory().newUploadOptionsBuilder().createOptions());
+      Upload u =
+        new S3MultipartUpload(getS3Client(), _options.getBucketName(), _options.getObjectKey(),
+          _uploadId, null, _client.getApiExecutor(),
+          _client.getOptionsBuilderFactory().newUploadOptionsBuilder().createOptions());
 
       return u.abort();
     }
 
     public String toString()
     {
-      return "aborting pending upload of " + getUri(_options.getBucketName(),
-        _options.getObjectKey()) + ", with id " + _uploadId;
+      return "aborting pending upload of " +
+        getUri(_options.getBucketName(), _options.getObjectKey()) + ", with id " + _uploadId;
     }
   }
 
@@ -146,16 +139,18 @@ public class S3AbortPendingUploadsCommand extends Command
     }
 
     public ListenableFuture<List<Void>> call()
-      throws ExecutionException, InterruptedException
+    throws ExecutionException, InterruptedException
     {
       // TODO(geokollias): It's a blocking call (similar case with DownloadDirectoryCommand)
       List<Upload> pendingUploads = _client.listPendingUploads(_options).get();
 
       List<ListenableFuture<Void>> aborts = new ArrayList<>();
-      for (Upload obj : pendingUploads) {
-        if (obj.getInitiationDate().before(_date)) {
-          ListenableFuture<Void> abort = executeWithRetry(_client.getInternalExecutor(),
-            new AbortById(obj.getId()));
+      for (Upload obj : pendingUploads)
+      {
+        if (obj.getInitiationDate().before(_date))
+        {
+          ListenableFuture<Void> abort =
+            executeWithRetry(_client.getInternalExecutor(), new AbortById(obj.getId()));
           aborts.add(abort);
         }
       }
@@ -165,8 +160,8 @@ public class S3AbortPendingUploadsCommand extends Command
 
     public String toString()
     {
-      return "aborting pending uploads of " + getUri(_options.getBucketName(),
-        _options.getObjectKey()) + ", initiated before " + _date;
+      return "aborting pending uploads of " +
+        getUri(_options.getBucketName(), _options.getObjectKey()) + ", initiated before " + _date;
     }
   }
 }

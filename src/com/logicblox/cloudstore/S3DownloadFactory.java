@@ -16,22 +16,20 @@
 
 package com.logicblox.cloudstore;
 
-import java.util.concurrent.Callable;
-
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
+import java.util.concurrent.Callable;
 
 class S3DownloadFactory
 {
   private ListeningExecutorService executor;
   private AmazonS3 client;
 
-  public S3DownloadFactory(AmazonS3 client, ListeningExecutorService
-      executor)
+  public S3DownloadFactory(AmazonS3 client, ListeningExecutorService executor)
   {
     this.client = client;
     this.executor = executor;
@@ -59,7 +57,7 @@ class S3DownloadFactory
     {
       GetObjectMetadataRequest metareq = new GetObjectMetadataRequest(bucketName, key, version);
       ObjectMetadata data = client.getObjectMetadata(metareq);
-      return new S3Download(client, key, bucketName,version, data, executor);
+      return new S3Download(client, key, bucketName, version, data, executor);
     }
   }
 }

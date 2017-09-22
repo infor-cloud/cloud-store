@@ -19,15 +19,14 @@ package com.logicblox.cloudstore;
 import java.util.Optional;
 
 /**
- * {@code RenameOptions} contains all the details needed by the rename operation.
- * The specified {@code sourceObjectKey}, under {@code sourceBucketName} bucket, is renamed
- * to {@code destinationObjectKey}, under {@code destinationBucketName}.
+ * {@code RenameOptions} contains all the details needed by the rename operation. The specified
+ * {@code sourceObjectKey}, under {@code sourceBucketName} bucket, is renamed to {@code
+ * destinationObjectKey}, under {@code destinationBucketName}.
  * <p>
- * If {@code cannedAcl} is specified then it's applied to the destination
- * object.
+ * If {@code cannedAcl} is specified then it's applied to the destination object.
  * <p>
- * {@code RenameOptions} objects are meant to be built by {@code
- * RenameOptionsBuilder}. This class provides only public getter methods.
+ * {@code RenameOptions} objects are meant to be built by {@code RenameOptionsBuilder}. This class
+ * provides only public getter methods.
  */
 public class RenameOptions extends CommandOptions
 {
@@ -39,10 +38,14 @@ public class RenameOptions extends CommandOptions
   private final boolean _dryRun;
   private String _cannedAcl;
 
-  RenameOptions(
-    CloudStoreClient cloudStoreClient, String sourceBucketName, String sourceObjectKey,
-    String destinationBucket, String destinationObjectKey,
-    String cannedAcl, boolean recursive, boolean dryRun)
+  RenameOptions(CloudStoreClient cloudStoreClient,
+                String sourceBucketName,
+                String sourceObjectKey,
+                String destinationBucket,
+                String destinationObjectKey,
+                String cannedAcl,
+                boolean recursive,
+                boolean dryRun)
   {
     super(cloudStoreClient);
     _sourceBucketName = sourceBucketName;

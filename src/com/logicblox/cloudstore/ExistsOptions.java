@@ -22,9 +22,7 @@ public class ExistsOptions extends CommandOptions
   private final String _bucket;
   private final String _objectKey;
 
-  ExistsOptions(CloudStoreClient cloudStoreClient,
-                String bucket,
-                String objectKey)
+  ExistsOptions(CloudStoreClient cloudStoreClient, String bucket, String objectKey)
   {
     super(cloudStoreClient);
     _bucket = bucket;

@@ -16,29 +16,28 @@
 
 package com.logicblox.cloudstore;
 
-import java.io.ByteArrayOutputStream;
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.concurrent.Callable;
-import java.io.InputStream;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListMap;
-import javax.xml.bind.DatatypeConverter;
-
 import com.amazonaws.event.ProgressListener;
-import com.google.common.primitives.Ints;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AbortMultipartUploadRequest;
 import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
 import com.amazonaws.services.s3.model.CompleteMultipartUploadResult;
+import com.amazonaws.services.s3.model.PartETag;
 import com.amazonaws.services.s3.model.UploadPartRequest;
 import com.amazonaws.services.s3.model.UploadPartResult;
-import com.amazonaws.services.s3.model.PartETag;
+import com.google.common.primitives.Ints;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import org.apache.commons.codec.digest.DigestUtils;
+
+import javax.xml.bind.DatatypeConverter;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 class S3MultipartUpload implements Upload
 {
@@ -52,8 +51,12 @@ class S3MultipartUpload implements Upload
   private UploadOptions options;
 
 
-  public S3MultipartUpload(AmazonS3 client, String bucketName, String key,
-                           String uploadId, Date initiated, ListeningExecutorService executor,
+  public S3MultipartUpload(AmazonS3 client,
+                           String bucketName,
+                           String key,
+                           String uploadId,
+                           Date initiated,
+                           ListeningExecutorService executor,
                            UploadOptions options)
   {
     this.bucketName = bucketName;
@@ -68,11 +71,9 @@ class S3MultipartUpload implements Upload
   public ListenableFuture<Void> uploadPart(int partNumber,
                                            long partSize,
                                            Callable<InputStream> stream,
-                                           OverallProgressListener
-                                               progressListener)
+                                           OverallProgressListener progressListener)
   {
-    return executor.submit(new UploadCallable(partNumber, partSize, stream,
-        progressListener));
+    return executor.submit(new UploadCallable(partNumber, partSize, stream, progressListener));
   }
 
   public ListenableFuture<String> completeUpload()
@@ -107,9 +108,10 @@ class S3MultipartUpload implements Upload
 
   private class AbortCallable implements Callable<Void>
   {
-    public Void call() throws Exception
+    public Void call()
+    throws Exception
     {
-      AbortMultipartUploadRequest req = new AbortMultipartUploadRequest(bucketName,key, uploadId);
+      AbortMultipartUploadRequest req = new AbortMultipartUploadRequest(bucketName, key, uploadId);
       client.abortMultipartUpload(req);
       return null;
     }
@@ -117,15 +119,17 @@ class S3MultipartUpload implements Upload
 
   private class CompleteCallable implements Callable<String>
   {
-    public String call() throws Exception
+    public String call()
+    throws Exception
     {
       String multipartDigest;
       CompleteMultipartUploadRequest req;
 
       req = new CompleteMultipartUploadRequest(bucketName, key, uploadId,
-          new ArrayList<PartETag>(etags.values()));
+        new ArrayList<PartETag>(etags.values()));
       ByteArrayOutputStream os = new ByteArrayOutputStream();
-      for (Integer pNum : etags.keySet()) {
+      for (Integer pNum : etags.keySet())
+      {
         os.write(DatatypeConverter.parseHexBinary(etags.get(pNum).getETag()));
       }
 
@@ -133,14 +137,15 @@ class S3MultipartUpload implements Upload
 
       CompleteMultipartUploadResult res = client.completeMultipartUpload(req);
 
-      if(res.getETag().equals(multipartDigest)){
+      if (res.getETag().equals(multipartDigest))
+      {
         return res.getETag();
       }
-      else {
-        throw new BadHashException("Failed checksum validation for " +
-            bucketName + "/" + key + ". " +
-            "Calculated MD5: " + multipartDigest +
-            ", Expected MD5: " + res.getETag());
+      else
+      {
+        throw new BadHashException(
+          "Failed checksum validation for " + bucketName + "/" + key + ". " + "Calculated MD5: " +
+            multipartDigest + ", Expected MD5: " + res.getETag());
       }
     }
   }
@@ -163,14 +168,18 @@ class S3MultipartUpload implements Upload
       this.progressListener = progressListener;
     }
 
-    public Void call() throws Exception
+    public Void call()
+    throws Exception
     {
-      try (HashingInputStream stream = new HashingInputStream(streamCallable.call())) {
+      try (HashingInputStream stream = new HashingInputStream(streamCallable.call()))
+      {
         return upload(stream);
       }
     }
 
-    private Void upload(HashingInputStream stream) throws BadHashException {
+    private Void upload(HashingInputStream stream)
+    throws BadHashException
+    {
 
       // added to support retry testing
       options.injectAbort(uploadId);
@@ -194,9 +203,10 @@ class S3MultipartUpload implements Upload
       // error message mentioned in LB-2298. That limit should be the
       // expected max size of our input stream in bytes, plus 1, hence
       // partSize+1.
-      req.getRequestClientOptions().setReadLimit(Ints.checkedCast(partSize+1));
+      req.getRequestClientOptions().setReadLimit(Ints.checkedCast(partSize + 1));
 
-      if (progressListener != null) {
+      if (progressListener != null)
+      {
         PartProgressEvent ppe = new PartProgressEvent(Integer.toString(partNumber));
         ProgressListener s3pl = new S3ProgressListener(progressListener, ppe);
         req.setGeneralProgressListener(s3pl);
@@ -213,11 +223,9 @@ class S3MultipartUpload implements Upload
       else
       {
         String calculatedMD5 = DatatypeConverter.printHexBinary(stream.getDigest()).toLowerCase();
-        throw new BadHashException("Failed checksum validation for part " +
-            (partNumber + 1) + " of " +
-            bucketName + "/" + key + ". " +
-            "Calculated MD5: " + calculatedMD5 +
-            ", Expected MD5: " + res.getETag());
+        throw new BadHashException(
+          "Failed checksum validation for part " + (partNumber + 1) + " of " + bucketName + "/" +
+            key + ". " + "Calculated MD5: " + calculatedMD5 + ", Expected MD5: " + res.getETag());
       }
     }
   }

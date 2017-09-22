@@ -29,16 +29,13 @@ class S3ObjectMetadataFactory
   private ListeningExecutorService executor;
   private AmazonS3 client;
 
-  public S3ObjectMetadataFactory(AmazonS3 client,
-                                 ListeningExecutorService executor)
+  public S3ObjectMetadataFactory(AmazonS3 client, ListeningExecutorService executor)
   {
     this.client = client;
     this.executor = executor;
   }
 
-  public ListenableFuture<S3ObjectMetadata> create(String bucketName,
-                                                   String key,
-                                                   String version)
+  public ListenableFuture<S3ObjectMetadata> create(String bucketName, String key, String version)
   {
     return executor.submit(new S3ObjectMetadataCallable(bucketName, key, version));
   }
@@ -68,8 +65,7 @@ class S3ObjectMetadataFactory
         req = new GetObjectMetadataRequest(bucketName, key, version);
       }
       ObjectMetadata metadata = client.getObjectMetadata(req);
-      return new S3ObjectMetadata(client, key, bucketName, version, metadata,
-        executor);
+      return new S3ObjectMetadata(client, key, bucketName, version, metadata, executor);
     }
   }
 }

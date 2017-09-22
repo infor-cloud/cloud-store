@@ -31,13 +31,16 @@ class S3MultipartCopyFactory
   private AmazonS3Client client;
   private ListeningExecutorService executor;
 
-  public S3MultipartCopyFactory(AmazonS3Client client,
-                                ListeningExecutorService executor)
+  public S3MultipartCopyFactory(AmazonS3Client client, ListeningExecutorService executor)
   {
-    if(client == null)
+    if (client == null)
+    {
       throw new IllegalArgumentException("non-null client is required");
-    if(executor == null)
+    }
+    if (executor == null)
+    {
       throw new IllegalArgumentException("non-null executor is required");
+    }
 
     this.client = client;
     this.executor = executor;
@@ -49,8 +52,9 @@ class S3MultipartCopyFactory
                                           String destinationObjectKey,
                                           CopyOptions options)
   {
-    return executor.submit(new StartCallable(sourceBucketName, sourceObjectKey,
-      destinationBucketName, destinationObjectKey, options));
+    return executor.submit(
+      new StartCallable(sourceBucketName, sourceObjectKey, destinationBucketName,
+        destinationObjectKey, options));
   }
 
   private class StartCallable implements Callable<Copy>
@@ -61,8 +65,10 @@ class S3MultipartCopyFactory
     private String destinationObjectKey;
     private CopyOptions options;
 
-    public StartCallable(String sourceBucketName, String sourceObjectKey,
-                         String destinationBucketName, String destinationObjectKey,
+    public StartCallable(String sourceBucketName,
+                         String sourceObjectKey,
+                         String destinationBucketName,
+                         String destinationObjectKey,
                          CopyOptions options)
     {
       this.sourceBucketName = sourceBucketName;
@@ -72,10 +78,10 @@ class S3MultipartCopyFactory
       this.options = options;
     }
 
-    public Copy call() throws Exception
+    public Copy call()
+    throws Exception
     {
-      ObjectMetadata metadata = client.getObjectMetadata(sourceBucketName,
-        sourceObjectKey);
+      ObjectMetadata metadata = client.getObjectMetadata(sourceBucketName, sourceObjectKey);
 
       options.getUserMetadata().ifPresent(metadata::setUserMetadata);
 
@@ -88,25 +94,22 @@ class S3MultipartCopyFactory
         metadata.addUserMetadata("s3tool-file-length", Long.toString(metadata.getContentLength()));
       }
       // It seems setting the STORAGE_CLASS metadata header is sufficient
-      options.getStorageClass().ifPresent(
-        sc -> metadata.setHeader(Headers.STORAGE_CLASS, sc));
+      options.getStorageClass().ifPresent(sc -> metadata.setHeader(Headers.STORAGE_CLASS, sc));
 
-      InitiateMultipartUploadRequest req = new InitiateMultipartUploadRequest
-          (destinationBucketName, destinationObjectKey, metadata);
+      InitiateMultipartUploadRequest req =
+        new InitiateMultipartUploadRequest(destinationBucketName, destinationObjectKey, metadata);
       if (options.getCannedAcl().isPresent())
       {
         req.setCannedACL(S3Client.getCannedAcl(options.getCannedAcl().get()));
       }
       else
       {
-        req.setAccessControlList(
-          S3Client.getObjectAcl(client, sourceBucketName, sourceObjectKey));
+        req.setAccessControlList(S3Client.getObjectAcl(client, sourceBucketName, sourceObjectKey));
       }
       // req.setStorageClass(StorageClass.fromValue(storageClass));
       InitiateMultipartUploadResult res = client.initiateMultipartUpload(req);
-      return new S3MultipartCopy(client, sourceBucketName, sourceObjectKey,
-          destinationBucketName, destinationObjectKey, res.getUploadId(), metadata,
-          executor);
+      return new S3MultipartCopy(client, sourceBucketName, sourceObjectKey, destinationBucketName,
+        destinationObjectKey, res.getUploadId(), metadata, executor);
     }
   }
 }

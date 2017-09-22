@@ -17,9 +17,9 @@
 package com.logicblox.cloudstore;
 
 /**
- * {@code EncryptionKeyOptions} contains all the options needed for
- * adding/removing encryption keys.
- *
+ * {@code EncryptionKeyOptions} contains all the options needed for adding/removing encryption
+ * keys.
+ * <p>
  * {@code EncryptionKeyOptions} objects are meant to be built by {@code
  * EncryptionKeyOptionsBuilder}. This class provides only public getter methods.
  */

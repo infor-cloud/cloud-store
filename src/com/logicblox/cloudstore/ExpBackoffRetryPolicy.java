@@ -28,10 +28,7 @@ public abstract class ExpBackoffRetryPolicy implements ThrowableRetryPolicy
   private final long _maxDelay;
   private final int _maxRetryCount;
 
-  public ExpBackoffRetryPolicy(int initialDelay,
-                               int maxDelay,
-                               int maxRetryCount,
-                               TimeUnit timeUnit)
+  public ExpBackoffRetryPolicy(int initialDelay, int maxDelay, int maxRetryCount, TimeUnit timeUnit)
   {
     _initialDelay = timeUnit.toMillis(initialDelay);
     _maxDelay = timeUnit.toMillis(maxDelay);
@@ -46,16 +43,16 @@ public abstract class ExpBackoffRetryPolicy implements ThrowableRetryPolicy
   {
     long delay = 0;
 
-    if(thrown != null)
+    if (thrown != null)
     {
       if (thrown instanceof AmazonServiceException)
       {
         AmazonServiceException exc = (AmazonServiceException) thrown;
-        if(exc.getErrorType() == AmazonServiceException.ErrorType.Service &&
+        if (exc.getErrorType() == AmazonServiceException.ErrorType.Service &&
           exc.getErrorCode().equals("SlowDown"))
         {
           long sdInitialDelay = TimeUnit.SECONDS.toMillis(10);
-          long sdMaxDelay     = TimeUnit.MINUTES.toMillis(10);
+          long sdMaxDelay = TimeUnit.MINUTES.toMillis(10);
           delay = expBackoffFullJitter(sdInitialDelay, sdMaxDelay, retryCount);
 
           return delay;
@@ -63,7 +60,7 @@ public abstract class ExpBackoffRetryPolicy implements ThrowableRetryPolicy
       }
     }
 
-    if(retryCount > 0)
+    if (retryCount > 0)
     {
       delay = expBackoff(_initialDelay, _maxDelay, retryCount);
     }
@@ -78,11 +75,10 @@ public abstract class ExpBackoffRetryPolicy implements ThrowableRetryPolicy
   }
 
   /**
-   * Full Jitter exponential backoff as described in
-   * https://www.awsarchitectureblog.com/2015/03/backoff.html
+   * Full Jitter exponential backoff as described in https://www.awsarchitectureblog
+   * .com/2015/03/backoff.html
    */
-  private long expBackoffFullJitter(long initialDelay, long maxDelay, int
-    retryCount)
+  private long expBackoffFullJitter(long initialDelay, long maxDelay, int retryCount)
   {
     long delay = expBackoff(initialDelay, maxDelay, retryCount);
 

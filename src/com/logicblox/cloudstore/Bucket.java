@@ -27,7 +27,7 @@ public class Bucket
   protected String _name = null;
   protected Date _creationDate = null;
   protected Owner _owner = null;
-  
+
 
   /**
    * Create a new bucket.
@@ -39,7 +39,7 @@ public class Bucket
     _owner = owner;
   }
 
-  
+
   /**
    * Return this bucket's name.
    */

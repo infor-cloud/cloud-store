@@ -20,12 +20,12 @@ import java.util.Date;
 import java.util.Optional;
 
 /**
- * {@code PendingUploadsOptions} contains all the options needed by the various
- * pending upload methods.
+ * {@code PendingUploadsOptions} contains all the options needed by the various pending upload
+ * methods.
  * <p>
- * Each pending upload method might use different options provided by this
- * class. Which options are used is documented in each method individually.
- *
+ * Each pending upload method might use different options provided by this class. Which options are
+ * used is documented in each method individually.
+ * <p>
  * {@code PendingUploadsOptions} objects are meant to be built by {@code
  * PendingUploadsOptionsBuilder}. This class provides only public getter methods.
  */

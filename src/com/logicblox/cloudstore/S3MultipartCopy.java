@@ -50,8 +50,10 @@ class S3MultipartCopy implements Copy
   private ListeningExecutorService executor;
 
   public S3MultipartCopy(AmazonS3 client,
-                         String sourceBucketName, String sourceObjectKey,
-                         String destinationBucketName, String destinationObjectKey,
+                         String sourceBucketName,
+                         String sourceObjectKey,
+                         String destinationBucketName,
+                         String destinationObjectKey,
                          String uploadId,
                          ObjectMetadata meta,
                          ListeningExecutorService executor)
@@ -66,11 +68,12 @@ class S3MultipartCopy implements Copy
     this.executor = executor;
   }
 
-  public ListenableFuture<Void> copyPart(int partNumber, Long startByte, Long
-      endByte, OverallProgressListener progressListener)
+  public ListenableFuture<Void> copyPart(int partNumber,
+                                         Long startByte,
+                                         Long endByte,
+                                         OverallProgressListener progressListener)
   {
-    return executor.submit(new CopyCallable(partNumber, startByte, endByte,
-        progressListener));
+    return executor.submit(new CopyCallable(partNumber, startByte, endByte, progressListener));
   }
 
   public ListenableFuture<String> completeCopy()
@@ -103,22 +106,25 @@ class S3MultipartCopy implements Copy
     return meta.getContentLength();
   }
 
-  public Map<String,String> getMeta()
+  public Map<String, String> getMeta()
   {
     return meta.getUserMetadata();
   }
 
   private class CompleteCallable implements Callable<String>
   {
-    public String call() throws Exception
+    public String call()
+    throws Exception
     {
       String multipartDigest;
       CompleteMultipartUploadRequest req;
 
-      req = new CompleteMultipartUploadRequest(destinationBucketName,
-          destinationObjectKey, uploadId, new ArrayList<PartETag>(etags.values()));
+      req =
+        new CompleteMultipartUploadRequest(destinationBucketName, destinationObjectKey, uploadId,
+          new ArrayList<PartETag>(etags.values()));
       ByteArrayOutputStream os = new ByteArrayOutputStream();
-      for (Integer pNum : etags.keySet()) {
+      for (Integer pNum : etags.keySet())
+      {
         os.write(DatatypeConverter.parseHexBinary(etags.get(pNum).getETag()));
       }
 
@@ -126,14 +132,15 @@ class S3MultipartCopy implements Copy
 
       CompleteMultipartUploadResult res = client.completeMultipartUpload(req);
 
-      if(res.getETag().equals(multipartDigest)) {
+      if (res.getETag().equals(multipartDigest))
+      {
         return res.getETag();
       }
-      else {
-        throw new BadHashException("Failed checksum validation for " +
-            destinationBucketName + "/" + destinationObjectKey + ". " +
-            "Calculated MD5: " + multipartDigest +
-            ", Expected MD5: " + res.getETag());
+      else
+      {
+        throw new BadHashException(
+          "Failed checksum validation for " + destinationBucketName + "/" + destinationObjectKey +
+            ". " + "Calculated MD5: " + multipartDigest + ", Expected MD5: " + res.getETag());
       }
     }
   }
@@ -154,27 +161,27 @@ class S3MultipartCopy implements Copy
       this.progressListener = progressListener;
     }
 
-    public Void call() throws Exception
+    public Void call()
+    throws Exception
     {
-      CopyPartRequest req = new CopyPartRequest()
-          .withSourceBucketName(sourceBucketName)
-          .withSourceKey(sourceObjectKey)
-          .withDestinationBucketName(destinationBucketName)
-          .withDestinationKey(destinationObjectKey)
-          .withUploadId(uploadId)
-          .withFirstByte(startByte)
-          .withLastByte(endByte)
-          .withPartNumber(partNumber + 1);
-      
-      if (progressListener != null) {
+      CopyPartRequest req = new CopyPartRequest().withSourceBucketName(sourceBucketName)
+        .withSourceKey(sourceObjectKey)
+        .withDestinationBucketName(destinationBucketName)
+        .withDestinationKey(destinationObjectKey)
+        .withUploadId(uploadId)
+        .withFirstByte(startByte)
+        .withLastByte(endByte)
+        .withPartNumber(partNumber + 1);
+
+      if (progressListener != null)
+      {
         PartProgressEvent ppe = new PartProgressEvent(Integer.toString(partNumber));
         ProgressListener s3pl = new S3ProgressListener(progressListener, ppe);
         req.setGeneralProgressListener(s3pl);
       }
 
       CopyPartResult res = client.copyPart(req);
-      etags.put(res.getPartNumber(),
-          new PartETag(res.getPartNumber(), res.getETag()));
+      etags.put(res.getPartNumber(), new PartETag(res.getPartNumber(), res.getETag()));
 
       return null;
     }

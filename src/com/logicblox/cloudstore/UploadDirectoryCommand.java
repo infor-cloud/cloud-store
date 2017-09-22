@@ -55,7 +55,7 @@ public class UploadDirectoryCommand extends Command
       {
         try
         {
-          boolean res = ! FileUtils.isSymlink(file);
+          boolean res = !FileUtils.isSymlink(file);
           return res;
         }
         catch (FileNotFoundException e)
@@ -80,25 +80,25 @@ public class UploadDirectoryCommand extends Command
     List<ListenableFuture<StoreFile>> files = new ArrayList<ListenableFuture<StoreFile>>();
     for (File file : found)
     {
-      String relPath = file.getPath().substring(_options.getFile().getPath().length()+1);
+      String relPath = file.getPath().substring(_options.getFile().getPath().length() + 1);
       String key = Paths.get(_options.getObjectKey(), relPath).toString();
 
       UploadOptions options = _client.getOptionsBuilderFactory()
-          .newUploadOptionsBuilder()
-          .setFile(file)
-          .setBucketName(_options.getBucketName())
-          .setObjectKey(key)
-          .setChunkSize(_options.getChunkSize())
-          .setEncKey(_options.getEncKey().orElse(null))
-          .setCannedAcl(_options.getCannedAcl())
-          .setOverallProgressListenerFactory(_options
-            .getOverallProgressListenerFactory().orElse(null))
-          .createOptions();
+        .newUploadOptionsBuilder()
+        .setFile(file)
+        .setBucketName(_options.getBucketName())
+        .setObjectKey(key)
+        .setChunkSize(_options.getChunkSize())
+        .setEncKey(_options.getEncKey().orElse(null))
+        .setCannedAcl(_options.getCannedAcl())
+        .setOverallProgressListenerFactory(
+          _options.getOverallProgressListenerFactory().orElse(null))
+        .createOptions();
 
-      if(_options.isDryRun())
+      if (_options.isDryRun())
       {
-        System.out.println("<DRYRUN> uploading '" + file.getAbsolutePath()
-                           + "' to '" + getUri(_options.getBucketName(), key) + "'");
+        System.out.println("<DRYRUN> uploading '" + file.getAbsolutePath() + "' to '" +
+          getUri(_options.getBucketName(), key) + "'");
       }
       else
       {
@@ -106,7 +106,7 @@ public class UploadDirectoryCommand extends Command
       }
     }
 
-    if(_options.isDryRun())
+    if (_options.isDryRun())
     {
       return Futures.immediateFuture(null);
     }

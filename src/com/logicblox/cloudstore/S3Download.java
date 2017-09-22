@@ -17,7 +17,6 @@
 package com.logicblox.cloudstore;
 
 import com.amazonaws.event.ProgressListener;
-
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -37,13 +36,12 @@ class S3Download
   private String bucketName;
   private String version;
 
-  public S3Download(
-    AmazonS3 client,
-    String key,
-    String bucketName,
-    String version,
-    ObjectMetadata meta,
-    ListeningExecutorService executor)
+  public S3Download(AmazonS3 client,
+                    String key,
+                    String bucketName,
+                    String version,
+                    ObjectMetadata meta,
+                    ListeningExecutorService executor)
   {
     this.client = client;
     this.key = key;
@@ -58,14 +56,14 @@ class S3Download
     return getPart(start, end, null);
   }
 
-  public ListenableFuture<InputStream> getPart(long start, long end,
-                                               OverallProgressListener
-                                                   progressListener)
+  public ListenableFuture<InputStream> getPart(long start,
+                                               long end,
+                                               OverallProgressListener progressListener)
   {
     return executor.submit(new DownloadCallable(start, end, progressListener));
   }
 
-  public Map<String,String> getMeta()
+  public Map<String, String> getMeta()
   {
     return meta.getUserMetadata();
   }
@@ -89,7 +87,7 @@ class S3Download
   {
     return version;
   }
-  
+
   public String getBucket()
   {
     return bucketName;
@@ -101,27 +99,30 @@ class S3Download
     private long end;
     private OverallProgressListener progressListener;
 
-    public DownloadCallable(long start, long end,
-                            OverallProgressListener progressListener)
+    public DownloadCallable(long start, long end, OverallProgressListener progressListener)
     {
       this.start = start;
       this.end = end;
       this.progressListener = progressListener;
     }
 
-    public InputStream call() throws Exception
+    public InputStream call()
+    throws Exception
     {
       GetObjectRequest req = null;
-      if (version == null) {
+      if (version == null)
+      {
         req = new GetObjectRequest(bucketName, key);
       }
-      else {
+      else
+      {
         req = new GetObjectRequest(bucketName, key, version);
       }
       req.setRange(start, end);
-      if (progressListener != null) {
-        PartProgressEvent ppe = new PartProgressEvent(
-            Long.toString(start) + ':' + Long.toString(end));
+      if (progressListener != null)
+      {
+        PartProgressEvent ppe =
+          new PartProgressEvent(Long.toString(start) + ':' + Long.toString(end));
         ProgressListener s3pl = new S3ProgressListener(progressListener, ppe);
         req.setGeneralProgressListener(s3pl);
       }

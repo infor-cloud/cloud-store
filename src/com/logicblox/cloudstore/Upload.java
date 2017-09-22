@@ -16,11 +16,11 @@
 
 package com.logicblox.cloudstore;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import java.io.InputStream;
 import java.util.Date;
 import java.util.concurrent.Callable;
-
-import com.google.common.util.concurrent.ListenableFuture;
 
 interface Upload
 {

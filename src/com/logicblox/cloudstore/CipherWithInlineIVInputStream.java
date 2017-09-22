@@ -16,17 +16,18 @@
 
 package com.logicblox.cloudstore;
 
-import java.io.InputStream;
-import java.io.FilterInputStream;
-import java.io.IOException;
-import java.security.Key;
-import java.security.InvalidKeyException;
-import java.security.InvalidAlgorithmParameterException;
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.spec.IvParameterSpec;
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.Key;
 
-class CipherWithInlineIVInputStream extends FilterInputStream {
+class CipherWithInlineIVInputStream extends FilterInputStream
+{
   private int opmode;
   private int ivBytesWritten = 0;
   private int ivLen;
@@ -41,14 +42,17 @@ class CipherWithInlineIVInputStream extends FilterInputStream {
 
     this.opmode = opmode;
 
-    switch (this.opmode) {
+    switch (this.opmode)
+    {
       case Cipher.DECRYPT_MODE:
         iv = new byte[ivLen];
         int offset = 0;
         // !!! Should this be in a background thread?
-        while (offset < ivLen) {
+        while (offset < ivLen)
+        {
           int result = in.read(iv, offset, ivLen - offset);
-          if (result == -1) {
+          if (result == -1)
+          {
             // !!! What should we really do here?
             throw new RuntimeException();
           }
@@ -62,22 +66,29 @@ class CipherWithInlineIVInputStream extends FilterInputStream {
         iv = cipher.getIV();
         break;
       default:
-        throw new IllegalArgumentException(CipherWithInlineIVInputStream.class.getCanonicalName() + " can only be constructed in DECRYPT_MODE or ENCRYPT_MODE");
+        throw new IllegalArgumentException(CipherWithInlineIVInputStream.class.getCanonicalName() +
+          " can only be constructed in DECRYPT_MODE or ENCRYPT_MODE");
     }
     this.in = new CipherInputStream(this.in, cipher);
   }
 
   @Override
-  public int available() throws IOException {
-    if (this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen) {
+  public int available()
+  throws IOException
+  {
+    if (this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen)
+    {
       return ivLen - ivBytesWritten;
     }
     return in.available();
   }
 
   @Override
-  public int read() throws IOException {
-    if (this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen) {
+  public int read()
+  throws IOException
+  {
+    if (this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen)
+    {
       ivBytesWritten++;
       return (int) iv[ivBytesWritten - 1] & 0xFF;
     }
@@ -85,8 +96,11 @@ class CipherWithInlineIVInputStream extends FilterInputStream {
   }
 
   @Override
-  public int read(byte[] b) throws IOException {
-    if (this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen) {
+  public int read(byte[] b)
+  throws IOException
+  {
+    if (this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen)
+    {
       int readCount = Math.min(b.length, ivLen - ivBytesWritten);
       System.arraycopy(iv, ivBytesWritten, b, 0, readCount);
       ivBytesWritten += readCount;
@@ -96,8 +110,11 @@ class CipherWithInlineIVInputStream extends FilterInputStream {
   }
 
   @Override
-  public int read(byte[] b, int off, int len) throws IOException {
-    if (this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen) {
+  public int read(byte[] b, int off, int len)
+  throws IOException
+  {
+    if (this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen)
+    {
       int readCount = Math.min(len, ivLen - ivBytesWritten);
       System.arraycopy(iv, ivBytesWritten, b, off, readCount);
       ivBytesWritten += readCount;
@@ -107,8 +124,11 @@ class CipherWithInlineIVInputStream extends FilterInputStream {
   }
 
   @Override
-  public long skip(long n) throws IOException {
-    if (this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen) {
+  public long skip(long n)
+  throws IOException
+  {
+    if (this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen)
+    {
       long skipped = Math.min(ivLen - ivBytesWritten, n);
       ivBytesWritten += skipped;
       return skipped;

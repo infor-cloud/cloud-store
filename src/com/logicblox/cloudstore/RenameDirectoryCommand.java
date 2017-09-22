@@ -37,17 +37,17 @@ public class RenameDirectoryCommand extends Command
   }
 
   public ListenableFuture<List<StoreFile>> run()
-    throws InterruptedException, ExecutionException, IOException
+  throws InterruptedException, ExecutionException, IOException
   {
     return startCopyThenDelete();
   }
 
   private ListenableFuture<List<StoreFile>> startCopyThenDelete()
-    throws InterruptedException, ExecutionException, IOException
+  throws InterruptedException, ExecutionException, IOException
   {
     final String bucket = _options.getDestinationBucketName();
     final String key = stripSlash(_options.getDestinationObjectKey());
-       // exists command doesn't allow trailing slash
+    // exists command doesn't allow trailing slash
 
     ExistsOptions opts = _client.getOptionsBuilderFactory()
       .newExistsOptionsBuilder()
@@ -56,79 +56,78 @@ public class RenameDirectoryCommand extends Command
       .createOptions();
 
     ListenableFuture<Metadata> destExists = _client.exists(opts);
-    return Futures.transform(
-      destExists,
-      new AsyncFunction<Metadata,List<StoreFile>>()
+    return Futures.transform(destExists, new AsyncFunction<Metadata, List<StoreFile>>()
+    {
+      public ListenableFuture<List<StoreFile>> apply(Metadata mdata)
+      throws Exception
       {
-        public ListenableFuture<List<StoreFile>> apply(Metadata mdata)
-          throws Exception
+        if (null != mdata)
         {
-          if(null != mdata)
-          {
-            throw new UsageException("Cannot overwrite existing destination object '"
-              + getUri(bucket, key));
-          }
-          return copyThenDelete();
+          throw new UsageException(
+            "Cannot overwrite existing destination object '" + getUri(bucket, key));
         }
-      });
+        return copyThenDelete();
+      }
+    });
   }
 
 
   private String stripSlash(String s)
   {
-    if(s.endsWith("/"))
+    if (s.endsWith("/"))
+    {
       return s.substring(0, s.length() - 1);
+    }
     else
+    {
       return s;
+    }
   }
 
 
   private ListenableFuture<List<StoreFile>> copyThenDelete()
-    throws InterruptedException, ExecutionException, IOException
+  throws InterruptedException, ExecutionException, IOException
   {
     CopyOptions copyOpts = _client.getOptionsBuilderFactory()
-       .newCopyOptionsBuilder()
-       .setSourceBucketName(_options.getSourceBucketName())
-       .setSourceObjectKey(_options.getSourceObjectKey())
-       .setDestinationBucketName(_options.getDestinationBucketName())
-       .setDestinationObjectKey(_options.getDestinationObjectKey())
-       .setRecursive(_options.isRecursive())
-       .setDryRun(_options.isDryRun())
-       .setCannedAcl(_options.getCannedAcl().orElse(null))
-       .createOptions();
+      .newCopyOptionsBuilder()
+      .setSourceBucketName(_options.getSourceBucketName())
+      .setSourceObjectKey(_options.getSourceObjectKey())
+      .setDestinationBucketName(_options.getDestinationBucketName())
+      .setDestinationObjectKey(_options.getDestinationObjectKey())
+      .setRecursive(_options.isRecursive())
+      .setDryRun(_options.isDryRun())
+      .setCannedAcl(_options.getCannedAcl().orElse(null))
+      .createOptions();
 
     // hack -- exceptions are a bit of a mess.  copyToDir throws all sorts of stuff that 
     //         should be collected into an ExecutionException?
     ListenableFuture<List<StoreFile>> copyFuture = null;
     copyFuture = _client.copyToDir(copyOpts);
 
-    return Futures.transform(
-      copyFuture,
-      new AsyncFunction<List<StoreFile>, List<StoreFile>>()
+    return Futures.transform(copyFuture, new AsyncFunction<List<StoreFile>, List<StoreFile>>()
+    {
+      public ListenableFuture<List<StoreFile>> apply(final List<StoreFile> destFiles)
+      throws InterruptedException, ExecutionException
       {
-        public ListenableFuture<List<StoreFile>> apply(final List<StoreFile> destFiles)
-          throws InterruptedException, ExecutionException
-        {
-          DeleteOptions delOpts = _client.getOptionsBuilderFactory()
-            .newDeleteOptionsBuilder()
-            .setBucketName(_options.getSourceBucketName())
-            .setObjectKey(_options.getSourceObjectKey())
-            .setRecursive(_options.isRecursive())
-            .setDryRun(_options.isDryRun())
-            .createOptions();
+        DeleteOptions delOpts = _client.getOptionsBuilderFactory()
+          .newDeleteOptionsBuilder()
+          .setBucketName(_options.getSourceBucketName())
+          .setObjectKey(_options.getSourceObjectKey())
+          .setRecursive(_options.isRecursive())
+          .setDryRun(_options.isDryRun())
+          .createOptions();
 
-          // need to return list of dest files
-          return Futures.transform(
-            _client.deleteDir(delOpts),
-            new Function<List<StoreFile>, List<StoreFile>>()
+        // need to return list of dest files
+        return Futures.transform(_client.deleteDir(delOpts),
+          new Function<List<StoreFile>, List<StoreFile>>()
+          {
+            public List<StoreFile> apply(List<StoreFile> deletedFiles)
             {
-              public List<StoreFile> apply(List<StoreFile> deletedFiles)
-              {
-                return destFiles;
-              }
-            });
-        }
-      });
+              return destFiles;
+            }
+          });
+      }
+    });
   }
 
 }

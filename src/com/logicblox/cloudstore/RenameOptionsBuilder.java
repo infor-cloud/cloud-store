@@ -19,9 +19,8 @@ package com.logicblox.cloudstore;
 /**
  * {@code RenameOptionsBuilder} is a builder for {@code RenameOptions} objects.
  * <p>
- * Setting {@code sourceBucketName}, {@code sourceObjectKey}, {@code
- * destinationBucket} and {@code destinationObjectKey} is mandatory. All the
- * others are optional.
+ * Setting {@code sourceBucketName}, {@code sourceObjectKey}, {@code destinationBucket} and {@code
+ * destinationObjectKey} is mandatory. All the others are optional.
  */
 public class RenameOptionsBuilder extends CommandOptionsBuilder
 {
@@ -82,24 +81,31 @@ public class RenameOptionsBuilder extends CommandOptionsBuilder
 
   private void validateOptions()
   {
-    if (_cloudStoreClient == null) {
+    if (_cloudStoreClient == null)
+    {
       throw new UsageException("CloudStoreClient has to be set");
     }
-    else if (_sourceBucketName == null) {
+    else if (_sourceBucketName == null)
+    {
       throw new UsageException("Source bucket name has to be set");
     }
-    else if (_sourceObjectKey == null) {
+    else if (_sourceObjectKey == null)
+    {
       throw new UsageException("Source object key has to be set");
     }
-    else if (_destinationBucketName == null) {
+    else if (_destinationBucketName == null)
+    {
       throw new UsageException("Destination bucket name key has to be set");
     }
-    else if (_destinationObjectKey == null) {
+    else if (_destinationObjectKey == null)
+    {
       throw new UsageException("Destination object key has to be set");
     }
 
-    if (_cannedAcl != null) {
-      if (!_cloudStoreClient.getAclHandler().isCannedAclValid(_cannedAcl)) {
+    if (_cannedAcl != null)
+    {
+      if (!_cloudStoreClient.getAclHandler().isCannedAclValid(_cannedAcl))
+      {
         throw new UsageException("Invalid canned ACL '" + _cannedAcl + "'");
       }
     }
@@ -110,8 +116,7 @@ public class RenameOptionsBuilder extends CommandOptionsBuilder
   {
     validateOptions();
 
-    return new RenameOptions(_cloudStoreClient, _sourceBucketName,
-      _sourceObjectKey, _destinationBucketName, _destinationObjectKey,
-      _cannedAcl, _recursive, _dryRun);
+    return new RenameOptions(_cloudStoreClient, _sourceBucketName, _sourceObjectKey,
+      _destinationBucketName, _destinationObjectKey, _cannedAcl, _recursive, _dryRun);
   }
 }

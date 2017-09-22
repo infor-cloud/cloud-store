@@ -16,6 +16,26 @@
 
 package com.logicblox.cloudstore;
 
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.Protocol;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.AWSCredentialsProviderChain;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
+import com.amazonaws.auth.InstanceProfileCredentialsProvider;
+import com.amazonaws.auth.SystemPropertiesCredentialsProvider;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -33,33 +53,11 @@ import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.Protocol;
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSCredentialsProviderChain;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
-import com.amazonaws.auth.InstanceProfileCredentialsProvider;
-import com.amazonaws.auth.SystemPropertiesCredentialsProvider;
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3Client;
-
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
-
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-
 
 public class Utils
 {
   private static String _defaultKeyDir = null;
-  
+
   static void initLogging()
   {
     Logger root = Logger.getRootLogger();
@@ -79,11 +77,11 @@ public class Utils
     apacheLogger.addAppender(console);
   }
 
-  
+
   public static DateFormat getDefaultDateFormat()
   {
     DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-//    DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss,SSSSSS");
+    //    DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss,SSSSSS");
     df.setTimeZone(TimeZone.getTimeZone("UTC"));
 
     return df;
@@ -91,8 +89,10 @@ public class Utils
 
   public static String getDefaultKeyDirectory()
   {
-    if(null == _defaultKeyDir)
+    if (null == _defaultKeyDir)
+    {
       _defaultKeyDir = System.getProperty("user.home") + File.separator + ".s3lib-keys";
+    }
     return _defaultKeyDir;
   }
 
@@ -113,7 +113,8 @@ public class Utils
     // S3 requires the number of parts to be less that 10K. GCS might not have
     // that requirement (whenever we happen to use its native API call) but,
     // still, it seems like a good idea to avoid huge number of parts.
-    while (partsNum >= 10000) {
+    while (partsNum >= 10000)
+    {
       chunkSize *= 1.5;
       partsNum = fileSize / chunkSize;
     }
@@ -146,41 +147,48 @@ public class Utils
     }
   }
 
-  public static URI getURI(String s) throws URISyntaxException
+  public static URI getURI(String s)
+  throws URISyntaxException
   {
     URI uri = new URI(s);
-    if("https".equals(uri.getScheme()) && uri.getHost().endsWith("amazonaws.com"))
+    if ("https".equals(uri.getScheme()) && uri.getHost().endsWith("amazonaws.com"))
     {
       uri = getS3URI(s);
       return uri;
     }
 
     uri = new URI(s);
-    if("https".equals(uri.getScheme()) && uri.getHost().endsWith("googleapis.com"))
+    if ("https".equals(uri.getScheme()) && uri.getHost().endsWith("googleapis.com"))
     {
       uri = getGCSURI(s);
       return uri;
     }
 
     uri = new URI(s);
-    if((!"s3".equals(uri.getScheme())) && (!"gs".equals(uri.getScheme())))
+    if ((!"s3".equals(uri.getScheme())) && (!"gs".equals(uri.getScheme())))
+    {
       throw new UsageException("Object URL needs to have either 's3' or 'gs' as scheme");
+    }
 
     return uri;
   }
 
   public static URI getURI(String scheme, String bucket, String objectKey)
-    throws URISyntaxException
+  throws URISyntaxException
   {
     return new URI(scheme + "://" + bucket + "/" + objectKey);
   }
 
-  public static URI getS3URI(String s) throws URISyntaxException, UsageException {
+  public static URI getS3URI(String s)
+  throws URISyntaxException, UsageException
+  {
     URI uri = new URI(s);
 
     String path = uri.getPath();
-    if(path == null || path.length() < 3 || path.charAt(0) != '/' || path.indexOf('/', 1) == -1)
+    if (path == null || path.length() < 3 || path.charAt(0) != '/' || path.indexOf('/', 1) == -1)
+    {
       throw new UsageException("HTTPS S3 URLs have the format https://s3.amazonaws.com/bucket/key");
+    }
 
     String bucket = path.substring(1, path.indexOf('/', 1));
     String key = path.substring(path.indexOf('/', 1) + 1);
@@ -189,24 +197,32 @@ public class Utils
     return uri;
   }
 
-  public static URI getGCSURI(String s) throws URISyntaxException, UsageException {
+  public static URI getGCSURI(String s)
+  throws URISyntaxException, UsageException
+  {
     Matcher matcher;
     matcher = matchesGCSURI("https://storage.googleapis.com/(.+?)/(.+?)$", s);
     if (matcher.find())
+    {
       return new URI("gs://" + matcher.group(1) + "/" + (matcher.group(2)));
+    }
 
     matcher = matchesGCSURI("https://(.+?).storage.googleapis.com/(.+?)$", s);
     if (matcher.find())
+    {
       return new URI("gs://" + matcher.group(1) + "/" + (matcher.group(2)));
+    }
 
     matcher = matchesGCSURI("https://www.googleapis.com/upload/storage/v1/b/(.+?)/o/(.+?)$", s);
     if (matcher.find())
+    {
       return new URI("gs://" + matcher.group(1) + "/" + (matcher.group(2)));
+    }
 
     throw new UsageException("HTTPS GCS URLs have one of the following formats:\n" +
-            "https://storage.googleapis.com/bucket/key (for non-upload operations)\n" +
-            "https://bucket.storage.googleapis.com/key (for non-upload operations)\n" +
-            "https://www.googleapis.com/upload/storage/v1/b/bucket/o/key\n");
+      "https://storage.googleapis.com/bucket/key (for non-upload operations)\n" +
+      "https://bucket.storage.googleapis.com/key (for non-upload operations)\n" +
+      "https://www.googleapis.com/upload/storage/v1/b/bucket/o/key\n");
   }
 
   private static Matcher matchesGCSURI(String pattern, String uri)
@@ -220,25 +236,34 @@ public class Utils
    */
   enum StorageService
   {
-    S3, GCS
+    S3,
+    GCS
   }
 
   static StorageService detectStorageService(String endpoint, String scheme)
-      throws URISyntaxException
+  throws URISyntaxException
   {
     // We consider endpoint (if exists) stronger evidence than URI
     if (endpoint != null)
     {
       URI endpointuri;
       if (!endpoint.startsWith("https://") && !endpoint.startsWith("http://"))
+      {
         endpointuri = new URI("https://" + endpoint);
+      }
       else
+      {
         endpointuri = new URI(endpoint);
+      }
 
       if (endpointuri.getHost().endsWith("amazonaws.com"))
+      {
         return StorageService.S3;
+      }
       else if (endpointuri.getHost().endsWith("googleapis.com"))
+      {
         return StorageService.GCS;
+      }
     }
 
     if (scheme != null)
@@ -252,17 +277,19 @@ public class Utils
       }
     }
 
-    throw new UsageException("Cannot detect storage service: (endpoint=" +
-        endpoint +  ", scheme=" + scheme + ")");
+    throw new UsageException(
+      "Cannot detect storage service: (endpoint=" + endpoint + ", scheme=" + scheme + ")");
   }
 
-  public static final List<String> defaultCredentialProvidersS3 = Arrays.asList(
-      "env-vars", "system-properties", "credentials-profile", "ec2-metadata-service");
+  public static final List<String> defaultCredentialProvidersS3 =
+    Arrays.asList("env-vars", "system-properties", "credentials-profile", "ec2-metadata-service");
 
   public static AWSCredentialsProvider getCredentialsProviderS3(List<String> credentialsProvidersS3)
   {
     if (credentialsProvidersS3 == null || credentialsProvidersS3.size() == 0)
+    {
       return new DefaultAWSCredentialsProviderChain();
+    }
 
     List<AWSCredentialsProvider> choices = new ArrayList<>();
     for (String cp : credentialsProvidersS3)
@@ -287,7 +314,9 @@ public class Utils
     }
 
     if (choices.size() == 0)
+    {
       return new DefaultAWSCredentialsProviderChain();
+    }
 
     AWSCredentialsProvider[] choicesArr = new AWSCredentialsProvider[choices.size()];
     choicesArr = choices.toArray(choicesArr);
@@ -299,37 +328,46 @@ public class Utils
 
   public static final String GCS_XML_SECRET_KEY_ENV_VAR = "GCS_XML_SECRET_KEY";
 
-  static class GCSXMLEnvironmentVariableCredentialsProvider implements AWSCredentialsProvider {
+  static class GCSXMLEnvironmentVariableCredentialsProvider implements AWSCredentialsProvider
+  {
 
-    public AWSCredentials getCredentials() {
+    public AWSCredentials getCredentials()
+    {
       String accessKey = System.getenv(GCS_XML_ACCESS_KEY_ENV_VAR);
       String secretKey = System.getenv(GCS_XML_SECRET_KEY_ENV_VAR);
 
-      if (accessKey == null || secretKey == null) {
-        throw new UsageException(
-            "Unable to load GCS credentials from environment variables " +
-                GCS_XML_ACCESS_KEY_ENV_VAR + " and " + GCS_XML_SECRET_KEY_ENV_VAR);
+      if (accessKey == null || secretKey == null)
+      {
+        throw new UsageException("Unable to load GCS credentials from environment variables " +
+          GCS_XML_ACCESS_KEY_ENV_VAR + " and " + GCS_XML_SECRET_KEY_ENV_VAR);
       }
 
       return new BasicAWSCredentials(accessKey, secretKey);
     }
 
-    public void refresh() {}
+    public void refresh()
+    {
+    }
 
     @Override
-    public String toString() {
+    public String toString()
+    {
       return getClass().getSimpleName();
     }
   }
 
-  public static GCSXMLEnvironmentVariableCredentialsProvider getGCSXMLEnvironmentVariableCredentialsProvider() {
+  public static GCSXMLEnvironmentVariableCredentialsProvider
+  getGCSXMLEnvironmentVariableCredentialsProvider()
+  {
     return new GCSXMLEnvironmentVariableCredentialsProvider();
   }
 
   public static String getBucket(URI uri)
   {
-    if((!"s3".equals(uri.getScheme())) && (!"gs".equals(uri.getScheme())))
+    if ((!"s3".equals(uri.getScheme())) && (!"gs".equals(uri.getScheme())))
+    {
       throw new IllegalArgumentException("Object URL needs to have either 's3' or 'gs' as scheme");
+    }
 
     return uri.getAuthority();
   }
@@ -338,35 +376,44 @@ public class Utils
   {
     String path = uri.getPath();
 
-    if(path == null || path.length() == 0)
-      throw new UsageException("URLs have the format scheme://bucket/key, where scheme is either 's3' or 'gs'");
+    if (path == null || path.length() == 0)
+    {
+      throw new UsageException(
+        "URLs have the format scheme://bucket/key, where scheme is either 's3' or 'gs'");
+    }
 
-    if(path.charAt(0) != '/')
-      throw new UsageException("URLs have the format scheme://bucket/key, where scheme is either 's3' or 'gs'");
-    
+    if (path.charAt(0) != '/')
+    {
+      throw new UsageException(
+        "URLs have the format scheme://bucket/key, where scheme is either 's3' or 'gs'");
+    }
+
     return path.substring(1);
   }
 
   public static ListeningExecutorService createApiExecutor(int nThreads)
   {
-    return MoreExecutors.listeningDecorator(
-        Executors.newFixedThreadPool(nThreads));
+    return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(nThreads));
   }
 
   public static ListeningScheduledExecutorService createInternalExecutor(int poolSize)
   {
-    return MoreExecutors.listeningDecorator(
-        Executors.newScheduledThreadPool(poolSize));
+    return MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(poolSize));
   }
 
   public static KeyProvider createKeyProvider(String encKeyDirectory)
   {
     File dir = new File(encKeyDirectory);
-    if(!dir.exists() && !dir.mkdirs())
+    if (!dir.exists() && !dir.mkdirs())
+    {
       throw new UsageException("specified key directory '" + encKeyDirectory + "' does not exist");
+    }
 
-    if(!dir.isDirectory())
-      throw new UsageException("specified key directory '" + encKeyDirectory + "' is not a directory");
+    if (!dir.isDirectory())
+    {
+      throw new UsageException(
+        "specified key directory '" + encKeyDirectory + "' is not a directory");
+    }
 
     return new DirectoryKeyProvider(dir);
   }
@@ -374,14 +421,18 @@ public class Utils
   public static boolean viaProxy()
   {
     if (System.getenv("HTTP_PROXY") != null || System.getenv("HTTPS_PROXY") != null)
+    {
       return true;
+    }
     return false;
   }
 
   public static ClientConfiguration setProxy(ClientConfiguration clientCfg)
   {
     if (!Utils.viaProxy())
+    {
       return clientCfg;
+    }
 
     String proxy = System.getenv("HTTPS_PROXY");
     if (proxy == null)
@@ -393,7 +444,8 @@ public class Utils
     try
     {
       url = new URL(proxy);
-    } catch (MalformedURLException e)
+    }
+    catch (MalformedURLException e)
     {
       System.err.println("Malformed proxy url: " + proxy);
       e.printStackTrace();
@@ -422,30 +474,29 @@ public class Utils
   }
 
   public static CloudStoreClient createCloudStoreClient(String scheme, String endpoint)
-      throws URISyntaxException, GeneralSecurityException, IOException
+  throws URISyntaxException, GeneralSecurityException, IOException
   {
-    return createCloudStoreClient(
-      scheme, endpoint, getDefaultMaxConcurrentConnections(), 
-      getDefaultKeyDirectory(), new ArrayList<String>(),
-      false, getDefaultRetryCount());
+    return createCloudStoreClient(scheme, endpoint, getDefaultMaxConcurrentConnections(),
+      getDefaultKeyDirectory(), new ArrayList<String>(), false, getDefaultRetryCount());
   }
 
-  public static CloudStoreClient createCloudStoreClient(
-    String scheme, String endpoint, int maxConcurrentConnections,
-    String encKeyDirectory, List<String> credentialProvidersS3,
-    boolean stubborn, int retryCount)
-      throws URISyntaxException, GeneralSecurityException, IOException
+  public static CloudStoreClient createCloudStoreClient(String scheme,
+                                                        String endpoint,
+                                                        int maxConcurrentConnections,
+                                                        String encKeyDirectory,
+                                                        List<String> credentialProvidersS3,
+                                                        boolean stubborn,
+                                                        int retryCount)
+  throws URISyntaxException, GeneralSecurityException, IOException
   {
-    ListeningExecutorService uploadExecutor = 
-      createApiExecutor(maxConcurrentConnections);
+    ListeningExecutorService uploadExecutor = createApiExecutor(maxConcurrentConnections);
 
     StorageService service = detectStorageService(endpoint, scheme);
 
     CloudStoreClient client;
-    if(service == StorageService.GCS)
+    if (service == StorageService.GCS)
     {
-      AWSCredentialsProvider gcsXMLProvider =
-        getGCSXMLEnvironmentVariableCredentialsProvider();
+      AWSCredentialsProvider gcsXMLProvider = getGCSXMLEnvironmentVariableCredentialsProvider();
 
       // make the AWS interfaces use V2 signatures for authentication
       ClientConfiguration config = new ClientConfiguration();
@@ -453,72 +504,77 @@ public class Utils
 
       AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(gcsXMLProvider, config);
 
-      client = new GCSClientBuilder()
-          .setInternalS3Client(s3Client)
-          .setApiExecutor(uploadExecutor)
-          .setKeyProvider(createKeyProvider(encKeyDirectory))
-          .createGCSClient();
+      client = new GCSClientBuilder().setInternalS3Client(s3Client)
+        .setApiExecutor(uploadExecutor)
+        .setKeyProvider(createKeyProvider(encKeyDirectory))
+        .createGCSClient();
     }
     else
     {
       ClientConfiguration clientCfg = new ClientConfiguration();
       clientCfg = setProxy(clientCfg);
-      AWSCredentialsProvider credsProvider =
-        getCredentialsProviderS3(credentialProvidersS3);
+      AWSCredentialsProvider credsProvider = getCredentialsProviderS3(credentialProvidersS3);
       AmazonS3Client s3Client = new AmazonS3Client(credsProvider, clientCfg);
 
-      client = new S3ClientBuilder()
-          .setInternalS3Client(s3Client)
-          .setApiExecutor(uploadExecutor)
-          .setKeyProvider(createKeyProvider(encKeyDirectory))
-          .createS3Client();
+      client = new S3ClientBuilder().setInternalS3Client(s3Client)
+        .setApiExecutor(uploadExecutor)
+        .setKeyProvider(createKeyProvider(encKeyDirectory))
+        .createS3Client();
     }
 
     client.setRetryClientException(stubborn);
     client.setRetryCount(retryCount);
-    if(endpoint != null)
+    if (endpoint != null)
+    {
       client.setEndpoint(endpoint);
+    }
 
     return client;
   }
 
   public static List<File> mkdirs(File dir)
-    throws IOException
+  throws IOException
   {
     return mkdirs(dir, false);
   }
-  
+
   // create all missing parent directories of the specified directory.
   // if dryRun is true, just return what would be created instead of doing
   // the actual work.
   // return a list of the directories that had to be created, ordered top down
   public static List<File> mkdirs(File dir, boolean dryRun)
-    throws IOException
+  throws IOException
   {
-     String[] subdirs = dir.getAbsolutePath().split(File.separator);
-     List<File> created = new ArrayList<File>();
-     File current = null;
-     for(String s : subdirs)
-     {
-       if(null == current)
-       {
-         if(s.isEmpty())
-           current = new File("/");
-         else
-           current = new File(s);
-       }
-       else
-       {
-         current = new File(current, s);
-       }
-       if(!current.exists())
-       {
-         if(!dryRun)
-           current.mkdir();
-         created.add(current);
-       }
-     }
-     return created;
+    String[] subdirs = dir.getAbsolutePath().split(File.separator);
+    List<File> created = new ArrayList<File>();
+    File current = null;
+    for (String s : subdirs)
+    {
+      if (null == current)
+      {
+        if (s.isEmpty())
+        {
+          current = new File("/");
+        }
+        else
+        {
+          current = new File(s);
+        }
+      }
+      else
+      {
+        current = new File(current, s);
+      }
+      if (!current.exists())
+      {
+        if (!dryRun)
+        {
+          current.mkdir();
+        }
+        created.add(current);
+      }
+    }
+    return created;
   }
 
 }

@@ -53,7 +53,7 @@ The minio S3 server can be used to run all the tests locally without AWS or GCS 
 
 Cloud-store relies on a few third party jars.  We currently don't have separate package for these jars so you need to download an lb-universe-deps package and add all the jars in the lib/java/ directory to your CLASSPATH environemtn variable.  The easiest way to set up these dependencies right now is to install a full LB release package and source the env.sh script that comes with LB.  There is also a run-tests bash script in the cloud-store repository that can help as an example of how to set up and invoke the test suite.
 
-To build the cloud-store test suite, download all the source files from the cloud-store repository (aka s3lib) and run
+To build the cloud-store test suite, download all the source files from the cloud-store repository and run
 
     ./configure
     make

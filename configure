@@ -10,7 +10,7 @@ moduledir = dirname(abspath(__file__))
 depdir = os.getenv('LB_UNIVERSE_DEPS', '/opt/logicblox/lb-universe-deps')
 
 parse_arguments(
-  prefix='/opt/logicblox/s3lib',
+  prefix='/opt/logicblox/cloudstore',
   deps = { 
            'guava' : depdir,
            'jcommander' : depdir,
@@ -25,7 +25,7 @@ parse_arguments(
 open_makefile()
 
 emit('version = 0.2')
-emit('package_name = s3lib-$(version)')
+emit('package_name = cloudstore-$(version)')
 emit('all : jars')
 
 
@@ -53,34 +53,34 @@ deps = [
 
     '$(gcs_java_sdk)/lib/java/jsr305-1.3.9.jar']
 
-rev_info = os.getenv('name', 's3lib-1234-0pre').split('-')[1].replace('_', '-')
+rev_info = os.getenv('name', 'cloudstore-1234-0pre').split('-')[1].replace('_', '-')
 impl_version = (rev_info + '_' + strftime("%Y%m%d%H%M", gmtime()))
 jar(
-   name = 's3lib-$(version)',
+   name = 'cloudstore-$(version)',
    srcdirs = ['src'],
    classpath = deps,
    javadoc =
-     {'title' : "s3lib $(version) API Documentation"},
+     {'title' : "cloudstore $(version) API Documentation"},
    manifest = {'add_classpath': True,
-               'main_class': "com.logicblox.s3lib.Main",
-               'package_version': [('Name', "com.logicblox.s3lib"),
+               'main_class': "com.logicblox.cloudstore.Main",
+               'package_version': [('Name', "com.logicblox.cloudstore"),
                                    ('Specification-Title', "APIs for cloud storage"),
                                    ('Specification-Version', "1.0"),
                                    ('Specification-Vendor', "LogicBlox, Inc."),
-                                   ('Implementation-Title', "com.logicblox.s3lib"),
+                                   ('Implementation-Title', "com.logicblox.cloudstore"),
                                    ('Implementation-Version', impl_version),
                                    ('Implementation-Vendor', "LogicBlox, Inc.")]},
    java_version = "1.8")
 
 test_deps = [
   '$(junit)/lib/java/junit-4.8.2.jar',
-  '$(build)/jars/s3lib-$(version).jar']
+  '$(build)/jars/cloudstore-$(version).jar']
 jar(
-   name = 's3lib-test',
+   name = 'cloudstore-test',
    srcdirs = ['test/src'],
    classpath = deps + test_deps,
    manifest = {'add_classpath': True,
-               'main_class': "com.logicblox.s3lib.TestRunner"},
+               'main_class': "com.logicblox.cloudstore.TestRunner"},
    java_version = "1.7")
 
 bin_program('cloud-store')

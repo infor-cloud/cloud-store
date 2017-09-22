@@ -8,7 +8,7 @@
 , python ? pkgs.pythonFull
 , jdk ? pkgs.openjdk8 or pkgs.openjdk
 , unzip ? pkgs.unzip
-, s3lib ?  { outPath = ./.; rev = "1234"; }
+, cloudstore ?  { outPath = ./.; rev = "1234"; }
 }:
 
 let
@@ -17,8 +17,8 @@ let
 
   version = src: stdenv.lib.optionalString (src ? revCount) (toString src.revCount + "_" ) + toString (src.rev or src.tag or "unknown");
 
-  revision = version s3lib;
-  name = "s3lib-${revision}";
+  revision = version cloudstore;
+  name = "cloudstore-${revision}";
 
   build_minio = pkgs.buildGoPackage rec {
     name = "minio";
@@ -78,7 +78,7 @@ let
         minio_pid="$!"
         sleep 5
 
-        $jre/bin/java -cp ./lib/java/s3lib-test.jar com.logicblox.s3lib.TestRunner --keydir $keydir --endpoint $s3_endpoint
+        $jre/bin/java -cp ./lib/java/cloudstore-test.jar com.logicblox.cloudstore.TestRunner --keydir $keydir --endpoint $s3_endpoint
       '';
 
       installPhase = ''
@@ -94,7 +94,7 @@ let
     source_tarball = 
       pkgs.releaseTools.sourceTarball { 
         inherit name;
-        src = "${s3lib}";
+        src = "${cloudstore}";
         buildInputs = [python jdk];
         preConfigure = "patchShebangs .";
       };

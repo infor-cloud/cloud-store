@@ -3,15 +3,15 @@ set -e
 
 iterations=1
 
-s3lib_jars=$LB_INSTALL_PREFIX/s3lib/lib/java
+cloudstore_jars=$LB_INSTALL_PREFIX/cloudstore/lib/java
 
 test_jars=$PWD/build/jars
    # for local testing
 
-cp="$LOGICBLOX_HOME/share/java/junit-4.8.2.jar:$test_jars/s3lib-test.jar:$s3lib_jars/s3lib-test.jar"
+cp="$LOGICBLOX_HOME/share/java/junit-4.8.2.jar:$test_jars/cloudstore-test.jar:$cloudstore_jars/cloudstore-test.jar"
 
 for i in $(seq 1 $iterations);
 do
   echo "------------- Iteration $i ------------------"
-  java -cp $cp com.logicblox.s3lib.TestRunner $*
+  java -cp $cp com.logicblox.cloudstore.TestRunner $*
 done

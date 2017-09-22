@@ -3,7 +3,7 @@ set -e
 
 iterations=1
 
-cloudstore_jars=$LB_INSTALL_PREFIX/cloudstore/lib/java
+cloudstore_jars=$LB_INSTALL_PREFIX/s3lib/lib/java
 
 test_jars=$PWD/build/jars
    # for local testing

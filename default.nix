@@ -8,7 +8,7 @@
 , python ? pkgs.pythonFull
 , jdk ? pkgs.openjdk8 or pkgs.openjdk
 , unzip ? pkgs.unzip
-, cloudstore ?  { outPath = ./.; rev = "1234"; }
+, s3lib ?  { outPath = ./.; rev = "1234"; }
 }:
 
 let
@@ -17,7 +17,7 @@ let
 
   version = src: stdenv.lib.optionalString (src ? revCount) (toString src.revCount + "_" ) + toString (src.rev or src.tag or "unknown");
 
-  revision = version cloudstore;
+  revision = version s3lib;
   name = "cloudstore-${revision}";
 
   build_minio = pkgs.buildGoPackage rec {
@@ -94,7 +94,7 @@ let
     source_tarball = 
       pkgs.releaseTools.sourceTarball { 
         inherit name;
-        src = "${cloudstore}";
+        src = "${s3lib}";
         buildInputs = [python jdk];
         preConfigure = "patchShebangs .";
       };

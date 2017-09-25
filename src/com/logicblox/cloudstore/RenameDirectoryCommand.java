@@ -26,7 +26,8 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 
-public class RenameDirectoryCommand extends Command
+public class RenameDirectoryCommand
+  extends Command
 {
   private RenameOptions _options;
 
@@ -37,13 +38,13 @@ public class RenameDirectoryCommand extends Command
   }
 
   public ListenableFuture<List<StoreFile>> run()
-  throws InterruptedException, ExecutionException, IOException
+    throws InterruptedException, ExecutionException, IOException
   {
     return startCopyThenDelete();
   }
 
   private ListenableFuture<List<StoreFile>> startCopyThenDelete()
-  throws InterruptedException, ExecutionException, IOException
+    throws InterruptedException, ExecutionException, IOException
   {
     final String bucket = _options.getDestinationBucketName();
     final String key = stripSlash(_options.getDestinationObjectKey());
@@ -59,9 +60,9 @@ public class RenameDirectoryCommand extends Command
     return Futures.transform(destExists, new AsyncFunction<Metadata, List<StoreFile>>()
     {
       public ListenableFuture<List<StoreFile>> apply(Metadata mdata)
-      throws Exception
+        throws Exception
       {
-        if (null != mdata)
+        if(null != mdata)
         {
           throw new UsageException(
             "Cannot overwrite existing destination object '" + getUri(bucket, key));
@@ -74,7 +75,7 @@ public class RenameDirectoryCommand extends Command
 
   private String stripSlash(String s)
   {
-    if (s.endsWith("/"))
+    if(s.endsWith("/"))
     {
       return s.substring(0, s.length() - 1);
     }
@@ -86,7 +87,7 @@ public class RenameDirectoryCommand extends Command
 
 
   private ListenableFuture<List<StoreFile>> copyThenDelete()
-  throws InterruptedException, ExecutionException, IOException
+    throws InterruptedException, ExecutionException, IOException
   {
     CopyOptions copyOpts = _client.getOptionsBuilderFactory()
       .newCopyOptionsBuilder()
@@ -107,7 +108,7 @@ public class RenameDirectoryCommand extends Command
     return Futures.transform(copyFuture, new AsyncFunction<List<StoreFile>, List<StoreFile>>()
     {
       public ListenableFuture<List<StoreFile>> apply(final List<StoreFile> destFiles)
-      throws InterruptedException, ExecutionException
+        throws InterruptedException, ExecutionException
       {
         DeleteOptions delOpts = _client.getOptionsBuilderFactory()
           .newDeleteOptionsBuilder()

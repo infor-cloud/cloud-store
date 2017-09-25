@@ -117,43 +117,43 @@ public class Command
   }
 
   protected static Key readKeyFromFile(String encKeyName, File encKeyFile)
-  throws IOException, ClassNotFoundException
+    throws IOException, ClassNotFoundException
   {
     FileInputStream fs = new FileInputStream(encKeyFile);
     ObjectInputStream in = new ObjectInputStream(fs);
     Map<String, Key> keys = (HashMap<String, Key>) in.readObject();
     in.close();
-    if (keys.containsKey(encKeyName))
+    if(keys.containsKey(encKeyName))
     {
       return keys.get(encKeyName);
     }
     return null;
   }
 
-  protected <V> ListenableFuture<V> executeWithRetry(ListeningScheduledExecutorService executor,
-                                                     Callable<ListenableFuture<V>> callable)
+  protected <V> ListenableFuture<V> executeWithRetry(
+    ListeningScheduledExecutorService executor, Callable<ListenableFuture<V>> callable)
   {
     int initialDelay = 300;
     int maxDelay = 20 * 1000;
 
-    ThrowableRetryPolicy trp =
-      new ExpBackoffRetryPolicy(initialDelay, maxDelay, _retryCount, TimeUnit.MILLISECONDS)
+    ThrowableRetryPolicy trp = new ExpBackoffRetryPolicy(initialDelay, maxDelay, _retryCount,
+      TimeUnit.MILLISECONDS)
+    {
+      @Override
+      public boolean retryOnThrowable(Throwable thrown)
       {
-        @Override
-        public boolean retryOnThrowable(Throwable thrown)
+        if(!_stubborn && thrown instanceof AmazonServiceException)
         {
-          if (!_stubborn && thrown instanceof AmazonServiceException)
+          AmazonServiceException exc = (AmazonServiceException) thrown;
+          if(exc.getErrorType() == AmazonServiceException.ErrorType.Client)
           {
-            AmazonServiceException exc = (AmazonServiceException) thrown;
-            if (exc.getErrorType() == AmazonServiceException.ErrorType.Client)
-            {
-              return false;
-            }
+            return false;
           }
-
-          return true;
         }
-      };
+
+        return true;
+      }
+    };
 
     Callable<ListenableFuture<V>> rt = new ThrowableRetriableTask(callable, executor, trp);
     ListenableFuture<V> f;
@@ -161,7 +161,7 @@ public class Command
     {
       f = rt.call();
     }
-    catch (Exception e)
+    catch(Exception e)
     {
       f = Futures.immediateFailedFuture(e);
     }
@@ -170,13 +170,13 @@ public class Command
   }
 
   protected static void rethrow(Throwable thrown)
-  throws Exception
+    throws Exception
   {
-    if (thrown instanceof Exception)
+    if(thrown instanceof Exception)
     {
       throw (Exception) thrown;
     }
-    if (thrown instanceof Error)
+    if(thrown instanceof Error)
     {
       throw (Error) thrown;
     }
@@ -187,21 +187,21 @@ public class Command
   }
 
   public static PublicKey getPublicKey(PrivateKey privateKey)
-  throws NoSuchKeyException
+    throws NoSuchKeyException
   {
     try
     {
       RSAPrivateCrtKey privateCrtKey = (RSAPrivateCrtKey) privateKey;
-      RSAPublicKeySpec publicKeySpec =
-        new RSAPublicKeySpec(privateCrtKey.getModulus(), privateCrtKey.getPublicExponent());
+      RSAPublicKeySpec publicKeySpec = new RSAPublicKeySpec(privateCrtKey.getModulus(),
+        privateCrtKey.getPublicExponent());
       KeyFactory keyFactory = KeyFactory.getInstance("RSA");
       return keyFactory.generatePublic(publicKeySpec);
     }
-    catch (NoSuchAlgorithmException exc)
+    catch(NoSuchAlgorithmException exc)
     {
       throw new RuntimeException(exc);
     }
-    catch (InvalidKeySpecException exc)
+    catch(InvalidKeySpecException exc)
     {
       throw new NoSuchKeyException(exc);
     }

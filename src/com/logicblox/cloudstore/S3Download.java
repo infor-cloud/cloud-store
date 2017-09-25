@@ -36,12 +36,9 @@ class S3Download
   private String bucketName;
   private String version;
 
-  public S3Download(AmazonS3 client,
-                    String key,
-                    String bucketName,
-                    String version,
-                    ObjectMetadata meta,
-                    ListeningExecutorService executor)
+  public S3Download(
+    AmazonS3 client, String key, String bucketName, String version, ObjectMetadata meta,
+    ListeningExecutorService executor)
   {
     this.client = client;
     this.key = key;
@@ -56,9 +53,8 @@ class S3Download
     return getPart(start, end, null);
   }
 
-  public ListenableFuture<InputStream> getPart(long start,
-                                               long end,
-                                               OverallProgressListener progressListener)
+  public ListenableFuture<InputStream> getPart(
+    long start, long end, OverallProgressListener progressListener)
   {
     return executor.submit(new DownloadCallable(start, end, progressListener));
   }
@@ -93,7 +89,8 @@ class S3Download
     return bucketName;
   }
 
-  private class DownloadCallable implements Callable<InputStream>
+  private class DownloadCallable
+    implements Callable<InputStream>
   {
     private long start;
     private long end;
@@ -107,10 +104,10 @@ class S3Download
     }
 
     public InputStream call()
-    throws Exception
+      throws Exception
     {
       GetObjectRequest req = null;
-      if (version == null)
+      if(version == null)
       {
         req = new GetObjectRequest(bucketName, key);
       }
@@ -119,10 +116,10 @@ class S3Download
         req = new GetObjectRequest(bucketName, key, version);
       }
       req.setRange(start, end);
-      if (progressListener != null)
+      if(progressListener != null)
       {
-        PartProgressEvent ppe =
-          new PartProgressEvent(Long.toString(start) + ':' + Long.toString(end));
+        PartProgressEvent ppe = new PartProgressEvent(
+          Long.toString(start) + ':' + Long.toString(end));
         ProgressListener s3pl = new S3ProgressListener(progressListener, ppe);
         req.setGeneralProgressListener(s3pl);
       }

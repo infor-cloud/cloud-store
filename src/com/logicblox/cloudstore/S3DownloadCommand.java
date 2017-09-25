@@ -48,7 +48,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
-public class S3DownloadCommand extends Command
+public class S3DownloadCommand
+  extends Command
 {
   private DownloadOptions _options;
   private KeyProvider _encKeyProvider;
@@ -57,7 +58,7 @@ public class S3DownloadCommand extends Command
   private OverallProgressListenerFactory progressListenerFactory;
 
   public S3DownloadCommand(DownloadOptions options)
-  throws IOException
+    throws IOException
   {
     super(options);
     _options = options;
@@ -70,31 +71,31 @@ public class S3DownloadCommand extends Command
   }
 
   private void createNewFile()
-  throws IOException
+    throws IOException
   {
     file = file.getAbsoluteFile();
     File dir = file.getParentFile();
-    if (!dir.exists())
+    if(!dir.exists())
     {
       List<File> newDirs = Utils.mkdirs(dir, _dryRun);
-      if (_dryRun)
+      if(_dryRun)
       {
-        for (File f : newDirs)
+        for(File f : newDirs)
           System.out.println("<DRYRUN> creating missing directory '" + f.getAbsolutePath() + "'");
       }
     }
 
-    if (file.exists())
+    if(file.exists())
     {
-      if (_options.doesOverwrite())
+      if(_options.doesOverwrite())
       {
-        if (_dryRun)
+        if(_dryRun)
         {
           System.out.println("<DRYRUN> overwrite existing file '" + file.getAbsolutePath() + "'");
         }
         else
         {
-          if (!file.delete())
+          if(!file.delete())
           {
             throw new UsageException("Could not delete existing file '" + file + "'");
           }
@@ -107,9 +108,9 @@ public class S3DownloadCommand extends Command
       }
     }
 
-    if (!_dryRun)
+    if(!_dryRun)
     {
-      if (!file.createNewFile())
+      if(!file.createNewFile())
       {
         throw new IOException("File '" + file + "' already exists");
       }
@@ -119,7 +120,7 @@ public class S3DownloadCommand extends Command
 
   public ListenableFuture<StoreFile> run()
   {
-    if (_dryRun)
+    if(_dryRun)
     {
       System.out.println(
         "<DRYRUN> downloading '" + getUri(_options.getBucketName(), _options.getObjectKey()) +
@@ -134,13 +135,13 @@ public class S3DownloadCommand extends Command
       .createOptions();
 
     ListenableFuture<Metadata> existsFuture = _client.exists(opts);
-    ListenableFuture<StoreFile> result =
-      Futures.transform(existsFuture, new AsyncFunction<Metadata, StoreFile>()
+    ListenableFuture<StoreFile> result = Futures.transform(existsFuture,
+      new AsyncFunction<Metadata, StoreFile>()
       {
         public ListenableFuture<StoreFile> apply(Metadata mdata)
-        throws UsageException
+          throws UsageException
         {
-          if (null == mdata)
+          if(null == mdata)
           {
             throw new UsageException(
               "Object not found at " + getUri(_options.getBucketName(), _options.getObjectKey()));
@@ -158,8 +159,8 @@ public class S3DownloadCommand extends Command
     ListenableFuture<S3Download> download = startDownload();
     download = Futures.transform(download, startPartsAsyncFunction());
     download = Futures.transform(download, validate());
-    ListenableFuture<StoreFile> res =
-      Futures.transform(download, new Function<S3Download, StoreFile>()
+    ListenableFuture<StoreFile> res = Futures.transform(download,
+      new Function<S3Download, StoreFile>()
       {
         public StoreFile apply(S3Download download)
         {
@@ -176,12 +177,12 @@ public class S3DownloadCommand extends Command
     {
       public ListenableFuture<StoreFile> create(Throwable t)
       {
-        if (S3DownloadCommand.this.file.exists())
+        if(S3DownloadCommand.this.file.exists())
         {
           S3DownloadCommand.this.file.delete();
         }
 
-        if (t instanceof UsageException)
+        if(t instanceof UsageException)
         {
           return Futures.immediateFailedFuture(t);
         }
@@ -207,9 +208,9 @@ public class S3DownloadCommand extends Command
 
         public String toString()
         {
-          String toStringOutput =
-            "starting download " + _options.getBucketName() + "/" + _options.getObjectKey();
-          if (_options.getVersion().isPresent())
+          String toStringOutput = "starting download " + _options.getBucketName() + "/" +
+            _options.getObjectKey();
+          if(_options.getVersion().isPresent())
           {
             return toStringOutput + " version id = " + _options.getVersion().get();
           }
@@ -231,19 +232,19 @@ public class S3DownloadCommand extends Command
         String errPrefix = getUri(download.getBucket(), download.getKey()) + ": ";
         long len = download.getLength();
         long cs = chunkSize;
-        if (meta.containsKey("s3tool-version"))
+        if(meta.containsKey("s3tool-version"))
         {
           String objectVersion = meta.get("s3tool-version");
 
-          if (!String.valueOf(Version.CURRENT).equals(objectVersion))
+          if(!String.valueOf(Version.CURRENT).equals(objectVersion))
           {
             throw new UsageException(
               errPrefix + "file uploaded with unsupported version: " + objectVersion +
                 ", should be " + Version.CURRENT);
           }
-          if (meta.containsKey("s3tool-key-name"))
+          if(meta.containsKey("s3tool-key-name"))
           {
-            if (_encKeyProvider == null)
+            if(_encKeyProvider == null)
             {
               throw new UsageException(errPrefix + "No encryption key " + "provider is specified");
             }
@@ -252,7 +253,7 @@ public class S3DownloadCommand extends Command
             List<String> keyNames = new ArrayList<>(Arrays.asList(keyNamesStr.split(",")));
             String symKeyStr;
             PrivateKey privKey = null;
-            if (keyNames.size() == 1)
+            if(keyNames.size() == 1)
             {
               // We handle objects with a single encryption key separately
               // because it's allowed not to have "s3tool-pubkey-hash" header
@@ -260,15 +261,14 @@ public class S3DownloadCommand extends Command
               try
               {
                 privKey = _encKeyProvider.getPrivateKey(keyName);
-                if (meta.containsKey("s3tool-pubkey-hash"))
+                if(meta.containsKey("s3tool-pubkey-hash"))
                 {
                   String pubKeyHashHeader = meta.get("s3tool-pubkey-hash");
                   PublicKey pubKey = Command.getPublicKey(privKey);
-                  String pubKeyHashLocal =
-                    DatatypeConverter.printBase64Binary(DigestUtils.sha256(pubKey.getEncoded()))
-                      .substring(0, 8);
+                  String pubKeyHashLocal = DatatypeConverter.printBase64Binary(
+                    DigestUtils.sha256(pubKey.getEncoded())).substring(0, 8);
 
-                  if (!pubKeyHashLocal.equals(pubKeyHashHeader))
+                  if(!pubKeyHashLocal.equals(pubKeyHashHeader))
                   {
                     throw new UsageException(
                       "Public-key checksums do not match. " + "Calculated hash: " +
@@ -276,7 +276,7 @@ public class S3DownloadCommand extends Command
                   }
                 }
               }
-              catch (NoSuchKeyException e)
+              catch(NoSuchKeyException e)
               {
                 throw new UsageException(
                   errPrefix + "private key '" + keyName + "' is not available to decrypt");
@@ -288,25 +288,25 @@ public class S3DownloadCommand extends Command
               // Objects with multiple encryption keys must have
               // "s3tool-pubkey-hash" header. We might want to relax this
               // requirement.
-              if (!meta.containsKey("s3tool-pubkey-hash"))
+              if(!meta.containsKey("s3tool-pubkey-hash"))
               {
                 throw new UsageException(
                   errPrefix + " public key hashes are " + "required when object has multiple " +
                     "encryption keys");
               }
               String pubKeyHashHeadersStr = meta.get("s3tool-pubkey-hash");
-              List<String> pubKeyHashHeaders =
-                new ArrayList<>(Arrays.asList(pubKeyHashHeadersStr.split(",")));
+              List<String> pubKeyHashHeaders = new ArrayList<>(
+                Arrays.asList(pubKeyHashHeadersStr.split(",")));
               int privKeyIndex = -1;
               boolean privKeyFound = false;
-              for (String kn : keyNames)
+              for(String kn : keyNames)
               {
                 privKeyIndex++;
                 try
                 {
                   privKey = _encKeyProvider.getPrivateKey(kn);
                 }
-                catch (NoSuchKeyException e)
+                catch(NoSuchKeyException e)
                 {
                   // We might find an eligible key later.
                   continue;
@@ -315,18 +315,17 @@ public class S3DownloadCommand extends Command
                 try
                 {
                   PublicKey pubKey = Command.getPublicKey(privKey);
-                  String pubKeyHashLocal =
-                    DatatypeConverter.printBase64Binary(DigestUtils.sha256(pubKey.getEncoded()))
-                      .substring(0, 8);
+                  String pubKeyHashLocal = DatatypeConverter.printBase64Binary(
+                    DigestUtils.sha256(pubKey.getEncoded())).substring(0, 8);
 
-                  if (pubKeyHashLocal.equals(pubKeyHashHeaders.get(privKeyIndex)))
+                  if(pubKeyHashLocal.equals(pubKeyHashHeaders.get(privKeyIndex)))
                   {
                     // Successfully-read, validated key.
                     privKeyFound = true;
                     break;
                   }
                 }
-                catch (NoSuchKeyException e)
+                catch(NoSuchKeyException e)
                 {
                   throw new UsageException(
                     errPrefix + "Cannot generate the " + "public key out of the private one" +
@@ -334,13 +333,13 @@ public class S3DownloadCommand extends Command
                 }
               }
 
-              if (privKey == null || !privKeyFound)
+              if(privKey == null || !privKeyFound)
               {
                 // No private key found
                 throw new UsageException(errPrefix + "No eligible private key" + " found");
               }
-              List<String> symKeys =
-                new ArrayList<>(Arrays.asList(meta.get("s3tool-symmetric-key").split(",")));
+              List<String> symKeys = new ArrayList<>(
+                Arrays.asList(meta.get("s3tool-symmetric-key").split(",")));
               symKeyStr = symKeys.get(privKeyIndex);
             }
 
@@ -352,23 +351,23 @@ public class S3DownloadCommand extends Command
               cipher.init(Cipher.DECRYPT_MODE, privKey);
               encKeyBytes = cipher.doFinal(DatatypeConverter.parseBase64Binary(symKeyStr));
             }
-            catch (NoSuchAlgorithmException e)
+            catch(NoSuchAlgorithmException e)
             {
               throw new RuntimeException(e);
             }
-            catch (NoSuchPaddingException e)
+            catch(NoSuchPaddingException e)
             {
               throw new RuntimeException(e);
             }
-            catch (InvalidKeyException e)
+            catch(InvalidKeyException e)
             {
               throw new RuntimeException(e);
             }
-            catch (IllegalBlockSizeException e)
+            catch(IllegalBlockSizeException e)
             {
               throw new RuntimeException(e);
             }
-            catch (BadPaddingException e)
+            catch(BadPaddingException e)
             {
               throw new RuntimeException(e);
             }
@@ -381,7 +380,7 @@ public class S3DownloadCommand extends Command
         }
 
         setFileLength(len);
-        if (cs == 0)
+        if(cs == 0)
         {
           cs = Utils.getDefaultChunkSize(len);
         }
@@ -403,7 +402,7 @@ public class S3DownloadCommand extends Command
     return new AsyncFunction<S3Download, S3Download>()
     {
       public ListenableFuture<S3Download> apply(S3Download download)
-      throws Exception
+        throws Exception
       {
         return startParts(download);
       }
@@ -411,10 +410,10 @@ public class S3DownloadCommand extends Command
   }
 
   private ListenableFuture<S3Download> startParts(S3Download download)
-  throws IOException, UsageException
+    throws IOException, UsageException
   {
     OverallProgressListener opl = null;
-    if (progressListenerFactory != null)
+    if(progressListenerFactory != null)
     {
       opl = progressListenerFactory.create(
         new ProgressOptionsBuilder().setObjectUri(getUri(download.getBucket(), download.getKey()))
@@ -424,8 +423,8 @@ public class S3DownloadCommand extends Command
     }
 
     List<ListenableFuture<Integer>> parts = new ArrayList<ListenableFuture<Integer>>();
-    for (long position = 0; position < fileLength || (position == 0 && fileLength == 0);
-         position += chunkSize)
+    for(long position = 0; position < fileLength || (position == 0 && fileLength == 0);
+        position += chunkSize)
     {
       parts.add(startPartDownload(download, position, opl));
     }
@@ -433,9 +432,8 @@ public class S3DownloadCommand extends Command
     return Futures.transform(Futures.allAsList(parts), Functions.constant(download));
   }
 
-  private ListenableFuture<Integer> startPartDownload(final S3Download download,
-                                                      final long position,
-                                                      final OverallProgressListener opl)
+  private ListenableFuture<Integer> startPartDownload(
+    final S3Download download, final long position, final OverallProgressListener opl)
   {
     final int partNumber = (int) (position / chunkSize);
 
@@ -453,26 +451,25 @@ public class S3DownloadCommand extends Command
     });
   }
 
-  private ListenableFuture<Integer> startPartDownloadActual(final S3Download download,
-                                                            final long position,
-                                                            OverallProgressListener opl)
+  private ListenableFuture<Integer> startPartDownloadActual(
+    final S3Download download, final long position, OverallProgressListener opl)
   {
     final int partNumber = (int) (position / chunkSize);
     long start;
     long partSize;
 
-    if (encKey != null)
+    if(encKey != null)
     {
       long blockSize;
       try
       {
         blockSize = Cipher.getInstance("AES/CBC/PKCS5Padding").getBlockSize();
       }
-      catch (NoSuchAlgorithmException e)
+      catch(NoSuchAlgorithmException e)
       {
         throw new RuntimeException(e);
       }
-      catch (NoSuchPaddingException e)
+      catch(NoSuchPaddingException e)
       {
         throw new RuntimeException(e);
       }
@@ -487,42 +484,40 @@ public class S3DownloadCommand extends Command
       partSize = Math.min(fileLength - position, chunkSize);
     }
 
-    ListenableFuture<InputStream> getPartFuture =
-      download.getPart(start, start + partSize - 1, opl);
+    ListenableFuture<InputStream> getPartFuture = download.getPart(start, start + partSize - 1,
+      opl);
 
-    AsyncFunction<InputStream, Integer> readDownloadFunction =
-      new AsyncFunction<InputStream, Integer>()
-      {
-        public ListenableFuture<Integer> apply(InputStream stream)
+    AsyncFunction<InputStream, Integer> readDownloadFunction
+      = new AsyncFunction<InputStream, Integer>()
+    {
+      public ListenableFuture<Integer> apply(InputStream stream)
         throws Exception
+      {
+        try
         {
+          readDownload(download, stream, position, partNumber);
+          return Futures.immediateFuture(partNumber);
+        }
+        finally
+        {
+          // make sure that the stream is always closed
           try
           {
-            readDownload(download, stream, position, partNumber);
-            return Futures.immediateFuture(partNumber);
+            stream.close();
           }
-          finally
+          catch(IOException e)
           {
-            // make sure that the stream is always closed
-            try
-            {
-              stream.close();
-            }
-            catch (IOException e)
-            {
-            }
           }
         }
-      };
+      }
+    };
 
     return Futures.transform(getPartFuture, readDownloadFunction);
   }
 
-  private void readDownload(S3Download download,
-                            InputStream inStream,
-                            long position,
-                            int partNumber)
-  throws Exception
+  private void readDownload(
+    S3Download download, InputStream inStream, long position, int partNumber)
+    throws Exception
   {
     HashingInputStream stream = new HashingInputStream(inStream);
     RandomAccessFile out = new RandomAccessFile(file, "rw");
@@ -531,7 +526,7 @@ public class S3DownloadCommand extends Command
     Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 
     InputStream in;
-    if (encKey != null)
+    if(encKey != null)
     {
       in = new CipherWithInlineIVInputStream(stream, cipher, Cipher.DECRYPT_MODE, encKey);
     }
@@ -551,16 +546,16 @@ public class S3DownloadCommand extends Command
         out.close();
         stream.close();
       }
-      catch (IOException ignored)
+      catch(IOException ignored)
       {
       }
     };
 
     // Handle empty encrypted file, offset == postCryptSize is implied
-    if (encKey != null && postCryptSize == 0)
+    if(encKey != null && postCryptSize == 0)
     {
       int result = readSafe(in, buf, 0, 0, cleanup);
-      if (result != -1)
+      if(result != -1)
       {
         // TODO: Check if the correct/expected result here should be 0 (instead
         // of -1).
@@ -570,11 +565,11 @@ public class S3DownloadCommand extends Command
     }
     else // Not necessary, just for easier reading
     {
-      while (offset < postCryptSize)
+      while(offset < postCryptSize)
       {
         int len = Math.min(bufSize, postCryptSize - offset);
         int result = readSafe(in, buf, 0, len, cleanup);
-        if (result == -1)
+        if(result == -1)
         {
           cleanup.run();
           throw new IOException("unexpected EOF");
@@ -590,14 +585,14 @@ public class S3DownloadCommand extends Command
   }
 
   private int readSafe(InputStream in, byte[] buf, int offset, int len, Runnable cleanup)
-  throws IOException
+    throws IOException
   {
     int result;
     try
     {
       result = in.read(buf, offset, len);
     }
-    catch (IOException e)
+    catch(IOException e)
     {
       cleanup.run();
       throw e;
@@ -606,13 +601,13 @@ public class S3DownloadCommand extends Command
   }
 
   private void writeSafe(RandomAccessFile out, byte[] buf, int offset, int len, Runnable cleanup)
-  throws IOException
+    throws IOException
   {
     try
     {
       out.write(buf, offset, len);
     }
-    catch (IOException e)
+    catch(IOException e)
     {
       cleanup.run();
       throw e;
@@ -632,24 +627,24 @@ public class S3DownloadCommand extends Command
 
   private ListenableFuture<S3Download> validateChecksum(final S3Download download)
   {
-    ListenableFuture<S3Download> result =
-      _client.getInternalExecutor().submit(new Callable<S3Download>()
+    ListenableFuture<S3Download> result = _client.getInternalExecutor()
+      .submit(new Callable<S3Download>()
       {
         public S3Download call()
-        throws Exception
+          throws Exception
         {
           String remoteEtag = download.getETag();
           String localDigest = "";
           String fn = "'s3://" + download.getBucket() + "/" + download.getKey() + "'";
 
-          if (null == remoteEtag)
+          if(null == remoteEtag)
           {
             System.err.println(
               "Warning: Skipped checksum validation for " + fn + ".  No etag attached to object.");
             return download;
           }
 
-          if ((remoteEtag.length() > 32) && (remoteEtag.charAt(32) == '-'))
+          if((remoteEtag.length() > 32) && (remoteEtag.charAt(32) == '-'))
           {
             // Object has been uploaded using S3's multipart upload protocol,
             // so it has a special Etag documented here:
@@ -659,7 +654,7 @@ public class S3DownloadCommand extends Command
             // the number of the chucks) we cannot validate robustly checksums for
             // files uploaded with tool other than s3tool.
             Map<String, String> meta = download.getMeta();
-            if (!meta.containsKey("s3tool-version"))
+            if(!meta.containsKey("s3tool-version"))
             {
               System.err.println(
                 "Warning: Skipped checksum " + "validation for " + fn + ". It was uploaded using " +
@@ -667,11 +662,11 @@ public class S3DownloadCommand extends Command
               return download;
             }
 
-            int expectedPartsNum =
-              fileLength == 0 ? 1 : (int) Math.ceil(fileLength / (double) chunkSize);
+            int expectedPartsNum = fileLength == 0 ? 1
+              : (int) Math.ceil(fileLength / (double) chunkSize);
             int actualPartsNum = Integer.parseInt(remoteEtag.substring(33));
 
-            if (expectedPartsNum != actualPartsNum)
+            if(expectedPartsNum != actualPartsNum)
             {
               System.err.println(
                 "Warning: Skipped checksum validation for " + fn + ". Actual number of parts: " +
@@ -681,7 +676,7 @@ public class S3DownloadCommand extends Command
             }
 
             ByteArrayOutputStream os = new ByteArrayOutputStream();
-            for (Integer pNum : etags.keySet())
+            for(Integer pNum : etags.keySet())
             {
               os.write(etags.get(pNum));
             }
@@ -694,7 +689,7 @@ public class S3DownloadCommand extends Command
             // so its Etag should be equal to object's MD5.
             // Same should hold for objects uploaded to GCS (if "compose" operation
             // wasn't used).
-            if (etags.size() == 1)
+            if(etags.size() == 1)
             {
               // Single-part download (1 range GET).
               localDigest = DatatypeConverter.printHexBinary(etags.get(0)).toLowerCase();
@@ -708,7 +703,7 @@ public class S3DownloadCommand extends Command
               return download;
             }
           }
-          if (remoteEtag.equals(localDigest))
+          if(remoteEtag.equals(localDigest))
           {
             return download;
           }

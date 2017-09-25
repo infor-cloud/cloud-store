@@ -26,7 +26,8 @@ import java.net.URI;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-public class RenameTests implements RetryListener
+public class RenameTests
+  implements RetryListener
 {
   private static CloudStoreClient _client = null;
   private static String _testBucket = null;
@@ -43,7 +44,7 @@ public class RenameTests implements RetryListener
 
   @BeforeClass
   public static void setUp()
-  throws Throwable
+    throws Throwable
   {
     TestUtils.setUp();
     _testBucket = TestUtils.getTestBucket();
@@ -53,7 +54,7 @@ public class RenameTests implements RetryListener
 
   @AfterClass
   public static void tearDown()
-  throws Throwable
+    throws Throwable
   {
     TestUtils.tearDown();
     _testBucket = null;
@@ -63,7 +64,7 @@ public class RenameTests implements RetryListener
 
   @Test
   public void testDryRunFile()
-  throws Throwable
+    throws Throwable
   {
     // create test file and upload it
     String rootPrefix = TestUtils.addPrefix("rename-dryrun");
@@ -96,14 +97,14 @@ public class RenameTests implements RetryListener
 
   @Test
   public void testDryRunDir()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload tests intermittently fail when using minio.  trying to minimize
     // false failure reports by repeating and only failing the test if it consistently reports an
     // error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
@@ -146,10 +147,10 @@ public class RenameTests implements RetryListener
 
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -160,14 +161,14 @@ public class RenameTests implements RetryListener
 
   @Test
   public void testRenameDirAbortOneDuringCopy()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload/rename tests intermittently fail when using minio.
     // trying to minimize false failure reports by repeating and only failing
     // the test if it consistently reports an error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       boolean oldGlobalFlag = false;
       try
@@ -188,8 +189,8 @@ public class RenameTests implements RetryListener
 
         // rename the directory
         URI src = dest;
-        String destPrefix =
-          TestUtils.addPrefix("rename-dir-abort-one-on-copy-dest-" + count + "/subdir/");
+        String destPrefix = TestUtils.addPrefix(
+          "rename-dir-abort-one-on-copy-dest-" + count + "/subdir/");
         int newCount = TestUtils.listObjects(_testBucket, destPrefix).size();
         dest = TestUtils.getUri(_testBucket, "subdir2", destPrefix);
         RenameOptions opts = _client.getOptionsBuilderFactory()
@@ -207,7 +208,7 @@ public class RenameTests implements RetryListener
         {
           _client.renameDirectory(opts).get();
         }
-        catch (ExecutionException ex)
+        catch(ExecutionException ex)
         {
           // expected for one of the rename jobs
           Assert.assertTrue(ex.getMessage().contains("forcing copy abort"));
@@ -228,10 +229,10 @@ public class RenameTests implements RetryListener
 
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -254,14 +255,14 @@ public class RenameTests implements RetryListener
   //         recover from these failures
   //  @Test
   public void testRenameDirAbortOneDuringDelete()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload/rename tests intermittently fail when using minio.
     // trying to minimize false failure reports by repeating and only failing
     // the test if it consistently reports an error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
@@ -281,8 +282,8 @@ public class RenameTests implements RetryListener
 
         // rename the directory
         URI src = dest;
-        String destPrefix =
-          TestUtils.addPrefix("rename-dir-abort-one-on-delete-dest-" + count + "/subdir/");
+        String destPrefix = TestUtils.addPrefix(
+          "rename-dir-abort-one-on-delete-dest-" + count + "/subdir/");
         int newCount = TestUtils.listObjects(_testBucket, destPrefix).size();
         dest = TestUtils.getUri(_testBucket, "subdir2", destPrefix);
         RenameOptions opts = _client.getOptionsBuilderFactory()
@@ -301,7 +302,7 @@ public class RenameTests implements RetryListener
           // abort first rename during delete phase
           _client.renameDirectory(opts).get();
         }
-        catch (ExecutionException ex)
+        catch(ExecutionException ex)
         {
           // expected for one of the rename jobs
           Assert.assertTrue(ex.getMessage().contains("forcing delete abort"));
@@ -330,10 +331,10 @@ public class RenameTests implements RetryListener
 
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -346,7 +347,7 @@ public class RenameTests implements RetryListener
   //         recover from these failures
   //  @Test
   public void testRenameDirAllAbortDuringDelete()
-  throws Throwable
+    throws Throwable
   {
     // NOTE: this test dumps a stack trace that can be ignored
 
@@ -355,7 +356,7 @@ public class RenameTests implements RetryListener
     // the test if it consistently reports an error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
@@ -374,8 +375,8 @@ public class RenameTests implements RetryListener
 
         // rename the directory
         URI src = dest;
-        String destPrefix =
-          TestUtils.addPrefix("rename-dir-all-abort-on-delete-dest-" + count + "/subdir/");
+        String destPrefix = TestUtils.addPrefix(
+          "rename-dir-all-abort-on-delete-dest-" + count + "/subdir/");
         int newCount = TestUtils.listObjects(_testBucket, destPrefix).size();
         dest = TestUtils.getUri(_testBucket, "subdir2", destPrefix);
         RenameOptions opts = _client.getOptionsBuilderFactory()
@@ -394,7 +395,7 @@ public class RenameTests implements RetryListener
           _client.renameDirectory(opts).get();
           msg = "expected exception (forcing abort on delete)";
         }
-        catch (ExecutionException ex)
+        catch(ExecutionException ex)
         {
           // expected
           Assert.assertTrue(TestUtils.findCause(ex, AbortInjection.class));
@@ -415,10 +416,10 @@ public class RenameTests implements RetryListener
 
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -435,7 +436,7 @@ public class RenameTests implements RetryListener
 
   @Test
   public void testRenameDirAllAbortDuringCopy()
-  throws Throwable
+    throws Throwable
   {
     // NOTE: this test dumps a stack trace that can be ignored
 
@@ -444,7 +445,7 @@ public class RenameTests implements RetryListener
     // the test if it consistently reports an error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
@@ -463,8 +464,8 @@ public class RenameTests implements RetryListener
 
         // rename the directory
         URI src = dest;
-        String destPrefix =
-          TestUtils.addPrefix("rename-dir-all-abort-on-copy-dest-" + count + "/subdir/");
+        String destPrefix = TestUtils.addPrefix(
+          "rename-dir-all-abort-on-copy-dest-" + count + "/subdir/");
         int newCount = TestUtils.listObjects(_testBucket, destPrefix).size();
         dest = TestUtils.getUri(_testBucket, "subdir2", destPrefix);
         RenameOptions opts = _client.getOptionsBuilderFactory()
@@ -483,7 +484,7 @@ public class RenameTests implements RetryListener
           _client.renameDirectory(opts).get();
           msg = "expected exception (forcing abort on copy)";
         }
-        catch (ExecutionException ex)
+        catch(ExecutionException ex)
         {
           // expected
           Assert.assertTrue(TestUtils.findCause(ex, AbortInjection.class));
@@ -504,10 +505,10 @@ public class RenameTests implements RetryListener
 
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -524,7 +525,7 @@ public class RenameTests implements RetryListener
 
   @Test
   public void testRetryOnCopy()
-  throws Throwable
+    throws Throwable
   {
     try
     {
@@ -577,7 +578,7 @@ public class RenameTests implements RetryListener
 
   @Test
   public void testRetryOnDelete()
-  throws Throwable
+    throws Throwable
   {
     try
     {
@@ -630,7 +631,7 @@ public class RenameTests implements RetryListener
 
   @Test
   public void testAbortDuringCopy()
-  throws Throwable
+    throws Throwable
   {
     try
     {
@@ -661,7 +662,7 @@ public class RenameTests implements RetryListener
         _client.rename(opts).get();
         msg = "expected exception (forcing abort on copy)";
       }
-      catch (ExecutionException ex)
+      catch(ExecutionException ex)
       {
         // expected
         Assert.assertTrue(TestUtils.findCause(ex, AbortInjection.class));
@@ -685,7 +686,7 @@ public class RenameTests implements RetryListener
 
   @Test
   public void testAbortDuringDelete()
-  throws Throwable
+    throws Throwable
   {
     try
     {
@@ -716,7 +717,7 @@ public class RenameTests implements RetryListener
         _client.rename(opts).get();
         msg = "expected exception (forcing abort on copy)";
       }
-      catch (ExecutionException ex)
+      catch(ExecutionException ex)
       {
         // expected
         Assert.assertTrue(TestUtils.findCause(ex, AbortInjection.class));
@@ -740,14 +741,14 @@ public class RenameTests implements RetryListener
 
   @Test
   public void testSimpleObject()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload/rename tests intermittently fail when using minio.  trying to
     // minimize false failure reports by repeating and only failing the test if it consistently
     // reports an error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
@@ -788,10 +789,10 @@ public class RenameTests implements RetryListener
         Assert.assertTrue(TestUtils.findObject(objs, newPrefix + "new-file.txt"));
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -802,14 +803,14 @@ public class RenameTests implements RetryListener
 
   @Test
   public void testDestExists()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload/rename tests intermittently fail when using minio.  trying to
     // minimize false failure reports by repeating and only failing the test if it consistently
     // reports an error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
@@ -841,7 +842,7 @@ public class RenameTests implements RetryListener
           _client.rename(opts).get();
           msg = "expected exception (dest exists)";
         }
-        catch (Exception ex)
+        catch(Exception ex)
         {
           // expected
           checkUsageException(ex, "Cannot overwrite existing destination");
@@ -849,10 +850,10 @@ public class RenameTests implements RetryListener
         Assert.assertNull(msg);
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -863,14 +864,14 @@ public class RenameTests implements RetryListener
 
   @Test
   public void testSameSourceAndDest()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload/rename tests intermittently fail when using minio.  trying to
     // minimize false failure reports by repeating and only failing the test if it consistently
     // reports an error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
@@ -896,7 +897,7 @@ public class RenameTests implements RetryListener
           _client.rename(opts).get();
           msg = "expected exception (dest exists)";
         }
-        catch (Exception ex)
+        catch(Exception ex)
         {
           // expected
           checkUsageException(ex, "Cannot overwrite existing destination");
@@ -904,10 +905,10 @@ public class RenameTests implements RetryListener
         Assert.assertNull(msg);
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -918,14 +919,14 @@ public class RenameTests implements RetryListener
 
   @Test
   public void testMissingSource()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload/rename tests intermittently fail when using minio.  trying to
     // minimize false failure reports by repeating and only failing the test if it consistently
     // reports an error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
@@ -946,7 +947,7 @@ public class RenameTests implements RetryListener
           _client.rename(opts).get();
           msg = "expected exception (source missing)";
         }
-        catch (Exception ex)
+        catch(Exception ex)
         {
           // expected
           checkUsageException(ex, "does not exist");
@@ -954,10 +955,10 @@ public class RenameTests implements RetryListener
         Assert.assertNull(msg);
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -968,21 +969,21 @@ public class RenameTests implements RetryListener
 
   @Test
   public void testMoveObjectAcrossBuckets()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload/rename tests intermittently fail when using minio.  trying to
     // minimize false failure reports by repeating and only failing the test if it consistently
     // reports an error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
         // skip this if we're using a pre-exising test bucket, assuming we're
         // running against a server that we don't want to (or can't) create
         // buckets in...
-        if (null != TestUtils.getPrefix())
+        if(null != TestUtils.getPrefix())
         {
           return;
         }
@@ -1000,8 +1001,8 @@ public class RenameTests implements RetryListener
         // rename the file
         String bucket2 = TestUtils.createTestBucket();
         URI src = dest;
-        String newPrefix =
-          TestUtils.addPrefix("rename-move-obj-across-buckets-dest-" + count + "/c/d/");
+        String newPrefix = TestUtils.addPrefix(
+          "rename-move-obj-across-buckets-dest-" + count + "/c/d/");
         int newCount = TestUtils.listObjects(bucket2, newPrefix).size();
         dest = TestUtils.getUri(bucket2, "new-file.txt", newPrefix);
         RenameOptions opts = _client.getOptionsBuilderFactory()
@@ -1026,10 +1027,10 @@ public class RenameTests implements RetryListener
         Assert.assertTrue(TestUtils.findObject(objs, newPrefix + "new-file.txt"));
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -1040,14 +1041,14 @@ public class RenameTests implements RetryListener
 
   @Test
   public void testNonRecursiveDirectory()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload/rename tests intermittently fail when using minio.  trying to
     // minimize false failure reports by repeating and only failing the test if it consistently
     // reports an error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
@@ -1086,7 +1087,7 @@ public class RenameTests implements RetryListener
 
         // verify that top level objects moved (a and b), but others stayed
         Assert.assertEquals(2, renamedFiles.size());
-        for (StoreFile f : renamedFiles)
+        for(StoreFile f : renamedFiles)
           Assert.assertEquals(Utils.getBucket(dest), f.getBucketName());
         List<StoreFile> newObjs = TestUtils.listObjects(_testBucket, newPrefix);
         Assert.assertEquals(newCount + renamedFiles.size(), newObjs.size());
@@ -1099,10 +1100,10 @@ public class RenameTests implements RetryListener
         Assert.assertTrue(TestUtils.findObject(newObjs, topN + b.getName()));
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -1113,14 +1114,14 @@ public class RenameTests implements RetryListener
 
   @Test
   public void testRecursiveDirectory()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload/rename tests intermittently fail when using minio.  trying to
     // minimize false failure reports by repeating and only failing the test if it consistently
     // reports an error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
@@ -1159,7 +1160,7 @@ public class RenameTests implements RetryListener
 
         // verify that everything moved
         Assert.assertEquals(uploadCount, renamedFiles.size());
-        for (StoreFile f : renamedFiles)
+        for(StoreFile f : renamedFiles)
           Assert.assertEquals(Utils.getBucket(dest), f.getBucketName());
         List<StoreFile> newObjs = TestUtils.listObjects(_testBucket, newPrefix);
         Assert.assertEquals(newCount + renamedFiles.size(), newObjs.size());
@@ -1177,10 +1178,10 @@ public class RenameTests implements RetryListener
         Assert.assertTrue(TestUtils.findObject(newObjs, sub2N + e.getName()));
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -1191,21 +1192,21 @@ public class RenameTests implements RetryListener
 
   @Test
   public void testMoveDirectoryAcrossBuckets()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload/rename tests intermittently fail when using minio.  trying to
     // minimize false failure reports by repeating and only failing the test if it consistently
     // reports an error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
         // skip this if we're using a pre-exising test bucket, assuming we're
         // running against a server that we don't want to (or can't) create
         // buckets in...
-        if (null != TestUtils.getPrefix())
+        if(null != TestUtils.getPrefix())
         {
           return;
         }
@@ -1231,8 +1232,8 @@ public class RenameTests implements RetryListener
         // rename the directory
         String bucket2 = TestUtils.createTestBucket();
         URI src = dest;
-        String newPrefix =
-          TestUtils.addPrefix("rename-dir-across-buckets-dest-" + count + "/subdir/");
+        String newPrefix = TestUtils.addPrefix(
+          "rename-dir-across-buckets-dest-" + count + "/subdir/");
         int newCount = TestUtils.listObjects(bucket2, newPrefix).size();
         dest = TestUtils.getUri(bucket2, "subdir2", newPrefix);
         RenameOptions opts = _client.getOptionsBuilderFactory()
@@ -1247,7 +1248,7 @@ public class RenameTests implements RetryListener
 
         // verify that everything moved
         Assert.assertEquals(uploadCount, renamedFiles.size());
-        for (StoreFile f : renamedFiles)
+        for(StoreFile f : renamedFiles)
           Assert.assertEquals(Utils.getBucket(dest), f.getBucketName());
         List<StoreFile> newObjs = TestUtils.listObjects(bucket2, newPrefix);
         Assert.assertEquals(newCount + renamedFiles.size(), newObjs.size());
@@ -1265,10 +1266,10 @@ public class RenameTests implements RetryListener
         Assert.assertTrue(TestUtils.findObject(newObjs, sub2N + e.getName()));
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -1279,14 +1280,14 @@ public class RenameTests implements RetryListener
 
   @Test
   public void testMissingSourceDir()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload/rename tests intermittently fail when using minio.  trying to
     // minimize false failure reports by repeating and only failing the test if it consistently
     // reports an error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
@@ -1307,7 +1308,7 @@ public class RenameTests implements RetryListener
           _client.renameDirectory(opts).get();
           msg = "expected exception (source missing)";
         }
-        catch (Exception ex)
+        catch(Exception ex)
         {
           // expected
           checkUsageException(ex, "No objects found");
@@ -1315,10 +1316,10 @@ public class RenameTests implements RetryListener
         Assert.assertNull(msg);
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -1329,14 +1330,14 @@ public class RenameTests implements RetryListener
 
   @Test
   public void testDirOverwriteFile()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload/rename tests intermittently fail when using minio.  trying to
     // minimize false failure reports by repeating and only failing the test if it consistently
     // reports an error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
@@ -1376,7 +1377,7 @@ public class RenameTests implements RetryListener
           _client.renameDirectory(opts).get();
           msg = "expected exception (source missing)";
         }
-        catch (Exception ex)
+        catch(Exception ex)
         {
           // expected
           checkUsageException(ex, "Cannot overwrite existing destination");
@@ -1384,10 +1385,10 @@ public class RenameTests implements RetryListener
         Assert.assertNull(msg);
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -1398,12 +1399,14 @@ public class RenameTests implements RetryListener
 
   @Test
   public void testMoveFileIntoExistingDir()
-  throws Throwable
+    throws Throwable
   {
-    // directory copy/upload/rename tests intermittently fail when using minio.  trying to minimize false failure reports by repeating and only failing the test if it consistently reports an error.
+    // directory copy/upload/rename tests intermittently fail when using minio.  trying to
+    // minimize false failure reports by repeating and only failing the test if it consistently
+    // reports an error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
@@ -1448,10 +1451,10 @@ public class RenameTests implements RetryListener
 
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -1473,22 +1476,22 @@ public class RenameTests implements RetryListener
 
 
   private void checkUsageException(Exception ex, String expectedMsg)
-  throws Exception
+    throws Exception
   {
     UsageException uex = null;
-    if (ex instanceof UsageException)
+    if(ex instanceof UsageException)
     {
       uex = (UsageException) ex;
     }
     else
     {
-      if ((null != ex.getCause()) && (ex.getCause() instanceof UsageException))
+      if((null != ex.getCause()) && (ex.getCause() instanceof UsageException))
       {
         uex = (UsageException) ex.getCause();
       }
     }
 
-    if (null == uex)
+    if(null == uex)
     {
       throw ex;
     }

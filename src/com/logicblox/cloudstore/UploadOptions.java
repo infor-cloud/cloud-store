@@ -38,7 +38,8 @@ import java.util.Optional;
  * {@code UploadOptions} objects are meant to be built by {@code UploadOptionsBuilder}. This class
  * provides only public getter methods.
  */
-public class UploadOptions extends CommandOptions
+public class UploadOptions
+  extends CommandOptions
 {
   private File file;
   private String bucket;
@@ -54,16 +55,10 @@ public class UploadOptions extends CommandOptions
   private static AbortCounters _abortCounters = new AbortCounters();
 
 
-  UploadOptions(CloudStoreClient cloudStoreClient,
-                File file,
-                String bucket,
-                String objectKey,
-                long chunkSize,
-                String encKey,
-                String cannedAcl,
-                boolean dryRun,
-                boolean ignoreAbortInjection,
-                OverallProgressListenerFactory overallProgressListenerFactory)
+  UploadOptions(
+    CloudStoreClient cloudStoreClient, File file, String bucket, String objectKey, long chunkSize,
+    String encKey, String cannedAcl, boolean dryRun, boolean ignoreAbortInjection,
+    OverallProgressListenerFactory overallProgressListenerFactory)
   {
     super(cloudStoreClient);
     this.file = file;
@@ -81,7 +76,7 @@ public class UploadOptions extends CommandOptions
   // for testing injection of aborts during a copy
   void injectAbort(String id)
   {
-    if (!this.ignoreAbortInjection && (_abortCounters.decrementInjectionCounter(id) > 0))
+    if(!this.ignoreAbortInjection && (_abortCounters.decrementInjectionCounter(id) > 0))
     {
       throw new AbortInjection("forcing upload abort");
     }
@@ -109,11 +104,11 @@ public class UploadOptions extends CommandOptions
 
   public long getChunkSize()
   {
-    if (file.isDirectory())
+    if(file.isDirectory())
     {
       return -1;
     }
-    if (chunkSize == -1)
+    if(chunkSize == -1)
     {
       return Utils.getDefaultChunkSize(file.length());
     }

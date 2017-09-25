@@ -16,7 +16,8 @@
 
 package com.logicblox.cloudstore;
 
-public class NoSuchKeyException extends Exception
+public class NoSuchKeyException
+  extends Exception
 {
   public NoSuchKeyException(String msg)
   {

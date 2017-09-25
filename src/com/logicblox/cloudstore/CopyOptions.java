@@ -31,7 +31,8 @@ import java.util.Optional;
  * {@code CopyOptions} objects are meant to be built by {@code CopyOptionsBuilder}. This class
  * provides only public getter methods.
  */
-public class CopyOptions extends CommandOptions
+public class CopyOptions
+  extends CommandOptions
 {
   private final String sourceBucketName;
   private final String sourceObjectKey;
@@ -49,18 +50,11 @@ public class CopyOptions extends CommandOptions
   private static AbortCounters _abortCounters = new AbortCounters();
 
 
-  CopyOptions(CloudStoreClient cloudStoreClient,
-              String sourceBucketName,
-              String sourceObjectKey,
-              String destinationBucketName,
-              String destinationObjectKey,
-              String cannedAcl,
-              String storageClass,
-              boolean recursive,
-              boolean dryRun,
-              boolean ignoreAbortInjection,
-              Map<String, String> userMetadata,
-              OverallProgressListenerFactory overallProgressListenerFactory)
+  CopyOptions(
+    CloudStoreClient cloudStoreClient, String sourceBucketName, String sourceObjectKey,
+    String destinationBucketName, String destinationObjectKey, String cannedAcl,
+    String storageClass, boolean recursive, boolean dryRun, boolean ignoreAbortInjection,
+    Map<String, String> userMetadata, OverallProgressListenerFactory overallProgressListenerFactory)
   {
     super(cloudStoreClient);
     this.sourceBucketName = sourceBucketName;
@@ -79,7 +73,7 @@ public class CopyOptions extends CommandOptions
   // for testing injection of aborts during a copy
   void injectAbort(String id)
   {
-    if (!this.ignoreAbortInjection && (_abortCounters.decrementInjectionCounter(id) > 0))
+    if(!this.ignoreAbortInjection && (_abortCounters.decrementInjectionCounter(id) > 0))
     {
       throw new AbortInjection("forcing copy abort");
     }

@@ -26,7 +26,8 @@ import java.net.URI;
 import java.util.List;
 
 
-public class DeleteTests implements RetryListener
+public class DeleteTests
+  implements RetryListener
 {
   private static CloudStoreClient _client = null;
   private static String _testBucket = null;
@@ -43,7 +44,7 @@ public class DeleteTests implements RetryListener
 
   @BeforeClass
   public static void setUp()
-  throws Throwable
+    throws Throwable
   {
     TestUtils.setUp();
     _testBucket = TestUtils.getTestBucket();
@@ -53,7 +54,7 @@ public class DeleteTests implements RetryListener
 
   @AfterClass
   public static void tearDown()
-  throws Throwable
+    throws Throwable
   {
     TestUtils.tearDown();
     _testBucket = null;
@@ -63,7 +64,7 @@ public class DeleteTests implements RetryListener
 
   @Test
   public void testRetry()
-  throws Throwable
+    throws Throwable
   {
     // create test file and upload it
     String rootPrefix = TestUtils.addPrefix("delete-retry");
@@ -111,14 +112,14 @@ public class DeleteTests implements RetryListener
 
   @Test
   public void testRetryDir()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload tests intermittently fail when using minio.  trying to minimize
     // false failure reports by repeating and only failing the test if it consistently reports an
     // error.
     int testLoops = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < testLoops)
+    while(count < testLoops)
     {
       try
       {
@@ -176,10 +177,10 @@ public class DeleteTests implements RetryListener
         Assert.assertEquals(0, TestUtils.listObjects(_testBucket, rootPrefix).size());
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= testLoops)
+        if(count >= testLoops)
         {
           throw t;
         }
@@ -190,7 +191,7 @@ public class DeleteTests implements RetryListener
 
   @Test
   public void testDryRunFile()
-  throws Throwable
+    throws Throwable
   {
     // create test file and upload it
     String rootPrefix = TestUtils.addPrefix("delete-dryrun");
@@ -218,14 +219,14 @@ public class DeleteTests implements RetryListener
 
   @Test
   public void testDryRunDir()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload tests intermittently fail when using minio.  trying to minimize
     // false failure reports by repeating and only failing the test if it consistently reports an
     // error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
@@ -259,10 +260,10 @@ public class DeleteTests implements RetryListener
         Assert.assertTrue(TestUtils.findObject(objs, topN + b.getName()));
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -274,14 +275,14 @@ public class DeleteTests implements RetryListener
   // FIXME - break this into multiple functions for test isolation
   @Test
   public void testBasicOperations()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload tests intermittently fail when using minio.  trying to minimize
     // false failure reports by repeating and only failing the test if it consistently reports an
     // error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
@@ -320,7 +321,7 @@ public class DeleteTests implements RetryListener
           _client.delete(opts).get();
           msg = "expected exception (object not found)";
         }
-        catch (Exception ex)
+        catch(Exception ex)
         {
           // expected
           checkUsageException(ex, "Object not found");
@@ -354,7 +355,7 @@ public class DeleteTests implements RetryListener
           _client.deleteDir(opts).get();
           msg = "expected exception (object not found)";
         }
-        catch (Exception ex)
+        catch(Exception ex)
         {
           // expected
           checkUsageException(ex, "No objects found that match");
@@ -413,10 +414,10 @@ public class DeleteTests implements RetryListener
 
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -438,22 +439,22 @@ public class DeleteTests implements RetryListener
 
 
   private void checkUsageException(Exception ex, String expectedMsg)
-  throws Exception
+    throws Exception
   {
     UsageException uex = null;
-    if (ex instanceof UsageException)
+    if(ex instanceof UsageException)
     {
       uex = (UsageException) ex;
     }
     else
     {
-      if ((null != ex.getCause()) && (ex.getCause() instanceof UsageException))
+      if((null != ex.getCause()) && (ex.getCause() instanceof UsageException))
       {
         uex = (UsageException) ex.getCause();
       }
     }
 
-    if (null == uex)
+    if(null == uex)
     {
       throw ex;
     }

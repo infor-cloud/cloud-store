@@ -16,7 +16,8 @@
 
 package com.logicblox.cloudstore;
 
-public class ListOptionsBuilder extends CommandOptionsBuilder
+public class ListOptionsBuilder
+  extends CommandOptionsBuilder
 {
   private String bucket;
   private String objectKey;
@@ -61,11 +62,11 @@ public class ListOptionsBuilder extends CommandOptionsBuilder
 
   private void validateOptions()
   {
-    if (_cloudStoreClient == null)
+    if(_cloudStoreClient == null)
     {
       throw new UsageException("CloudStoreClient has to be set");
     }
-    else if (bucket == null)
+    else if(bucket == null)
     {
       throw new UsageException("Bucket has to be set");
     }

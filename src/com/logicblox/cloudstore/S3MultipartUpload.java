@@ -39,7 +39,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
-class S3MultipartUpload implements Upload
+class S3MultipartUpload
+  implements Upload
 {
   private ConcurrentMap<Integer, PartETag> etags = new ConcurrentSkipListMap<Integer, PartETag>();
   private AmazonS3 client;
@@ -51,13 +52,9 @@ class S3MultipartUpload implements Upload
   private UploadOptions options;
 
 
-  public S3MultipartUpload(AmazonS3 client,
-                           String bucketName,
-                           String key,
-                           String uploadId,
-                           Date initiated,
-                           ListeningExecutorService executor,
-                           UploadOptions options)
+  public S3MultipartUpload(
+    AmazonS3 client, String bucketName, String key, String uploadId, Date initiated,
+    ListeningExecutorService executor, UploadOptions options)
   {
     this.bucketName = bucketName;
     this.key = key;
@@ -68,10 +65,9 @@ class S3MultipartUpload implements Upload
     this.options = options;
   }
 
-  public ListenableFuture<Void> uploadPart(int partNumber,
-                                           long partSize,
-                                           Callable<InputStream> stream,
-                                           OverallProgressListener progressListener)
+  public ListenableFuture<Void> uploadPart(
+    int partNumber, long partSize, Callable<InputStream> stream,
+    OverallProgressListener progressListener)
   {
     return executor.submit(new UploadCallable(partNumber, partSize, stream, progressListener));
   }
@@ -106,10 +102,11 @@ class S3MultipartUpload implements Upload
     return initiated;
   }
 
-  private class AbortCallable implements Callable<Void>
+  private class AbortCallable
+    implements Callable<Void>
   {
     public Void call()
-    throws Exception
+      throws Exception
     {
       AbortMultipartUploadRequest req = new AbortMultipartUploadRequest(bucketName, key, uploadId);
       client.abortMultipartUpload(req);
@@ -117,10 +114,11 @@ class S3MultipartUpload implements Upload
     }
   }
 
-  private class CompleteCallable implements Callable<String>
+  private class CompleteCallable
+    implements Callable<String>
   {
     public String call()
-    throws Exception
+      throws Exception
     {
       String multipartDigest;
       CompleteMultipartUploadRequest req;
@@ -128,7 +126,7 @@ class S3MultipartUpload implements Upload
       req = new CompleteMultipartUploadRequest(bucketName, key, uploadId,
         new ArrayList<PartETag>(etags.values()));
       ByteArrayOutputStream os = new ByteArrayOutputStream();
-      for (Integer pNum : etags.keySet())
+      for(Integer pNum : etags.keySet())
       {
         os.write(DatatypeConverter.parseHexBinary(etags.get(pNum).getETag()));
       }
@@ -137,7 +135,7 @@ class S3MultipartUpload implements Upload
 
       CompleteMultipartUploadResult res = client.completeMultipartUpload(req);
 
-      if (res.getETag().equals(multipartDigest))
+      if(res.getETag().equals(multipartDigest))
       {
         return res.getETag();
       }
@@ -150,17 +148,17 @@ class S3MultipartUpload implements Upload
     }
   }
 
-  private class UploadCallable implements Callable<Void>
+  private class UploadCallable
+    implements Callable<Void>
   {
     private int partNumber;
     private long partSize;
     private Callable<InputStream> streamCallable;
     private OverallProgressListener progressListener;
 
-    public UploadCallable(int partNumber,
-                          long partSize,
-                          Callable<InputStream> streamCallable,
-                          OverallProgressListener progressListener)
+    public UploadCallable(
+      int partNumber, long partSize, Callable<InputStream> streamCallable,
+      OverallProgressListener progressListener)
     {
       this.partNumber = partNumber;
       this.partSize = partSize;
@@ -169,16 +167,16 @@ class S3MultipartUpload implements Upload
     }
 
     public Void call()
-    throws Exception
+      throws Exception
     {
-      try (HashingInputStream stream = new HashingInputStream(streamCallable.call()))
+      try(HashingInputStream stream = new HashingInputStream(streamCallable.call()))
       {
         return upload(stream);
       }
     }
 
     private Void upload(HashingInputStream stream)
-    throws BadHashException
+      throws BadHashException
     {
 
       // added to support retry testing
@@ -205,7 +203,7 @@ class S3MultipartUpload implements Upload
       // partSize+1.
       req.getRequestClientOptions().setReadLimit(Ints.checkedCast(partSize + 1));
 
-      if (progressListener != null)
+      if(progressListener != null)
       {
         PartProgressEvent ppe = new PartProgressEvent(Integer.toString(partNumber));
         ProgressListener s3pl = new S3ProgressListener(progressListener, ppe);
@@ -214,7 +212,7 @@ class S3MultipartUpload implements Upload
 
       UploadPartResult res = client.uploadPart(req);
       byte[] etag = DatatypeConverter.parseHexBinary(res.getETag());
-      if (Arrays.equals(etag, stream.getDigest()))
+      if(Arrays.equals(etag, stream.getDigest()))
       {
         etags.put(partNumber, res.getPartETag());
 

@@ -23,7 +23,8 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 
-public class RenameCommand extends Command
+public class RenameCommand
+  extends Command
 {
   private RenameOptions _options;
 
@@ -36,7 +37,7 @@ public class RenameCommand extends Command
 
   public ListenableFuture<StoreFile> run()
   {
-    if (_options.isDryRun())
+    if(_options.isDryRun())
     {
       System.out.println("<DRYRUN> renaming '" + getSourceUri() + "' to '" + getDestUri() + "'");
       return Futures.immediateFuture(null);
@@ -92,9 +93,9 @@ public class RenameCommand extends Command
     return Futures.transform(sourceExists, new AsyncFunction<Metadata, StoreFile>()
     {
       public ListenableFuture<StoreFile> apply(Metadata mdata)
-      throws UsageException
+        throws UsageException
       {
-        if (null == mdata)
+        if(null == mdata)
         {
           throw new UsageException("Source object '" + getSourceUri() + "' does not exist");
         }
@@ -118,9 +119,9 @@ public class RenameCommand extends Command
     return Futures.transform(destExists, new AsyncFunction<Metadata, StoreFile>()
     {
       public ListenableFuture<StoreFile> apply(Metadata mdata)
-      throws UsageException
+        throws UsageException
       {
-        if (null != mdata)
+        if(null != mdata)
         {
           throw new UsageException("Cannot overwrite existing destination object '" + getDestUri());
         }
@@ -187,12 +188,12 @@ public class RenameCommand extends Command
   private String getDestKey()
   {
     String key = _options.getDestinationObjectKey();
-    if (key.endsWith("/"))
+    if(key.endsWith("/"))
     {
       // moving a file into a folder....
       String src = _options.getSourceObjectKey();
       int idx = src.lastIndexOf("/");
-      if (-1 != idx)
+      if(-1 != idx)
       {
         key = key + src.substring(idx + 1);
       }

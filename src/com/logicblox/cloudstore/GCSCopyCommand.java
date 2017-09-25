@@ -27,7 +27,8 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 
-public class GCSCopyCommand extends Command
+public class GCSCopyCommand
+  extends Command
 {
   private CopyOptions _options;
 
@@ -39,7 +40,7 @@ public class GCSCopyCommand extends Command
 
   public ListenableFuture<StoreFile> run()
   {
-    if (_options.isDryRun())
+    if(_options.isDryRun())
     {
       System.out.println("<DRYRUN> copying '" +
         getUri(_options.getSourceBucketName(), _options.getSourceObjectKey()) + "' to '" +
@@ -48,8 +49,8 @@ public class GCSCopyCommand extends Command
     }
     else
     {
-      ListenableFuture<StoreFile> future =
-        executeWithRetry(_client.getInternalExecutor(), new Callable<ListenableFuture<StoreFile>>()
+      ListenableFuture<StoreFile> future = executeWithRetry(_client.getInternalExecutor(),
+        new Callable<ListenableFuture<StoreFile>>()
         {
           public ListenableFuture<StoreFile> call()
           {
@@ -74,7 +75,7 @@ public class GCSCopyCommand extends Command
     return _client.getApiExecutor().submit(new Callable<StoreFile>()
     {
       public StoreFile call()
-      throws IOException
+        throws IOException
       {
         // support for testing failures
         String srcUri = getUri(_options.getSourceBucketName(), _options.getSourceObjectKey());
@@ -82,7 +83,7 @@ public class GCSCopyCommand extends Command
 
         StorageObject objectMetadata = null;
         Map<String, String> userMetadata = _options.getUserMetadata().orElse(null);
-        if (userMetadata != null)
+        if(userMetadata != null)
         {
           Storage.Objects.Get get = getGCSClient().objects()
             .get(_options.getSourceBucketName(), _options.getSourceObjectKey());
@@ -94,7 +95,7 @@ public class GCSCopyCommand extends Command
           // .setContentDisposition(sourceObject.getContentDisposition())
           // other metadata to be set?
 
-          if (!_options.getCannedAcl().isPresent())
+          if(!_options.getCannedAcl().isPresent())
           {
             objectMetadata.setAcl(sourceObject.getAcl());
           }
@@ -120,7 +121,7 @@ public class GCSCopyCommand extends Command
     f.setETag(obj.getEtag());
     f.setBucketName(obj.getBucket());
     f.setSize(obj.getSize().longValue());
-    if (includeVersion && (null != obj.getGeneration()))
+    if(includeVersion && (null != obj.getGeneration()))
     {
       f.setVersionId(obj.getGeneration().toString());
     }

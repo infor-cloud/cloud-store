@@ -16,7 +16,8 @@
 
 package com.logicblox.cloudstore;
 
-public class DeleteOptionsBuilder extends CommandOptionsBuilder
+public class DeleteOptionsBuilder
+  extends CommandOptionsBuilder
 {
   private String _bucket = null;
   private String _objectKey = null;
@@ -68,15 +69,15 @@ public class DeleteOptionsBuilder extends CommandOptionsBuilder
 
   private void validateOptions()
   {
-    if (_cloudStoreClient == null)
+    if(_cloudStoreClient == null)
     {
       throw new UsageException("CloudStoreClient has to be set");
     }
-    else if (_bucket == null)
+    else if(_bucket == null)
     {
       throw new UsageException("Bucket has to be set");
     }
-    else if (_objectKey == null)
+    else if(_objectKey == null)
     {
       throw new UsageException("Object key has to be set");
     }

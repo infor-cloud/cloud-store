@@ -38,20 +38,21 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.regex.Pattern;
 
-public class DirectoryKeyProvider implements KeyProvider
+public class DirectoryKeyProvider
+  implements KeyProvider
 {
-  private static final Pattern beginPublic =
-    Pattern.compile("^----[\\-\\ ]BEGIN PUBLIC KEY---[-]+$");
+  private static final Pattern beginPublic = Pattern.compile(
+    "^----[\\-\\ ]BEGIN PUBLIC KEY---[-]+$");
   private static final Pattern endPublic = Pattern.compile("^----[\\-\\ ]END PUBLIC KEY---[-]+$");
 
-  private static final Pattern beginPrivate =
-    Pattern.compile("^----[\\-\\ ]BEGIN PRIVATE KEY---[-]+$");
+  private static final Pattern beginPrivate = Pattern.compile(
+    "^----[\\-\\ ]BEGIN PRIVATE KEY---[-]+$");
   private static final Pattern endPrivate = Pattern.compile("^----[\\-\\ ]END PRIVATE KEY---[-]+$");
 
-  private static final Pattern beginCertificate =
-    Pattern.compile("^----[\\-\\ ]BEGIN CERTIFICATE---[-]+$");
-  private static final Pattern endCertificate =
-    Pattern.compile("^----[\\-\\ ]END CERTIFICATE---[-]+$");
+  private static final Pattern beginCertificate = Pattern.compile(
+    "^----[\\-\\ ]BEGIN CERTIFICATE---[-]+$");
+  private static final Pattern endCertificate = Pattern.compile(
+    "^----[\\-\\ ]END CERTIFICATE---[-]+$");
 
   private File _directory;
 
@@ -61,7 +62,7 @@ public class DirectoryKeyProvider implements KeyProvider
   }
 
   public PrivateKey getPrivateKey(String alias)
-  throws NoSuchKeyException
+    throws NoSuchKeyException
   {
     try
     {
@@ -70,22 +71,22 @@ public class DirectoryKeyProvider implements KeyProvider
       KeyFactory keyFactory = KeyFactory.getInstance("RSA");
       return keyFactory.generatePrivate(keySpec);
     }
-    catch (NoSuchAlgorithmException exc)
+    catch(NoSuchAlgorithmException exc)
     {
       throw new RuntimeException(exc);
     }
-    catch (InvalidKeySpecException exc)
+    catch(InvalidKeySpecException exc)
     {
       throw new NoSuchKeyException(exc);
     }
-    catch (IOException exc)
+    catch(IOException exc)
     {
       throw new NoSuchKeyException(exc);
     }
   }
 
   public PublicKey getPublicKey(String alias)
-  throws NoSuchKeyException
+    throws NoSuchKeyException
   {
     try
     {
@@ -94,22 +95,22 @@ public class DirectoryKeyProvider implements KeyProvider
       KeyFactory keyFactory = KeyFactory.getInstance("RSA");
       return keyFactory.generatePublic(keySpec);
     }
-    catch (NoSuchAlgorithmException exc)
+    catch(NoSuchAlgorithmException exc)
     {
       throw new RuntimeException(exc);
     }
-    catch (InvalidKeySpecException exc)
+    catch(InvalidKeySpecException exc)
     {
       throw new NoSuchKeyException(exc);
     }
-    catch (IOException exc)
+    catch(IOException exc)
     {
       throw new NoSuchKeyException(exc);
     }
   }
 
   public Certificate getCertificate(String alias)
-  throws NoSuchKeyException
+    throws NoSuchKeyException
   {
     try
     {
@@ -118,11 +119,11 @@ public class DirectoryKeyProvider implements KeyProvider
       ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
       return certFact.generateCertificate(bis);
     }
-    catch (CertificateException exc)
+    catch(CertificateException exc)
     {
       throw new NoSuchKeyException(exc);
     }
-    catch (IOException exc)
+    catch(IOException exc)
     {
       throw new NoSuchKeyException(exc);
     }
@@ -132,26 +133,26 @@ public class DirectoryKeyProvider implements KeyProvider
    * Returns the .pem file for the given alias.
    */
   private File getFile(String alias, String extension)
-  throws NoSuchKeyException
+    throws NoSuchKeyException
   {
     File result = null;
 
-    if (!_directory.exists() || !_directory.isDirectory())
+    if(!_directory.exists() || !_directory.isDirectory())
     {
       throw new NoSuchKeyException("Invalid key directory: " + _directory.getPath());
     }
 
     // iterate of the actual files to avoid security issues with alias
     // that are not simple file names.
-    for (File file : _directory.listFiles())
+    for(File file : _directory.listFiles())
     {
-      if (file.getName().equals(alias + "." + extension))
+      if(file.getName().equals(alias + "." + extension))
       {
         result = file;
       }
     }
 
-    if (result == null)
+    if(result == null)
     {
       throw new NoSuchKeyException("No such key: " + alias);
     }
@@ -160,7 +161,7 @@ public class DirectoryKeyProvider implements KeyProvider
   }
 
   private byte[] extractKey(File file, Pattern begin, Pattern end)
-  throws NoSuchKeyException, IOException
+    throws NoSuchKeyException, IOException
   {
     int state = 0;
     StringBuilder keyPem = new StringBuilder();
@@ -171,19 +172,19 @@ public class DirectoryKeyProvider implements KeyProvider
     {
       in = new BufferedReader(new InputStreamReader(new FileInputStream(file), Charsets.UTF_8));
       String line;
-      while (((line = in.readLine()) != null))
+      while(((line = in.readLine()) != null))
       {
-        if (begin.matcher(line).matches() && state == 0)
+        if(begin.matcher(line).matches() && state == 0)
         {
           state = 1;
           continue;
         }
-        else if (end.matcher(line).matches() && state == 1)
+        else if(end.matcher(line).matches() && state == 1)
         {
           state = 2;
         }
 
-        if (state == 1)
+        if(state == 1)
         {
           keyPem.append(line);
           keyPem.append("\n");
@@ -197,7 +198,7 @@ public class DirectoryKeyProvider implements KeyProvider
       Closeables.close(in, threw);
     }
 
-    if (state != 2)
+    if(state != 2)
     {
       throw new NoSuchKeyException("Incorrect file format: " + file.getPath());
     }

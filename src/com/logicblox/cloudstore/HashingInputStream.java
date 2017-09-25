@@ -22,7 +22,8 @@ import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-class HashingInputStream extends FilterInputStream
+class HashingInputStream
+  extends FilterInputStream
 {
   private MessageDigest md;
   private byte[] digest;
@@ -34,7 +35,7 @@ class HashingInputStream extends FilterInputStream
     {
       md = MessageDigest.getInstance("MD5");
     }
-    catch (NoSuchAlgorithmException e)
+    catch(NoSuchAlgorithmException e)
     {
       // No MD5, give up
       throw new RuntimeException(e);
@@ -43,7 +44,7 @@ class HashingInputStream extends FilterInputStream
 
   public byte[] getDigest()
   {
-    if (digest == null)
+    if(digest == null)
     {
       digest = md.digest();
     }
@@ -53,10 +54,10 @@ class HashingInputStream extends FilterInputStream
 
   @Override
   public int read()
-  throws IOException
+    throws IOException
   {
     int res = in.read();
-    if (res != -1)
+    if(res != -1)
     {
       md.update((byte) res);
     }
@@ -65,10 +66,10 @@ class HashingInputStream extends FilterInputStream
 
   @Override
   public int read(byte[] b)
-  throws IOException
+    throws IOException
   {
     int count = in.read(b);
-    if (count != -1)
+    if(count != -1)
     {
       md.update(b, 0, count);
     }
@@ -77,10 +78,10 @@ class HashingInputStream extends FilterInputStream
 
   @Override
   public int read(byte[] b, int off, int len)
-  throws IOException
+    throws IOException
   {
     int count = in.read(b, off, len);
-    if (count != -1)
+    if(count != -1)
     {
       md.update(b, off, count);
     }

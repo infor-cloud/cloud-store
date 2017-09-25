@@ -16,7 +16,8 @@
 
 package com.logicblox.cloudstore;
 
-class BadHashException extends Exception
+class BadHashException
+  extends Exception
 {
   public BadHashException(String msg)
   {

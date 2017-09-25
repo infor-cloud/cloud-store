@@ -22,10 +22,8 @@ import java.util.Map;
 
 interface Copy
 {
-  ListenableFuture<Void> copyPart(int partNumber,
-                                  Long startByte,
-                                  Long endByte,
-                                  OverallProgressListener opl);
+  ListenableFuture<Void> copyPart(
+    int partNumber, Long startByte, Long endByte, OverallProgressListener opl);
 
   ListenableFuture<String> completeCopy();
 

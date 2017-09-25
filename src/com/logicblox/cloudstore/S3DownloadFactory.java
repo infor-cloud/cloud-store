@@ -40,7 +40,8 @@ class S3DownloadFactory
     return executor.submit(new StartCallable(bucketName, key, version));
   }
 
-  private class StartCallable implements Callable<S3Download>
+  private class StartCallable
+    implements Callable<S3Download>
   {
     private String bucketName;
     private String key;

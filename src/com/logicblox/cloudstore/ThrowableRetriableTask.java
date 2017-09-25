@@ -26,7 +26,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
-public class ThrowableRetriableTask<V> implements Callable<ListenableFuture<V>>
+public class ThrowableRetriableTask<V>
+  implements Callable<ListenableFuture<V>>
 {
   private final Callable<ListenableFuture<V>> _callable;
   private final ListeningScheduledExecutorService _executor;
@@ -36,9 +37,9 @@ public class ThrowableRetriableTask<V> implements Callable<ListenableFuture<V>>
   // for testing
   private static Set<RetryListener> _retryListeners = new HashSet<RetryListener>();
 
-  public ThrowableRetriableTask(Callable<ListenableFuture<V>> callable,
-                                ListeningScheduledExecutorService executor,
-                                ThrowableRetryPolicy retryPolicy)
+  public ThrowableRetriableTask(
+    Callable<ListenableFuture<V>> callable, ListeningScheduledExecutorService executor,
+    ThrowableRetryPolicy retryPolicy)
   {
     _callable = callable;
     _executor = executor;
@@ -53,7 +54,7 @@ public class ThrowableRetriableTask<V> implements Callable<ListenableFuture<V>>
     {
       future = _callable.call();
     }
-    catch (Exception exc)
+    catch(Exception exc)
     {
       future = Futures.immediateFailedFuture(exc);
     }
@@ -63,7 +64,7 @@ public class ThrowableRetriableTask<V> implements Callable<ListenableFuture<V>>
       public ListenableFuture<V> create(Throwable t)
       {
         _retryCount++;
-        if (_retryPolicy.shouldRetry(t, _retryCount))
+        if(_retryPolicy.shouldRetry(t, _retryCount))
         {
           String msg = "Info: Retriable exception: " + _callable.toString() + ": " + t.getMessage();
           System.err.println(msg);
@@ -87,7 +88,7 @@ public class ThrowableRetriableTask<V> implements Callable<ListenableFuture<V>>
   // for testing
   private synchronized void sendRetryNotifications(String callableId, Throwable t)
   {
-    for (RetryListener l : _retryListeners)
+    for(RetryListener l : _retryListeners)
       l.retryTriggered(new RetryEvent(callableId, t));
   }
 
@@ -99,13 +100,13 @@ public class ThrowableRetriableTask<V> implements Callable<ListenableFuture<V>>
 
   private void sleep(long delay)
   {
-    if (delay > 0)
+    if(delay > 0)
     {
       try
       {
         Thread.sleep(delay);
       }
-      catch (InterruptedException ignored)
+      catch(InterruptedException ignored)
       {
       }
     }

@@ -24,10 +24,9 @@ import java.util.concurrent.Callable;
 
 interface Upload
 {
-  ListenableFuture<Void> uploadPart(int partNumber,
-                                    long partSize,
-                                    Callable<InputStream> streamCallable,
-                                    OverallProgressListener opl);
+  ListenableFuture<Void> uploadPart(
+    int partNumber, long partSize, Callable<InputStream> streamCallable,
+    OverallProgressListener opl);
 
   ListenableFuture<String> completeUpload();
 

@@ -27,7 +27,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 
-public class S3AbortPendingUploadsCommand extends Command
+public class S3AbortPendingUploadsCommand
+  extends Command
 {
   private PendingUploadsOptions _options;
 
@@ -40,7 +41,7 @@ public class S3AbortPendingUploadsCommand extends Command
   public ListenableFuture<List<Void>> run()
   {
     ListenableFuture<List<Void>> future;
-    if (_options.getUploadId().isPresent() && _options.getDate().isPresent())
+    if(_options.getUploadId().isPresent() && _options.getDate().isPresent())
     {
       ListenableFuture<Void> f = executeWithRetry(_client.getInternalExecutor(),
         new AbortByIdDate(_options.getUploadId().get(), _options.getDate().get()));
@@ -48,7 +49,7 @@ public class S3AbortPendingUploadsCommand extends Command
       List<ListenableFuture<Void>> aborts = new ArrayList<>(Arrays.asList(f));
       future = Futures.allAsList(aborts);
     }
-    else if (_options.getUploadId().isPresent())
+    else if(_options.getUploadId().isPresent())
     {
       ListenableFuture<Void> f = executeWithRetry(_client.getInternalExecutor(),
         new AbortById(_options.getUploadId().get()));
@@ -56,10 +57,10 @@ public class S3AbortPendingUploadsCommand extends Command
       List<ListenableFuture<Void>> aborts = new ArrayList<>(Arrays.asList(f));
       future = Futures.allAsList(aborts);
     }
-    else if (_options.getDate().isPresent())
+    else if(_options.getDate().isPresent())
     {
-      future =
-        executeWithRetry(_client.getInternalExecutor(), new AbortByDate(_options.getDate().get()));
+      future = executeWithRetry(_client.getInternalExecutor(),
+        new AbortByDate(_options.getDate().get()));
     }
     else
     {
@@ -69,7 +70,8 @@ public class S3AbortPendingUploadsCommand extends Command
     return future;
   }
 
-  private class AbortByIdDate implements Callable<ListenableFuture<Void>>
+  private class AbortByIdDate
+    implements Callable<ListenableFuture<Void>>
   {
     private String _uploadId;
     private Date _date;
@@ -81,14 +83,13 @@ public class S3AbortPendingUploadsCommand extends Command
     }
 
     public ListenableFuture<Void> call()
-    throws ExecutionException, InterruptedException
+      throws ExecutionException, InterruptedException
     {
-      Upload u =
-        new S3MultipartUpload(getS3Client(), _options.getBucketName(), _options.getObjectKey(),
-          _uploadId, null, _client.getApiExecutor(),
-          _client.getOptionsBuilderFactory().newUploadOptionsBuilder().createOptions());
+      Upload u = new S3MultipartUpload(getS3Client(), _options.getBucketName(),
+        _options.getObjectKey(), _uploadId, null, _client.getApiExecutor(),
+        _client.getOptionsBuilderFactory().newUploadOptionsBuilder().createOptions());
 
-      if (u.getInitiationDate().before(_date))
+      if(u.getInitiationDate().before(_date))
       {
         return executeWithRetry(_client.getInternalExecutor(), new AbortById(u.getId()));
       }
@@ -103,7 +104,8 @@ public class S3AbortPendingUploadsCommand extends Command
     }
   }
 
-  private class AbortById implements Callable<ListenableFuture<Void>>
+  private class AbortById
+    implements Callable<ListenableFuture<Void>>
   {
     private String _uploadId;
 
@@ -114,10 +116,9 @@ public class S3AbortPendingUploadsCommand extends Command
 
     public ListenableFuture<Void> call()
     {
-      Upload u =
-        new S3MultipartUpload(getS3Client(), _options.getBucketName(), _options.getObjectKey(),
-          _uploadId, null, _client.getApiExecutor(),
-          _client.getOptionsBuilderFactory().newUploadOptionsBuilder().createOptions());
+      Upload u = new S3MultipartUpload(getS3Client(), _options.getBucketName(),
+        _options.getObjectKey(), _uploadId, null, _client.getApiExecutor(),
+        _client.getOptionsBuilderFactory().newUploadOptionsBuilder().createOptions());
 
       return u.abort();
     }
@@ -129,7 +130,8 @@ public class S3AbortPendingUploadsCommand extends Command
     }
   }
 
-  private class AbortByDate implements Callable<ListenableFuture<List<Void>>>
+  private class AbortByDate
+    implements Callable<ListenableFuture<List<Void>>>
   {
     private Date _date;
 
@@ -139,18 +141,18 @@ public class S3AbortPendingUploadsCommand extends Command
     }
 
     public ListenableFuture<List<Void>> call()
-    throws ExecutionException, InterruptedException
+      throws ExecutionException, InterruptedException
     {
       // TODO(geokollias): It's a blocking call (similar case with DownloadDirectoryCommand)
       List<Upload> pendingUploads = _client.listPendingUploads(_options).get();
 
       List<ListenableFuture<Void>> aborts = new ArrayList<>();
-      for (Upload obj : pendingUploads)
+      for(Upload obj : pendingUploads)
       {
-        if (obj.getInitiationDate().before(_date))
+        if(obj.getInitiationDate().before(_date))
         {
-          ListenableFuture<Void> abort =
-            executeWithRetry(_client.getInternalExecutor(), new AbortById(obj.getId()));
+          ListenableFuture<Void> abort = executeWithRetry(_client.getInternalExecutor(),
+            new AbortById(obj.getId()));
           aborts.add(abort);
         }
       }

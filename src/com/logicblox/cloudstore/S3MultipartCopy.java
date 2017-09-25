@@ -37,7 +37,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 
-class S3MultipartCopy implements Copy
+class S3MultipartCopy
+  implements Copy
 {
   private ConcurrentMap<Integer, PartETag> etags = new ConcurrentSkipListMap<Integer, PartETag>();
   private AmazonS3 client;
@@ -49,14 +50,10 @@ class S3MultipartCopy implements Copy
   private ObjectMetadata meta;
   private ListeningExecutorService executor;
 
-  public S3MultipartCopy(AmazonS3 client,
-                         String sourceBucketName,
-                         String sourceObjectKey,
-                         String destinationBucketName,
-                         String destinationObjectKey,
-                         String uploadId,
-                         ObjectMetadata meta,
-                         ListeningExecutorService executor)
+  public S3MultipartCopy(
+    AmazonS3 client, String sourceBucketName, String sourceObjectKey, String destinationBucketName,
+    String destinationObjectKey, String uploadId, ObjectMetadata meta,
+    ListeningExecutorService executor)
   {
     this.sourceBucketName = sourceBucketName;
     this.sourceObjectKey = sourceObjectKey;
@@ -68,10 +65,8 @@ class S3MultipartCopy implements Copy
     this.executor = executor;
   }
 
-  public ListenableFuture<Void> copyPart(int partNumber,
-                                         Long startByte,
-                                         Long endByte,
-                                         OverallProgressListener progressListener)
+  public ListenableFuture<Void> copyPart(
+    int partNumber, Long startByte, Long endByte, OverallProgressListener progressListener)
   {
     return executor.submit(new CopyCallable(partNumber, startByte, endByte, progressListener));
   }
@@ -111,19 +106,19 @@ class S3MultipartCopy implements Copy
     return meta.getUserMetadata();
   }
 
-  private class CompleteCallable implements Callable<String>
+  private class CompleteCallable
+    implements Callable<String>
   {
     public String call()
-    throws Exception
+      throws Exception
     {
       String multipartDigest;
       CompleteMultipartUploadRequest req;
 
-      req =
-        new CompleteMultipartUploadRequest(destinationBucketName, destinationObjectKey, uploadId,
-          new ArrayList<PartETag>(etags.values()));
+      req = new CompleteMultipartUploadRequest(destinationBucketName, destinationObjectKey,
+        uploadId, new ArrayList<PartETag>(etags.values()));
       ByteArrayOutputStream os = new ByteArrayOutputStream();
-      for (Integer pNum : etags.keySet())
+      for(Integer pNum : etags.keySet())
       {
         os.write(DatatypeConverter.parseHexBinary(etags.get(pNum).getETag()));
       }
@@ -132,7 +127,7 @@ class S3MultipartCopy implements Copy
 
       CompleteMultipartUploadResult res = client.completeMultipartUpload(req);
 
-      if (res.getETag().equals(multipartDigest))
+      if(res.getETag().equals(multipartDigest))
       {
         return res.getETag();
       }
@@ -145,15 +140,16 @@ class S3MultipartCopy implements Copy
     }
   }
 
-  private class CopyCallable implements Callable<Void>
+  private class CopyCallable
+    implements Callable<Void>
   {
     private int partNumber;
     private Long startByte;
     private Long endByte;
     private OverallProgressListener progressListener;
 
-    public CopyCallable(int partNumber, Long startByte, Long endByte,
-                        OverallProgressListener progressListener)
+    public CopyCallable(
+      int partNumber, Long startByte, Long endByte, OverallProgressListener progressListener)
     {
       this.partNumber = partNumber;
       this.startByte = startByte;
@@ -162,7 +158,7 @@ class S3MultipartCopy implements Copy
     }
 
     public Void call()
-    throws Exception
+      throws Exception
     {
       CopyPartRequest req = new CopyPartRequest().withSourceBucketName(sourceBucketName)
         .withSourceKey(sourceObjectKey)
@@ -173,7 +169,7 @@ class S3MultipartCopy implements Copy
         .withLastByte(endByte)
         .withPartNumber(partNumber + 1);
 
-      if (progressListener != null)
+      if(progressListener != null)
       {
         PartProgressEvent ppe = new PartProgressEvent(Integer.toString(partNumber));
         ProgressListener s3pl = new S3ProgressListener(progressListener, ppe);

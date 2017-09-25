@@ -24,7 +24,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.concurrent.Callable;
 
-public class S3ExistsCommand extends Command
+public class S3ExistsCommand
+  extends Command
 {
   private ExistsOptions _options;
 
@@ -36,8 +37,8 @@ public class S3ExistsCommand extends Command
 
   public ListenableFuture<Metadata> run()
   {
-    ListenableFuture<Metadata> future =
-      executeWithRetry(_client.getInternalExecutor(), new Callable<ListenableFuture<Metadata>>()
+    ListenableFuture<Metadata> future = executeWithRetry(_client.getInternalExecutor(),
+      new Callable<ListenableFuture<Metadata>>()
       {
         public ListenableFuture<Metadata> call()
         {
@@ -58,10 +59,10 @@ public class S3ExistsCommand extends Command
     {
       public ListenableFuture<Metadata> create(Throwable t)
       {
-        if (t instanceof AmazonS3Exception)
+        if(t instanceof AmazonS3Exception)
         {
           AmazonS3Exception exc = (AmazonS3Exception) t;
-          if (exc.getStatusCode() == 404)
+          if(exc.getStatusCode() == 404)
           {
             return Futures.immediateFuture(null);
           }

@@ -19,7 +19,8 @@ package com.logicblox.cloudstore;
 import com.google.api.client.googleapis.media.MediaHttpUploader;
 import com.google.api.client.googleapis.media.MediaHttpUploaderProgressListener;
 
-class GCSProgressListener implements MediaHttpUploaderProgressListener
+class GCSProgressListener
+  implements MediaHttpUploaderProgressListener
 {
   final private OverallProgressListener opl;
   final private PartProgressEvent ppe;
@@ -33,7 +34,7 @@ class GCSProgressListener implements MediaHttpUploaderProgressListener
   @Override
   public void progressChanged(MediaHttpUploader uploader)
   {
-    switch (uploader.getUploadState())
+    switch(uploader.getUploadState())
     {
       case MEDIA_IN_PROGRESS:
         // TODO: Progress works iff you have a content length specified.

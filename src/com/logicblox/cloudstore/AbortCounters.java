@@ -30,19 +30,19 @@ public class AbortCounters
 
   public int decrementInjectionCounter(String id)
   {
-    synchronized (_abortSync)
+    synchronized(_abortSync)
     {
-      if (_abortInjectionCounter <= 0)
+      if(_abortInjectionCounter <= 0)
       {
         return 0;
       }
 
-      if (_globalAbortCounter)
+      if(_globalAbortCounter)
       {
         id = "";
       }
 
-      if (!_injectionCounters.containsKey(id))
+      if(!_injectionCounters.containsKey(id))
       {
         _injectionCounters.put(id, _abortInjectionCounter);
       }
@@ -55,7 +55,7 @@ public class AbortCounters
 
   public void setInjectionCounter(int counter)
   {
-    synchronized (_abortSync)
+    synchronized(_abortSync)
     {
       _abortInjectionCounter = counter;
     }
@@ -64,7 +64,7 @@ public class AbortCounters
 
   public void clearInjectionCounters()
   {
-    synchronized (_abortSync)
+    synchronized(_abortSync)
     {
       _injectionCounters.clear();
     }
@@ -76,7 +76,7 @@ public class AbortCounters
   // each operation type
   public boolean useGlobalCounter(boolean b)
   {
-    synchronized (_abortSync)
+    synchronized(_abortSync)
     {
       boolean old = _globalAbortCounter;
       _globalAbortCounter = b;

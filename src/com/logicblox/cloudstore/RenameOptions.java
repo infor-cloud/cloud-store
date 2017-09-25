@@ -28,7 +28,8 @@ import java.util.Optional;
  * {@code RenameOptions} objects are meant to be built by {@code RenameOptionsBuilder}. This class
  * provides only public getter methods.
  */
-public class RenameOptions extends CommandOptions
+public class RenameOptions
+  extends CommandOptions
 {
   private final String _sourceBucketName;
   private final String _sourceObjectKey;
@@ -38,14 +39,10 @@ public class RenameOptions extends CommandOptions
   private final boolean _dryRun;
   private String _cannedAcl;
 
-  RenameOptions(CloudStoreClient cloudStoreClient,
-                String sourceBucketName,
-                String sourceObjectKey,
-                String destinationBucket,
-                String destinationObjectKey,
-                String cannedAcl,
-                boolean recursive,
-                boolean dryRun)
+  RenameOptions(
+    CloudStoreClient cloudStoreClient, String sourceBucketName, String sourceObjectKey,
+    String destinationBucket, String destinationObjectKey, String cannedAcl, boolean recursive,
+    boolean dryRun)
   {
     super(cloudStoreClient);
     _sourceBucketName = sourceBucketName;

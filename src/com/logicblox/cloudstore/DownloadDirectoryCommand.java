@@ -28,7 +28,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-public class DownloadDirectoryCommand extends Command
+public class DownloadDirectoryCommand
+  extends Command
 {
   private DownloadOptions _options;
   private File _destination;
@@ -51,7 +52,7 @@ public class DownloadDirectoryCommand extends Command
   }
 
   public ListenableFuture<List<StoreFile>> run()
-  throws ExecutionException, InterruptedException, IOException
+    throws ExecutionException, InterruptedException, IOException
   {
     _futures.clear();
     _filesToCleanup.clear();
@@ -61,28 +62,28 @@ public class DownloadDirectoryCommand extends Command
     {
       checkDestination();
     }
-    catch (UsageException ex)
+    catch(UsageException ex)
     {
       cleanup();
       throw ex;
     }
 
     ListenableFuture<List<StoreFile>> listObjs = querySourceFiles();
-    ListenableFuture<List<StoreFile>> result =
-      Futures.transform(listObjs, new AsyncFunction<List<StoreFile>, List<StoreFile>>()
+    ListenableFuture<List<StoreFile>> result = Futures.transform(listObjs,
+      new AsyncFunction<List<StoreFile>, List<StoreFile>>()
       {
         public ListenableFuture<List<StoreFile>> apply(List<StoreFile> srcFiles)
-        throws IOException
+          throws IOException
         {
           prepareFutures(srcFiles);
-          if (srcFiles.isEmpty())
+          if(srcFiles.isEmpty())
           {
             throw new UsageException(
               "No objects found for '" + getUri(_options.getBucketName(), _options.getObjectKey()) +
                 "'");
           }
 
-          if (_options.isDryRun())
+          if(_options.isDryRun())
           {
             return Futures.immediateFuture(null);
           }
@@ -132,13 +133,13 @@ public class DownloadDirectoryCommand extends Command
     // the destination must be a directory if it exists.  if doesn't exist, create it.
     // overwrite flag is only checked on a file by file basis, not for the destination
     // directory
-    if (_destination.exists())
+    if(_destination.exists())
     {
-      if (!_destination.isDirectory())
+      if(!_destination.isDirectory())
       {
-        if (_options.doesOverwrite())
+        if(_options.doesOverwrite())
         {
-          if (_dryRun)
+          if(_dryRun)
           {
             System.out.println(
               "<DRYRUN> overwriting existing file '" + _destination.getAbsolutePath() +
@@ -162,7 +163,7 @@ public class DownloadDirectoryCommand extends Command
       {
         updateDirsToCleanup(Utils.mkdirs(_destination, _dryRun));
       }
-      catch (IOException ex)
+      catch(IOException ex)
       {
         throw new UsageException(
           "Could not create directory '" + _destination + "': " + ex.getMessage());
@@ -173,11 +174,11 @@ public class DownloadDirectoryCommand extends Command
 
   private void updateDirsToCleanup(List<File> newDirs)
   {
-    if (_dryRun)
+    if(_dryRun)
     {
-      for (File f : newDirs)
+      for(File f : newDirs)
       {
-        if (!_dirsToCleanup.contains(f))
+        if(!_dirsToCleanup.contains(f))
         {
           System.out.println("<DRYRUN> creating missing directory '" + f.getAbsolutePath() + "'");
         }
@@ -188,42 +189,42 @@ public class DownloadDirectoryCommand extends Command
 
 
   private void prepareFutures(List<StoreFile> potentialFiles)
-  throws IOException
+    throws IOException
   {
     File destAbs = _destination.getAbsoluteFile();
-    for (StoreFile src : potentialFiles)
+    for(StoreFile src : potentialFiles)
     {
       String relFile = src.getKey().substring(_options.getObjectKey().length());
       File outputFile = new File(destAbs, relFile);
       File outputPath = new File(outputFile.getParent());
 
-      if (!outputPath.exists())
+      if(!outputPath.exists())
       {
         try
         {
           updateDirsToCleanup(Utils.mkdirs(outputPath, _dryRun));
         }
-        catch (IOException ex)
+        catch(IOException ex)
         {
           throw new UsageException(
             "Could not create directory '" + outputPath + "': " + ex.getMessage());
         }
       }
 
-      if (!src.getKey().endsWith("/"))
+      if(!src.getKey().endsWith("/"))
       {
-        if (outputFile.exists())
+        if(outputFile.exists())
         {
-          if (_options.doesOverwrite())
+          if(_options.doesOverwrite())
           {
-            if (_dryRun)
+            if(_dryRun)
             {
               System.out.println(
                 "<DRYRUN> overwrite existing file '" + outputFile.getAbsolutePath() + "'");
             }
             else
             {
-              if (!outputFile.delete())
+              if(!outputFile.delete())
               {
                 throw new UsageException("Could not overwrite existing file '" + outputFile + "'");
               }
@@ -235,7 +236,7 @@ public class DownloadDirectoryCommand extends Command
               "File '" + outputFile + "' already exists. Please delete or use --overwrite");
           }
         }
-        if (_dryRun)
+        if(_dryRun)
         {
           System.out.println(
             "<DRYRUN> downloading '" + getUri(_options.getBucketName(), src.getKey()) + "' to '" +
@@ -264,14 +265,14 @@ public class DownloadDirectoryCommand extends Command
   private void cleanup()
   {
     // cancel any futures that may still be trying to run
-    for (ListenableFuture<StoreFile> f : _futures)
+    for(ListenableFuture<StoreFile> f : _futures)
       f.cancel(true);
     _futures.clear();
 
     // delete any files we created
-    for (File f : _filesToCleanup)
+    for(File f : _filesToCleanup)
     {
-      if (f.exists())
+      if(f.exists())
       {
         f.delete();
       }
@@ -280,7 +281,7 @@ public class DownloadDirectoryCommand extends Command
 
     // delete any directories we created
     //   - assume these were created topdown, so we can unravel them bottom up
-    for (int i = _dirsToCleanup.size() - 1; i >= 0; --i)
+    for(int i = _dirsToCleanup.size() - 1; i >= 0; --i)
     {
       _dirsToCleanup.get(i).delete();
     }

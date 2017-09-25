@@ -16,7 +16,8 @@
 
 package com.logicblox.cloudstore;
 
-public class S3AclHandler implements AclHandler
+public class S3AclHandler
+  implements AclHandler
 {
   @Override
   public boolean isCannedAclValid(String cannedAcl)

@@ -111,7 +111,7 @@ public interface CloudStoreClient
    * @see UploadOptions
    */
   ListenableFuture<StoreFile> upload(UploadOptions options)
-  throws IOException;
+    throws IOException;
 
   /**
    * Uploads a directory according to {@code options}. For more details check {@link
@@ -125,7 +125,7 @@ public interface CloudStoreClient
    * @see UploadOptions
    */
   ListenableFuture<List<StoreFile>> uploadDirectory(UploadOptions options)
-  throws IOException, ExecutionException, InterruptedException;
+    throws IOException, ExecutionException, InterruptedException;
 
   /**
    * Deletes a single object from a cloud store service.
@@ -140,7 +140,7 @@ public interface CloudStoreClient
    * @param opts DeleteOptions that specify what to delete
    */
   ListenableFuture<List<StoreFile>> deleteDir(DeleteOptions opts)
-  throws InterruptedException, ExecutionException;
+    throws InterruptedException, ExecutionException;
 
   /** Lists all buckets visible for the current user. */
   ListenableFuture<List<Bucket>> listBuckets();
@@ -188,7 +188,7 @@ public interface CloudStoreClient
    * @see DownloadOptions
    */
   ListenableFuture<StoreFile> download(DownloadOptions options)
-  throws IOException;
+    throws IOException;
 
   /**
    * Downloads a conceptual directory according to {@code options}. For more details check {@link
@@ -205,7 +205,7 @@ public interface CloudStoreClient
    * @param options Download options
    */
   ListenableFuture<List<StoreFile>> downloadDirectory(DownloadOptions options)
-  throws IOException, ExecutionException, InterruptedException;
+    throws IOException, ExecutionException, InterruptedException;
 
   /**
    * Copies an object according to {@code options}. For more details check {@link
@@ -235,7 +235,7 @@ public interface CloudStoreClient
    * @see CopyOptions
    */
   ListenableFuture<List<StoreFile>> copyToDir(CopyOptions options)
-  throws InterruptedException, ExecutionException, IOException;
+    throws InterruptedException, ExecutionException, IOException;
 
   /**
    * Renames an object according to {@code options}. For more details check {@link
@@ -268,7 +268,7 @@ public interface CloudStoreClient
    * @see RenameOptions
    */
   ListenableFuture<List<StoreFile>> renameDirectory(RenameOptions options)
-  throws InterruptedException, ExecutionException, IOException;
+    throws InterruptedException, ExecutionException, IOException;
 
   /**
    * Returns a list of summary information about the objects whose keys start with {@code prefix}
@@ -323,7 +323,7 @@ public interface CloudStoreClient
    * @param options EncryptionKeyOptions
    */
   ListenableFuture<StoreFile> addEncryptionKey(EncryptionKeyOptions options)
-  throws IOException;
+    throws IOException;
 
   /**
    * Removes an existing encryption key.
@@ -331,7 +331,7 @@ public interface CloudStoreClient
    * @param options EncryptionKeyOptions
    */
   ListenableFuture<StoreFile> removeEncryptionKey(EncryptionKeyOptions options)
-  throws IOException;
+    throws IOException;
 
   /**
    * Makes sure all pending tasks have been completed and shuts down all internal machinery

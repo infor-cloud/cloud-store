@@ -28,7 +28,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 
-public class GCSCopyDirCommand extends Command
+public class GCSCopyDirCommand
+  extends Command
 {
   private CopyOptions _options;
 
@@ -39,39 +40,38 @@ public class GCSCopyDirCommand extends Command
   }
 
   public ListenableFuture<List<StoreFile>> run()
-  throws IOException
+    throws IOException
   {
-    if (!_options.getDestinationObjectKey().endsWith("/") &&
+    if(!_options.getDestinationObjectKey().endsWith("/") &&
       !_options.getDestinationObjectKey().equals(""))
     {
       throw new UsageException("Destination directory key should end with a '/'");
     }
 
     String baseDirPath = "";
-    if (_options.getSourceObjectKey().length() > 0)
+    if(_options.getSourceObjectKey().length() > 0)
     {
       int endIndex = _options.getSourceObjectKey().lastIndexOf("/");
-      if (endIndex != -1)
+      if(endIndex != -1)
       {
         baseDirPath = _options.getSourceObjectKey().substring(0, endIndex + 1);
       }
     }
     final String baseDirPathF = baseDirPath;
 
-    ListenableFuture<List<StoreFile>> listFuture =
-      getListFuture(_options.getSourceBucketName(), _options.getSourceObjectKey(),
-        _options.isRecursive());
-    ListenableFuture<List<StoreFile>> result =
-      Futures.transform(listFuture, new AsyncFunction<List<StoreFile>, List<StoreFile>>()
+    ListenableFuture<List<StoreFile>> listFuture = getListFuture(_options.getSourceBucketName(),
+      _options.getSourceObjectKey(), _options.isRecursive());
+    ListenableFuture<List<StoreFile>> result = Futures.transform(listFuture,
+      new AsyncFunction<List<StoreFile>, List<StoreFile>>()
       {
         public ListenableFuture<List<StoreFile>> apply(List<StoreFile> filesToCopy)
         {
           List<ListenableFuture<StoreFile>> files = new ArrayList<>();
           List<ListenableFuture<StoreFile>> futures = new ArrayList<>();
-          for (StoreFile src : filesToCopy)
+          for(StoreFile src : filesToCopy)
             createCopyOp(futures, src, baseDirPathF);
 
-          if (_options.isDryRun())
+          if(_options.isDryRun())
           {
             return Futures.immediateFuture(null);
           }
@@ -85,15 +85,14 @@ public class GCSCopyDirCommand extends Command
   }
 
 
-  private void createCopyOp(List<ListenableFuture<StoreFile>> futures,
-                            final StoreFile src,
-                            String baseDirPath)
+  private void createCopyOp(
+    List<ListenableFuture<StoreFile>> futures, final StoreFile src, String baseDirPath)
   {
-    if (!src.getKey().endsWith("/"))
+    if(!src.getKey().endsWith("/"))
     {
       String destKeyLastPart = src.getKey().substring(baseDirPath.length());
       final String destKey = _options.getDestinationObjectKey() + destKeyLastPart;
-      if (_options.isDryRun())
+      if(_options.isDryRun())
       {
         System.out.println(
           "<DRYRUN> copying '" + getUri(_options.getSourceBucketName(), src.getKey()) + "' to '" +
@@ -116,7 +115,7 @@ public class GCSCopyDirCommand extends Command
           return _client.getApiExecutor().submit(new Callable<StoreFile>()
           {
             public StoreFile call()
-            throws IOException
+              throws IOException
             {
               return performCopy(src, destKey);
             }
@@ -126,7 +125,7 @@ public class GCSCopyDirCommand extends Command
   }
 
   private StoreFile performCopy(StoreFile src, String destKey)
-  throws IOException
+    throws IOException
   {
     // support for testing failures
     String srcUri = getUri(_options.getSourceBucketName(), src.getKey());
@@ -139,9 +138,8 @@ public class GCSCopyDirCommand extends Command
     return createStoreFile(resp, false);
   }
 
-  private ListenableFuture<List<StoreFile>> getListFuture(String bucket,
-                                                          String prefix,
-                                                          boolean isRecursive)
+  private ListenableFuture<List<StoreFile>> getListFuture(
+    String bucket, String prefix, boolean isRecursive)
   {
     // FIXME - if we gave commands a CloudStoreClient when they were created
     //         we could then use client.listObjects() instead of all this....
@@ -162,7 +160,7 @@ public class GCSCopyDirCommand extends Command
     f.setETag(obj.getEtag());
     f.setBucketName(obj.getBucket());
     f.setSize(obj.getSize().longValue());
-    if (includeVersion && (null != obj.getGeneration()))
+    if(includeVersion && (null != obj.getGeneration()))
     {
       f.setVersionId(obj.getGeneration().toString());
     }

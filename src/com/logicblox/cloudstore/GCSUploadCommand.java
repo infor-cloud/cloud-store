@@ -43,7 +43,8 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 
-public class GCSUploadCommand extends Command
+public class GCSUploadCommand
+  extends Command
 {
   private String encKeyName;
   private String encryptedSymmetricKeyString;
@@ -58,7 +59,7 @@ public class GCSUploadCommand extends Command
 
 
   public GCSUploadCommand(UploadOptions options)
-  throws IOException
+    throws IOException
   {
     super(options);
     _options = options;
@@ -71,7 +72,7 @@ public class GCSUploadCommand extends Command
     this.bucket = _options.getBucketName();
     this.key = _options.getObjectKey();
 
-    if (this.encKeyName != null)
+    if(this.encKeyName != null)
     {
       byte[] encKeyBytes = new byte[32];
       new SecureRandom().nextBytes(encKeyBytes);
@@ -79,34 +80,34 @@ public class GCSUploadCommand extends Command
       try
       {
         Key pubKey = _client.getKeyProvider().getPublicKey(this.encKeyName);
-        this.pubKeyHash =
-          DatatypeConverter.printBase64Binary(DigestUtils.sha256(pubKey.getEncoded()));
+        this.pubKeyHash = DatatypeConverter.printBase64Binary(
+          DigestUtils.sha256(pubKey.getEncoded()));
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.ENCRYPT_MODE, pubKey);
-        this.encryptedSymmetricKeyString =
-          DatatypeConverter.printBase64Binary(cipher.doFinal(encKeyBytes));
+        this.encryptedSymmetricKeyString = DatatypeConverter.printBase64Binary(
+          cipher.doFinal(encKeyBytes));
       }
-      catch (NoSuchKeyException e)
+      catch(NoSuchKeyException e)
       {
         throw new UsageException("Missing encryption key: " + this.encKeyName);
       }
-      catch (NoSuchAlgorithmException e)
+      catch(NoSuchAlgorithmException e)
       {
         throw new RuntimeException(e);
       }
-      catch (NoSuchPaddingException e)
+      catch(NoSuchPaddingException e)
       {
         throw new RuntimeException(e);
       }
-      catch (InvalidKeyException e)
+      catch(InvalidKeyException e)
       {
         throw new RuntimeException(e);
       }
-      catch (IllegalBlockSizeException e)
+      catch(IllegalBlockSizeException e)
       {
         throw new RuntimeException(e);
       }
-      catch (BadPaddingException e)
+      catch(BadPaddingException e)
       {
         throw new RuntimeException(e);
       }
@@ -119,14 +120,14 @@ public class GCSUploadCommand extends Command
    * Run ties Step 1, Step 2, and Step 3 together. The return result is the ETag of the upload.
    */
   public ListenableFuture<StoreFile> run()
-  throws FileNotFoundException
+    throws FileNotFoundException
   {
-    if (!file.exists())
+    if(!file.exists())
     {
       throw new FileNotFoundException(file.getPath());
     }
 
-    if (_options.isDryRun())
+    if(_options.isDryRun())
     {
       System.out.println(
         "<DRYRUN> uploading '" + this.file.getAbsolutePath() + "' to '" + getUri(bucket, key) +
@@ -184,7 +185,7 @@ public class GCSUploadCommand extends Command
 
     Map<String, String> meta = new HashMap<String, String>();
     meta.put("s3tool-version", String.valueOf(Version.CURRENT));
-    if (this.encKeyName != null)
+    if(this.encKeyName != null)
     {
       meta.put("s3tool-key-name", encKeyName);
       meta.put("s3tool-symmetric-key", encryptedSymmetricKeyString);
@@ -214,7 +215,7 @@ public class GCSUploadCommand extends Command
   private ListenableFuture<Upload> startParts(final Upload upload)
   {
     OverallProgressListener opl = null;
-    if (progressListenerFactory != null)
+    if(progressListenerFactory != null)
     {
       opl = progressListenerFactory.create(
         new ProgressOptionsBuilder().setObjectUri(getUri(upload.getBucket(), upload.getKey()))
@@ -230,14 +231,14 @@ public class GCSUploadCommand extends Command
     return Futures.transform(part, Functions.constant(upload));
   }
 
-  private ListenableFuture<Void> startPartUploadThread(final Upload upload,
-                                                       final OverallProgressListener opl)
+  private ListenableFuture<Void> startPartUploadThread(
+    final Upload upload, final OverallProgressListener opl)
   {
-    ListenableFuture<ListenableFuture<Void>> result =
-      _client.getInternalExecutor().submit(new Callable<ListenableFuture<Void>>()
+    ListenableFuture<ListenableFuture<Void>> result = _client.getInternalExecutor()
+      .submit(new Callable<ListenableFuture<Void>>()
       {
         public ListenableFuture<Void> call()
-        throws Exception
+          throws Exception
         {
           return GCSUploadCommand.this.startPartUpload(upload, opl);
         }
@@ -249,15 +250,15 @@ public class GCSUploadCommand extends Command
   /**
    * Execute startPartUpload with retry
    */
-  private ListenableFuture<Void> startPartUpload(final Upload upload,
-                                                 final OverallProgressListener opl)
+  private ListenableFuture<Void> startPartUpload(
+    final Upload upload, final OverallProgressListener opl)
   {
     final int partNumber = 0;
 
     return executeWithRetry(_client.getInternalExecutor(), new Callable<ListenableFuture<Void>>()
     {
       public ListenableFuture<Void> call()
-      throws Exception
+        throws Exception
       {
         return startPartUploadActual(upload, opl);
       }
@@ -269,15 +270,15 @@ public class GCSUploadCommand extends Command
     });
   }
 
-  private ListenableFuture<Void> startPartUploadActual(final Upload upload,
-                                                       final OverallProgressListener opl)
-  throws Exception
+  private ListenableFuture<Void> startPartUploadActual(
+    final Upload upload, final OverallProgressListener opl)
+    throws Exception
   {
     final int partNumber = 0;
     final Cipher cipher;
 
     long partSize;
-    if (encKeyName != null)
+    if(encKeyName != null)
     {
       cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 
@@ -294,13 +295,13 @@ public class GCSUploadCommand extends Command
     Callable<InputStream> inputStreamCallable = new Callable<InputStream>()
     {
       public InputStream call()
-      throws Exception
+        throws Exception
       {
         FileInputStream fs = new FileInputStream(file);
 
         BufferedInputStream bs = new BufferedInputStream(fs);
         InputStream in;
-        if (cipher != null)
+        if(cipher != null)
         {
           in = new CipherWithInlineIVInputStream(bs, cipher, Cipher.ENCRYPT_MODE, encKey);
         }

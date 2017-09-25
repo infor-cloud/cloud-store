@@ -21,7 +21,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-class ConsoleProgressListener implements OverallProgressListener
+class ConsoleProgressListener
+  implements OverallProgressListener
 {
   /**
    * This map contains the progress of each part.
@@ -29,8 +30,8 @@ class ConsoleProgressListener implements OverallProgressListener
    * Currently, it is not a ConcurrentMap since it is used by {@code progress}, which is {@code
    * synchronized}, and {@code getTotalTransferredBytes}, which is called only by {@code progress}.
    */
-  protected Map<String, PartProgressEvent> partsProgressEvents =
-    new HashMap<String, PartProgressEvent>();
+  protected Map<String, PartProgressEvent> partsProgressEvents
+    = new HashMap<String, PartProgressEvent>();
   protected final long intervalInBytes;
   protected final ProgressOptions options;
   protected AtomicLong lastReportBytes = new AtomicLong();
@@ -50,7 +51,7 @@ class ConsoleProgressListener implements OverallProgressListener
 
     long totalTransferredBytes = getTotalTransferredBytes();
     long unreportedBytes = getUnreportedBytes(totalTransferredBytes);
-    if (isReportTime(unreportedBytes) ||
+    if(isReportTime(unreportedBytes) ||
       (isTransferComplete(totalTransferredBytes) && !allBytesReported()))
     {
       System.out.println(
@@ -64,7 +65,7 @@ class ConsoleProgressListener implements OverallProgressListener
   private long getTotalTransferredBytes()
   {
     long bytes = 0L;
-    for (Map.Entry<String, PartProgressEvent> e : partsProgressEvents.entrySet())
+    for(Map.Entry<String, PartProgressEvent> e : partsProgressEvents.entrySet())
     {
       bytes += e.getValue().getTransferredBytes();
     }

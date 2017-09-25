@@ -31,7 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-public class S3CopyCommand extends Command
+public class S3CopyCommand
+  extends Command
 {
   private CopyOptions _options;
   private OverallProgressListenerFactory _progressListenerFactory;
@@ -46,7 +47,7 @@ public class S3CopyCommand extends Command
 
   public ListenableFuture<StoreFile> run()
   {
-    if (_options.isDryRun())
+    if(_options.isDryRun())
     {
       System.out.println("<DRYRUN> copying '" +
         getUri(_options.getSourceBucketName(), _options.getSourceObjectKey()) + "' to '" +
@@ -96,8 +97,8 @@ public class S3CopyCommand extends Command
 
   private ListenableFuture<Copy> startCopyActual()
   {
-    S3MultipartCopyFactory factory =
-      new S3MultipartCopyFactory(getS3Client(), _client.getApiExecutor());
+    S3MultipartCopyFactory factory = new S3MultipartCopyFactory(getS3Client(),
+      _client.getApiExecutor());
 
     return factory.startCopy(_options.getSourceBucketName(), _options.getSourceObjectKey(),
       _options.getDestinationBucketName(), _options.getDestinationObjectKey(), _options);
@@ -111,7 +112,7 @@ public class S3CopyCommand extends Command
     return new AsyncFunction<Copy, Copy>()
     {
       public ListenableFuture<Copy> apply(final Copy copy)
-      throws Exception
+        throws Exception
       {
         return startParts(copy);
       }
@@ -119,7 +120,7 @@ public class S3CopyCommand extends Command
   }
 
   private ListenableFuture<Copy> startParts(Copy copy)
-  throws UsageException
+    throws UsageException
   {
     String srcUri = getUri(copy.getSourceBucketName(), copy.getSourceObjectKey());
     String destUri = getUri(copy.getDestinationBucketName(), copy.getDestinationObjectKey());
@@ -130,7 +131,7 @@ public class S3CopyCommand extends Command
     // cloudstore-specific metadata should already be set by factory.startCopy
     String objectVersion = meta.get("s3tool-version");
 
-    if (!String.valueOf(Version.CURRENT).equals(objectVersion))
+    if(!String.valueOf(Version.CURRENT).equals(objectVersion))
     {
       throw new UsageException(
         errPrefix + "unsupported version: " + objectVersion + ", should be " + Version.CURRENT);
@@ -140,7 +141,7 @@ public class S3CopyCommand extends Command
     setChunkSize(Long.valueOf(meta.get("s3tool-chunk-size")));
 
     OverallProgressListener opl = null;
-    if (_progressListenerFactory != null)
+    if(_progressListenerFactory != null)
     {
       opl = _progressListenerFactory.create(new ProgressOptionsBuilder().setObjectUri(
         getUri(copy.getDestinationBucketName(), copy.getDestinationObjectKey()))
@@ -151,8 +152,8 @@ public class S3CopyCommand extends Command
 
     List<ListenableFuture<Void>> parts = new ArrayList<>();
 
-    for (long position = 0; position < fileLength || (position == 0 && fileLength == 0);
-         position += chunkSize)
+    for(long position = 0; position < fileLength || (position == 0 && fileLength == 0);
+        position += chunkSize)
     {
       parts.add(startPartCopy(copy, position, opl));
     }
@@ -160,9 +161,8 @@ public class S3CopyCommand extends Command
     return Futures.transform(Futures.allAsList(parts), Functions.constant(copy));
   }
 
-  private ListenableFuture<Void> startPartCopy(final Copy copy,
-                                               final long position,
-                                               final OverallProgressListener opl)
+  private ListenableFuture<Void> startPartCopy(
+    final Copy copy, final long position, final OverallProgressListener opl)
   {
     final int partNumber = (int) (position / chunkSize);
 
@@ -180,10 +180,8 @@ public class S3CopyCommand extends Command
     });
   }
 
-  private ListenableFuture<Void> startPartCopyActual(final Copy copy,
-                                                     final long position,
-                                                     final int partNumber,
-                                                     OverallProgressListener opl)
+  private ListenableFuture<Void> startPartCopyActual(
+    final Copy copy, final long position, final int partNumber, OverallProgressListener opl)
   {
     // support for testing failures
     String srcUri = getUri(copy.getSourceBucketName(), copy.getSourceObjectKey());
@@ -193,14 +191,14 @@ public class S3CopyCommand extends Command
     Long end;
     long partSize;
 
-    if (copy.getMeta().containsKey("s3tool-key-name"))
+    if(copy.getMeta().containsKey("s3tool-key-name"))
     {
       long blockSize;
       try
       {
         blockSize = Cipher.getInstance("AES/CBC/PKCS5Padding").getBlockSize();
       }
-      catch (NoSuchAlgorithmException | NoSuchPaddingException e)
+      catch(NoSuchAlgorithmException | NoSuchPaddingException e)
       {
         throw new RuntimeException(e);
       }
@@ -216,7 +214,7 @@ public class S3CopyCommand extends Command
     }
     end = start + partSize - 1;
 
-    if (fileLength == 0)
+    if(fileLength == 0)
     {
       start = null;
       end = null;

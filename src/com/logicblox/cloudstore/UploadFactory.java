@@ -22,8 +22,6 @@ import java.util.Map;
 
 interface UploadFactory
 {
-  ListenableFuture<Upload> startUpload(String bucketName,
-                                       String key,
-                                       Map<String, String> meta,
-                                       UploadOptions options);
+  ListenableFuture<Upload> startUpload(
+    String bucketName, String key, Map<String, String> meta, UploadOptions options);
 }

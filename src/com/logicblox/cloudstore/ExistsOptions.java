@@ -17,7 +17,8 @@
 package com.logicblox.cloudstore;
 
 
-public class ExistsOptions extends CommandOptions
+public class ExistsOptions
+  extends CommandOptions
 {
   private final String _bucket;
   private final String _objectKey;

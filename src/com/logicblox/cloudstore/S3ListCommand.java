@@ -25,7 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-public class S3ListCommand extends Command
+public class S3ListCommand
+  extends Command
 {
 
   private ListOptions _options;
@@ -65,7 +66,7 @@ public class S3ListCommand extends Command
       {
         ListObjectsRequest req = new ListObjectsRequest().withBucketName(_options.getBucketName())
           .withPrefix(_options.getObjectKey().orElse(null));
-        if (!_options.isRecursive())
+        if(!_options.isRecursive())
         {
           req.setDelimiter("/");
         }
@@ -73,23 +74,23 @@ public class S3ListCommand extends Command
         List<StoreFile> all = new ArrayList<StoreFile>();
         ObjectListing current = getS3Client().listObjects(req);
         appendS3ObjectSummaryList(all, current.getObjectSummaries());
-        if (!_options.dirsExcluded())
+        if(!_options.dirsExcluded())
         {
           appendS3DirStringList(all, current.getCommonPrefixes(), _options.getBucketName());
         }
         current = getS3Client().listNextBatchOfObjects(current);
 
-        while (current.isTruncated())
+        while(current.isTruncated())
         {
           appendS3ObjectSummaryList(all, current.getObjectSummaries());
-          if (!_options.dirsExcluded())
+          if(!_options.dirsExcluded())
           {
             appendS3DirStringList(all, current.getCommonPrefixes(), _options.getBucketName());
           }
           current = getS3Client().listNextBatchOfObjects(current);
         }
         appendS3ObjectSummaryList(all, current.getObjectSummaries());
-        if (!_options.dirsExcluded())
+        if(!_options.dirsExcluded())
         {
           appendS3DirStringList(all, current.getCommonPrefixes(), _options.getBucketName());
         }
@@ -99,10 +100,10 @@ public class S3ListCommand extends Command
     });
   }
 
-  private List<StoreFile> appendS3ObjectSummaryList(List<StoreFile> all,
-                                                    List<S3ObjectSummary> appendList)
+  private List<StoreFile> appendS3ObjectSummaryList(
+    List<StoreFile> all, List<S3ObjectSummary> appendList)
   {
-    for (S3ObjectSummary o : appendList)
+    for(S3ObjectSummary o : appendList)
     {
       all.add(S3ObjectSummaryToStoreFile(o));
     }
@@ -110,11 +111,10 @@ public class S3ListCommand extends Command
     return all;
   }
 
-  private List<StoreFile> appendS3DirStringList(List<StoreFile> all,
-                                                List<String> appendList,
-                                                String bucket)
+  private List<StoreFile> appendS3DirStringList(
+    List<StoreFile> all, List<String> appendList, String bucket)
   {
-    for (String o : appendList)
+    for(String o : appendList)
     {
       all.add(S3DirStringToStoreFile(o, bucket));
     }

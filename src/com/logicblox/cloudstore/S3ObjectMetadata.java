@@ -32,12 +32,9 @@ class S3ObjectMetadata
   private String bucketName;
   private String version;
 
-  public S3ObjectMetadata(AmazonS3 client,
-                          String key,
-                          String bucketName,
-                          String version,
-                          ObjectMetadata meta,
-                          ListeningExecutorService executor)
+  public S3ObjectMetadata(
+    AmazonS3 client, String key, String bucketName, String version, ObjectMetadata meta,
+    ListeningExecutorService executor)
   {
     this.client = client;
     this.key = key;
@@ -68,7 +65,7 @@ class S3ObjectMetadata
   {
     Map<String, String> userData = meta.getUserMetadata();
     Map<String, String> fixed = new HashMap<String, String>();
-    for (Map.Entry<String, String> e : userData.entrySet())
+    for(Map.Entry<String, String> e : userData.entrySet())
       fixed.put(e.getKey().toLowerCase(), e.getValue());
     return fixed;
   }

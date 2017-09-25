@@ -34,7 +34,8 @@ import java.util.Optional;
  * {@code DownloadOptions} objects are meant to be built by {@code DownloadOptionsBuilder}. This
  * class provides only public getter methods.
  */
-public class DownloadOptions extends CommandOptions
+public class DownloadOptions
+  extends CommandOptions
 {
   private File file;
   private String bucket;
@@ -45,15 +46,10 @@ public class DownloadOptions extends CommandOptions
   private boolean dryRun;
   private OverallProgressListenerFactory overallProgressListenerFactory;
 
-  DownloadOptions(CloudStoreClient cloudStoreClient,
-                  File file,
-                  String bucket,
-                  String objectKey,
-                  String version,
-                  boolean recursive,
-                  boolean overwrite,
-                  boolean dryRun,
-                  OverallProgressListenerFactory overallProgressListenerFactory)
+  DownloadOptions(
+    CloudStoreClient cloudStoreClient, File file, String bucket, String objectKey, String version,
+    boolean recursive, boolean overwrite, boolean dryRun,
+    OverallProgressListenerFactory overallProgressListenerFactory)
   {
     super(cloudStoreClient);
     this.file = file;

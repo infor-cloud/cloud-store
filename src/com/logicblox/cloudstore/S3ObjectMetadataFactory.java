@@ -40,7 +40,8 @@ class S3ObjectMetadataFactory
     return executor.submit(new S3ObjectMetadataCallable(bucketName, key, version));
   }
 
-  private class S3ObjectMetadataCallable implements Callable<S3ObjectMetadata>
+  private class S3ObjectMetadataCallable
+    implements Callable<S3ObjectMetadata>
   {
     private String bucketName;
     private String key;
@@ -56,7 +57,7 @@ class S3ObjectMetadataFactory
     public S3ObjectMetadata call()
     {
       GetObjectMetadataRequest req;
-      if (version == null)
+      if(version == null)
       {
         req = new GetObjectMetadataRequest(bucketName, key);
       }

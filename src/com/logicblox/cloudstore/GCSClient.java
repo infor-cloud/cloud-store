@@ -39,7 +39,8 @@ import java.util.concurrent.ExecutionException;
  * <a href="https://cloud.google.com/storage/">https://cloud.google
  * .com/storage/</a>
  */
-public class GCSClient implements CloudStoreClient
+public class GCSClient
+  implements CloudStoreClient
 {
   private static final String GCS_JSON_API_ENDPOINT = "https://www.googleapis.com";
   private static final String GCS_XML_API_ENDPOINT = "https://storage.googleapis.com";
@@ -57,11 +58,10 @@ public class GCSClient implements CloudStoreClient
    * @param internalExecutor  Executor for internally initiating uploads
    * @param keyProvider       Provider of encryption keys
    */
-  GCSClient(Storage internalGCSClient,
-            AmazonS3Client internalS3Client,
-            ListeningExecutorService apiExecutor,
-            ListeningScheduledExecutorService internalExecutor,
-            KeyProvider keyProvider)
+  GCSClient(
+    Storage internalGCSClient, AmazonS3Client internalS3Client,
+    ListeningExecutorService apiExecutor, ListeningScheduledExecutorService internalExecutor,
+    KeyProvider keyProvider)
   {
     s3Client = new S3ClientDelegatee(internalS3Client, apiExecutor, internalExecutor, keyProvider);
     gcsClient = internalGCSClient;
@@ -73,9 +73,9 @@ public class GCSClient implements CloudStoreClient
   /**
    * Canned ACLs handling
    */
-  public static final List<String> ALL_CANNED_ACLS =
-    Arrays.asList("projectPrivate", "private", "publicRead", "publicReadWrite", "authenticatedRead",
-      "bucketOwnerRead", "bucketOwnerFullControl");
+  public static final List<String> ALL_CANNED_ACLS = Arrays.asList("projectPrivate", "private",
+    "publicRead", "publicReadWrite", "authenticatedRead", "bucketOwnerRead",
+    "bucketOwnerFullControl");
 
   /**
    * {@code CANNED_ACLS_DESC_CONST} has to be a compile-time String constant expression. That's why
@@ -145,11 +145,9 @@ public class GCSClient implements CloudStoreClient
     return _storageClassHandler;
   }
 
-  static void patchMetaData(Storage gcsStorage,
-                            String bucket,
-                            String key,
-                            Map<String, String> userMetadata)
-  throws IOException
+  static void patchMetaData(
+    Storage gcsStorage, String bucket, String key, Map<String, String> userMetadata)
+    throws IOException
   {
     StorageObject sobj = new StorageObject().setName(key).setMetadata(userMetadata);
     Storage.Objects.Patch cmd = gcsStorage.objects().patch(bucket, key, sobj);
@@ -158,21 +156,21 @@ public class GCSClient implements CloudStoreClient
 
   @Override
   public ListenableFuture<StoreFile> upload(UploadOptions options)
-  throws IOException
+    throws IOException
   {
     return s3Client.upload(options);
   }
 
   @Override
   public ListenableFuture<List<StoreFile>> uploadDirectory(UploadOptions options)
-  throws IOException, ExecutionException, InterruptedException
+    throws IOException, ExecutionException, InterruptedException
   {
     return s3Client.uploadDirectory(options);
   }
 
   @Override
   public ListenableFuture<List<StoreFile>> deleteDir(DeleteOptions opts)
-  throws InterruptedException, ExecutionException
+    throws InterruptedException, ExecutionException
   {
     return s3Client.deleteDir(opts);
   }
@@ -197,14 +195,14 @@ public class GCSClient implements CloudStoreClient
 
   @Override
   public ListenableFuture<StoreFile> download(DownloadOptions options)
-  throws IOException
+    throws IOException
   {
     return s3Client.download(options);
   }
 
   @Override
   public ListenableFuture<List<StoreFile>> downloadDirectory(DownloadOptions options)
-  throws IOException, ExecutionException, InterruptedException
+    throws IOException, ExecutionException, InterruptedException
   {
     return s3Client.downloadDirectory(options);
   }
@@ -217,7 +215,7 @@ public class GCSClient implements CloudStoreClient
 
   @Override
   public ListenableFuture<List<StoreFile>> copyToDir(CopyOptions options)
-  throws InterruptedException, ExecutionException, IOException
+    throws InterruptedException, ExecutionException, IOException
   {
     return s3Client.copyToDir(options);
   }
@@ -230,7 +228,7 @@ public class GCSClient implements CloudStoreClient
 
   @Override
   public ListenableFuture<List<StoreFile>> renameDirectory(RenameOptions options)
-  throws InterruptedException, ExecutionException, IOException
+    throws InterruptedException, ExecutionException, IOException
   {
     return s3Client.renameDirectory(options);
   }
@@ -255,14 +253,14 @@ public class GCSClient implements CloudStoreClient
 
   @Override
   public ListenableFuture<StoreFile> addEncryptionKey(EncryptionKeyOptions options)
-  throws IOException
+    throws IOException
   {
     return s3Client.addEncryptionKey(options);
   }
 
   @Override
   public ListenableFuture<StoreFile> removeEncryptionKey(EncryptionKeyOptions options)
-  throws IOException
+    throws IOException
   {
     return s3Client.removeEncryptionKey(options);
   }
@@ -273,12 +271,12 @@ public class GCSClient implements CloudStoreClient
     s3Client.shutdown();
   }
 
-  private class S3ClientDelegatee extends S3Client
+  private class S3ClientDelegatee
+    extends S3Client
   {
-    public S3ClientDelegatee(AmazonS3Client internalS3Client,
-                             ListeningExecutorService apiExecutor,
-                             ListeningScheduledExecutorService internalExecutor,
-                             KeyProvider keyProvider)
+    public S3ClientDelegatee(
+      AmazonS3Client internalS3Client, ListeningExecutorService apiExecutor,
+      ListeningScheduledExecutorService internalExecutor, KeyProvider keyProvider)
     {
       super(internalS3Client, apiExecutor, internalExecutor, keyProvider);
     }
@@ -299,7 +297,7 @@ public class GCSClient implements CloudStoreClient
      */
     @Override
     public ListenableFuture<StoreFile> upload(UploadOptions options)
-    throws IOException
+      throws IOException
     {
       GCSUploadCommand cmd = new GCSUploadCommand(options);
       s3Client.configure(cmd);
@@ -313,7 +311,7 @@ public class GCSClient implements CloudStoreClient
      */
     @Override
     public ListenableFuture<List<StoreFile>> uploadDirectory(UploadOptions options)
-    throws IOException, ExecutionException, InterruptedException
+      throws IOException, ExecutionException, InterruptedException
     {
       UploadDirectoryCommand cmd = new UploadDirectoryCommand(options);
       s3Client.configure(cmd);
@@ -338,7 +336,7 @@ public class GCSClient implements CloudStoreClient
 
     @Override
     public ListenableFuture<List<StoreFile>> copyToDir(CopyOptions options)
-    throws IOException
+      throws IOException
     {
       GCSCopyDirCommand cmd = new GCSCopyDirCommand(options);
       configure(cmd);
@@ -347,7 +345,7 @@ public class GCSClient implements CloudStoreClient
 
     @Override
     protected S3AddEncryptionKeyCommand createAddKeyCommand(EncryptionKeyOptions options)
-    throws IOException
+      throws IOException
     {
       S3AddEncryptionKeyCommand cmd = super.createAddKeyCommand(options);
       configure(cmd);
@@ -356,7 +354,7 @@ public class GCSClient implements CloudStoreClient
 
     @Override
     protected S3RemoveEncryptionKeyCommand createRemoveKeyCommand(EncryptionKeyOptions options)
-    throws IOException
+      throws IOException
     {
       S3RemoveEncryptionKeyCommand cmd = super.createRemoveKeyCommand(options);
       configure(cmd);

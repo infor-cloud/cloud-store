@@ -27,7 +27,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 
-public class GCSListCommand extends Command
+public class GCSListCommand
+  extends Command
 {
 
   private ListOptions _options;
@@ -65,13 +66,13 @@ public class GCSListCommand extends Command
     return _client.getApiExecutor().submit(new Callable<List<StoreFile>>()
     {
       public List<StoreFile> call()
-      throws IOException
+        throws IOException
       {
         List<StoreFile> s3files = new ArrayList<StoreFile>();
         List<StorageObject> allObjs = new ArrayList<StorageObject>();
         Storage.Objects.List cmd = getGCSClient().objects().list(_options.getBucketName());
         cmd.setPrefix(_options.getObjectKey().orElse(null));
-        if (!_options.isRecursive())
+        if(!_options.isRecursive())
         {
           cmd.setDelimiter("/");
         }
@@ -82,14 +83,15 @@ public class GCSListCommand extends Command
         {
           objs = cmd.execute();
           List<StorageObject> items = objs.getItems();
-          if (items != null)
+          if(items != null)
           {
             allObjs.addAll(items);
           }
           cmd.setPageToken(objs.getNextPageToken());
-        } while (objs.getNextPageToken() != null);
+        }
+        while(objs.getNextPageToken() != null);
 
-        for (StorageObject s : allObjs)
+        for(StorageObject s : allObjs)
           s3files.add(createStoreFile(s, ver));
         return s3files;
       }
@@ -103,7 +105,7 @@ public class GCSListCommand extends Command
     f.setETag(obj.getEtag());
     f.setBucketName(obj.getBucket());
     f.setSize(obj.getSize().longValue());
-    if (includeVersion && (null != obj.getGeneration()))
+    if(includeVersion && (null != obj.getGeneration()))
     {
       f.setVersionId(obj.getGeneration().toString());
     }

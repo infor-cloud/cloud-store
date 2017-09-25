@@ -25,7 +25,8 @@ import java.io.File;
  * Setting fields {@code file}, {@code bucket} and {@code objectKey} is mandatory. All the others
  * are optional.
  */
-public class UploadOptionsBuilder extends CommandOptionsBuilder
+public class UploadOptionsBuilder
+  extends CommandOptionsBuilder
 {
   private File file;
   private String bucket;
@@ -78,8 +79,8 @@ public class UploadOptionsBuilder extends CommandOptionsBuilder
     return this;
   }
 
-  public UploadOptionsBuilder setOverallProgressListenerFactory(OverallProgressListenerFactory
-                                                                  overallProgressListenerFactory)
+  public UploadOptionsBuilder setOverallProgressListenerFactory(
+    OverallProgressListenerFactory overallProgressListenerFactory)
   {
     this.overallProgressListenerFactory = overallProgressListenerFactory;
     return this;
@@ -99,26 +100,26 @@ public class UploadOptionsBuilder extends CommandOptionsBuilder
 
   private void validateOptions()
   {
-    if (_cloudStoreClient == null)
+    if(_cloudStoreClient == null)
     {
       throw new UsageException("CloudStoreClient has to be set");
     }
-    else if (file == null)
+    else if(file == null)
     {
       throw new UsageException("File has to be set");
     }
-    else if (bucket == null)
+    else if(bucket == null)
     {
       throw new UsageException("Bucket has to be set");
     }
-    else if (objectKey == null)
+    else if(objectKey == null)
     {
       throw new UsageException("Object key has to be set");
     }
 
-    if (cannedAcl != null)
+    if(cannedAcl != null)
     {
-      if (!_cloudStoreClient.getAclHandler().isCannedAclValid(cannedAcl))
+      if(!_cloudStoreClient.getAclHandler().isCannedAclValid(cannedAcl))
       {
         throw new UsageException("Invalid canned ACL '" + cannedAcl + "'");
       }

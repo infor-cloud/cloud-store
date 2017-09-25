@@ -26,7 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-public class S3ListVersionsCommand extends Command
+public class S3ListVersionsCommand
+  extends Command
 {
 
   private ListOptions _options;
@@ -69,7 +70,7 @@ public class S3ListVersionsCommand extends Command
       {
         ListVersionsRequest req = new ListVersionsRequest().withBucketName(_options.getBucketName())
           .withPrefix(_options.getObjectKey().orElse(null));
-        if (!_options.isRecursive())
+        if(!_options.isRecursive())
         {
           req.setDelimiter("/");
         }
@@ -77,23 +78,23 @@ public class S3ListVersionsCommand extends Command
         List<StoreFile> all = new ArrayList<StoreFile>();
         VersionListing current = getS3Client().listVersions(req);
         appendVersionSummaryList(all, current.getVersionSummaries());
-        if (!_options.dirsExcluded())
+        if(!_options.dirsExcluded())
         {
           appendVersionsDirStringList(all, current.getCommonPrefixes(), _options.getBucketName());
         }
         current = getS3Client().listNextBatchOfVersions(current);
 
-        while (current.isTruncated())
+        while(current.isTruncated())
         {
           appendVersionSummaryList(all, current.getVersionSummaries());
-          if (!_options.dirsExcluded())
+          if(!_options.dirsExcluded())
           {
             appendVersionsDirStringList(all, current.getCommonPrefixes(), _options.getBucketName());
           }
           current = getS3Client().listNextBatchOfVersions(current);
         }
         appendVersionSummaryList(all, current.getVersionSummaries());
-        if (!_options.dirsExcluded())
+        if(!_options.dirsExcluded())
         {
           appendVersionsDirStringList(all, current.getCommonPrefixes(), _options.getBucketName());
         }
@@ -103,10 +104,10 @@ public class S3ListVersionsCommand extends Command
     });
   }
 
-  private List<StoreFile> appendVersionSummaryList(List<StoreFile> all,
-                                                   List<S3VersionSummary> appendList)
+  private List<StoreFile> appendVersionSummaryList(
+    List<StoreFile> all, List<S3VersionSummary> appendList)
   {
-    for (S3VersionSummary o : appendList)
+    for(S3VersionSummary o : appendList)
     {
       all.add(versionSummaryToStoreFile(o));
     }
@@ -114,11 +115,10 @@ public class S3ListVersionsCommand extends Command
     return all;
   }
 
-  private List<StoreFile> appendVersionsDirStringList(List<StoreFile> all,
-                                                      List<String> appendList,
-                                                      String bucket)
+  private List<StoreFile> appendVersionsDirStringList(
+    List<StoreFile> all, List<String> appendList, String bucket)
   {
-    for (String o : appendList)
+    for(String o : appendList)
     {
       all.add(versionsDirStringToStoreFile(o, bucket));
     }
@@ -132,11 +132,11 @@ public class S3ListVersionsCommand extends Command
     of.setKey(o.getKey());
     of.setETag(o.getETag());
     of.setBucketName(o.getBucketName());
-    if (!o.getVersionId().equals(Constants.NULL_VERSION_ID))
+    if(!o.getVersionId().equals(Constants.NULL_VERSION_ID))
     {
       of.setVersionId(o.getVersionId());
     }
-    if (o.getLastModified() != null)
+    if(o.getLastModified() != null)
     {
       of.setTimestamp(o.getLastModified());
     }

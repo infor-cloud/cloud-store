@@ -31,14 +31,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-public class S3RemoveEncryptionKeyCommand extends Command
+public class S3RemoveEncryptionKeyCommand
+  extends Command
 {
   private EncryptionKeyOptions _options;
   private String _encKeyName;
   private KeyProvider _encKeyProvider;
 
   public S3RemoveEncryptionKeyCommand(EncryptionKeyOptions options)
-  throws IOException
+    throws IOException
   {
     super(options);
     _options = options;
@@ -57,7 +58,7 @@ public class S3RemoveEncryptionKeyCommand extends Command
     {
       public ListenableFuture<StoreFile> create(Throwable t)
       {
-        if (t instanceof UsageException)
+        if(t instanceof UsageException)
         {
           return Futures.immediateFailedFuture(t);
         }
@@ -91,30 +92,30 @@ public class S3RemoveEncryptionKeyCommand extends Command
 
   private ListenableFuture<S3ObjectMetadata> getMetadataAsync()
   {
-    S3ObjectMetadataFactory f =
-      new S3ObjectMetadataFactory(getS3Client(), _client.getApiExecutor());
-    ListenableFuture<S3ObjectMetadata> metadataFactory =
-      f.create(_options.getBucketName(), _options.getObjectKey(), null);
+    S3ObjectMetadataFactory f = new S3ObjectMetadataFactory(getS3Client(),
+      _client.getApiExecutor());
+    ListenableFuture<S3ObjectMetadata> metadataFactory = f.create(_options.getBucketName(),
+      _options.getObjectKey(), null);
 
-    AsyncFunction<S3ObjectMetadata, S3ObjectMetadata> checkMetadata =
-      new AsyncFunction<S3ObjectMetadata, S3ObjectMetadata>()
+    AsyncFunction<S3ObjectMetadata, S3ObjectMetadata> checkMetadata
+      = new AsyncFunction<S3ObjectMetadata, S3ObjectMetadata>()
+    {
+      public ListenableFuture<S3ObjectMetadata> apply(S3ObjectMetadata metadata)
       {
-        public ListenableFuture<S3ObjectMetadata> apply(S3ObjectMetadata metadata)
+        Map<String, String> userMetadata = metadata.getUserMetadata();
+        String obj = getUri(metadata.getBucket(), metadata.getKey());
+        if(!userMetadata.containsKey("s3tool-key-name"))
         {
-          Map<String, String> userMetadata = metadata.getUserMetadata();
-          String obj = getUri(metadata.getBucket(), metadata.getKey());
-          if (!userMetadata.containsKey("s3tool-key-name"))
-          {
-            throw new UsageException("Object doesn't seem to be encrypted");
-          }
-          if (!userMetadata.containsKey("s3tool-pubkey-hash"))
-          {
-            throw new UsageException(
-              "Public key hashes are required when " + "object has multiple encryption keys");
-          }
-          return Futures.immediateFuture(metadata);
+          throw new UsageException("Object doesn't seem to be encrypted");
         }
-      };
+        if(!userMetadata.containsKey("s3tool-pubkey-hash"))
+        {
+          throw new UsageException(
+            "Public key hashes are required when " + "object has multiple encryption keys");
+        }
+        return Futures.immediateFuture(metadata);
+      }
+    };
 
     return Futures.transform(metadataFactory, checkMetadata);
   }
@@ -144,18 +145,18 @@ public class S3RemoveEncryptionKeyCommand extends Command
   private S3ObjectMetadata removeEncryptionKey(S3ObjectMetadata metadata)
   {
     String errPrefix = getUri(metadata.getBucket(), metadata.getKey()) + ": ";
-    if (_encKeyProvider == null)
+    if(_encKeyProvider == null)
     {
       throw new UsageException(errPrefix + "No encryption key provider is " + "specified");
     }
-    if (_encKeyName == null)
+    if(_encKeyName == null)
     {
       throw new UsageException(errPrefix + "No encryption key name is " + "specified");
     }
     Map<String, String> userMetadata = metadata.getUserMetadata();
     String keyNamesStr = userMetadata.get("s3tool-key-name");
     List<String> keyNames;
-    if (null == keyNamesStr)
+    if(null == keyNamesStr)
     {
       keyNames = new ArrayList<String>();
     }
@@ -164,13 +165,13 @@ public class S3RemoveEncryptionKeyCommand extends Command
       keyNames = new ArrayList<>(Arrays.asList(keyNamesStr.split(",")));
     }
 
-    if (keyNames.size() == 1)
+    if(keyNames.size() == 1)
     {
       throw new UsageException(errPrefix + "Cannot remove the last remaining " + "key.");
     }
 
     int removedKeyIndex = keyNames.indexOf(_encKeyName);
-    if (removedKeyIndex == -1)
+    if(removedKeyIndex == -1)
     {
       throw new UsageException(errPrefix + "Encryption key " + _encKeyName + " doesn't exist");
     }
@@ -199,51 +200,51 @@ public class S3RemoveEncryptionKeyCommand extends Command
    */
   private AsyncFunction<S3ObjectMetadata, StoreFile> updateObjectMetadataFn()
   {
-    AsyncFunction<S3ObjectMetadata, StoreFile> update =
-      new AsyncFunction<S3ObjectMetadata, StoreFile>()
-      {
-        public ListenableFuture<StoreFile> apply(S3ObjectMetadata metadata)
+    AsyncFunction<S3ObjectMetadata, StoreFile> update
+      = new AsyncFunction<S3ObjectMetadata, StoreFile>()
+    {
+      public ListenableFuture<StoreFile> apply(S3ObjectMetadata metadata)
         throws IOException
+      {
+        if(null == getGCSClient())
         {
-          if (null == getGCSClient())
-          {
-            // It seems in AWS there is no way to update an object's metadata
-            // without re-uploading/copying the whole object. Here, we
-            // copy the object to itself in order to add the new
-            // user-metadata.
-            CopyOptions options = _client.getOptionsBuilderFactory()
-              .newCopyOptionsBuilder()
-              .setSourceBucketName(metadata.getBucket())
-              .setSourceObjectKey(metadata.getKey())
-              .setDestinationBucketName(metadata.getBucket())
-              .setDestinationObjectKey(metadata.getKey())
-              .setUserMetadata(metadata.getUserMetadata())
-              .createOptions();
+          // It seems in AWS there is no way to update an object's metadata
+          // without re-uploading/copying the whole object. Here, we
+          // copy the object to itself in order to add the new
+          // user-metadata.
+          CopyOptions options = _client.getOptionsBuilderFactory()
+            .newCopyOptionsBuilder()
+            .setSourceBucketName(metadata.getBucket())
+            .setSourceObjectKey(metadata.getKey())
+            .setDestinationBucketName(metadata.getBucket())
+            .setDestinationObjectKey(metadata.getKey())
+            .setUserMetadata(metadata.getUserMetadata())
+            .createOptions();
 
-            return _client.copy(options);
-          }
-          else
-          {
-            return executeWithRetry(_client.getInternalExecutor(),
-              new Callable<ListenableFuture<StoreFile>>()
-              {
-                public ListenableFuture<StoreFile> call()
-                {
-                  return _client.getApiExecutor().submit(new Callable<StoreFile>()
-                  {
-                    public StoreFile call()
-                    throws IOException
-                    {
-                      GCSClient.patchMetaData(getGCSClient(), metadata.getBucket(),
-                        metadata.getKey(), metadata.getUserMetadata());
-                      return new StoreFile(metadata.getBucket(), metadata.getKey());
-                    }
-                  });
-                }
-              });
-          }
+          return _client.copy(options);
         }
-      };
+        else
+        {
+          return executeWithRetry(_client.getInternalExecutor(),
+            new Callable<ListenableFuture<StoreFile>>()
+            {
+              public ListenableFuture<StoreFile> call()
+              {
+                return _client.getApiExecutor().submit(new Callable<StoreFile>()
+                {
+                  public StoreFile call()
+                    throws IOException
+                  {
+                    GCSClient.patchMetaData(getGCSClient(), metadata.getBucket(), metadata.getKey(),
+                      metadata.getUserMetadata());
+                    return new StoreFile(metadata.getBucket(), metadata.getKey());
+                  }
+                });
+              }
+            });
+        }
+      }
+    };
 
     return update;
   }

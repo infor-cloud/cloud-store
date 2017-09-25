@@ -18,7 +18,8 @@ package com.logicblox.cloudstore;
 
 
 // Used to inject aborts for testing purposes
-public class AbortInjection extends RuntimeException
+public class AbortInjection
+  extends RuntimeException
 {
   public AbortInjection(String msg)
   {

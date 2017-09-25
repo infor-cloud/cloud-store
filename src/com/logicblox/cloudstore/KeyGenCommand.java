@@ -36,7 +36,7 @@ public class KeyGenCommand
   private PrivateKey privateKey;
 
   public KeyGenCommand(String algo, int nbits)
-  throws NoSuchAlgorithmException
+    throws NoSuchAlgorithmException
   {
     keypairGen = KeyPairGenerator.getInstance(algo);
     keypairGen.initialize(nbits);
@@ -46,7 +46,7 @@ public class KeyGenCommand
   }
 
   public void savePemKeypair(File pemf)
-  throws IOException
+    throws IOException
   {
     String pem = getPemPublicKey() + "\n" + getPemPrivateKey();
 
@@ -59,8 +59,8 @@ public class KeyGenCommand
     byte[] pkcs8_der = privateKey.getEncoded();
 
     // DER to PEM conversion
-    String pem_encoded =
-      pemEncode(pkcs8_der, "-----BEGIN PRIVATE KEY-----\n", "-----END PRIVATE KEY-----\n");
+    String pem_encoded = pemEncode(pkcs8_der, "-----BEGIN PRIVATE KEY-----\n",
+      "-----END PRIVATE KEY-----\n");
 
     return pem_encoded;
   }
@@ -71,8 +71,8 @@ public class KeyGenCommand
     byte[] x509_der = publickey.getEncoded();
 
     // DER to PEM conversion
-    String pem_encoded =
-      pemEncode(x509_der, "-----BEGIN PUBLIC KEY-----\n", "-----END PUBLIC KEY-----\n");
+    String pem_encoded = pemEncode(x509_der, "-----BEGIN PUBLIC KEY-----\n",
+      "-----END PUBLIC KEY-----\n");
 
     return pem_encoded;
   }

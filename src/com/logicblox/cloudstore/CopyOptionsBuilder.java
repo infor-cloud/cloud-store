@@ -24,7 +24,8 @@ import java.util.Map;
  * Setting {@code sourceBucketName}, {@code sourceObjectKey}, {@code destinationBucketName} and
  * {@code destinationObjectKey} is mandatory. All the others are optional.
  */
-public class CopyOptionsBuilder extends CommandOptionsBuilder
+public class CopyOptionsBuilder
+  extends CommandOptionsBuilder
 {
   private String sourceBucketName;
   private String sourceObjectKey;
@@ -114,38 +115,38 @@ public class CopyOptionsBuilder extends CommandOptionsBuilder
 
   private void validateOptions()
   {
-    if (_cloudStoreClient == null)
+    if(_cloudStoreClient == null)
     {
       throw new UsageException("CloudStoreClient has to be set");
     }
-    else if (sourceBucketName == null)
+    else if(sourceBucketName == null)
     {
       throw new UsageException("Source bucket name has to be set");
     }
-    else if (sourceObjectKey == null)
+    else if(sourceObjectKey == null)
     {
       throw new UsageException("Source object key has to be set");
     }
-    else if (destinationBucketName == null)
+    else if(destinationBucketName == null)
     {
       throw new UsageException("Destination bucket name key has to be set");
     }
-    else if (destinationObjectKey == null)
+    else if(destinationObjectKey == null)
     {
       throw new UsageException("Destination object key has to be set");
     }
 
-    if (cannedAcl != null)
+    if(cannedAcl != null)
     {
-      if (!_cloudStoreClient.getAclHandler().isCannedAclValid(cannedAcl))
+      if(!_cloudStoreClient.getAclHandler().isCannedAclValid(cannedAcl))
       {
         throw new UsageException("Invalid canned ACL '" + cannedAcl + "'");
       }
     }
 
-    if (storageClass != null)
+    if(storageClass != null)
     {
-      if (!_cloudStoreClient.getStorageClassHandler().isStorageClassValid(storageClass))
+      if(!_cloudStoreClient.getStorageClassHandler().isStorageClassValid(storageClass))
       {
         throw new UsageException("Invalid storage class '" + storageClass + "'");
       }

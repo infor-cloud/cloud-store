@@ -25,7 +25,8 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 
-public class DeleteDirCommand extends Command
+public class DeleteDirCommand
+  extends Command
 {
   private DeleteOptions _options;
 
@@ -36,23 +37,23 @@ public class DeleteDirCommand extends Command
   }
 
   public ListenableFuture<List<StoreFile>> run()
-  throws InterruptedException, ExecutionException
+    throws InterruptedException, ExecutionException
   {
     ListenableFuture<List<StoreFile>> listObjs = queryFiles();
-    ListenableFuture<List<StoreFile>> result =
-      Futures.transform(listObjs, new AsyncFunction<List<StoreFile>, List<StoreFile>>()
+    ListenableFuture<List<StoreFile>> result = Futures.transform(listObjs,
+      new AsyncFunction<List<StoreFile>, List<StoreFile>>()
       {
         public ListenableFuture<List<StoreFile>> apply(List<StoreFile> potential)
         {
           List<StoreFile> matches = new ArrayList<StoreFile>();
-          for (StoreFile f : potential)
+          for(StoreFile f : potential)
           {
-            if (!f.getKey().endsWith("/"))
+            if(!f.getKey().endsWith("/"))
             {
               matches.add(f);
             }
           }
-          if (!_options.forceDelete() && matches.isEmpty())
+          if(!_options.forceDelete() && matches.isEmpty())
           {
             throw new UsageException("No objects found that match '" +
               getUri(_options.getBucketName(), _options.getObjectKey()) + "'");
@@ -60,7 +61,7 @@ public class DeleteDirCommand extends Command
 
           List<ListenableFuture<StoreFile>> futures = prepareFutures(matches);
 
-          if (_options.isDryRun())
+          if(_options.isDryRun())
           {
             return Futures.immediateFuture(null);
           }
@@ -77,9 +78,9 @@ public class DeleteDirCommand extends Command
   private List<ListenableFuture<StoreFile>> prepareFutures(List<StoreFile> toDelete)
   {
     List<ListenableFuture<StoreFile>> futures = new ArrayList<ListenableFuture<StoreFile>>();
-    for (StoreFile src : toDelete)
+    for(StoreFile src : toDelete)
     {
-      if (_options.isDryRun())
+      if(_options.isDryRun())
       {
         System.out.println("<DRYRUN> deleting '" + getUri(src.getBucketName(), src.getKey()) + "'");
       }

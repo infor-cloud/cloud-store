@@ -27,7 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-public class S3CopyDirCommand extends Command
+public class S3CopyDirCommand
+  extends Command
 {
   private CopyOptions _options;
   private boolean _dryRun;
@@ -40,19 +41,19 @@ public class S3CopyDirCommand extends Command
   }
 
   public ListenableFuture<List<StoreFile>> run()
-  throws ExecutionException, InterruptedException, IOException
+    throws ExecutionException, InterruptedException, IOException
   {
-    if (!_options.getDestinationObjectKey().endsWith("/") &&
+    if(!_options.getDestinationObjectKey().endsWith("/") &&
       !_options.getDestinationObjectKey().equals(""))
     {
       throw new UsageException("Destination directory key should end with a '/'");
     }
 
     String baseDirPath = "";
-    if (_options.getSourceObjectKey().length() > 0)
+    if(_options.getSourceObjectKey().length() > 0)
     {
       int endIndex = _options.getSourceObjectKey().lastIndexOf("/");
-      if (endIndex != -1)
+      if(endIndex != -1)
       {
         baseDirPath = _options.getSourceObjectKey().substring(0, endIndex + 1);
       }
@@ -62,7 +63,7 @@ public class S3CopyDirCommand extends Command
 
     ListObjectsRequest req = new ListObjectsRequest().withBucketName(_options.getSourceBucketName())
       .withPrefix(_options.getSourceObjectKey());
-    if (!_options.isRecursive())
+    if(!_options.isRecursive())
     {
       req.setDelimiter("/");
     }
@@ -71,14 +72,14 @@ public class S3CopyDirCommand extends Command
     files.addAll(copyBatch(current.getObjectSummaries(), baseDirPath));
     current = getS3Client().listNextBatchOfObjects(current);
 
-    while (current.isTruncated())
+    while(current.isTruncated())
     {
       files.addAll(copyBatch(current.getObjectSummaries(), baseDirPath));
       current = getS3Client().listNextBatchOfObjects(current);
     }
     files.addAll(copyBatch(current.getObjectSummaries(), baseDirPath));
 
-    if (_dryRun)
+    if(_dryRun)
     {
       return Futures.immediateFuture(null);
     }
@@ -89,13 +90,13 @@ public class S3CopyDirCommand extends Command
   }
 
   private List<ListenableFuture<StoreFile>> copyBatch(List<S3ObjectSummary> lst, String baseDirPath)
-  throws IOException
+    throws IOException
   {
     List<ListenableFuture<StoreFile>> batch = new ArrayList<>();
 
-    for (S3ObjectSummary obj : lst)
+    for(S3ObjectSummary obj : lst)
     {
-      if (!obj.getKey().endsWith("/"))
+      if(!obj.getKey().endsWith("/"))
       {
         String destKeyLastPart = obj.getKey().substring(baseDirPath.length());
         String destKey = _options.getDestinationObjectKey() + destKeyLastPart;
@@ -109,7 +110,7 @@ public class S3CopyDirCommand extends Command
           .setStorageClass(_options.getStorageClass().orElse(null))
           .createOptions();
 
-        if (_dryRun)
+        if(_dryRun)
         {
           System.out.println(
             "<DRYRUN> copying '" + getUri(_options.getSourceBucketName(), obj.getKey()) + "' to '" +

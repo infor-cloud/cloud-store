@@ -53,19 +53,19 @@ public class S3ClientBuilder
 
   public S3Client createS3Client()
   {
-    if (s3Client == null)
+    if(s3Client == null)
     {
       setInternalS3Client(new AmazonS3Client());
     }
-    if (apiExecutor == null)
+    if(apiExecutor == null)
     {
       setApiExecutor(Utils.createApiExecutor(10));
     }
-    if (internalExecutor == null)
+    if(internalExecutor == null)
     {
       setInternalExecutor(Utils.createInternalExecutor(50));
     }
-    if (keyProvider == null)
+    if(keyProvider == null)
     {
       setKeyProvider(Utils.createKeyProvider(Utils.getDefaultKeyDirectory()));
     }

@@ -56,7 +56,7 @@ class Main
       Main main = new Main();
       main.execute(args);
     }
-    catch (Exception exc)
+    catch(Exception exc)
     {
       exc.printStackTrace();
       System.exit(1);
@@ -98,13 +98,14 @@ class Main
     boolean help = false;
 
     public abstract void invoke()
-    throws Exception;
+      throws Exception;
   }
 
   /**
    * Abstraction for all storage service commands
    */
-  abstract class S3CommandOptions extends CommandOptions
+  abstract class S3CommandOptions
+    extends CommandOptions
   {
     @Parameter(names = {"--max-concurrent-connections"}, description = "The " +
       "maximum number of concurrent HTTP connections to the storage service")
@@ -132,33 +133,34 @@ class Main
     List<String> credentialProvidersS3;
 
     protected URI getURI()
-    throws URISyntaxException
+      throws URISyntaxException
     {
       return null;
     }
 
     protected String getScheme()
-    throws URISyntaxException
+      throws URISyntaxException
     {
       return null;
     }
 
     protected CloudStoreClient createCloudStoreClient()
-    throws URISyntaxException, IOException, GeneralSecurityException
+      throws URISyntaxException, IOException, GeneralSecurityException
     {
       return Utils.createCloudStoreClient(getScheme(), endpoint, maxConcurrentConnections,
         encKeyDirectory, credentialProvidersS3, _stubborn, _retryCount);
     }
   }
 
-  public static class CredentialProvidersValidator implements IValueValidator<List<String>>
+  public static class CredentialProvidersValidator
+    implements IValueValidator<List<String>>
   {
     @Override
     public void validate(String name, List<String> credentialsProvidersS3)
-    throws ParameterException
+      throws ParameterException
     {
-      for (String cp : credentialsProvidersS3)
-        if (!Utils.defaultCredentialProvidersS3.contains(cp))
+      for(String cp : credentialsProvidersS3)
+        if(!Utils.defaultCredentialProvidersS3.contains(cp))
         {
           throw new ParameterException("Credential providers should be a " + "subset of " +
             Arrays.toString(Utils.defaultCredentialProvidersS3.toArray()));
@@ -169,15 +171,16 @@ class Main
   /**
    * Abstraction for commands that deal with storage service objects
    */
-  abstract class S3ObjectCommandOptions extends S3CommandOptions
+  abstract class S3ObjectCommandOptions
+    extends S3CommandOptions
   {
     @Parameter(description = "storage-service-url", required = true)
     List<String> urls;
 
     protected URI getURI()
-    throws URISyntaxException
+      throws URISyntaxException
     {
-      if (urls.size() != 1)
+      if(urls.size() != 1)
       {
         throw new UsageException("A single storage service object URL is " + "required");
       }
@@ -186,19 +189,19 @@ class Main
     }
 
     protected String getBucket()
-    throws URISyntaxException
+      throws URISyntaxException
     {
       return Utils.getBucket(getURI());
     }
 
     protected String getObjectKey()
-    throws URISyntaxException
+      throws URISyntaxException
     {
       return Utils.getObjectKey(getURI());
     }
 
     protected String getScheme()
-    throws URISyntaxException
+      throws URISyntaxException
     {
       return getURI().getScheme();
     }
@@ -207,7 +210,8 @@ class Main
   /**
    * Abstraction for commands that deal with two object/prefix URLs
    */
-  abstract class TwoObjectsCommandOptions extends S3CommandOptions
+  abstract class TwoObjectsCommandOptions
+    extends S3CommandOptions
   {
     // Upgrade JCommander to support following lines
     // @Parameter(description = "source-url", required = true)
@@ -220,9 +224,9 @@ class Main
     List<String> urls;
 
     protected URI getSourceURI()
-    throws URISyntaxException
+      throws URISyntaxException
     {
-      if (urls.size() != 2)
+      if(urls.size() != 2)
       {
         throw new UsageException("Two object URLs are required");
       }
@@ -231,9 +235,9 @@ class Main
     }
 
     protected String getSourceBucket()
-    throws URISyntaxException
+      throws URISyntaxException
     {
-      if (urls.size() != 2)
+      if(urls.size() != 2)
       {
         throw new UsageException("Two object URLs are required");
       }
@@ -242,60 +246,61 @@ class Main
     }
 
     protected String getSourceObjectKey()
-    throws URISyntaxException
+      throws URISyntaxException
     {
       return Utils.getObjectKey(getSourceURI());
     }
 
     protected String getScheme()
-    throws URISyntaxException
+      throws URISyntaxException
     {
       return getSourceURI().getScheme();
     }
 
     protected URI getDestinationURI()
-    throws URISyntaxException
+      throws URISyntaxException
     {
       return Utils.getURI(urls.get(1));
     }
 
     protected String getDestinationBucket()
-    throws URISyntaxException
+      throws URISyntaxException
     {
       return Utils.getBucket(getDestinationURI());
     }
 
     protected String getDestinationObjectKey()
-    throws URISyntaxException
+      throws URISyntaxException
     {
       return Utils.getObjectKey(getDestinationURI());
     }
   }
 
   @Parameters(commandDescription = "List storage service buckets")
-  class ListBucketsCommandOptions extends S3CommandOptions
+  class ListBucketsCommandOptions
+    extends S3CommandOptions
   {
     @Parameter(description = "service", required = true)
     List<String> services;
 
     protected String getScheme()
     {
-      if (null == services)
+      if(null == services)
       {
-        if (null == endpoint)
+        if(null == endpoint)
         {
           throw new UsageException("Either 's3' or 'gs' service is required");
         }
         return null;
       }
 
-      if (services.size() != 1)
+      if(services.size() != 1)
       {
         throw new UsageException("Only one service name may be specified");
       }
 
       String service = services.get(0);
-      if (!service.equals("s3") && !service.equals("gs"))
+      if(!service.equals("s3") && !service.equals("gs"))
       {
         throw new UsageException("Either 's3' or 'gs' service is required");
       }
@@ -303,7 +308,7 @@ class Main
     }
 
     public void invoke()
-    throws Exception
+      throws Exception
     {
       CloudStoreClient client = createCloudStoreClient();
       ListenableFuture<List<Bucket>> result = client.listBuckets();
@@ -322,7 +327,7 @@ class Main
 
       DateFormat df = Utils.getDefaultDateFormat();
 
-      for (int i = 0; i < buckets.size(); i++)
+      for(int i = 0; i < buckets.size(); i++)
       {
         Bucket b = buckets.get(i);
         table[i][0] = b.getName();
@@ -330,11 +335,11 @@ class Main
         String ownerName = b.getOwner().getDisplayName();
         table[i][2] = (ownerName != null) ? ownerName : b.getOwner().getId();
 
-        for (int j = 0; j < 3; j++)
+        for(int j = 0; j < 3; j++)
           max[j] = Math.max(table[i][j].length(), max[j]);
       }
 
-      for (final String[] row : table)
+      for(final String[] row : table)
       {
         System.out.format("%-" + (max[2] + 3) + "s%-" + (max[1] + 3) + "s%-" + (max[0] + 3) + "s\n",
           row[2], row[1], row[0]);
@@ -345,14 +350,15 @@ class Main
   }
 
   @Parameters(commandDescription = "Check if a file exists in the storage service")
-  class ExistsCommandOptions extends S3ObjectCommandOptions
+  class ExistsCommandOptions
+    extends S3ObjectCommandOptions
   {
     @Parameter(names = "--verbose", description = "Print information about success/failure and " +
       "metadata if object exists")
     boolean _verbose = false;
 
     public void invoke()
-    throws Exception
+      throws Exception
     {
       CloudStoreClient client = createCloudStoreClient();
       String bucket = getBucket();
@@ -368,9 +374,9 @@ class Main
 
       boolean exists = false;
       Metadata metadata = result.get();
-      if (metadata == null)
+      if(metadata == null)
       {
-        if (_verbose)
+        if(_verbose)
         {
           System.err.println(
             "Object " + Utils.getURI(client.getScheme(), bucket, key) + " does not exist.");
@@ -380,7 +386,7 @@ class Main
       {
         exists = true;
 
-        if (_verbose)
+        if(_verbose)
         {
           metadata.print(System.out);
         }
@@ -388,7 +394,7 @@ class Main
 
       client.shutdown();
 
-      if (!exists)
+      if(!exists)
       {
         System.exit(1);
       }
@@ -400,7 +406,8 @@ class Main
     " a directory (ends with '/'), then source URI acts as a prefix and " +
     "this operation will copy all keys that would be returned by the list " +
     "operation on the same prefix. Otherwise, we go for a direct key-to-key" + " copy.")
-  class CopyCommandOptions extends TwoObjectsCommandOptions
+  class CopyCommandOptions
+    extends TwoObjectsCommandOptions
   {
     @Parameter(names = "--canned-acl", description = "The canned ACL to use. " +
       S3Client.CANNED_ACLS_DESC_CONST)
@@ -418,7 +425,7 @@ class Main
     boolean dryRun = false;
 
     public void invoke()
-    throws Exception
+      throws Exception
     {
       CloudStoreClient client = createCloudStoreClient();
 
@@ -443,13 +450,13 @@ class Main
           .createOptions();
 
         // Check if destination bucket exists
-        if (client.exists(opts).get() == null)
+        if(client.exists(opts).get() == null)
         {
           throw new UsageException(
             "Bucket not found at " + Utils.getURI(client.getScheme(), getDestinationBucket(), ""));
         }
 
-        if (getDestinationObjectKey().endsWith("/") || getDestinationObjectKey().equals(""))
+        if(getDestinationObjectKey().endsWith("/") || getDestinationObjectKey().equals(""))
         {
           // If destination URI is a directory (ends with "/") or a bucket
           // (object URI is empty), then source URI acts as a prefix and this
@@ -467,14 +474,14 @@ class Main
 
           // We go for a direct key-to-key copy, so source object has
           // to be there.
-          if (client.exists(opts).get() == null)
+          if(client.exists(opts).get() == null)
           {
             throw new UsageException("Object not found at " + getSourceURI());
           }
           client.copy(options).get();
         }
       }
-      catch (ExecutionException exc)
+      catch(ExecutionException exc)
       {
         rethrow(exc.getCause());
       }
@@ -490,7 +497,8 @@ class Main
     "source URI ends with '/', then it acts as a prefix and " +
     "this operation will rename all objects that would be returned by the list " +
     "operation on the same prefix.")
-  class RenameCommandOptions extends TwoObjectsCommandOptions
+  class RenameCommandOptions
+    extends TwoObjectsCommandOptions
   {
     @Parameter(names = "--canned-acl", description = "The canned ACL to use. " +
       S3Client.CANNED_ACLS_DESC_CONST)
@@ -503,7 +511,7 @@ class Main
     boolean dryRun = false;
 
     public void invoke()
-    throws Exception
+      throws Exception
     {
       CloudStoreClient client = createCloudStoreClient();
 
@@ -520,7 +528,7 @@ class Main
 
       try
       {
-        if (getSourceObjectKey().endsWith("/"))
+        if(getSourceObjectKey().endsWith("/"))
         {
           client.renameDirectory(options).get();
         }
@@ -529,7 +537,7 @@ class Main
           client.rename(options).get();
         }
       }
-      catch (ExecutionException exc)
+      catch(ExecutionException exc)
       {
         rethrow(exc.getCause());
       }
@@ -542,7 +550,8 @@ class Main
 
 
   @Parameters(commandDescription = "Upload a file or directory to the storage service")
-  class UploadCommandOptions extends S3ObjectCommandOptions
+  class UploadCommandOptions
+    extends S3ObjectCommandOptions
   {
     @Parameter(names = "-i", description = "File or directory to upload", required = true)
     String file;
@@ -565,12 +574,12 @@ class Main
     long chunkSize = -1;
 
     public void invoke()
-    throws Exception
+      throws Exception
     {
       CloudStoreClient client = createCloudStoreClient();
       File f = new File(file);
 
-      if (f.isDirectory() && !getObjectKey().endsWith("/"))
+      if(f.isDirectory() && !getObjectKey().endsWith("/"))
       {
         throw new UsageException(
           "Destination key " + Utils.getURI(client.getScheme(), getBucket(), getObjectKey()) +
@@ -587,21 +596,21 @@ class Main
         .setCannedAcl(cannedAcl)
         .setDryRun(dryRun);
 
-      if (progress)
+      if(progress)
       {
         OverallProgressListenerFactory cplf = new ConsoleProgressListenerFactory();
         uob.setOverallProgressListenerFactory(cplf);
       }
 
-      if (f.isFile())
+      if(f.isFile())
       {
-        if (getObjectKey().endsWith("/"))
+        if(getObjectKey().endsWith("/"))
         {
           uob.setObjectKey(getObjectKey() + f.getName());
         }
         client.upload(uob.createOptions()).get();
       }
-      else if (f.isDirectory())
+      else if(f.isDirectory())
       {
         client.uploadDirectory(uob.createOptions()).get();
       }
@@ -614,7 +623,8 @@ class Main
   }
 
   @Parameters(commandDescription = "List objects in storage service")
-  class ListCommandOptions extends S3ObjectCommandOptions
+  class ListCommandOptions
+    extends S3ObjectCommandOptions
   {
     @Parameter(names = {"-r", "--recursive"}, description = "List all objects" +
       " that match the provided storage service URL prefix.")
@@ -630,7 +640,7 @@ class Main
 
     @Override
     public void invoke()
-    throws Exception
+      throws Exception
     {
       CloudStoreClient client = createCloudStoreClient();
       ListOptionsBuilder lob = client.getOptionsBuilderFactory()
@@ -643,17 +653,17 @@ class Main
       try
       {
         List<StoreFile> listCommandResults = client.listObjects(lob.createOptions()).get();
-        if (includeVersions)
+        if(includeVersions)
         {
           String[][] table = new String[listCommandResults.size()][4];
           int[] max = new int[4];
           DateFormat df = Utils.getDefaultDateFormat();
-          for (int i = 0; i < listCommandResults.size(); i++)
+          for(int i = 0; i < listCommandResults.size(); i++)
           {
             StoreFile obj = listCommandResults.get(i);
             table[i][0] = Utils.getURI(client.getScheme(), obj.getBucketName(), "") + obj.getKey();
             table[i][1] = obj.getVersionId().orElse("No Version Id");
-            if (obj.getTimestamp().isPresent())
+            if(obj.getTimestamp().isPresent())
             {
               table[i][2] = df.format(obj.getTimestamp().get());
             }
@@ -661,7 +671,7 @@ class Main
             {
               table[i][2] = "Not applicable";
             }
-            if (obj.getSize().isPresent())
+            if(obj.getSize().isPresent())
             {
               table[i][3] = obj.getSize().get().toString();
             }
@@ -669,10 +679,10 @@ class Main
             {
               table[i][3] = "0";
             }
-            for (int j = 0; j < 4; j++)
+            for(int j = 0; j < 4; j++)
               max[j] = Math.max(table[i][j].length(), max[j]);
           }
-          for (final String[] row : table)
+          for(final String[] row : table)
           {
             System.out.format(
               "%-" + (max[0] + 4) + "s%-" + (max[1] + 4) + "s%-" + (max[2] + 3) + "s%-" +
@@ -681,14 +691,14 @@ class Main
         }
         else
         {
-          for (StoreFile obj : listCommandResults)
+          for(StoreFile obj : listCommandResults)
           {
             System.out.println(
               Utils.getURI(client.getScheme(), obj.getBucketName(), "") + obj.getKey());
           }
         }
       }
-      catch (ExecutionException exc)
+      catch(ExecutionException exc)
       {
         rethrow(exc.getCause());
       }
@@ -697,7 +707,8 @@ class Main
   }
 
   @Parameters(commandDescription = "Delete objects from a storage service")
-  class DeleteCommandOptions extends S3ObjectCommandOptions
+  class DeleteCommandOptions
+    extends S3ObjectCommandOptions
   {
     @Parameter(names = {"-r", "--recursive"}, description = "Delete all objects" +
       " that match the provided storage service URL prefix.")
@@ -712,9 +723,9 @@ class Main
 
     @Override
     public void invoke()
-    throws Exception
+      throws Exception
     {
-      if (recursive && !getObjectKey().endsWith("/"))
+      if(recursive && !getObjectKey().endsWith("/"))
       {
         throw new UsageException(
           "Object key should end with / to recursively delete a directory structure");
@@ -732,7 +743,7 @@ class Main
 
       try
       {
-        if (getObjectKey().endsWith("/"))
+        if(getObjectKey().endsWith("/"))
         {
           client.deleteDir(opts).get();
         }
@@ -741,7 +752,7 @@ class Main
           client.delete(opts).get();
         }
       }
-      catch (ExecutionException exc)
+      catch(ExecutionException exc)
       {
         // if UsageException is thrown from the command, rethrow that instead of the
         // wrapper exception to get cleaner error logging
@@ -752,7 +763,8 @@ class Main
   }
 
   @Parameters(commandDescription = "List objects sizes in storage service")
-  class DiskUsageCommandOptions extends S3ObjectCommandOptions
+  class DiskUsageCommandOptions
+    extends S3ObjectCommandOptions
   {
 
 
@@ -769,7 +781,7 @@ class Main
 
     @Override
     public void invoke()
-    throws Exception
+      throws Exception
     {
       CloudStoreClient client = createCloudStoreClient();
       ListOptionsBuilder lob = client.getOptionsBuilderFactory()
@@ -787,20 +799,20 @@ class Main
       try
       {
         List<StoreFile> result = client.listObjects(lob.createOptions()).get();
-        for (StoreFile obj : result)
+        for(StoreFile obj : result)
         {
           numberOfFiles += 1;
           totalSize += obj.getSize().orElse((long) 0);
-          if (maxDepth > 0)
+          if(maxDepth > 0)
           {
             String current = obj.getKey();
             String parent = findParent(current);
             long depth = current.split("/").length - baseDepth + 1;
             // add size to the parent Node if parent Node to be displayed
-            if (0 <= depth - 1 && depth - 1 <= maxDepth)
+            if(0 <= depth - 1 && depth - 1 <= maxDepth)
             {
               DirectoryNode parentNode = dirs.get(parent);
-              if (parentNode != null)
+              if(parentNode != null)
               {
                 parentNode.size = parentNode.size + obj.getSize().orElse((long) 0);
               }
@@ -810,36 +822,36 @@ class Main
                 dirs.put(parent, parentNode);
               }
               // handle children if they were to be displayed
-              if (depth <= maxDepth)
+              if(depth <= maxDepth)
               {
                 // if child node was a directory add them to the map of directories
-                if (current.endsWith("/"))
+                if(current.endsWith("/"))
                 {
-                  if (!dirs.containsKey(current))
+                  if(!dirs.containsKey(current))
                   {
                     current = current.substring(0, current.length() - 1);
-                    DirectoryNode currentNode =
-                      new DirectoryNode(obj.getSize().orElse((long) 0), current);
+                    DirectoryNode currentNode = new DirectoryNode(obj.getSize().orElse((long) 0),
+                      current);
                     parentNode.childs.add(currentNode);
                     dirs.put(current, currentNode);
                   }
                 }
                 // else add file Node to children if all was enabled to be displayed
-                else if (all)
+                else if(all)
                 {
-                  DirectoryNode currentNode =
-                    new DirectoryNode(obj.getSize().orElse((long) 0), current);
+                  DirectoryNode currentNode = new DirectoryNode(obj.getSize().orElse((long) 0),
+                    current);
                   parentNode.childs.add(currentNode);
                 }
               }
             }
             // add size of current to all great Parents who will be displayed
-            while (parent.length() > 0 && parent.split("/").length - baseDepth < maxDepth &&
+            while(parent.length() > 0 && parent.split("/").length - baseDepth < maxDepth &&
               0 < parent.split("/").length - baseDepth)
             {
               parent = findParent(parent);
               DirectoryNode parentNode = dirs.get(parent);
-              if (parentNode != null)
+              if(parentNode != null)
               {
                 parentNode.size = parentNode.size + obj.getSize().orElse((long) 0);
               }
@@ -852,7 +864,7 @@ class Main
             }
           }
         }
-        if (humanReadble)
+        if(humanReadble)
         {
           du = getReadableString(totalSize);
         }
@@ -861,12 +873,12 @@ class Main
           du = Long.toString(totalSize);
         }
         System.out.format("%-15s %d objects %s %n", du, numberOfFiles, getURI().toString());
-        if (dirs.size() > 0)
+        if(dirs.size() > 0)
         {
           printTree(dirs, humanReadble, all, getObjectKey());
         }
       }
-      catch (ExecutionException exc)
+      catch(ExecutionException exc)
       {
         rethrow(exc.getCause());
       }
@@ -879,7 +891,7 @@ class Main
 
   public String findParent(String current)
   {
-    if (current.endsWith("/"))
+    if(current.endsWith("/"))
     {
       current = current.substring(0, current.length() - 1);
     }
@@ -887,20 +899,18 @@ class Main
     return current.substring(0, endIndex == -1 ? 0 : endIndex);
   }
 
-  public void printTree(Map<String, DirectoryNode> map,
-                        boolean humanReadble,
-                        boolean all,
-                        String root)
+  public void printTree(
+    Map<String, DirectoryNode> map, boolean humanReadble, boolean all, String root)
   {
     ArrayList<String[]> table = new ArrayList<String[]>();
     int[] max = new int[2];
     int tableCounter = 0;
-    for (Map.Entry<String, DirectoryNode> entry : map.entrySet())
+    for(Map.Entry<String, DirectoryNode> entry : map.entrySet())
     {
       String size = "";
-      if (!entry.getKey().equals(root))
+      if(!entry.getKey().equals(root))
       {// skip root info
-        if (humanReadble)
+        if(humanReadble)
         {
           size = getReadableString(entry.getValue().size);
         }
@@ -910,19 +920,19 @@ class Main
         }
         String[] row = {size, "/" + entry.getValue().fileName + "/"};
         table.add(tableCounter, row);
-        for (int j = 0; j < 2; j++)
+        for(int j = 0; j < 2; j++)
           max[j] = Math.max(table.get(tableCounter)[j].length(), max[j]);
         tableCounter++;
       }
-      if (all)
+      if(all)
       {
-        for (DirectoryNode n : entry.getValue().childs)
+        for(DirectoryNode n : entry.getValue().childs)
         {
-          if (map.containsKey(n.fileName))
+          if(map.containsKey(n.fileName))
           {
             continue;
           }
-          if (humanReadble)
+          if(humanReadble)
           {
             size = getReadableString(n.size);
           }
@@ -932,13 +942,13 @@ class Main
           }
           String[] row = {size, "/" + n.fileName};
           table.add(tableCounter, row);
-          for (int j = 0; j < 2; j++)
+          for(int j = 0; j < 2; j++)
             max[j] = Math.max(table.get(tableCounter)[j].length(), max[j]);
           tableCounter++;
         }
       }
     }
-    for (final String[] row : table)
+    for(final String[] row : table)
     {
       System.out.format("%-" + (max[0] + 4) + "s%-" + (max[1] + 4) + "s\n", row[0], row[1]);
     }
@@ -948,10 +958,10 @@ class Main
 
   public String getReadableString(long bytes)
   {
-    for (int i = 6; i > 0; i--)
+    for(int i = 6; i > 0; i--)
     {
       double step = Math.pow(1024, i);
-      if (bytes > step)
+      if(bytes > step)
       {
         return new DecimalFormat("#,##0.##").format(bytes / step) + units[i];
       }
@@ -960,11 +970,12 @@ class Main
   }
 
   @Parameters(commandDescription = "List pending uploads")
-  class ListPendingUploadsCommandOptions extends S3ObjectCommandOptions
+  class ListPendingUploadsCommandOptions
+    extends S3ObjectCommandOptions
   {
     @Override
     public void invoke()
-    throws Exception
+      throws Exception
     {
       CloudStoreClient client = createCloudStoreClient();
 
@@ -991,25 +1002,25 @@ class Main
 
         DateFormat df = Utils.getDefaultDateFormat();
 
-        for (int i = 0; i < pendingUploads.size(); i++)
+        for(int i = 0; i < pendingUploads.size(); i++)
         {
           Upload u = pendingUploads.get(i);
           table[i][0] = Utils.getURI(client.getScheme(), u.getBucket(), u.getKey()).toString();
           table[i][1] = u.getId();
           table[i][2] = df.format(u.getInitiationDate());
 
-          for (int j = 0; j < 3; j++)
+          for(int j = 0; j < 3; j++)
             max[j] = Math.max(table[i][j].length(), max[j]);
         }
 
-        for (final String[] row : table)
+        for(final String[] row : table)
         {
           System.out.format(
             "%-" + (max[0] + 3) + "s%-" + (max[1] + 3) + "s%-" + (max[2] + 3) + "s\n", row[0],
             row[1], row[2]);
         }
       }
-      catch (ExecutionException exc)
+      catch(ExecutionException exc)
       {
         rethrow(exc.getCause());
       }
@@ -1022,7 +1033,8 @@ class Main
 
   @Parameters(commandDescription = "Abort pending uploads, either by id or " +
     "date/datetime. When date/datetime is specified the URL can be a prefix.")
-  class AbortPendingUploadsCommandOptions extends S3ObjectCommandOptions
+  class AbortPendingUploadsCommandOptions
+    extends S3ObjectCommandOptions
   {
     @Parameter(names = "--id", description = "Id of the pending upload to " + "abort")
     String id;
@@ -1039,29 +1051,29 @@ class Main
 
     @Override
     public void invoke()
-    throws Exception
+      throws Exception
     {
       CloudStoreClient client = createCloudStoreClient();
 
       try
       {
-        if (id != null && dateTimeStr != null && dateStr != null)
+        if(id != null && dateTimeStr != null && dateStr != null)
         {
           throw new UsageException("id and/or date/datetime should be specified");
         }
-        if (dateTimeStr != null && dateStr != null)
+        if(dateTimeStr != null && dateStr != null)
         {
           throw new UsageException("Only one of date and datetime " + "options can be specified");
         }
 
         Date date = null;
-        if (dateStr != null)
+        if(dateStr != null)
         {
           DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
           df.setTimeZone(TimeZone.getTimeZone("UTC"));
           date = df.parse(dateStr);
         }
-        else if (dateTimeStr != null)
+        else if(dateTimeStr != null)
         {
           DateFormat df = Utils.getDefaultDateFormat();
           date = df.parse(dateTimeStr);
@@ -1075,7 +1087,7 @@ class Main
           .createOptions();
         client.abortPendingUploads(options).get();
       }
-      catch (ExecutionException exc)
+      catch(ExecutionException exc)
       {
         rethrow(exc.getCause());
       }
@@ -1087,7 +1099,8 @@ class Main
   }
 
   @Parameters(commandDescription = "Generates a public/private keypair in PEM format")
-  class KeyGenCommandOptions extends CommandOptions
+  class KeyGenCommandOptions
+    extends CommandOptions
   {
     @Parameter(names = {"-n", "--name"}, description = "Name of the PEM file", required = true)
     String name = null;
@@ -1097,13 +1110,13 @@ class Main
 
     @Override
     public void invoke()
-    throws Exception
+      throws Exception
     {
       try
       {
         String pemfp = name + ".pem";
         File pemf = new File(encKeyDirectory, pemfp);
-        if (pemf.exists())
+        if(pemf.exists())
         {
           System.err.println("File " + pemf.getPath() + " already exists.");
           System.exit(1);
@@ -1112,7 +1125,7 @@ class Main
         KeyGenCommand kgc = new KeyGenCommand("RSA", 2048);
         kgc.savePemKeypair(pemf);
       }
-      catch (Exception exc)
+      catch(Exception exc)
       {
         rethrow(exc.getCause());
       }
@@ -1120,7 +1133,8 @@ class Main
   }
 
   @Parameters(commandDescription = "Download a file, or a set of files from the storage service")
-  class DownloadCommandOptions extends S3ObjectCommandOptions
+  class DownloadCommandOptions
+    extends S3ObjectCommandOptions
   {
     @Parameter(names = "-o", description = "Write output to file, or directory")
     String file = System.getProperty("user.dir");
@@ -1142,7 +1156,7 @@ class Main
 
     @Override
     public void invoke()
-    throws Exception
+      throws Exception
     {
       CloudStoreClient client = createCloudStoreClient();
 
@@ -1159,19 +1173,19 @@ class Main
         .setOverwrite(overwrite)
         .setDryRun(dryRun);
 
-      if (progress)
+      if(progress)
       {
         OverallProgressListenerFactory cplf = new ConsoleProgressListenerFactory();
         dob.setOverallProgressListenerFactory(cplf);
       }
 
-      if (getObjectKey().endsWith("/") || getObjectKey().equals(""))
+      if(getObjectKey().endsWith("/") || getObjectKey().equals(""))
       {
         result = client.downloadDirectory(dob.createOptions());
       }
       else
       {
-        if (output.isDirectory())
+        if(output.isDirectory())
         {
           output = new File(output, getObjectKey().substring(getObjectKey().lastIndexOf("/") + 1));
         }
@@ -1183,7 +1197,7 @@ class Main
       {
         result.get();
       }
-      catch (ExecutionException exc)
+      catch(ExecutionException exc)
       {
         rethrow(exc.getCause());
       }
@@ -1193,19 +1207,20 @@ class Main
   }
 
   @Parameters(commandDescription = "Add new encryption key")
-  class AddEncryptionKeyCommandOptions extends S3ObjectCommandOptions
+  class AddEncryptionKeyCommandOptions
+    extends S3ObjectCommandOptions
   {
     @Parameter(names = "--key", description = "The name of the encryption key to add", required =
       true)
     String encKeyName = null;
 
     public void invoke()
-    throws Exception
+      throws Exception
     {
       CloudStoreClient client = createCloudStoreClient();
       try
       {
-        if (getObjectKey().endsWith("/") || getObjectKey().equals(""))
+        if(getObjectKey().endsWith("/") || getObjectKey().equals(""))
         {
           throw new UsageException("Invalid object key " + getURI());
         }
@@ -1217,7 +1232,7 @@ class Main
             .setObjectKey(getObjectKey())
             .createOptions();
 
-          if (client.exists(opts).get() == null)
+          if(client.exists(opts).get() == null)
           {
             throw new UsageException("Object not found at " + getURI());
           }
@@ -1231,7 +1246,7 @@ class Main
           client.addEncryptionKey(options).get();
         }
       }
-      catch (ExecutionException exc)
+      catch(ExecutionException exc)
       {
         rethrow(exc.getCause());
       }
@@ -1243,19 +1258,20 @@ class Main
   }
 
   @Parameters(commandDescription = "Remove existing encryption key")
-  class RemoveEncryptionKeyCommandOptions extends S3ObjectCommandOptions
+  class RemoveEncryptionKeyCommandOptions
+    extends S3ObjectCommandOptions
   {
     @Parameter(names = "--key", description = "The name of the encryption key to remove",
                required = true)
     String encKeyName = null;
 
     public void invoke()
-    throws Exception
+      throws Exception
     {
       CloudStoreClient client = createCloudStoreClient();
       try
       {
-        if (getObjectKey().endsWith("/") || getObjectKey().equals(""))
+        if(getObjectKey().endsWith("/") || getObjectKey().equals(""))
         {
           throw new UsageException("Invalid object key " + getURI());
         }
@@ -1267,7 +1283,7 @@ class Main
             .setObjectKey(getObjectKey())
             .createOptions();
 
-          if (client.exists(opts).get() == null)
+          if(client.exists(opts).get() == null)
           {
             throw new UsageException("Object not found at " + getURI());
           }
@@ -1281,7 +1297,7 @@ class Main
           client.removeEncryptionKey(options).get();
         }
       }
-      catch (ExecutionException exc)
+      catch(ExecutionException exc)
       {
         rethrow(exc.getCause());
       }
@@ -1296,7 +1312,8 @@ class Main
    * Version
    */
   @Parameters(commandDescription = "Print version")
-  class VersionCommand extends CommandOptions
+  class VersionCommand
+    extends CommandOptions
   {
     public void invoke()
     {
@@ -1308,20 +1325,21 @@ class Main
    * Help
    */
   @Parameters(commandDescription = "Print usage")
-  class HelpCommand extends CommandOptions
+  class HelpCommand
+    extends CommandOptions
   {
     @Parameter(description = "Commands")
     List<String> _commands;
 
     public void invoke()
     {
-      if (_commands == null)
+      if(_commands == null)
       {
         printUsage();
       }
       else
       {
-        for (String cmd : _commands)
+        for(String cmd : _commands)
         {
           printCommandUsage(cmd);
         }
@@ -1335,11 +1353,13 @@ class Main
     {
       _commander.parse(args);
       String command = _commander.getParsedCommand();
-      if (command != null)
+      if(command != null)
       {
-        CommandOptions cmd =
-          (CommandOptions) _commander.getCommands().get(command).getObjects().get(0);
-        if (cmd.help)
+        CommandOptions cmd = (CommandOptions) _commander.getCommands()
+          .get(command)
+          .getObjects()
+          .get(0);
+        if(cmd.help)
         {
           printCommandUsage(command);
           System.exit(1);
@@ -1352,25 +1372,25 @@ class Main
         printUsage();
       }
     }
-    catch (ParameterException exc)
+    catch(ParameterException exc)
     {
       System.err.println("error: " + exc.getMessage());
       System.err.println("");
       printUsage();
       System.exit(1);
     }
-    catch (UsageException exc)
+    catch(UsageException exc)
     {
       System.err.println("error: " + exc.getMessage());
       System.exit(1);
     }
-    catch (AmazonServiceException exc)
+    catch(AmazonServiceException exc)
     {
-      if (exc.getStatusCode() == 404)
+      if(exc.getStatusCode() == 404)
       {
         System.err.println("error: Storage service object not found: " + exc.getMessage());
       }
-      else if (exc.getStatusCode() == 403)
+      else if(exc.getStatusCode() == 403)
       {
         System.err.println(
           "error: Access to storage service object denied " + "with current credentials: " +
@@ -1384,12 +1404,12 @@ class Main
 
       System.exit(1);
     }
-    catch (UnsupportedOperationException exc)
+    catch(UnsupportedOperationException exc)
     {
       System.err.println("error: " + exc.getMessage());
       System.exit(1);
     }
-    catch (Exception exc)
+    catch(Exception exc)
     {
       System.err.println("error: " + exc.getMessage());
       System.err.println("");
@@ -1420,15 +1440,14 @@ class Main
     printOptions();
 
     System.err.println("   Commands: ");
-    for (String cmd : _commander.getCommands().keySet())
+    for(String cmd : _commander.getCommands().keySet())
     {
       String indentStr = "     ";
       int padding = 23;
       int column = 79;
 
-      String wrapDesc =
-        wrapDescription(indentStr.length() + padding, _commander.getCommandDescription(cmd),
-          column);
+      String wrapDesc = wrapDescription(indentStr.length() + padding,
+        _commander.getCommandDescription(cmd), column);
       System.out.println(indentStr + padRight(padding, ' ', cmd) + wrapDesc);
     }
   }
@@ -1439,10 +1458,10 @@ class Main
     String[] words = description.split(" ");
     int current = indent;
     int i = 0;
-    while (i < words.length)
+    while(i < words.length)
     {
       String word = words[i];
-      if (word.length() > columnSize || current + word.length() < columnSize)
+      if(word.length() > columnSize || current + word.length() < columnSize)
       {
         out.append(" ").append(word);
         current += word.length() + 1;
@@ -1460,7 +1479,7 @@ class Main
   private String spaces(int indent)
   {
     StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < indent; i++)
+    for(int i = 0; i < indent; i++)
       sb.append(" ");
     return sb.toString();
   }
@@ -1469,7 +1488,7 @@ class Main
   {
     StringBuffer buf = new StringBuffer(width);
     buf.append(s);
-    for (int i = 0; i < width - s.length(); i++)
+    for(int i = 0; i < width - s.length(); i++)
       buf.append(c);
     return buf.toString();
   }
@@ -1482,13 +1501,13 @@ class Main
   }
 
   private static void rethrow(Throwable thrown)
-  throws Exception
+    throws Exception
   {
-    if (thrown instanceof Exception)
+    if(thrown instanceof Exception)
     {
       throw (Exception) thrown;
     }
-    if (thrown instanceof Error)
+    if(thrown instanceof Error)
     {
       throw (Error) thrown;
     }

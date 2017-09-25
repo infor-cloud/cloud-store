@@ -268,7 +268,7 @@ public class Metadata
     stream.println("Server-Side-Encryption: " + getSSEAlgorithm());
     stream.println("Version-Id: " + getVersionId());
     stream.println("");
-    for (Map.Entry<String, String> entry : getUserMetadata().entrySet())
+    for(Map.Entry<String, String> entry : getUserMetadata().entrySet())
     {
       stream.println(entry.getKey() + ": " + entry.getValue());
     }

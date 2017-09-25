@@ -24,18 +24,19 @@ import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-class GCSUploadFactory implements UploadFactory
+class GCSUploadFactory
+  implements UploadFactory
 {
   private Storage client;
   private ListeningExecutorService executor;
 
   public GCSUploadFactory(Storage client, ListeningExecutorService executor)
   {
-    if (client == null)
+    if(client == null)
     {
       throw new IllegalArgumentException("non-null client is required");
     }
-    if (executor == null)
+    if(executor == null)
     {
       throw new IllegalArgumentException("non-null executor is required");
     }
@@ -44,25 +45,22 @@ class GCSUploadFactory implements UploadFactory
     this.executor = executor;
   }
 
-  public ListenableFuture<Upload> startUpload(String bucketName,
-                                              String key,
-                                              Map<String, String> meta,
-                                              UploadOptions options)
+  public ListenableFuture<Upload> startUpload(
+    String bucketName, String key, Map<String, String> meta, UploadOptions options)
   {
     return executor.submit(new StartCallable(bucketName, key, meta, options));
   }
 
-  private class StartCallable implements Callable<Upload>
+  private class StartCallable
+    implements Callable<Upload>
   {
     private String key;
     private String bucketName;
     private Map<String, String> meta;
     private UploadOptions options;
 
-    public StartCallable(String bucketName,
-                         String key,
-                         Map<String, String> meta,
-                         UploadOptions options)
+    public StartCallable(
+      String bucketName, String key, Map<String, String> meta, UploadOptions options)
     {
       this.bucketName = bucketName;
       this.key = key;
@@ -71,7 +69,7 @@ class GCSUploadFactory implements UploadFactory
     }
 
     public Upload call()
-    throws Exception
+      throws Exception
     {
       return new GCSUpload(client, bucketName, key, this.meta, new Date(), executor, options);
     }

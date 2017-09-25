@@ -18,7 +18,8 @@ package com.logicblox.cloudstore;
 
 import com.amazonaws.services.s3.model.StorageClass;
 
-public class S3StorageClassHandler implements StorageClassHandler
+public class S3StorageClassHandler
+  implements StorageClassHandler
 {
   @Override
   public boolean isStorageClassValid(String storageClass)
@@ -27,7 +28,7 @@ public class S3StorageClassHandler implements StorageClassHandler
     {
       StorageClass.fromValue(storageClass);
     }
-    catch (IllegalArgumentException exc)
+    catch(IllegalArgumentException exc)
     {
       return false;
     }

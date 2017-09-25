@@ -31,7 +31,7 @@ public class BucketTests
 
   @BeforeClass
   public static void setUp()
-  throws Throwable
+    throws Throwable
   {
     _client = TestUtils.createClient(0);
   }
@@ -46,7 +46,7 @@ public class BucketTests
 
   @Test
   public void testBasics()
-  throws Throwable
+    throws Throwable
   {
     List<Bucket> buckets = _client.listBuckets().get();
     int originalCount = buckets.size();
@@ -60,9 +60,9 @@ public class BucketTests
     buckets = _client.listBuckets().get();
     Assert.assertEquals(originalCount + 1, buckets.size());
     boolean found = false;
-    for (Bucket b : buckets)
+    for(Bucket b : buckets)
     {
-      if (b.getName().equals(testBucket))
+      if(b.getName().equals(testBucket))
       {
         found = true;
       }
@@ -87,7 +87,7 @@ public class BucketTests
       _client.createBucket(testBucket);
       Assert.fail("Expected exception to be thrown");
     }
-    catch (Throwable t)
+    catch(Throwable t)
     {
       // exception expected
 
@@ -107,7 +107,7 @@ public class BucketTests
       _client.destroyBucket(testBucket);
       Assert.fail("Expected exception to be thrown");
     }
-    catch (Throwable t)
+    catch(Throwable t)
     {
       // expected
     }

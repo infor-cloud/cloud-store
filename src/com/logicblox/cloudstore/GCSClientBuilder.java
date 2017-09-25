@@ -117,7 +117,7 @@ public class GCSClientBuilder
   }
 
   public GCSClientBuilder setCredentialFromFile(File credentialFile)
-  throws IOException
+    throws IOException
   {
     InputStream credentialStream = null;
     try
@@ -125,13 +125,13 @@ public class GCSClientBuilder
       credentialStream = new FileInputStream(credentialFile);
       return setCredentialFromStream(credentialStream);
     }
-    catch (IOException e)
+    catch(IOException e)
     {
       throw e;
     }
     finally
     {
-      if (credentialFile != null)
+      if(credentialFile != null)
       {
         credentialStream.close();
       }
@@ -139,7 +139,7 @@ public class GCSClientBuilder
   }
 
   public GCSClientBuilder setCredentialFromStream(InputStream credentialStream)
-  throws IOException
+    throws IOException
   {
     return setCredential(getCredentialFromStream(credentialStream));
   }
@@ -152,28 +152,27 @@ public class GCSClientBuilder
 
   private Storage getDefaultInternalGCSClient()
   {
-    Storage gcsClient0 =
-      new Storage.Builder(httpTransport, jsonFactory, requestInitializer).setApplicationName(
-        APPLICATION_NAME).build();
+    Storage gcsClient0 = new Storage.Builder(httpTransport, jsonFactory,
+      requestInitializer).setApplicationName(APPLICATION_NAME).build();
 
     return gcsClient0;
   }
 
   private static HttpTransport getDefaultHttpTransport()
-  throws GeneralSecurityException, IOException
+    throws GeneralSecurityException, IOException
   {
     HttpTransport httpTransport0 = null;
     try
     {
       httpTransport0 = GoogleNetHttpTransport.newTrustedTransport();
     }
-    catch (GeneralSecurityException e)
+    catch(GeneralSecurityException e)
     {
       System.err.println(
         "Security error during GCS HTTP Transport " + "layer initialization: " + e.getMessage());
       throw e;
     }
-    catch (IOException e)
+    catch(IOException e)
     {
       System.err.println(
         "I/O error during GCS HTTP Transport layer" + " initialization: " + e.getMessage());
@@ -185,14 +184,14 @@ public class GCSClientBuilder
   }
 
   private static GoogleCredential getDefaultCredential()
-  throws IOException
+    throws IOException
   {
     GoogleCredential credential0 = null;
     try
     {
       credential0 = GoogleCredential.getApplicationDefault();
     }
-    catch (IOException e)
+    catch(IOException e)
     {
       throw new IOException(String.format(
         "Error reading credential " + "file from environment variable %s, value '%s': %s",
@@ -206,14 +205,14 @@ public class GCSClientBuilder
   }
 
   private static GoogleCredential getCredentialFromStream(InputStream credentialStream)
-  throws IOException
+    throws IOException
   {
     GoogleCredential credential0 = null;
     try
     {
       credential0 = GoogleCredential.fromStream(credentialStream);
     }
-    catch (IOException e)
+    catch(IOException e)
     {
       throw new IOException(
         String.format("Error reading credential " + "stream: %s", e.getMessage()));
@@ -228,7 +227,7 @@ public class GCSClientBuilder
   private static GoogleCredential setScopes(GoogleCredential credential0)
   {
     Collection scopes = Collections.singletonList(StorageScopes.DEVSTORAGE_FULL_CONTROL);
-    if (credential0.createScopedRequired())
+    if(credential0.createScopedRequired())
     {
       credential0 = credential0.createScoped(scopes);
     }
@@ -246,14 +245,14 @@ public class GCSClientBuilder
     {
       @Override
       public void initialize(HttpRequest request)
-      throws IOException
+        throws IOException
       {
         // Lazy credentials initialization to avoid throwing an
         // exception if CREDENTIAL_ENV_VAR doesn't point to a
         // valid credentials file at construction time. It's
         // useful for GCS clients that are constructed but never
         // used (e.g. in lb-web).
-        if (credential == null)
+        if(credential == null)
         {
           setCredential(getDefaultCredential());
         }
@@ -266,33 +265,33 @@ public class GCSClientBuilder
   }
 
   public GCSClient createGCSClient()
-  throws IOException, GeneralSecurityException
+    throws IOException, GeneralSecurityException
   {
-    if (httpTransport == null)
+    if(httpTransport == null)
     {
       setHttpTransport(getDefaultHttpTransport());
     }
-    if (requestInitializer == null)
+    if(requestInitializer == null)
     {
       setHttpRequestInitializer(getDefaultHttpRequestInitializer());
     }
-    if (gcsClient == null)
+    if(gcsClient == null)
     {
       setInternalGCSClient(getDefaultInternalGCSClient());
     }
-    if (s3Client == null)
+    if(s3Client == null)
     {
       setInternalS3Client(new AmazonS3ClientForGCS());
     }
-    if (apiExecutor == null)
+    if(apiExecutor == null)
     {
       setApiExecutor(Utils.createApiExecutor(10));
     }
-    if (internalExecutor == null)
+    if(internalExecutor == null)
     {
       setInternalExecutor(Utils.createInternalExecutor(50));
     }
-    if (keyProvider == null)
+    if(keyProvider == null)
     {
       setKeyProvider(Utils.createKeyProvider(Utils.getDefaultKeyDirectory()));
     }

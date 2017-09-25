@@ -16,7 +16,8 @@
 
 package com.logicblox.cloudstore;
 
-public class GCSStorageClassHandler implements StorageClassHandler
+public class GCSStorageClassHandler
+  implements StorageClassHandler
 {
   @Override
   public boolean isStorageClassValid(String storageClass)

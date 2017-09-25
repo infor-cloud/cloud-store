@@ -28,7 +28,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 
-public class CopyTests implements RetryListener
+public class CopyTests
+  implements RetryListener
 {
   private static CloudStoreClient _client = null;
   private static String _testBucket = null;
@@ -45,7 +46,7 @@ public class CopyTests implements RetryListener
 
   @BeforeClass
   public static void setUp()
-  throws Throwable
+    throws Throwable
   {
     TestUtils.setUp();
     _testBucket = TestUtils.getTestBucket();
@@ -55,7 +56,7 @@ public class CopyTests implements RetryListener
 
   @AfterClass
   public static void tearDown()
-  throws Throwable
+    throws Throwable
   {
     TestUtils.tearDown();
     _testBucket = null;
@@ -65,14 +66,14 @@ public class CopyTests implements RetryListener
 
   @Test
   public void testRetryDir()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload tests intermittently fail when using minio.  trying to minimize
     // false failure reports by repeating and only failing the test if it consistently reports an
     // error.
     int testLoop = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < testLoop)
+    while(count < testLoop)
     {
       try
       {
@@ -149,10 +150,10 @@ public class CopyTests implements RetryListener
 
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= testLoop)
+        if(count >= testLoop)
         {
           throw t;
         }
@@ -163,7 +164,7 @@ public class CopyTests implements RetryListener
 
   @Test
   public void testRetry()
-  throws Throwable
+    throws Throwable
   {
     try
     {
@@ -218,7 +219,7 @@ public class CopyTests implements RetryListener
 
   @Test
   public void testDryRunFile()
-  throws Throwable
+    throws Throwable
   {
     // create test file and upload it
     String rootPrefix = TestUtils.addPrefix("copy-dryrun");
@@ -246,14 +247,14 @@ public class CopyTests implements RetryListener
 
   @Test
   public void testDryRunDir()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload tests intermittently fail when using minio.  trying to minimize
     // false failure reports by repeating and only failing the test if it consistently reports an
     // error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
@@ -287,10 +288,10 @@ public class CopyTests implements RetryListener
           TestUtils.listObjects(_testBucket, rootPrefix).size());
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -301,7 +302,7 @@ public class CopyTests implements RetryListener
 
   @Test
   public void testSimpleCopy()
-  throws Throwable
+    throws Throwable
   {
     List<StoreFile> objs = TestUtils.listTestBucketObjects();
     int originalCount = objs.size();
@@ -360,7 +361,7 @@ public class CopyTests implements RetryListener
     Map<String, String> destUserMeta = destMeta.getUserMetadata();
     Assert.assertNotNull(destUserMeta);
     Assert.assertEquals(srcUserMeta.size(), destUserMeta.size());
-    for (Map.Entry<String, String> e : srcUserMeta.entrySet())
+    for(Map.Entry<String, String> e : srcUserMeta.entrySet())
     {
       Assert.assertTrue(destUserMeta.containsKey(e.getKey()));
       Assert.assertEquals(e.getValue(), destUserMeta.get(e.getKey()));
@@ -370,7 +371,7 @@ public class CopyTests implements RetryListener
 
   @Test
   public void testOverwriteExistingFile()
-  throws Throwable
+    throws Throwable
   {
     // test that copy overwrites without error
 
@@ -418,7 +419,7 @@ public class CopyTests implements RetryListener
 
   @Test
   public void testOverwriteExistingDir()
-  throws Throwable
+    throws Throwable
   {
     // copying a file to same name as existing dir should result in both
     // file and directory with same name
@@ -426,7 +427,7 @@ public class CopyTests implements RetryListener
     // this test can't work with minio on a local file system -- can't have a file and
     // directory with same name.  assuming if --dest-prefix passed to test runner, we're not
     // using minio and can run the test.
-    if (null == TestUtils.getDestUri())
+    if(null == TestUtils.getDestUri())
     {
       return;
     }
@@ -436,7 +437,7 @@ public class CopyTests implements RetryListener
     // error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
@@ -490,10 +491,10 @@ public class CopyTests implements RetryListener
         Assert.assertEquals(5, objs.size());
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -504,14 +505,14 @@ public class CopyTests implements RetryListener
 
   @Test
   public void testCopyIntoExistingDir()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload tests intermittently fail when using minio.  trying to minimize
     // false failure reports by repeating and only failing the test if it consistently reports an
     // error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
@@ -562,10 +563,10 @@ public class CopyTests implements RetryListener
         Assert.assertEquals(6, objs.size());
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -576,12 +577,12 @@ public class CopyTests implements RetryListener
 
   @Test
   public void testCrossBucketCopy()
-  throws Throwable
+    throws Throwable
   {
     // skip this if we're using a pre-exising test bucket, assuming we're
     // running against a server that we don't want to (or can't) create
     // buckets in...
-    if (null != TestUtils.getPrefix())
+    if(null != TestUtils.getPrefix())
     {
       return;
     }
@@ -616,7 +617,7 @@ public class CopyTests implements RetryListener
     // check for the copy in 1st bucket, should be the same
     List<StoreFile> copyObjs = TestUtils.listTestBucketObjects();
     Assert.assertEquals(objs.size(), copyObjs.size());
-    for (StoreFile sf : copyObjs)
+    for(StoreFile sf : copyObjs)
       Assert.assertTrue(TestUtils.findObject(objs, sf.getKey()));
 
     // check for the copy in 2nd bucket
@@ -644,14 +645,14 @@ public class CopyTests implements RetryListener
 
   @Test
   public void testCopyDir()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload tests intermittently fail when using minio.  trying to minimize
     // false failure reports by repeating and only failing the test if it consistently reports an
     // error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
@@ -723,10 +724,10 @@ public class CopyTests implements RetryListener
         Assert.assertTrue(TestUtils.findObject(copyObjs, sub2N + e.getName()));
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -737,21 +738,21 @@ public class CopyTests implements RetryListener
 
   @Test
   public void testCopyMissingDestBucket()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload tests intermittently fail when using minio.  trying to minimize
     // false failure reports by repeating and only failing the test if it consistently reports an
     // error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
         // skip this if we're using a pre-exising test bucket, assuming we're
         // running against a server that we don't want to (or can't) create
         // buckets in...
-        if (null != TestUtils.getPrefix())
+        if(null != TestUtils.getPrefix())
         {
           return;
         }
@@ -785,17 +786,17 @@ public class CopyTests implements RetryListener
           _client.copyToDir(copyOpts).get();
           msg = "Exception expected";
         }
-        catch (ExecutionException ex)
+        catch(ExecutionException ex)
         {
           Assert.assertTrue(ex.getMessage().contains("specified bucket is not valid"));
         }
         Assert.assertNull(msg);
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -806,21 +807,21 @@ public class CopyTests implements RetryListener
 
   @Test
   public void testCrossBucketCopyDir()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload tests intermittently fail when using minio.  trying to minimize
     // false failure reports by repeating and only failing the test if it consistently reports an
     // error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
         // skip this if we're using a pre-exising test bucket, assuming we're
         // running against a server that we don't want to (or can't) create
         // buckets in...
-        if (null != TestUtils.getPrefix())
+        if(null != TestUtils.getPrefix())
         {
           return;
         }
@@ -901,10 +902,10 @@ public class CopyTests implements RetryListener
         Assert.assertTrue(TestUtils.findObject(copyObjs, sub2N + e.getName()));
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }

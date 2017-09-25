@@ -31,7 +31,8 @@ import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-class GCSUpload implements Upload
+class GCSUpload
+  implements Upload
 {
   private String md5;
   private Storage client;
@@ -45,13 +46,9 @@ class GCSUpload implements Upload
   // for testing
   private String uploadId;
 
-  public GCSUpload(Storage client,
-                   String bucketName,
-                   String key,
-                   Map<String, String> meta,
-                   Date initiated,
-                   ListeningExecutorService executor,
-                   UploadOptions options)
+  public GCSUpload(
+    Storage client, String bucketName, String key, Map<String, String> meta, Date initiated,
+    ListeningExecutorService executor, UploadOptions options)
   {
     this.client = client;
     this.bucketName = bucketName;
@@ -63,10 +60,9 @@ class GCSUpload implements Upload
     this.options = options;
   }
 
-  public ListenableFuture<Void> uploadPart(int partNumber,
-                                           long partSize,
-                                           Callable<InputStream> stream,
-                                           OverallProgressListener progressListener)
+  public ListenableFuture<Void> uploadPart(
+    int partNumber, long partSize, Callable<InputStream> stream,
+    OverallProgressListener progressListener)
   {
     // added to support retry testing
     options.injectAbort(uploadId);
@@ -104,35 +100,37 @@ class GCSUpload implements Upload
     return initiated;
   }
 
-  private class AbortCallable implements Callable<Void>
+  private class AbortCallable
+    implements Callable<Void>
   {
     public Void call()
-    throws Exception
+      throws Exception
     {
       return null;
     }
   }
 
-  private class CompleteCallable implements Callable<String>
+  private class CompleteCallable
+    implements Callable<String>
   {
     public String call()
-    throws Exception
+      throws Exception
     {
       return md5;
     }
   }
 
-  private class UploadCallable implements Callable<Void>
+  private class UploadCallable
+    implements Callable<Void>
   {
     private int partNumber;
     private long partSize;
     private Callable<InputStream> streamCallable;
     private OverallProgressListener progressListener;
 
-    public UploadCallable(int partNumber,
-                          long partSize,
-                          Callable<InputStream> streamCallable,
-                          OverallProgressListener progressListener)
+    public UploadCallable(
+      int partNumber, long partSize, Callable<InputStream> streamCallable,
+      OverallProgressListener progressListener)
     {
       this.partNumber = partNumber;
       this.partSize = partSize;
@@ -141,33 +139,33 @@ class GCSUpload implements Upload
     }
 
     public Void call()
-    throws Exception
+      throws Exception
     {
-      try (HashingInputStream stream = new HashingInputStream(streamCallable.call()))
+      try(HashingInputStream stream = new HashingInputStream(streamCallable.call()))
       {
         return upload(stream);
       }
     }
 
     private Void upload(HashingInputStream stream)
-    throws IOException, BadHashException
+      throws IOException, BadHashException
     {
       InputStreamContent mediaContent = new InputStreamContent("application/octet-stream", stream);
 
       // Not strictly necessary, but allows optimization in the cloud.
       mediaContent.setLength(this.partSize);
 
-      StorageObject objectMetadata =
-        new StorageObject().setName(key).setMetadata(ImmutableMap.copyOf(meta));
+      StorageObject objectMetadata = new StorageObject().setName(key)
+        .setMetadata(ImmutableMap.copyOf(meta));
 
-      Storage.Objects.Insert insertObject =
-        client.objects().insert(bucketName, objectMetadata, mediaContent);
+      Storage.Objects.Insert insertObject = client.objects()
+        .insert(bucketName, objectMetadata, mediaContent);
 
       insertObject.setPredefinedAcl(options.getCannedAcl());
       insertObject.getMediaHttpUploader().setDisableGZipContent(true);
       //              .setDisableGZipContent(true).setDirectUploadEnabled(true);
 
-      if (progressListener != null)
+      if(progressListener != null)
       {
         PartProgressEvent ppe = new PartProgressEvent(Integer.toString(partNumber));
         MediaHttpUploaderProgressListener gcspl = new GCSProgressListener(progressListener, ppe);
@@ -180,7 +178,7 @@ class GCSUpload implements Upload
       // MD5 on-the-fly, we can only do the check at the client-side.
       String serverMD5 = res.getMd5Hash();
       String clientMD5 = new String(Base64.encodeBase64(stream.getDigest()));
-      if (serverMD5.equals(clientMD5))
+      if(serverMD5.equals(clientMD5))
       {
         md5 = serverMD5;
         return null;

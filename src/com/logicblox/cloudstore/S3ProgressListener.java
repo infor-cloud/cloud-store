@@ -16,7 +16,8 @@
 
 package com.logicblox.cloudstore;
 
-class S3ProgressListener implements com.amazonaws.event.ProgressListener
+class S3ProgressListener
+  implements com.amazonaws.event.ProgressListener
 {
   final private OverallProgressListener opl;
   final private PartProgressEvent ppe;

@@ -25,7 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-public class S3ListPendingUploadsCommand extends Command
+public class S3ListPendingUploadsCommand
+  extends Command
 {
   private PendingUploadsOptions _options;
 
@@ -37,8 +38,8 @@ public class S3ListPendingUploadsCommand extends Command
 
   public ListenableFuture<List<Upload>> run()
   {
-    ListenableFuture<List<Upload>> future =
-      executeWithRetry(_client.getInternalExecutor(), new Callable<ListenableFuture<List<Upload>>>()
+    ListenableFuture<List<Upload>> future = executeWithRetry(_client.getInternalExecutor(),
+      new Callable<ListenableFuture<List<Upload>>>()
       {
         public ListenableFuture<List<Upload>> call()
         {
@@ -61,16 +62,16 @@ public class S3ListPendingUploadsCommand extends Command
     {
       public List<Upload> call()
       {
-        ListMultipartUploadsRequest listMultipartUploadsRequest =
-          new ListMultipartUploadsRequest(_options.getBucketName());
+        ListMultipartUploadsRequest listMultipartUploadsRequest = new ListMultipartUploadsRequest(
+          _options.getBucketName());
 
         listMultipartUploadsRequest.setPrefix(_options.getObjectKey());
 
-        MultipartUploadListing multipartUploadListing =
-          getS3Client().listMultipartUploads(listMultipartUploadsRequest);
+        MultipartUploadListing multipartUploadListing = getS3Client().listMultipartUploads(
+          listMultipartUploadsRequest);
         List<Upload> uploadsList = new ArrayList<Upload>();
 
-        while (multipartUploadListing.isTruncated())
+        while(multipartUploadListing.isTruncated())
         {
           appendMultipartUploadList(uploadsList, multipartUploadListing.getMultipartUploads(),
             _options.getBucketName());
@@ -85,11 +86,10 @@ public class S3ListPendingUploadsCommand extends Command
     });
   }
 
-  private List<Upload> appendMultipartUploadList(List<Upload> mailList,
-                                                 List<MultipartUpload> appendList,
-                                                 String bucket)
+  private List<Upload> appendMultipartUploadList(
+    List<Upload> mailList, List<MultipartUpload> appendList, String bucket)
   {
-    for (MultipartUpload u : appendList)
+    for(MultipartUpload u : appendList)
       mailList.add(S3MultipartUploadToUpload(u, bucket));
 
     return mailList;

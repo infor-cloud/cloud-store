@@ -87,9 +87,9 @@ public class StoreFile
   }
 
   public void setVersionId(String versionId)
-  throws IllegalArgumentException
+    throws IllegalArgumentException
   {
-    if (versionId == null)
+    if(versionId == null)
     {
       throw new IllegalArgumentException("Error : Version Id should not be set to Null");
     }
@@ -102,9 +102,9 @@ public class StoreFile
   }
 
   public void setSize(Long size)
-  throws IllegalArgumentException
+    throws IllegalArgumentException
   {
-    if (size == null)
+    if(size == null)
     {
       throw new IllegalArgumentException("Error : size should not be set to Null");
     }
@@ -118,9 +118,9 @@ public class StoreFile
   }
 
   public void setTimestamp(Date timestamp)
-  throws IllegalArgumentException
+    throws IllegalArgumentException
   {
-    if (timestamp == null)
+    if(timestamp == null)
     {
       throw new IllegalArgumentException("Error : timestamp should not be set to Null");
     }

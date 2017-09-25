@@ -64,7 +64,7 @@ public class UploadDownloadTests
 
   @BeforeClass
   public static void setUp()
-  throws Throwable
+    throws Throwable
   {
     TestUtils.setUp();
     _testBucket = TestUtils.getTestBucket();
@@ -74,7 +74,7 @@ public class UploadDownloadTests
 
   @AfterClass
   public static void tearDown()
-  throws Throwable
+    throws Throwable
   {
     TestUtils.tearDown();
     _testBucket = null;
@@ -84,7 +84,7 @@ public class UploadDownloadTests
 
   @Test
   public void testUploadDryRun()
-  throws Throwable
+    throws Throwable
   {
     // create a file
     String rootPrefix = TestUtils.addPrefix("upload-dryrun");
@@ -108,14 +108,14 @@ public class UploadDownloadTests
 
   @Test
   public void testUploadDirectoryDryRun()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload tests intermittently fail when using minio.  trying to minimize
     // false failure reports by repeating and only failing the test if it consistently reports an
     // error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
@@ -140,10 +140,10 @@ public class UploadDownloadTests
         Assert.assertEquals(originalCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -154,7 +154,7 @@ public class UploadDownloadTests
 
   @Test
   public void testDownloadDryRun()
-  throws Throwable
+    throws Throwable
   {
     // create a small file and upload it
     String rootPrefix = TestUtils.addPrefix("download-dryrun");
@@ -186,7 +186,7 @@ public class UploadDownloadTests
 
   @Test
   public void testDownloadDirectoryDryRun()
-  throws Throwable
+    throws Throwable
   {
     // create simple directory structure and upload
     String rootPrefix = TestUtils.addPrefix("download-dir-dryrun");
@@ -220,7 +220,7 @@ public class UploadDownloadTests
 
   @Test
   public void testExists()
-  throws Throwable
+    throws Throwable
   {
     // NOTE - Not testing object keys that look like folders (i.e.
     // s3://my-bucket/a/b/).  minio reports a bad request with these
@@ -251,7 +251,7 @@ public class UploadDownloadTests
 
   @Test
   public void testSimpleUploadDownload()
-  throws Throwable
+    throws Throwable
   {
     String rootPrefix = TestUtils.addPrefix("simple-upload/a/b/");
     List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
@@ -288,7 +288,7 @@ public class UploadDownloadTests
 
   @Test
   public void testFailedUploadRetry()
-  throws Throwable
+    throws Throwable
   {
     // NOTE:  This test will log an exception stack trace that can be ignored
     try
@@ -322,7 +322,7 @@ public class UploadDownloadTests
         _client.upload(upOpts).get();
         Assert.fail("expected exception");
       }
-      catch (ExecutionException ex)
+      catch(ExecutionException ex)
       {
         Assert.assertTrue(TestUtils.findCause(ex, AbortInjection.class));
         // expected
@@ -350,7 +350,7 @@ public class UploadDownloadTests
 
   @Test
   public void testSuccessfulUploadRetry()
-  throws Throwable
+    throws Throwable
   {
     try
     {
@@ -413,7 +413,7 @@ public class UploadDownloadTests
 
   @Test
   public void testUploadAttributes()
-  throws Throwable
+    throws Throwable
   {
     // create a small file and upload it
     long fileSize = 100;
@@ -436,9 +436,9 @@ public class UploadDownloadTests
     // FIXME - this info is not being populated right now
 
     List<StoreFile> objs = TestUtils.listTestBucketObjects();
-    for (StoreFile o : objs)
+    for(StoreFile o : objs)
     {
-      if (o.getKey().equals(TestUtils.addPrefix(toUpload.getName())))
+      if(o.getKey().equals(TestUtils.addPrefix(toUpload.getName())))
       {
         Assert.assertNull(o.getLocalFile());
         //        Assert.asserTrue(o.getETag() != "");
@@ -462,7 +462,7 @@ public class UploadDownloadTests
 
   @Test
   public void testDownloadAttributes()
-  throws Throwable
+    throws Throwable
   {
     // create a small file and upload it
     long fileSize = 100;
@@ -490,7 +490,7 @@ public class UploadDownloadTests
 
   @Test
   public void testEmptyFile()
-  throws Throwable
+    throws Throwable
   {
     List<StoreFile> objs = TestUtils.listTestBucketObjects();
     int originalCount = objs.size();
@@ -519,7 +519,7 @@ public class UploadDownloadTests
 
   @Test
   public void testEmptyEncryptedFile()
-  throws Throwable
+    throws Throwable
   {
     // generate a new public/private key pair
     String keyName = "cloud-store-ut";
@@ -556,7 +556,7 @@ public class UploadDownloadTests
 
   @Test
   public void testDownloadMissingFile()
-  throws Throwable
+    throws Throwable
   {
     // upload a file
     File toUpload = TestUtils.createTextFile(100);
@@ -574,7 +574,7 @@ public class UploadDownloadTests
       TestUtils.downloadFile(src, dlTemp);
       msg = "expected exception";
     }
-    catch (Exception ex)
+    catch(Exception ex)
     {
       // expected
       checkUsageException(ex, "Object not found");
@@ -589,7 +589,7 @@ public class UploadDownloadTests
       TestUtils.downloadFile(src, dlTemp);
       msg = "expected exception";
     }
-    catch (Exception ex)
+    catch(Exception ex)
     {
       // expected
       checkUsageException(ex, "Object not found");
@@ -600,7 +600,7 @@ public class UploadDownloadTests
 
   @Test
   public void testDownloadNoOverwriteFile()
-  throws Throwable
+    throws Throwable
   {
     List<StoreFile> objs = TestUtils.listTestBucketObjects();
     int originalCount = objs.size();
@@ -626,7 +626,7 @@ public class UploadDownloadTests
       f = TestUtils.downloadFile(dest, dlTemp, false);
       Assert.fail("Expected download exception");
     }
-    catch (Exception ex)
+    catch(Exception ex)
     {
       // expected
       checkUsageException(ex, null);
@@ -640,14 +640,14 @@ public class UploadDownloadTests
 
   @Test
   public void testDirectoryOverwrite()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload tests intermittently fail when using minio.  trying to minimize
     // false failure reports by repeating and only failing the test if it consistently reports an
     // error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
@@ -662,8 +662,8 @@ public class UploadDownloadTests
 
         // should fail if source doesn't exist
         File dlDir = TestUtils.createTmpDir(true);
-        String badPrefix =
-          TestUtils.addPrefix("dir-overwrite-bad" + System.currentTimeMillis() + "/");
+        String badPrefix = TestUtils.addPrefix(
+          "dir-overwrite-bad" + System.currentTimeMillis() + "/");
         URI src = TestUtils.getUri(_testBucket, top, badPrefix);
         String msg = null;
         try
@@ -671,7 +671,7 @@ public class UploadDownloadTests
           TestUtils.downloadDir(src, dlDir, false);
           msg = "expected exception (no object found)";
         }
-        catch (Exception ex)
+        catch(Exception ex)
         {
           // expected
           checkUsageException(ex, "No objects found");
@@ -686,7 +686,7 @@ public class UploadDownloadTests
           TestUtils.downloadDir(src, existingFile, true, false);
           msg = "expected exception (can't overwrite file)";
         }
-        catch (Exception ex)
+        catch(Exception ex)
         {
           // expected
           checkUsageException(ex, "must be a directory");
@@ -708,7 +708,7 @@ public class UploadDownloadTests
           TestUtils.downloadDir(src, destDir, true, false);
           msg = "expected exception (can't overwrite file)";
         }
-        catch (Exception ex)
+        catch(Exception ex)
         {
           // expected
           checkUsageException(ex, "already exists");
@@ -729,10 +729,10 @@ public class UploadDownloadTests
 
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -743,14 +743,14 @@ public class UploadDownloadTests
 
   @Test
   public void testDirectoryUploadDownload()
-  throws Throwable
+    throws Throwable
   {
     // directory copy/upload tests intermittently fail when using minio.  trying to minimize
     // false failure reports by repeating and only failing the test if it consistently reports an
     // error.
     int retryCount = TestUtils.RETRY_COUNT;
     int count = 0;
-    while (count < retryCount)
+    while(count < retryCount)
     {
       try
       {
@@ -813,10 +813,10 @@ public class UploadDownloadTests
         Assert.assertTrue(TestUtils.compareFiles(e, new File(dlsub2, e.getName())));
         return;
       }
-      catch (Throwable t)
+      catch(Throwable t)
       {
         ++count;
-        if (count >= retryCount)
+        if(count >= retryCount)
         {
           throw t;
         }
@@ -827,7 +827,7 @@ public class UploadDownloadTests
 
   @Test
   public void testMultipartUploadDownload()
-  throws Throwable
+    throws Throwable
   {
     List<StoreFile> objs = TestUtils.listTestBucketObjects();
     int originalCount = objs.size();
@@ -882,7 +882,7 @@ public class UploadDownloadTests
 
   @Test
   public void testSmallMultipartUploadDownload()
-  throws Throwable
+    throws Throwable
   {
     // files smaller than the minimum chunk size can still be uploaded using
     // multi-part protocol.  should just use a single part.
@@ -940,7 +940,7 @@ public class UploadDownloadTests
 
   @Test
   public void testEncryptedUploadDownload()
-  throws Throwable
+    throws Throwable
   {
     // generate a new public/private key pair
     String keyName = "cloud-store-ut";
@@ -966,7 +966,7 @@ public class UploadDownloadTests
       TestUtils.uploadEncryptedFile(toUpload, dest, keyName);
       Assert.fail("Expected upload error (key not found)");
     }
-    catch (Exception ex)
+    catch(Exception ex)
     {
       // expected
       checkUsageException(ex, null);
@@ -998,7 +998,7 @@ public class UploadDownloadTests
       f = TestUtils.downloadFile(dest, dlTemp);
       Assert.fail("Expected download error (key not found)");
     }
-    catch (ExecutionException ex)
+    catch(ExecutionException ex)
     {
       // expected
     }
@@ -1019,7 +1019,7 @@ public class UploadDownloadTests
       TestUtils.uploadEncryptedFile(toUpload, dest, keyName);
       Assert.fail("Expected upload error (key not found)");
     }
-    catch (Exception ex)
+    catch(Exception ex)
     {
       // expected
       checkUsageException(ex, null);
@@ -1057,27 +1057,27 @@ public class UploadDownloadTests
 
 
   private void checkUsageException(Exception ex, String expectedMsg)
-  throws Exception
+    throws Exception
   {
     UsageException uex = null;
-    if (ex instanceof UsageException)
+    if(ex instanceof UsageException)
     {
       uex = (UsageException) ex;
     }
     else
     {
-      if ((null != ex.getCause()) && (ex.getCause() instanceof UsageException))
+      if((null != ex.getCause()) && (ex.getCause() instanceof UsageException))
       {
         uex = (UsageException) ex.getCause();
       }
     }
 
-    if (null == uex)
+    if(null == uex)
     {
       throw ex;
     }
 
-    if (null != expectedMsg)
+    if(null != expectedMsg)
     {
       Assert.assertTrue(uex.getMessage().contains(expectedMsg));
     }

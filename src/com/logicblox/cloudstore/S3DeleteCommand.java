@@ -24,7 +24,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import java.util.concurrent.Callable;
 
 
-public class S3DeleteCommand extends Command
+public class S3DeleteCommand
+  extends Command
 {
   private DeleteOptions _options;
 
@@ -49,15 +50,15 @@ public class S3DeleteCommand extends Command
 
     ListenableFuture<Metadata> existsFuture = _client.exists(opts);
 
-    ListenableFuture<StoreFile> result =
-      Futures.transform(existsFuture, new AsyncFunction<Metadata, StoreFile>()
+    ListenableFuture<StoreFile> result = Futures.transform(existsFuture,
+      new AsyncFunction<Metadata, StoreFile>()
       {
         public ListenableFuture<StoreFile> apply(Metadata mdata)
-        throws UsageException
+          throws UsageException
         {
-          if (null == mdata)
+          if(null == mdata)
           {
-            if (forceDelete)
+            if(forceDelete)
             {
               return Futures.immediateFuture(new StoreFile());
             }
@@ -79,8 +80,8 @@ public class S3DeleteCommand extends Command
     final String bucket = _options.getBucketName();
     final String key = _options.getObjectKey();
 
-    ListenableFuture<StoreFile> deleteFuture =
-      executeWithRetry(_client.getInternalExecutor(), new Callable<ListenableFuture<StoreFile>>()
+    ListenableFuture<StoreFile> deleteFuture = executeWithRetry(_client.getInternalExecutor(),
+      new Callable<ListenableFuture<StoreFile>>()
       {
         public ListenableFuture<StoreFile> call()
         {
@@ -99,7 +100,7 @@ public class S3DeleteCommand extends Command
   private ListenableFuture<StoreFile> runActual()
   {
     final String srcUri = getUri(_options.getBucketName(), _options.getObjectKey());
-    if (_options.isDryRun())
+    if(_options.isDryRun())
     {
       System.out.println("<DRYRUN> deleting '" + srcUri + "'");
       return Futures.immediateFuture(null);

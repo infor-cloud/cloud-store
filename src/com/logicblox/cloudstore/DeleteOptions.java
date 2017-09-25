@@ -17,7 +17,8 @@
 package com.logicblox.cloudstore;
 
 
-public class DeleteOptions extends CommandOptions
+public class DeleteOptions
+  extends CommandOptions
 {
   private String _bucket;
   private String _objectKey;
@@ -30,13 +31,9 @@ public class DeleteOptions extends CommandOptions
   private static AbortCounters _abortCounters = new AbortCounters();
 
 
-  DeleteOptions(CloudStoreClient cloudStoreClient,
-                String bucket,
-                String objectKey,
-                boolean recursive,
-                boolean dryRun,
-                boolean forceDelete,
-                boolean ignoreAbortInjection)
+  DeleteOptions(
+    CloudStoreClient cloudStoreClient, String bucket, String objectKey, boolean recursive,
+    boolean dryRun, boolean forceDelete, boolean ignoreAbortInjection)
   {
     super(cloudStoreClient);
     _bucket = bucket;
@@ -50,7 +47,7 @@ public class DeleteOptions extends CommandOptions
   // for testing injection of aborts during a copy
   void injectAbort(String id)
   {
-    if (!_ignoreAbortInjection && (_abortCounters.decrementInjectionCounter(id) > 0))
+    if(!_ignoreAbortInjection && (_abortCounters.decrementInjectionCounter(id) > 0))
     {
       throw new AbortInjection("forcing delete abort");
     }

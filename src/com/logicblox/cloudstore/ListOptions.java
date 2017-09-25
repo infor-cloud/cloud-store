@@ -18,7 +18,8 @@ package com.logicblox.cloudstore;
 
 import java.util.Optional;
 
-public class ListOptions extends CommandOptions
+public class ListOptions
+  extends CommandOptions
 {
   private String bucket;
   private String objectKey;
@@ -26,11 +27,9 @@ public class ListOptions extends CommandOptions
   private boolean includeVersions;
   private boolean excludeDirs;
 
-  ListOptions(CloudStoreClient cloudStoreClient,
-              String bucket,
-              String objectKey,
-              boolean recursive,
-              boolean includeVersions, boolean excludeDirs)
+  ListOptions(
+    CloudStoreClient cloudStoreClient, String bucket, String objectKey, boolean recursive,
+    boolean includeVersions, boolean excludeDirs)
   {
     super(cloudStoreClient);
     this.bucket = bucket;

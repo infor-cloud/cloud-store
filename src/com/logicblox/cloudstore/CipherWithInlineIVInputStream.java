@@ -26,7 +26,8 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
 
-class CipherWithInlineIVInputStream extends FilterInputStream
+class CipherWithInlineIVInputStream
+  extends FilterInputStream
 {
   private int opmode;
   private int ivBytesWritten = 0;
@@ -34,7 +35,7 @@ class CipherWithInlineIVInputStream extends FilterInputStream
   private byte[] iv;
 
   public CipherWithInlineIVInputStream(InputStream in, Cipher cipher, int opmode, Key key)
-  throws IOException, InvalidKeyException, InvalidAlgorithmParameterException
+    throws IOException, InvalidKeyException, InvalidAlgorithmParameterException
   {
     super(in);
 
@@ -42,16 +43,16 @@ class CipherWithInlineIVInputStream extends FilterInputStream
 
     this.opmode = opmode;
 
-    switch (this.opmode)
+    switch(this.opmode)
     {
       case Cipher.DECRYPT_MODE:
         iv = new byte[ivLen];
         int offset = 0;
         // !!! Should this be in a background thread?
-        while (offset < ivLen)
+        while(offset < ivLen)
         {
           int result = in.read(iv, offset, ivLen - offset);
-          if (result == -1)
+          if(result == -1)
           {
             // !!! What should we really do here?
             throw new RuntimeException();
@@ -74,9 +75,9 @@ class CipherWithInlineIVInputStream extends FilterInputStream
 
   @Override
   public int available()
-  throws IOException
+    throws IOException
   {
-    if (this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen)
+    if(this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen)
     {
       return ivLen - ivBytesWritten;
     }
@@ -85,9 +86,9 @@ class CipherWithInlineIVInputStream extends FilterInputStream
 
   @Override
   public int read()
-  throws IOException
+    throws IOException
   {
-    if (this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen)
+    if(this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen)
     {
       ivBytesWritten++;
       return (int) iv[ivBytesWritten - 1] & 0xFF;
@@ -97,9 +98,9 @@ class CipherWithInlineIVInputStream extends FilterInputStream
 
   @Override
   public int read(byte[] b)
-  throws IOException
+    throws IOException
   {
-    if (this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen)
+    if(this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen)
     {
       int readCount = Math.min(b.length, ivLen - ivBytesWritten);
       System.arraycopy(iv, ivBytesWritten, b, 0, readCount);
@@ -111,9 +112,9 @@ class CipherWithInlineIVInputStream extends FilterInputStream
 
   @Override
   public int read(byte[] b, int off, int len)
-  throws IOException
+    throws IOException
   {
-    if (this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen)
+    if(this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen)
     {
       int readCount = Math.min(len, ivLen - ivBytesWritten);
       System.arraycopy(iv, ivBytesWritten, b, off, readCount);
@@ -125,9 +126,9 @@ class CipherWithInlineIVInputStream extends FilterInputStream
 
   @Override
   public long skip(long n)
-  throws IOException
+    throws IOException
   {
-    if (this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen)
+    if(this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen)
     {
       long skipped = Math.min(ivLen - ivBytesWritten, n);
       ivBytesWritten += skipped;

@@ -22,7 +22,8 @@ import com.amazonaws.AmazonServiceException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-public abstract class ExpBackoffRetryPolicy implements ThrowableRetryPolicy
+public abstract class ExpBackoffRetryPolicy
+  implements ThrowableRetryPolicy
 {
   private final long _initialDelay;
   private final long _maxDelay;
@@ -43,12 +44,12 @@ public abstract class ExpBackoffRetryPolicy implements ThrowableRetryPolicy
   {
     long delay = 0;
 
-    if (thrown != null)
+    if(thrown != null)
     {
-      if (thrown instanceof AmazonServiceException)
+      if(thrown instanceof AmazonServiceException)
       {
         AmazonServiceException exc = (AmazonServiceException) thrown;
-        if (exc.getErrorType() == AmazonServiceException.ErrorType.Service &&
+        if(exc.getErrorType() == AmazonServiceException.ErrorType.Service &&
           exc.getErrorCode().equals("SlowDown"))
         {
           long sdInitialDelay = TimeUnit.SECONDS.toMillis(10);
@@ -60,7 +61,7 @@ public abstract class ExpBackoffRetryPolicy implements ThrowableRetryPolicy
       }
     }
 
-    if (retryCount > 0)
+    if(retryCount > 0)
     {
       delay = expBackoff(_initialDelay, _maxDelay, retryCount);
     }

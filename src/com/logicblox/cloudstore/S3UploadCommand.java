@@ -45,7 +45,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-public class S3UploadCommand extends Command
+public class S3UploadCommand
+  extends Command
 {
   private String encKeyName;
   private String encryptedSymmetricKeyString;
@@ -56,7 +57,7 @@ public class S3UploadCommand extends Command
 
 
   public S3UploadCommand(UploadOptions options)
-  throws IOException
+    throws IOException
   {
     super(options);
     _options = options;
@@ -66,48 +67,48 @@ public class S3UploadCommand extends Command
     setFileLength(this.file.length());
     this.encKeyName = _options.getEncKey().orElse(null);
 
-    if (this.encKeyName != null)
+    if(this.encKeyName != null)
     {
       byte[] encKeyBytes = new byte[32];
       new SecureRandom().nextBytes(encKeyBytes);
       this.encKey = new SecretKeySpec(encKeyBytes, "AES");
       try
       {
-        if (_client.getKeyProvider() == null)
+        if(_client.getKeyProvider() == null)
         {
           throw new UsageException("No encryption key provider is specified");
         }
         Key pubKey = _client.getKeyProvider().getPublicKey(this.encKeyName);
 
-        this.pubKeyHash =
-          DatatypeConverter.printBase64Binary(DigestUtils.sha256(pubKey.getEncoded()));
+        this.pubKeyHash = DatatypeConverter.printBase64Binary(
+          DigestUtils.sha256(pubKey.getEncoded()));
 
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.ENCRYPT_MODE, pubKey);
-        this.encryptedSymmetricKeyString =
-          DatatypeConverter.printBase64Binary(cipher.doFinal(encKeyBytes));
+        this.encryptedSymmetricKeyString = DatatypeConverter.printBase64Binary(
+          cipher.doFinal(encKeyBytes));
       }
-      catch (NoSuchKeyException e)
+      catch(NoSuchKeyException e)
       {
         throw new UsageException("Missing encryption key: " + this.encKeyName);
       }
-      catch (NoSuchAlgorithmException e)
+      catch(NoSuchAlgorithmException e)
       {
         throw new RuntimeException(e);
       }
-      catch (NoSuchPaddingException e)
+      catch(NoSuchPaddingException e)
       {
         throw new RuntimeException(e);
       }
-      catch (InvalidKeyException e)
+      catch(InvalidKeyException e)
       {
         throw new RuntimeException(e);
       }
-      catch (IllegalBlockSizeException e)
+      catch(IllegalBlockSizeException e)
       {
         throw new RuntimeException(e);
       }
-      catch (BadPaddingException e)
+      catch(BadPaddingException e)
       {
         throw new RuntimeException(e);
       }
@@ -120,14 +121,14 @@ public class S3UploadCommand extends Command
    * Run ties Step 1, Step 2, and Step 3 together. The return result is the ETag of the upload.
    */
   public ListenableFuture<StoreFile> run()
-  throws FileNotFoundException
+    throws FileNotFoundException
   {
-    if (!file.exists())
+    if(!file.exists())
     {
       throw new FileNotFoundException(file.getPath());
     }
 
-    if (_options.isDryRun())
+    if(_options.isDryRun())
     {
       System.out.println("<DRYRUN> uploading '" + this.file.getAbsolutePath() + "' to '" +
         getUri(_options.getBucketName(), _options.getObjectKey()) + "'");
@@ -163,8 +164,8 @@ public class S3UploadCommand extends Command
       public ListenableFuture<StoreFile> create(final Throwable t)
       {
         ListenableFuture<Void> aborted = Futures.transform(started, abortAsyncFunction());
-        ListenableFuture<StoreFile> res0 =
-          Futures.transform(aborted, new AsyncFunction<Void, StoreFile>()
+        ListenableFuture<StoreFile> res0 = Futures.transform(aborted,
+          new AsyncFunction<Void, StoreFile>()
           {
             public ListenableFuture<StoreFile> apply(Void v)
             {
@@ -202,7 +203,7 @@ public class S3UploadCommand extends Command
 
     Map<String, String> meta = new HashMap<String, String>();
     meta.put("s3tool-version", String.valueOf(Version.CURRENT));
-    if (this.encKeyName != null)
+    if(this.encKeyName != null)
     {
       meta.put("s3tool-key-name", encKeyName);
       meta.put("s3tool-symmetric-key", encryptedSymmetricKeyString);
@@ -231,7 +232,7 @@ public class S3UploadCommand extends Command
   private ListenableFuture<Upload> startParts(final Upload upload)
   {
     OverallProgressListener opl = null;
-    if (progressListenerFactory != null)
+    if(progressListenerFactory != null)
     {
       opl = progressListenerFactory.create(
         new ProgressOptionsBuilder().setObjectUri(getUri(upload.getBucket(), upload.getKey()))
@@ -241,8 +242,8 @@ public class S3UploadCommand extends Command
     }
 
     List<ListenableFuture<Void>> parts = new ArrayList<ListenableFuture<Void>>();
-    for (long position = 0; position < fileLength || (position == 0 && fileLength == 0);
-         position += chunkSize)
+    for(long position = 0; position < fileLength || (position == 0 && fileLength == 0);
+        position += chunkSize)
     {
       parts.add(startPartUploadThread(upload, position, opl));
     }
@@ -252,15 +253,14 @@ public class S3UploadCommand extends Command
     return Futures.transform(Futures.allAsList(parts), Functions.constant(upload));
   }
 
-  private ListenableFuture<Void> startPartUploadThread(final Upload upload,
-                                                       final long position,
-                                                       final OverallProgressListener opl)
+  private ListenableFuture<Void> startPartUploadThread(
+    final Upload upload, final long position, final OverallProgressListener opl)
   {
-    ListenableFuture<ListenableFuture<Void>> result =
-      _client.getInternalExecutor().submit(new Callable<ListenableFuture<Void>>()
+    ListenableFuture<ListenableFuture<Void>> result = _client.getInternalExecutor()
+      .submit(new Callable<ListenableFuture<Void>>()
       {
         public ListenableFuture<Void> call()
-        throws Exception
+          throws Exception
         {
           return S3UploadCommand.this.startPartUpload(upload, position, opl);
         }
@@ -272,16 +272,15 @@ public class S3UploadCommand extends Command
   /**
    * Execute startPartUpload with retry
    */
-  private ListenableFuture<Void> startPartUpload(final Upload upload,
-                                                 final long position,
-                                                 final OverallProgressListener opl)
+  private ListenableFuture<Void> startPartUpload(
+    final Upload upload, final long position, final OverallProgressListener opl)
   {
     final int partNumber = (int) (position / chunkSize);
 
     return executeWithRetry(_client.getInternalExecutor(), new Callable<ListenableFuture<Void>>()
     {
       public ListenableFuture<Void> call()
-      throws Exception
+        throws Exception
       {
         return startPartUploadActual(upload, position, opl);
       }
@@ -293,16 +292,15 @@ public class S3UploadCommand extends Command
     });
   }
 
-  private ListenableFuture<Void> startPartUploadActual(final Upload upload,
-                                                       final long position,
-                                                       final OverallProgressListener opl)
-  throws Exception
+  private ListenableFuture<Void> startPartUploadActual(
+    final Upload upload, final long position, final OverallProgressListener opl)
+    throws Exception
   {
     final int partNumber = (int) (position / chunkSize);
     final Cipher cipher;
 
     long partSize;
-    if (encKeyName != null)
+    if(encKeyName != null)
     {
       cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 
@@ -319,18 +317,18 @@ public class S3UploadCommand extends Command
     Callable<InputStream> inputStreamCallable = new Callable<InputStream>()
     {
       public InputStream call()
-      throws Exception
+        throws Exception
       {
         FileInputStream fs = new FileInputStream(file);
         long skipped = fs.skip(position);
-        while (skipped < position)
+        while(skipped < position)
         {
           skipped += fs.skip(position - skipped);
         }
 
         BufferedInputStream bs = new BufferedInputStream(fs);
         InputStream in;
-        if (cipher != null)
+        if(cipher != null)
         {
           in = new CipherWithInlineIVInputStream(bs, cipher, Cipher.ENCRYPT_MODE, encKey);
         }

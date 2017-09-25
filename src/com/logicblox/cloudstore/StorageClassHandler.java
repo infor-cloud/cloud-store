@@ -16,7 +16,19 @@
 
 package com.logicblox.cloudstore;
 
-interface StorageClassHandler
+/**
+ * StorageClassHandler provides an abstract interface over storage class
+ * functionality that may or may not be supported by a particular service.
+ *
+ * @see CloudStoreClient#getStorageClassHandler()
+ */
+public interface StorageClassHandler
 {
+  /**
+   * Return true if the specified storage class name is supported by
+   * a cloud store service.
+   *
+   * @param storageClass Name of a storage class to be checked for validity
+   */
   boolean isStorageClassValid(String storageClass);
 }

@@ -17,16 +17,19 @@
 package com.logicblox.cloudstore;
 
 
-// Used to inject aborts for testing purposes
-public class AbortInjection
+/**
+ * Internal exception class used by test framework to detect when
+ * aborts are injected into command execution.
+ */
+class AbortInjection
   extends RuntimeException
 {
-  public AbortInjection(String msg)
+  AbortInjection(String msg)
   {
     super(msg);
   }
 
-  public AbortInjection(String msg, Throwable cause)
+  AbortInjection(String msg, Throwable cause)
   {
     super(msg, cause);
   }

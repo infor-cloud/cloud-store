@@ -24,12 +24,18 @@ import java.util.Optional;
  * sourceObjectKey}, under {@code sourceBucketName} bucket, is copied to {@code
  * destinationObjectKey}, under {@code destinationBucketName}.
  * <p>
- * If {@code cannedAcl} is specified then it's applied to the destination object.
+ * If {@code cannedAcl} is specified then it is applied to the destination object.
  * <p>
- * If progress listener factory has been set, then progress notifications will be recorded.
+ * If a progress listener factory has been set, then progress notifications will be recorded.
  * <p>
  * {@code CopyOptions} objects are meant to be built by {@code CopyOptionsBuilder}. This class
- * provides only public getter methods.
+ * provides only public accessor methods.
+ * <p>
+ * @see CopyOptionsBuilder
+ * @see CloudStoreClient#getOptionsBuilderFactory()
+ * @see CloudStoreClient#copy()
+ * @see CloudStoreClient#copyToDir()
+ * @see OptionsBuilderFactory#newCopyOptionsBuilder()
  */
 public class CopyOptions
   extends CommandOptions
@@ -84,51 +90,90 @@ public class CopyOptions
     return _abortCounters;
   }
 
+  /**
+   * Return the bucket name containing the file to be copied.
+   */
   public String getSourceBucketName()
   {
     return sourceBucketName;
   }
 
+  /**
+   * Return the key of the file to be copied.
+   */
   public String getSourceObjectKey()
   {
     return sourceObjectKey;
   }
 
+  /**
+   * Return the name of the bucket that will receive the copied file.
+   */
   public String getDestinationBucketName()
   {
     return destinationBucketName;
   }
 
+  /**
+   * Return the key of the new file to be created.
+   */
   public String getDestinationObjectKey()
   {
     return destinationObjectKey;
   }
 
+  /**
+   * Return the name of an access control list for the copied file.  If not specified, 
+   * the access control list for the original file will be used.
+   */
   public Optional<String> getCannedAcl()
   {
     return Optional.ofNullable(cannedAcl);
   }
 
+  /**
+   * Return the storage class for the copied file.  If not specified, the storage class
+   * of the original file is used.
+   */
   public Optional<String> getStorageClass()
   {
     return Optional.ofNullable(storageClass);
   }
 
+  /**
+   * Return the recursive property for the copy operation.  If not set, a single file
+   * whose key matches the specified key will be copied if the key does not look like
+   * a directory (ends with a '/').  If not sets and the key ends in a '/', then all
+   * "top-level" files matching the key will be copied.  If recursive is set and the
+   * key ends in '/', all "top-level" and all matching "sub-directory" files will be copied.
+   */
   public boolean isRecursive()
   {
     return recursive;
   }
 
+  /**
+   * Return the dry-run property for the copy operation.  If set to true, print operations 
+   * that would be executed, but do not perform them.
+   */
   public boolean isDryRun()
   {
     return dryRun;
   }
 
+  /**
+   * Return user metadata for the copied file.  If not specified, all user metadata
+   * is copied to the new file.
+   */
   public Optional<Map<String, String>> getUserMetadata()
   {
     return Optional.ofNullable(userMetadata);
   }
 
+  /**
+   * Return an optional {@link OverallprogressListenerFactory progress listener} used to
+   * report progress as files are copied.
+   */
   public Optional<OverallProgressListenerFactory> getOverallProgressListenerFactory()
   {
     return Optional.ofNullable(overallProgressListenerFactory);

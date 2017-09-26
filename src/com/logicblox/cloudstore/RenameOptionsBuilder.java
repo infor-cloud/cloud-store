@@ -17,10 +17,17 @@
 package com.logicblox.cloudstore;
 
 /**
- * {@code RenameOptionsBuilder} is a builder for {@code RenameOptions} objects.
+ * {@code RenameOptionsBuilder} is used to create and set properties {@code RenameOptions} objects
+ * used to control the behavior of the cloud-store rename command.
  * <p>
- * Setting {@code sourceBucketName}, {@code sourceObjectKey}, {@code destinationBucket} and {@code
- * destinationObjectKey} is mandatory. All the others are optional.
+ * Setting {@code sourceBucketName}, {@code sourceObjectKey}, {@code destinationBucket} and 
+ * {@code destinationObjectKey} is mandatory. All the others are optional.
+ * <p>
+ * @see RenameOptions
+ * @see CloudStoreClient#getOptionsBuilderFactory()
+ * @see CloudStoreClient#rename()
+ * @see CloudStoreClient#renameDirectory()
+ * @see OptionsBuilderFactory#newRenameOptionsBuilder()
  */
 public class RenameOptionsBuilder
   extends CommandOptionsBuilder
@@ -38,42 +45,68 @@ public class RenameOptionsBuilder
     _cloudStoreClient = client;
   }
 
+  /**
+   * Set the name of the bucket containing the file to be renamed.
+   */
   public RenameOptionsBuilder setSourceBucketName(String sourceBucketName)
   {
     _sourceBucketName = sourceBucketName;
     return this;
   }
 
+  /**
+   * Set the key of the file to be renamed.
+   */
   public RenameOptionsBuilder setSourceObjectKey(String sourceObjectKey)
   {
     _sourceObjectKey = sourceObjectKey;
     return this;
   }
 
+  /**
+   * Set the name fo the bucket that will receive the renamed file.
+   */
   public RenameOptionsBuilder setDestinationBucketName(String destinationBucket)
   {
     _destinationBucketName = destinationBucket;
     return this;
   }
 
+  /**
+   * Set the key of the new file to be created.
+   */
   public RenameOptionsBuilder setDestinationObjectKey(String destinationObjectKey)
   {
     _destinationObjectKey = destinationObjectKey;
     return this;
   }
 
+  /**
+   * Set the name of an access control list for the renamed file.  If not specified, 
+   * the access control list for the original file will be used.
+   */
   public RenameOptionsBuilder setCannedAcl(String cannedAcl)
   {
     _cannedAcl = cannedAcl;
     return this;
   }
 
+  /**
+   * Set the recursive property for the rename operation.  If not set, a single file
+   * whose key matches the specified key will be renamed if the key does not look like
+   * a directory (ends with a '/').  If not set and the key ends in a '/', then all
+   * "top-level" files matching the key will be renamed.  If recursive is set and the
+   * key ends in '/', all "top-level" and all matching "sub-directory" files will be renamed.
+   */
   public RenameOptionsBuilder setRecursive(boolean recursive)
   {
     _recursive = recursive;
     return this;
   }
 
+  /**
+   * If set to true, print operations that would be executed, but do not perform them.
+   */
   public RenameOptionsBuilder setDryRun(boolean dryRun)
   {
     _dryRun = dryRun;
@@ -112,6 +145,10 @@ public class RenameOptionsBuilder
     }
   }
 
+  /**
+   * Validate that all required parameters are set and if so return a new {@link RenameOptions}
+   * object.
+   */
   @Override
   public RenameOptions createOptions()
   {

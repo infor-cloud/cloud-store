@@ -18,6 +18,14 @@ package com.logicblox.cloudstore;
 
 import java.util.Optional;
 
+/**
+ * {@code ListOptions} contains all the details needed by the cloud-store list command.
+ * <p>
+ * @see ListOptionsBuilder
+ * @see CloudStoreClient#getOptionsBuilderFactory()
+ * @see CloudStoreClient#listObjects()
+ * @see OptionsBuilderFactory#newListOptionsBuilder()
+ */
 public class ListOptions
   extends CommandOptions
 {
@@ -39,26 +47,43 @@ public class ListOptions
     this.excludeDirs = excludeDirs;
   }
 
+  /**
+   * Return the name of the bucket containing files to list.
+   */
   public String getBucketName()
   {
     return bucket;
   }
 
+  /**
+   * Return the key of the file or file prefix to be matched to files to be listed.
+   */
   public Optional<String> getObjectKey()
   {
     return Optional.ofNullable(objectKey);
   }
 
+  /**
+   * Return the recursive option for the command.  If true, recursively list files
+   * from all subdirectories as well as top-level directories.
+   */
   public boolean isRecursive()
   {
     return recursive;
   }
 
+  /**
+   * If set to true, list all version information for files.
+   */
   public boolean versionsIncluded()
   {
     return includeVersions;
   }
 
+  /**
+   * If set to true, do not list any files that look like directories
+   * (end with '/').
+   */
   public boolean dirsExcluded()
   {
     return excludeDirs;

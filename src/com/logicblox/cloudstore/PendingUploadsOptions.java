@@ -20,14 +20,20 @@ import java.util.Date;
 import java.util.Optional;
 
 /**
- * {@code PendingUploadsOptions} contains all the options needed by the various pending upload
- * methods.
+ * {@code PendingUploadsOptions} contains all the options that control the behavior of
+ * the cloud-store list pending uploads and abort pending uploads commands.
  * <p>
  * Each pending upload method might use different options provided by this class. Which options are
  * used is documented in each method individually.
  * <p>
  * {@code PendingUploadsOptions} objects are meant to be built by {@code
- * PendingUploadsOptionsBuilder}. This class provides only public getter methods.
+ * PendingUploadsOptionsBuilder}. This class provides only public accessor methods.
+ * <p>
+ * @see PendingUploadingOptionsBuilder
+ * @see CloudStoreClient#getOptionsBuilderFactory()
+ * @see CloudStoreClient#listPendingUploads()
+ * @see CloudStoreClient#abortPendingUploads()
+ * @see OptionsBuilderFactory#newPendingUploadingOptionsBuilder()
  */
 public class PendingUploadsOptions
   extends CommandOptions
@@ -47,21 +53,33 @@ public class PendingUploadsOptions
     _date = date;
   }
 
+  /**
+   * Return the name of the bucket in which to check for pending uploads.
+   */
   public String getBucketName()
   {
     return _bucket;
   }
 
+  /**
+   * Return the key of the file to check for pending uploads.
+   */
   public String getObjectKey()
   {
     return _objectKey;
   }
 
+  /**
+   * Return the upload ID for an upload to be aborted.
+   */
   public Optional<String> getUploadId()
   {
     return Optional.ofNullable(_uploadId);
   }
 
+  /**
+   * Return the date of an upload to be aborted.
+   */
   public Optional<Date> getDate()
   {
     return Optional.ofNullable(_date);

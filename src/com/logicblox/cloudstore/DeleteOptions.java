@@ -17,6 +17,22 @@
 package com.logicblox.cloudstore;
 
 
+/**
+ * {@code DeleteOptions} contains all the details needed by the cloud-store delete
+ * command. The specified {@code objectKey}, under {@code bucketName} bucket, is deleted
+ * from the store.  If the key looks like a directory (ends in a '/'), all "top-level"
+ * files in the directory will be deleted.  If the {@code recursive} property is set to
+ * true, all matching sub-directory files will also be deleted.
+ * <p>
+ * {@code DeleteOptions} objects are meant to be built by {@code DeleteOptionsBuilder}. This class
+ * provides only public accessor methods.
+ * <p>
+ * @see DeleteOptionsBuilder
+ * @see CloudStoreClient#getOptionsBuilderFactory()
+ * @see CloudStoreClient#delete()
+ * @see CloudStoreClient#deleteDir()
+ * @see OptionsBuilderFactory#newDeleteOptionsBuilder()
+ */
 public class DeleteOptions
   extends CommandOptions
 {
@@ -58,26 +74,45 @@ public class DeleteOptions
     return _abortCounters;
   }
 
+  /**
+   * Return the name of the bucket containing the file to delete.
+   */
   public String getBucketName()
   {
     return _bucket;
   }
 
+  /**
+   * Return the key of the file to delete.
+   */
   public String getObjectKey()
   {
     return _objectKey;
   }
 
+  /**
+   * Return the recursive property of the command.  If true and if the object key
+   * looks like a directory name (ends in '/'), all files that recursively
+   * have the key as their prefix will be deleted.
+   */
   public boolean isRecursive()
   {
     return _recursive;
   }
 
+  /**
+   * If set to true, print operations that would be executed, but do not perform them.
+   */
   public boolean isDryRun()
   {
     return _dryRun;
   }
 
+  /**
+   * If forceDelete is set to true, then delete command will complete successfully
+   * even if the specified file does not exist.  Otherwise, the delete command
+   * will fail when trying to delete a file that does not exist.
+   */
   public boolean forceDelete()
   {
     return _forceDelete;

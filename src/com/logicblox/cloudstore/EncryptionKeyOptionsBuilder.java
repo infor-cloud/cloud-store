@@ -16,6 +16,20 @@
 
 package com.logicblox.cloudstore;
 
+/**
+ * {@code EncryptionKeyOptionsBuilder} is used to create and set properties for {@code EncryptionKeyOptions} 
+ * objects used to control behavior of the cloud-store commands to add and remove encryption
+ * keys to and from files in a cloud store service.
+ * <p>
+ * Setting {@code bucketName}, {@code objectKey}, and {@code encryptionKey} are mandatory. All 
+ * the others are optional.
+ * <p>
+ * @see EncryptionKeyOptions
+ * @see CloudStoreClient#getOptionsBuilderFactory()
+ * @see CloudStoreClient#addEncryptionKey()
+ * @see CloudStoreClient#removeEncryptionKey()
+ * @see OptionsBuilderFactory#newEncryptionKeyOptionsBuilder()
+ */
 public class EncryptionKeyOptionsBuilder
   extends CommandOptionsBuilder
 {
@@ -28,18 +42,28 @@ public class EncryptionKeyOptionsBuilder
     _cloudStoreClient = client;
   }
 
+  /**
+   * Set name of bucket containing file to be modified.
+   */
   public EncryptionKeyOptionsBuilder setBucketName(String bucket)
   {
     _bucket = bucket;
     return this;
   }
 
+  /**
+   * Set the key of the file to be modified.
+   */
   public EncryptionKeyOptionsBuilder setObjectKey(String objectKey)
   {
     _objectKey = objectKey;
     return this;
   }
 
+  /**
+   * Set the name of the public/private key pair to be added to or removed
+   * from a file.  The key pair file must exist in the local key directory.
+   */
   public EncryptionKeyOptionsBuilder setEncryptionKey(String encryptionKey)
   {
     _encryptionKey = encryptionKey;
@@ -66,6 +90,10 @@ public class EncryptionKeyOptionsBuilder
     }
   }
 
+  /**
+   * Validate that all required parameters are set and if so return a new {@link EncryptionKeyOptions}
+   * object.
+   */
   @Override
   public EncryptionKeyOptions createOptions()
   {

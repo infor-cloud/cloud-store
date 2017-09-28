@@ -20,6 +20,12 @@ import java.io.File;
 import java.util.Date;
 import java.util.Optional;
 
+/**
+ * Represents a file that has been uploaded to or downloaded from a cloud store service.
+ * This object can contain a file's checksum, key, bucket, version, size, and modification
+ * timestamp.  For uploads or downloads, it can also contain a reference to a local File
+ * object.
+ */
 public class StoreFile
 {
 
@@ -31,61 +37,100 @@ public class StoreFile
   private Optional<Long> _size = Optional.empty();
   private Optional<Date> _timestamp = Optional.empty();
 
+  /**
+   * Create a new StoreFile with no properties set.
+   */
   public StoreFile()
   {
   }
 
+  /**
+   * Create a StoreFile for a particular file in a bucket.
+   *
+   * @param bucket Name of the bucket containing the file
+   * @param key Key that identifies the file in the store
+   */
   public StoreFile(String bucket, String key)
   {
     _bucket = bucket;
     _key = key;
   }
 
+  /**
+   * Return the local File object for an upload or download operation.
+   */
   public File getLocalFile()
   {
     return _localFile;
   }
 
+  /**
+   * Set the local File for an upload or download operation.
+   */
   public void setLocalFile(File f)
   {
     _localFile = f;
   }
 
+  /**
+   * Return the ETag (checksum) associated with a file in a cloud store service.
+   */
   public String getETag()
   {
     return _eTag;
   }
 
+  /**
+   * Set the ETag (checksum) associated with a file in a cloud store service.
+   */
   public void setETag(String tag)
   {
     _eTag = tag;
   }
 
+  /**
+   * Return the key of the file represented by this StoreFile.
+   */
   public String getKey()
   {
     return _key;
   }
 
+  /**
+   * Set the key of the file represented by this StoreFile.
+   */
   public void setKey(String key)
   {
     _key = key;
   }
 
+  /**
+   * Return the name of the bucket containing a file represented by this StoreFile.
+   */
   public String getBucketName()
   {
     return _bucket;
   }
 
+  /**
+   * Set the name of the bucket containing a file represented by this StoreFile.
+   */
   public void setBucketName(String bucket)
   {
     _bucket = bucket;
   }
 
+  /**
+   * Return the version ID of a file in a cloud store service.
+   */
   public Optional<String> getVersionId()
   {
     return _versionId;
   }
 
+  /**
+   * Set the version ID of a file in a cloud store service.
+   */
   public void setVersionId(String versionId)
     throws IllegalArgumentException
   {
@@ -96,11 +141,17 @@ public class StoreFile
     _versionId = Optional.of(versionId);
   }
 
+  /**
+   * Return the size of a file in a cloud store service.
+   */
   public Optional<Long> getSize()
   {
     return _size;
   }
 
+  /**
+   * Set the size of a file in a cloud store service.
+   */
   public void setSize(Long size)
     throws IllegalArgumentException
   {
@@ -112,11 +163,17 @@ public class StoreFile
 
   }
 
+  /**
+   * Return the modification time for a file in a cloud store service.
+   */
   public Optional<Date> getTimestamp()
   {
     return _timestamp;
   }
 
+  /**
+   * Set the modification time for a file in a cloud store service.
+   */
   public void setTimestamp(Date timestamp)
     throws IllegalArgumentException
   {

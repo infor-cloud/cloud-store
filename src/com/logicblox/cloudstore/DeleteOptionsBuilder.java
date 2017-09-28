@@ -16,6 +16,18 @@
 
 package com.logicblox.cloudstore;
 
+/**
+ * {@code DeleteOptionsBuilder} is used to create and set properties for {@code DeleteOptions} 
+ * objects used to control behavior of the cloud-store delete command.
+ * <p>
+ * Setting {@code bucketName} and {@code objectKey} are mandatory. All the others are optional.
+ * <p>
+ * @see DeleteOptions
+ * @see CloudStoreClient#getOptionsBuilderFactory()
+ * @see CloudStoreClient#delete()
+ * @see CloudStoreClient#deleteDir()
+ * @see OptionsBuilderFactory#newDeleteOptionsBuilder()
+ */
 public class DeleteOptionsBuilder
   extends CommandOptionsBuilder
 {
@@ -31,36 +43,58 @@ public class DeleteOptionsBuilder
     _cloudStoreClient = client;
   }
 
+  /**
+   * Set the name of the bucket containing the file to delete.
+   */
   public DeleteOptionsBuilder setBucketName(String bucket)
   {
     _bucket = bucket;
     return this;
   }
 
+  /**
+   * Set the key of the file to delete.
+   */
   public DeleteOptionsBuilder setObjectKey(String objectKey)
   {
     _objectKey = objectKey;
     return this;
   }
 
+  /**
+   * Set the recursive property of the command.  If true and if the object key
+   * looks like a directory name (ends in '/'), all files that recursively
+   * have the key as their prefix will be deleted.
+   */
   public DeleteOptionsBuilder setRecursive(boolean recursive)
   {
     _recursive = recursive;
     return this;
   }
 
+  /**
+   * If set to true, print operations that would be executed, but do not perform them.
+   */
   public DeleteOptionsBuilder setDryRun(boolean dryRun)
   {
     _dryRun = dryRun;
     return this;
   }
 
+  /**
+   * If forceDelete is set to true, then delete command will complete successfully
+   * even if the specified file does not exist.  Otherwise, the delete command
+   * will fail when trying to delete a file that does not exist.
+   */
   public DeleteOptionsBuilder setForceDelete(boolean force)
   {
     _forceDelete = force;
     return this;
   }
 
+  /**
+   * Used by test framework to control abort injection testing.
+   */
   public DeleteOptionsBuilder setIgnoreAbortInjection(boolean ignore)
   {
     _ignoreAbortInjection = ignore;
@@ -83,6 +117,10 @@ public class DeleteOptionsBuilder
     }
   }
 
+  /**
+   * Validate that all required parameters are set and if so return a new {@link DeleteOptions}
+   * object.
+   */
   @Override
   public DeleteOptions createOptions()
   {

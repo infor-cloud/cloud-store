@@ -16,55 +16,93 @@
 
 package com.logicblox.cloudstore;
 
+/**
+ * OptionsBuilderFactory is used to create builder objects for all cloud-store
+ * command options.  These option builders are the only way to parameterize
+ * a cloud-store command.  The OptionsBuilderFactory must be retrieved from
+ * a {@link CloudStoreClient} interface.
+ *
+ * @see CloudStoreClient#getOptionsBuilderFactory()
+ */
 public class OptionsBuilderFactory
 {
   private final CloudStoreClient _client;
 
+  /**
+   * Create a factory for a particular CloudStoreClient interface.
+   */
   OptionsBuilderFactory(CloudStoreClient client)
   {
     _client = client;
   }
 
+  /**
+   * Return a new builder for {@link CopyOptions}.
+   */
   public CopyOptionsBuilder newCopyOptionsBuilder()
   {
     return new CopyOptionsBuilder(_client);
   }
 
+  /**
+   * Return a new builder for {@link DeleteOptions}.
+   */
   public DeleteOptionsBuilder newDeleteOptionsBuilder()
   {
     return new DeleteOptionsBuilder(_client);
   }
 
+  /**
+   * Return a new builder for {@link DownloadOptions}.
+   */
   public DownloadOptionsBuilder newDownloadOptionsBuilder()
   {
     return new DownloadOptionsBuilder(_client);
   }
 
+  /**
+   * Return a new builder for {@link EncryptionKeyOptions}.
+   */
   public EncryptionKeyOptionsBuilder newEncryptionKeyOptionsBuilder()
   {
     return new EncryptionKeyOptionsBuilder(_client);
   }
 
+  /**
+   * Return a new builder for {@link ExistsOptions}.
+   */
   public ExistsOptionsBuilder newExistsOptionsBuilder()
   {
     return new ExistsOptionsBuilder(_client);
   }
 
+  /**
+   * Return a new builder for {@link ListOptions}.
+   */
   public ListOptionsBuilder newListOptionsBuilder()
   {
     return new ListOptionsBuilder(_client);
   }
 
+  /**
+   * Return a new builder for {@link PendingUploadsOptions}.
+   */
   public PendingUploadsOptionsBuilder newPendingUploadsOptionsBuilder()
   {
     return new PendingUploadsOptionsBuilder(_client);
   }
 
+  /**
+   * Return a new builder for {@link RenameOptions}.
+   */
   public RenameOptionsBuilder newRenameOptionsBuilder()
   {
     return new RenameOptionsBuilder(_client);
   }
 
+  /**
+   * Return a new builder for {@link UploadOptions}.
+   */
   public UploadOptionsBuilder newUploadOptionsBuilder()
   {
     return new UploadOptionsBuilder(_client);

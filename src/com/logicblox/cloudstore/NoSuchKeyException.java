@@ -16,14 +16,28 @@
 
 package com.logicblox.cloudstore;
 
+/**
+ * Exception thrown by {@link KeyProvider KeyProviders} when a specified key name
+ * cannot be found in the provider.
+ */
 public class NoSuchKeyException
   extends Exception
 {
+  /**
+   * Create a new exception with the specified error message.
+   *
+   * @param msg The error message to be contained in the exception.
+   */
   public NoSuchKeyException(String msg)
   {
     super(msg);
   }
 
+  /**
+   * Create a new exception with the specified cause.
+   *
+   * @param cause Another exception that is the root cause of this exception.
+   */
   public NoSuchKeyException(Exception cause)
   {
     super(cause);

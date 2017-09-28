@@ -182,7 +182,8 @@ public class Metadata
   }
 
   /**
-   *
+   * Return he replication status of the object if it is from a bucket that is the source 
+   * or destination in a cross-region replication.
    */
   public String getReplicationStatus()
   {
@@ -218,7 +219,7 @@ public class Metadata
   }
 
   /**
-   *
+   * Return the storage class of the object.
    */
   public String getStorageClass()
   {

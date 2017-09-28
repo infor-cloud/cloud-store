@@ -18,6 +18,18 @@ package com.logicblox.cloudstore;
 
 import java.util.Date;
 
+/**
+ * {@code PendingUploadingOptionsBuilder} is used to create and set properties for {@code PendingUploadingOptions} 
+ * objects used to control behavior of the cloud-store commands for managing pending uploads.
+ * <p>
+ * Setting {@code bucketName} and {@code objectKey} is mandatory.  Other properties are optional.
+ * <p>
+ * @see PendingUploadingOptions
+ * @see CloudStoreClient#getOptionsBuilderFactory()
+ * @see CloudStoreClient#listPendingUploads()
+ * @see CloudStoreClient#abortPendingUploads()
+ * @see OptionsBuilderFactory#newPendingUploadingOptionsBuilder()
+ */
 public class PendingUploadsOptionsBuilder
   extends CommandOptionsBuilder
 {
@@ -31,24 +43,36 @@ public class PendingUploadsOptionsBuilder
     _cloudStoreClient = client;
   }
 
+  /**
+   * Set the name of the bucket in which to check for pending uploads.
+   */
   public PendingUploadsOptionsBuilder setBucketName(String bucket)
   {
     _bucket = bucket;
     return this;
   }
 
+  /**
+   * Set the key of the file to check for pending uploads.
+   */
   public PendingUploadsOptionsBuilder setObjectKey(String objectKey)
   {
     _objectKey = objectKey;
     return this;
   }
 
+  /**
+   * Set the upload ID for an upload to be aborted.
+   */
   public PendingUploadsOptionsBuilder setUploadId(String uploadId)
   {
     _uploadId = uploadId;
     return this;
   }
 
+  /**
+   * Set the date of an upload to be aborted.
+   */
   public PendingUploadsOptionsBuilder setDate(Date date)
   {
     _date = date;
@@ -71,6 +95,10 @@ public class PendingUploadsOptionsBuilder
     }
   }
 
+  /**
+   * Validate that all required parameters are set and if so return a new {@link PendingUploadOptions}
+   * object.
+   */
   @Override
   public PendingUploadsOptions createOptions()
   {

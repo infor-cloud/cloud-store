@@ -16,6 +16,17 @@
 
 package com.logicblox.cloudstore;
 
+/**
+ * {@code ListOptionsBuilder} is used to create and set properties for {@code ListOptions} 
+ * objects used to control behavior of the cloud-store list command.
+ * <p>
+ * Setting {@code bucketName} is mandatory.  Other properties are optional.
+ * <p>
+ * @see ListOptions
+ * @see CloudStoreClient#getOptionsBuilderFactory()
+ * @see CloudStoreClient#listObjects()
+ * @see OptionsBuilderFactory#newListOptionsBuilder()
+ */
 public class ListOptionsBuilder
   extends CommandOptionsBuilder
 {
@@ -30,30 +41,47 @@ public class ListOptionsBuilder
     _cloudStoreClient = client;
   }
 
+  /**
+   * Set the name of the bucket containing files to list.
+   */
   public ListOptionsBuilder setBucketName(String bucket)
   {
     _bucketName = bucket;
     return this;
   }
 
+  /**
+   * Set the key of the file or file prefix to be matched to files to be listed.
+   */
   public ListOptionsBuilder setObjectKey(String objectKey)
   {
     _objectKey = objectKey;
     return this;
   }
 
+  /**
+   * Set recursive option for the command.  If true, recursively list files
+   * from all subdirectories as well as top-level directories.
+   */
   public ListOptionsBuilder setRecursive(boolean recursive)
   {
     _recursive = recursive;
     return this;
   }
 
+  /**
+   * If set to true, list all version information for files.
+   */
   public ListOptionsBuilder setIncludeVersions(boolean includeVersions)
   {
     _includeVersions = includeVersions;
     return this;
   }
 
+  /**
+   * If set to true, do not list any files that look like directories
+   * (end with '/').
+   */
   public ListOptionsBuilder setExcludeDirs(boolean excludeDirs)
   {
     _excludeDirs = excludeDirs;
@@ -72,6 +100,10 @@ public class ListOptionsBuilder
     }
   }
 
+  /**
+   * Validate that all required parameters are set and if so return a new {@link ListOptions}
+   * object.
+   */
   @Override
   public ListOptions createOptions()
   {

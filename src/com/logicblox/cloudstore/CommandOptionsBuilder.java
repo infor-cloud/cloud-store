@@ -16,9 +16,22 @@
 
 package com.logicblox.cloudstore;
 
+/**
+ * CommandOptionsBuilder contains shared properties of all commands and 
+ * declarations for methods required to be implemented by subclasses.  Builders
+ * are used to create the @{link CommandOptions} objects that configure
+ * cloud-store command execution.
+ * <p>
+ * @see CommandOptions
+ * @see OptionsBuilderFactory
+ * @see CloudStoreClient#getOptionsBuilderFactory()
+ */
 public abstract class CommandOptionsBuilder
 {
   CloudStoreClient _cloudStoreClient;
 
+  /**
+   * Create a new {@link CommandOptions} object from a builder.
+   */
   public abstract CommandOptions createOptions();
 }

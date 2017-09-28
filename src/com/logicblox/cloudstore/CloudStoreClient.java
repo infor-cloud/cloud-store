@@ -25,14 +25,18 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
- * Provides the a general client API for accessing cloud stores like Amazon S3 or Google Cloud
- * Storage.  This should be considered the primary public interface used by clients of the
- * cloud-store library.
+ * This interface provides a general client API for accessing cloud stores like Amazon S3 or 
+ * Google Cloud Storage.  This should be considered the primary public interface used by clients 
+ * of the cloud-store library.  Use the {@link Utils#createCloudStoreClient(String)} method or 
+ * another of the {@code Utils.createCloudStoreClient} overloads to create an appropriate 
+ * object that implements this interface for one of the supported
+ * cloud storage services, for example {@code Utils.createCloudStoreClient("s3")}.
  */
 public interface CloudStoreClient
 {
   /**
-   * Sets the number of retries after a failure before the operation will be cancelled.
+   * Sets the number of times an operation can fail and be retried before the operation will be 
+   * cancelled.
    *
    * @param retryCount Number of retries
    */
@@ -40,7 +44,7 @@ public interface CloudStoreClient
 
   /**
    * By default, client-side errors (like HTTP 404) will not cause operations to be retried. Setting
-   * retryClientException to true will cause client-side errirs to be retried in the same manner as
+   * retryClientException to true will cause client-side errors to be retried in the same manner as
    * server-side errors.
    */
   void setRetryClientException(boolean retry);
@@ -63,278 +67,338 @@ public interface CloudStoreClient
 
   /**
    * Returns the executor responsible for issuing HTTP API calls against the backend storage service
-   * asynchronously. It, also, determines the level of parallelism of an operation, e.g. number of
+   * asynchronously. It also determines the level of parallelism of an operation, e.g. number of
    * threads used for uploading/downloading a file.
    */
   ListeningExecutorService getApiExecutor();
 
   /**
    * Returns the executor responsible for executing internal cloud-store tasks asynchronously. Such
-   * tasks include file I/O, file encryption, file splitting and error handling.
+   * tasks include file I/O, file encryption, file splitting, and error handling.
    */
   ListeningScheduledExecutorService getInternalExecutor();
 
+  /**
+   * Returns a factory used to create builder objects for all command options.
+   */
   OptionsBuilderFactory getOptionsBuilderFactory();
 
   /**
-   * Returns the provider of encryption key-pairs used to encrypt/decrypt files during
-   * upload/download.
+   * Returns the provider of encryption key pairs used to encrypt or decrypt files during
+   * upload or download.
    */
   KeyProvider getKeyProvider();
 
+  /**
+   * Returns a service-specific object used to abstract over access control functionality
+   * provided by different services.
+   */
   AclHandler getAclHandler();
 
+  /**
+   * Returns a service-specific object used to query a service about storage classes.
+   */
   StorageClassHandler getStorageClassHandler();
 
   /**
-   * Uploads a file according to {@code options}. For more details check {@link
-   * com.logicblox.cloudstore.UploadOptions}.
+   * Upload a file from the local file system to a cloud store service.
    * <p>
-   * The specified bucket must already exist and the caller must have write permission to the bucket
-   * to upload an object.
+   * The destination bucket must already exist and the caller must have write permission
+   * to the bucket to upload a file.  Checksum validation is done after the transfer of the
+   * file (and each part if the service uses multi-part transfers) to ensure no data corruption
+   * occurs during the transfer.  If no exceptions are thrown, a future is returned that when
+   * completed means that the file has been successfully copied to the service.  The
+   * {@link StoreFile} wrapped by the future will contain metadata about the uploaded file.
    * <p>
-   * By default, the upload is multi-part with each part being {@code chunkSize} bytes.
-   * <p>
-   * The level of parallelism depends on the {@code s3Executor}. Ideally, different parts are
-   * uploaded by different threads.
-   * <p>
-   * The client automatically does checksum validation both for each part and for the final object,
-   * making sure there is no file corruption during the transfer.
-   * <p>
-   * Low-level upload operations (e.g. file type recognition) are taken care of by the underlying
-   * low-level service-specific clients.
-   * <p>
-   * If during this call an exception wasn't thrown, the entire object has supposedly been stored
-   * successfully.
+   * For services that support multi-part uploads, the chunk size in the specified options
+   * will control the size of each part to be uploaded.  The level of parallelism is controlled
+   * by the executor used to create the CloudStoreClient interface.  See {@link #getApiExecutor()}
+   * and {@link Utils#createCloudStoreClient(String)}.
    *
-   * @param options Upload options
-   * @see UploadOptions
+   * @param options Set of options that control the upload operation
    */
   ListenableFuture<StoreFile> upload(UploadOptions options)
     throws IOException;
 
   /**
-   * Uploads a directory according to {@code options}. For more details check {@link
-   * com.logicblox.cloudstore.UploadOptions}.
+   * Upload a set of files from a directory in the local file system to a cloud store service.
    * <p>
-   * Each individual file is uploaded with {@link CloudStoreClient#upload (UploadOptions)}.
+   * The destination bucket must already exist and the caller must have write permission
+   * to the bucket to upload a file.  Checksum validation is done after the transfer of each
+   * file (and each part if the service uses multi-part transfers) to ensure no data corruption
+   * occurs during the transfer.  If no exceptions are thrown, a future is returned that when
+   * completed means that all the files have been successfully copied to the service. The list of
+   * {@link StoreFile StoreFiles} wrapped by the future will contain metadata about the 
+   * uploaded files.
    * <p>
-   * Symbolic links are not supported.
+   * For services that support multi-part uploads, the chunk size in the specified options
+   * will control the size of each part to be uploaded.  The level of parallelism is controlled
+   * by the executor used to create the CloudStoreClient interface.  See {@link #getApiExecutor()}
+   * and {@link Utils#createCloudStoreClient(String)}.
+   * <p>
+   * Note that uploading from directories that are symbolically linked to another directory
+   * is not supported.
    *
-   * @param options Upload options
-   * @see UploadOptions
+   * @param options Set of options that control the upload operation
    */
   ListenableFuture<List<StoreFile>> uploadDirectory(UploadOptions options)
     throws IOException, ExecutionException, InterruptedException;
 
   /**
-   * Deletes a single object from a cloud store service.
+   * Delete a single file from a cloud store service.
+   * <p>
+   * This operation returns a future that when completed successfully will contain a
+   * {@link StoreFile} with metadata about the deleted file.  If a file matching the
+   * options is not found, an exception will be thrown.
    *
    * @param opts DeleteOptions that specify what to delete
    */
   ListenableFuture<StoreFile> delete(DeleteOptions opts);
 
   /**
-   * Recursively delete objects from a cloud store service.
+   * Delete a set of files from a cloud store service, where all the files match
+   * a particular prefix.
    *
    * @param opts DeleteOptions that specify what to delete
    */
   ListenableFuture<List<StoreFile>> deleteDir(DeleteOptions opts)
     throws InterruptedException, ExecutionException;
 
-  /** Lists all buckets visible for the current user. */
+  /** 
+   * List all buckets visible to the current user, returning a future that when completed
+   * will contain a list of {@link Bucket Buckets} with name and owner of each bucket.
+   */
   ListenableFuture<List<Bucket>> listBuckets();
 
   /**
-   * Checks if the specified {@code object} exists in the {@code bucket}.
+   * Check existence of a specific file in a cloud store service.
    * <p>
-   * Returns a null future if the file does not exist.
-   * <p>
-   * Throws an exception if the metadata of the file could not be fetched for different reasons.
+   * Returns a future that when completed will contain null if the file does not exist or
+   * will contain a {@link Metadata} object if it does exist.
    *
-   * @param options ExistsOptions
+   * @param options ExistsOptions specifying what file to check for
    */
   ListenableFuture<Metadata> exists(ExistsOptions options);
 
   /**
-   * Downloads a file according to {@code options}. For more details check {@link
-   * com.logicblox.cloudstore.DownloadOptions}.
+   * Download a file from a cloud store service to the local file system.
    * <p>
-   * If the {@code object} was encrypted by cloud-store at the client-side, this method will try to
-   * decrypt it automatically. It knows which key to use by checking {@code object}'s metadata.
+   * If the file was encrypted when uploaded, one of the private keys corresponding with the
+   * public keys associated with the file must be found in the local directory containing
+   * public/private key pair files.  If no matching key is found, an error will be reported
+   * and the download will fail.  Otherwise, the file will be downloaded and decrypted.
    * <p>
-   * The specified bucket must already exist and the caller must have read permission to the {@code
-   * bucket}.
+   * The current user must have read permission to the bucket containing the file to download.
+   * If a local file with the destination name already exists, the file will not be downloaded
+   * and an exception thrown unless the {@code overwrite} flag is set to true in the
+   * {@code options} parameter.
    * <p>
-   * By default, if {@code object}'s size is bigger than the {@code chunkSize} chosen during the
-   * upload, then multiple range GETs will be issued, effectively downloading different parts of the
-   * file concurrently.
+   * If the file's size is bigger than the chunk size used for its upload, multiple
+   * concurrent threads will be used to download parts of the file in parallel.  The level
+   * of parallelism is controled by the executor used to create the CloudStoreClient
+   * interface.  See {@link #getApiExecutor()} and {@link Utils#createCloudStoreClient(String)}.
    * <p>
-   * The level of parallelism depends on the {@code s3Executor}. Ideally, different parts are
-   * downloaded by different threads.
+   * Since a file can be uploaded, updated, and/or copied by tools other than cloud-store,
+   * there is no easy way to detect another tool's chosen chunk size (which affects the checksum)
+   * so is not always safe and efficient to validate its checksum.  Currently, this client tries 
+   * to do checksum validation when it knows that the file was uploaded by cloud-store or the 
+   * file can been fully downloaded using chunk.
    * <p>
-   * Since a file can be uploaded, updated and/or copied by any tool is not always safe and
-   * efficient to validate its checksum, since there is no easy way to detect each tool's chosen
-   * chunk size (which affects object's ETag).
-   * <p>
-   * Currently, this client tries to do checksum validation when it has good indication that a file
-   * was uploaded by cloud-store and/or the file can been fully downloaded using a single range
-   * GET.
-   * <p>
-   * If during this call an exception wasn't thrown, the entire object has supposedly been stored
-   * successfully.
+   * This returns a future that when completed will contain a {@link StoreFile} object with
+   * information about the downloaded file.
    *
-   * @param options Download options
-   * @see DownloadOptions
+   * @param options Set of options controlling the download operation
    */
   ListenableFuture<StoreFile> download(DownloadOptions options)
     throws IOException;
 
   /**
-   * Downloads a conceptual directory according to {@code options}. For more details check {@link
-   * com.logicblox.cloudstore.DownloadOptions}.
+   * Download a set of files from a cloud store service to the local file system.  The
+   * {@code objectKey} in the {@link DownloadOptions} will be used as a prefix to find
+   * a set of files in a simulated directory in the code store service.  If the
+   * {@code recursive} flag is set, then all files matching the prefix will be downloaded.
+   * If {@code recursive} is false, then only "top-level" files will be downloaded, not
+   * those that appear to be in simulated sub-directories.
    * <p>
-   * If {@code recursive} is true, then all objects under {@code uri} will be downloaded. Otherwise,
-   * only the first-level objects will be downloaded.
+   * If any file to be downloaded was encrypted when uploaded, one of the private keys 
+   * corresponding with the public keys associated with the file must be found in the local 
+   * directory containing public/private key pair files.  If no matching key is found, an error 
+   * will be reported and the download will fail.  Otherwise, the file will be downloaded and 
+   * decrypted.
    * <p>
-   * If {@code overwrite} is true, then newly downloaded files is possible to overwrite existing
-   * local files.
+   * The current user must have read permission to the bucket containing the files to download.
+   * If any local file with the destination name already exists, the file will not be downloaded
+   * and an exception thrown, unless the {@code overwrite} flag is set to true in the
+   * {@code options} parameter.
    * <p>
-   * Each individual file is downloaded with {@link CloudStoreClient#download(DownloadOptions)}.
+   * If any file's size is bigger than the chunk size used for its upload, multiple
+   * concurrent threads will be used to download parts of the file in parallel.  The level
+   * of parallelism is controled by the executor used to create the CloudStoreClient
+   * interface.  See {@link #getApiExecutor()} and {@link Utils#createCloudStoreClient(String)}.
+   * <p>
+   * Since a file can be uploaded, updated, and/or copied by tools other than cloud-store,
+   * there is no easy way to detect another tool's chosen chunk size (which affects the checksum)
+   * so is not always safe and efficient to validate its checksum.  Currently, this client tries 
+   * to do checksum validation when it knows that the file was uploaded by cloud-store or the 
+   * file can been fully downloaded using chunk.
+   * <p>
+   * This returns a future that when completed will contain a list of {@link StoreFile} objects with
+   * information about the downloaded files.
    *
-   * @param options Download options
+   * @param options Set of options controlling the download operation
    */
   ListenableFuture<List<StoreFile>> downloadDirectory(DownloadOptions options)
     throws IOException, ExecutionException, InterruptedException;
 
   /**
-   * Copies an object according to {@code options}. For more details check {@link
-   * com.logicblox.cloudstore.CopyOptions}.
+   * Copy one file in a cloud store service to have another name in the store.
    * <p>
-   * The source bucket must already exist and the caller must have read permission to it.
-   * Respectively, the destination bucket must already exist and the caller must have write
+   * The source bucket must already exist and the user must have read permission to it.
+   * Likewise, the destination bucket must already exist and the user must have write
    * permission to it.
+   * <p>
+   * Return a future that when complete will contain a {@link StoreFile} with information
+   * about the destination file.
    *
-   * @param options CopyOptions
-   * @see CloudStoreClient#copyToDir(CopyOptions)
-   * @see CopyOptions
+   * @param options Set of options specifying file to copy along with the new name and 
+   *                other properties.
    */
   ListenableFuture<StoreFile> copy(CopyOptions options);
 
   /**
-   * Copies all keys that would be returned by the list operation on the source prefix URI,
-   * according to {@code options}. The destination URI has to be a directory (i.e. end with '/').
-   * For more details check {@link com.logicblox.cloudstore.CopyOptions}.
+   * Copy all files in a cloud store service whose keys would be returned by the list 
+   * operation on the source prefix URI to new files with a new prefix.  This behaves like a
+   * local file system copy of a set of files into a new directory.  The destination URI in
+   * the {@link CopyOptions} must look like a directory (end with a '/').
    * <p>
-   * The source bucket must already exist and the caller must have read permission to it.
-   * Respectively, the destination bucket must already exist and the caller must have write
+   * The source bucket must already exist and the user must have read permission to it.
+   * Likewise, the destination bucket must already exist and the user must have write
    * permission to it.
+   * <p>
+   * Return a future that when complete will contain a list {@link StoreFile} objects with 
+   * information about the copied files.
    *
-   * @param options CopyOptions
-   * @see CloudStoreClient#copy(CopyOptions)
-   * @see CopyOptions
+   * @param options Set of options specifying files to copy along with their destination.
    */
   ListenableFuture<List<StoreFile>> copyToDir(CopyOptions options)
     throws InterruptedException, ExecutionException, IOException;
 
   /**
-   * Renames an object according to {@code options}. For more details check {@link
-   * com.logicblox.cloudstore.RenameOptions}.  Note that this is equivalent to a copy operation
-   * followed by a delete operation.
+   * Rename a file in a cloud-store service.  That this is equivalent to a copy operation
+   * followed by a delete operation on a file.
    * <p>
-   * The source bucket must already exist and the caller must have read permission to it.
-   * Respectively, the destination bucket must already exist and the caller must have write
+   * The source bucket must already exist and the user must have read permission to it.
+   * Likewise, the destination bucket must already exist and the user must have write
    * permission to it.
+   * <p>
+   * Return a future that when complete will contain a {@link StoreFile} with information
+   * on the destination file.
    *
-   * @param options RenameOptions - provides parameters for the rename operation
-   * @see CloudStoreClient#renameDirectory(RenameOptions)
-   * @see RenameOptions
+   * @param options Set of parameters that specify the source file, new name, and other
+   *                options for the operation.
    */
   ListenableFuture<StoreFile> rename(RenameOptions options);
 
   /**
-   * Renames all keys that share a prefix to have another prefix -- in other words, rename a folder.
-   * All keys that would be returned by a list operation on the source key will be renamed.
+   * Rename all files in a cloud store service whose keys share a prefix to have another prefix,
+   * behaving like a local directory rename.
    * <p>
-   * The source bucket must already exist and the caller must have read permission to it.
-   * Respectively, the destination bucket must already exist and the caller must have write
+   * The source bucket must already exist and the user must have read permission to it.
+   * Likewise, the destination bucket must already exist and the user must have write
    * permission to it.
    * <p>
-   * Both the source and destination keys should be folders.  There must be some keys that match the
-   * source founder, but the destination folder does not need to exist.
+   * Both the source and destination keys should be folders (ending with '/').  There must be 
+   * some keys that match the source folder prefix, but the destination folder does not need to exist.
+   * <p>
+   * Return a future that when complete will contain a list of @{link StoreFile} objects with
+   * information about the new renamed files.
    *
-   * @param options RenameOptions
-   * @see CloudStoreClient#rename(RenameOptions)
-   * @see RenameOptions
+   * @param options Set of parameters specifying what files to copy and their destination prefix.
    */
   ListenableFuture<List<StoreFile>> renameDirectory(RenameOptions options)
     throws InterruptedException, ExecutionException, IOException;
 
   /**
-   * Returns a list of summary information about the objects whose keys start with {@code prefix}
-   * and belong in the specified {@code bucket}.
+   * Return a future that when complete will contain a list of {@link StoreFile} objects
+   * with summary information about all files whose keys start with a specified prefix
+   * in a particular bucket.
    * <p>
-   * If {@code recursive} is enabled, then all objects of all subdirectories are going to be
-   * included in the results too.
+   * If the {@code recursive} option in the ${link ListOptions} is enabled, then all files of all 
+   * "subdirectories" will be included in the results as will as the "top-level" files that
+   * match the prefix.  If {@code excludeDirs} is set in the options, then directories that
+   * match the prefix are <i>not</i> included in the results.
    * <p>
    * List results are returned in lexicographic order.
    * <p>
-   * If {@code exclude_dirs} is enabled, then Directories are <i>not</i> included in the results.
-   * <p>
-   * If {@code include-versions} is enabled, then versions of objects will be included in the
-   * results.
+   * If {@code includeIersions} is set in the options, then information about all versions of 
+   * the matched files will be included in the results.
    *
-   * @param lsOptions Class contains all needed options for ls command
-   * @see CloudStoreClient#listObjects(ListOptions)
+   * @param lsOptions Set of options controlling the behavior of the list operation
    */
   ListenableFuture<List<StoreFile>> listObjects(ListOptions lsOptions);
 
   /**
-   * Returns a list of the pending uploads to object keys that start with {@code
-   * options.getObjectKey()}, inside {@code options.getBucketName()}.
+   * Return a list of pending in-progress uploads for files whose keys match a given key.
    * <p>
-   * Returned uploads' {@code Upload#getId()} and {@code Upload#getInitiationDate()} are useful to
-   * abort them via {@link CloudStoreClient#abortPendingUploads(PendingUploadsOptions)}
+   * Cloud-store attempts to abort uploads if an error is detected.  But there are some
+   * scenarios where AWS may have allocated storage for a pending upload and the upload
+   * never completes or is not cleanly aborted.  This function allows users to find and
+   * clean up pending uploads to avoid unnecessary service charges.  See 
+   * {@link #abortPendingUploads}.
+   * <p>
+   * This returns a future that when complete will contain a list of {@link Upload} objects
+   * for all pending uploads that match the requested key.  See {@link Upload#getId()} and 
+   * {@link Upload#getInitiationDate()} for information useful in aborting the uploads.
    *
-   * @param options Bucket and key/prefix are specified here
+   * @param options Set of options that control the search for pending uploads
    */
   ListenableFuture<List<Upload>> listPendingUploads(PendingUploadsOptions options);
 
   /**
-   * Aborts pending uploads depending on the passed {@code options}.
+   * Abort pending uploads identified by object key or date of the upload.
    * <p>
-   * If only the upload id is specified, then only this specific pending upload will be aborted.
-   * Such ids can be found via {@link CloudStoreClient#listPendingUploads}.
+   * Cloud-store attempts to abort uploads if an error is detected.  But there are some
+   * scenarios where AWS may have allocated storage for a pending upload and the upload
+   * never completes or is not cleanly aborted.  This function allows users to 
+   * clean up pending uploads to avoid unnecessary service charges.  See 
+   * {@link #listPendingUploads}.
    * <p>
-   * If only the date is specified ({@code options.getDate()}), then all pending uploads that were
-   * initiated before this date will be aborted.
-   * <p>
-   * If both upload id and date are specified, then only this specific pending upload will be
-   * aborted, provided it has been initiated before the specified date.
+   * If only the upload id is specified in the {@link PendingUploadOptions}, then only one 
+   * specific pending upload will be aborted.  If only the date is specified, then all pending 
+   * uploads that were initiated before this date will be aborted.  If both upload id and date
+   * are specified, then only one specific pending upload will be aborted, provided it had
+   * been initiated before the specified date.
    *
-   * @param options PendingUploadsOptions
-   * @see CloudStoreClient#listPendingUploads(PendingUploadsOptions)
+   * @param options Set of options detailing what upload operations to be aborted
    */
   ListenableFuture<List<Void>> abortPendingUploads(PendingUploadsOptions options);
 
   /**
-   * Adds a new encryption key.
+   * Adds a new encryption key to an existing file in a cloud store service.  The specified
+   * public key must be found in a public/private key pair file in a local key directory.
+   * <p>
+   * Return a future that when complete will contain a {@link StoreFile} with information
+   * on the modified file.
    *
-   * @param options EncryptionKeyOptions
+   * @param options Set of options specifying the new key and file to apply the key to
    */
   ListenableFuture<StoreFile> addEncryptionKey(EncryptionKeyOptions options)
     throws IOException;
 
   /**
-   * Removes an existing encryption key.
+   * Removes an existing encryption key from a file in a cloud store service.  The specified
+   * private key must be found in a public/private key pair file in a local key directory. 
+   *<p>
+   * Return a future that when complete will contain a {@link StoreFile} with information
+   * on the modified file.
    *
-   * @param options EncryptionKeyOptions
+   * @param options Set of options specifying the key to remove and file to remove it from
    */
   ListenableFuture<StoreFile> removeEncryptionKey(EncryptionKeyOptions options)
     throws IOException;
 
   /**
-   * Makes sure all pending tasks have been completed and shuts down all internal machinery
+   * Ensure all pending tasks have been completed then shut down all internal machinery
    * properly.
    */
   void shutdown();
@@ -352,7 +416,7 @@ public interface CloudStoreClient
    * Create a new bucket with default permissions.  An exception will be thrown if a bucket with
    * that name already exists.
    *
-   * @param bucketName The name of the bucket
+   * @param bucketName The name of the bucket to be created
    */
   void createBucket(String bucketName);
 
@@ -360,7 +424,7 @@ public interface CloudStoreClient
   /**
    * Delete a bucket.  An exception will be thrown if the bucket does not exist.
    *
-   * @param bucketName The name of the bucket
+   * @param bucketName The name of the bucket to be deleted
    */
   void destroyBucket(String bucketName);
 

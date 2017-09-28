@@ -20,14 +20,39 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
 
+/**
+ * KeyProvider is an interface used to retrieve public/private key information
+ * given the name of key pair.
+ *
+ * @see CloudStoreClient#getKeyProvider
+ */
+
 public interface KeyProvider
 {
+  /**
+   * Return the private part of a key pair for a given key name or throw
+   * {@link NoSuchKeyException} if the key pair cannot be located.
+   *
+   * @param alias The name of the key pair to search for.
+   */
   public PrivateKey getPrivateKey(String alias)
     throws NoSuchKeyException;
 
+  /**
+   * Return the public part of a key pair for a given key name or throw
+   * {@link NoSuchKeyException} if the key pair cannot be located.
+   *
+   * @param alias The name of the key pair to search for.
+   */
   public PublicKey getPublicKey(String alias)
     throws NoSuchKeyException;
 
+  /**
+   * Return the certificate associated with a given key name or throw
+   * {@link NoSuchKeyException} if the key pair cannot be located.
+   *
+   * @param alias The name of the key pair to search for.
+   */
   public Certificate getCertificate(String alias)
     throws NoSuchKeyException;
 }

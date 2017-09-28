@@ -19,10 +19,17 @@ package com.logicblox.cloudstore;
 import java.util.Map;
 
 /**
- * {@code CopyOptionsBuilder} is a builder for {@code CopyOptions} objects.
+ * {@code CopyOptionsBuilder} is used to create and set properties for {@code CopyOptions} objects
+ * used to control the behavior of the cloud-store copy command.
  * <p>
  * Setting {@code _sourceBucketName}, {@code _sourceObjectKey}, {@code _destinationBucketName} and
- * {@code _destinationObjectKey} is mandatory. All the others are optional.
+ * {@code _destinationObjectKey} are mandatory. All the others are optional.
+ * <p>
+ * @see CopyOptions
+ * @see CloudStoreClient#getOptionsBuilderFactory()
+ * @see CloudStoreClient#copy()
+ * @see CloudStoreClient#copyToDir()
+ * @see OptionsBuilderFactory#newCopyOptionsBuilder()
  */
 public class CopyOptionsBuilder
   extends CommandOptionsBuilder
@@ -44,60 +51,97 @@ public class CopyOptionsBuilder
     _cloudStoreClient = client;
   }
 
+  /**
+   * Set the bucket name containing the file to be copied.
+   */
   public CopyOptionsBuilder setSourceBucketName(String sourceBucketName)
   {
     _sourceBucketName = sourceBucketName;
     return this;
   }
 
+  /**
+   * Set the key of the file to be copied.
+   */
   public CopyOptionsBuilder setSourceObjectKey(String sourceObjectKey)
   {
     _sourceObjectKey = sourceObjectKey;
     return this;
   }
 
+  /**
+   * Set the name of the bucket that will receive the copied file.
+   */
   public CopyOptionsBuilder setDestinationBucketName(String destinationBucketName)
   {
     _destinationBucketName = destinationBucketName;
     return this;
   }
 
+  /**
+   * Set the key of the new file to be created.
+   */
   public CopyOptionsBuilder setDestinationObjectKey(String destinationObjectKey)
   {
     _destinationObjectKey = destinationObjectKey;
     return this;
   }
 
+  /**
+   * Set the name of an access control list for the copied file.  If not specified, 
+   * the access control list for the original file will be used.
+   */
   public CopyOptionsBuilder setCannedAcl(String cannedAcl)
   {
     _cannedAcl = cannedAcl;
     return this;
   }
 
+  /**
+   * Set user metadata for the copied file.  If not specified, all user metadata
+   * is copied to the new file.
+   */
   public CopyOptionsBuilder setUserMetadata(Map<String, String> userMetadata)
   {
     _userMetadata = userMetadata;
     return this;
   }
 
+  /**
+   * Set the storage class for the copied file.  If not specified, the storage class
+   * of the original file is used.
+   */
   public CopyOptionsBuilder setStorageClass(String storageClass)
   {
     _storageClass = storageClass;
     return this;
   }
 
+  /**
+   * Set the recursive property for the copy operation.  If not set, a single file
+   * whose key matches the specified key will be copied if the key does not look like
+   * a directory (ends with a '/').  If not set and the key ends in a '/', then all
+   * "top-level" files matching the key will be copied.  If recursive is set and the
+   * key ends in '/', all "top-level" and all matching "sub-directory" files will be copied.
+   */
   public CopyOptionsBuilder setRecursive(boolean recursive)
   {
     _recursive = recursive;
     return this;
   }
 
+  /**
+   * If set to true, print operations that would be executed, but do not perform them.
+   */
   public CopyOptionsBuilder setDryRun(boolean dryRun)
   {
     _dryRun = dryRun;
     return this;
   }
 
+  /**
+   * Used by test framework to control abort injection testing.
+   */
   public CopyOptionsBuilder setIgnoreAbortInjection(boolean ignore)
   {
     _ignoreAbortInjection = ignore;
@@ -153,6 +197,10 @@ public class CopyOptionsBuilder
     }
   }
 
+  /**
+   * Validate that all required parameters are set and if so return a new {@link CopyOptions}
+   * object.
+   */
   @Override
   public CopyOptions createOptions()
   {

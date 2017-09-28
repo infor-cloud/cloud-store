@@ -474,6 +474,33 @@ public class Utils
     return clientCfg;
   }
 
+  /**
+   * Create and return an object used as the interface to one of the supported
+   * cloud store services using the default endpoint for that service.    Default 
+   * values will be used for other parameters like maximum concurrent connections allowed,
+   * encryption key directory, credential providers, and retry behavior.
+   *
+   * @param schema Must be either "s3" or "gs" to create an interface to either
+   *   an AWS S3 or GCS cloud store service, respectively.
+   */
+  public static CloudStoreClient createCloudStoreClient(String scheme)
+    throws URISyntaxException, GeneralSecurityException, IOException
+  {
+    return createCloudStoreClient(scheme, null);
+  }
+
+  /**
+   * Create and return an object used as the interface to one of the supported
+   * cloud store services using a particular endpoint.  Default values will be
+   * used for other parameters like maximum concurrent connections allowed,
+   * encryption key directory, credential providers, and retry behavior.
+   *
+   * @param schema Must be either "s3" or "gs" to create an interface to either
+   *   an AWS S3 or GCS cloud store service, respectively.
+   * @param endpoint The endpoint URI, i.e. "http://127.0.0.1:9000/", used to connect 
+   *   to the cloud store service.  It may be null, in which case the default endpoint 
+   *   for the service will be used. 
+   */
   public static CloudStoreClient createCloudStoreClient(String scheme, String endpoint)
     throws URISyntaxException, GeneralSecurityException, IOException
   {
@@ -481,9 +508,33 @@ public class Utils
       getDefaultKeyDirectory(), new ArrayList<String>(), false, getDefaultRetryCount());
   }
 
+  /**
+   * Create and return an object used as the interface to one of the supported
+   * cloud store services using a particular endpoint.  Also explictly specify
+   * configuration values for maximum concurrent connections allowed,
+   * encryption key directory, credential providers, and retry behavior.
+   *
+   * @param schema Must be either "s3" or "gs" to create an interface to either
+   *   an AWS S3 or GCS cloud store service, respectively.
+   * @param endpoint The endpoint URI, i.e. "http://127.0.0.1:9000/", used to connect 
+   *   to the cloud store service.  It may be null, in which case the default endpoint 
+   * for the service will be used.
+   * @param maxConcurrentConnections The maximum number of HTTP connections to the storage
+   *   service to be used when executing an operation.
+   * @param encKeyDirectory Path to a local directory containing public/private key pair files.
+   * @param credentialProviders Only used for S3 services to provide a list of providers to 
+   *   search for S3 credentials.  If null or an empty list, the default credential provider 
+   *   chain for the service will be used.  Other values allowed in the list are "env-vars", 
+   * "system-properties", "credentials-profie", and "ec2-metadata-service".
+   * @param stubborn If false, client-side errors (like HTTP 404) will not cause operations
+   *    to be retried.  If true, client-side errors will be retried in the same
+   *    manner as server-side errors.
+   * @param retryCount Number of times an operation will be retried after failure
+   *    before the operation is cancelled.
+   */
   public static CloudStoreClient createCloudStoreClient(
     String scheme, String endpoint, int maxConcurrentConnections, String encKeyDirectory,
-    List<String> credentialProvidersS3, boolean stubborn, int retryCount)
+    List<String> credentialProviders, boolean stubborn, int retryCount)
     throws URISyntaxException, GeneralSecurityException, IOException
   {
     ListeningExecutorService uploadExecutor = createApiExecutor(maxConcurrentConnections);
@@ -510,7 +561,7 @@ public class Utils
     {
       ClientConfiguration clientCfg = new ClientConfiguration();
       clientCfg = setProxy(clientCfg);
-      AWSCredentialsProvider credsProvider = getCredentialsProviderS3(credentialProvidersS3);
+      AWSCredentialsProvider credsProvider = getCredentialsProviderS3(credentialProviders);
       AmazonS3Client s3Client = new AmazonS3Client(credsProvider, clientCfg);
 
       client = new S3ClientBuilder().setInternalS3Client(s3Client)

@@ -17,24 +17,29 @@
 package com.logicblox.cloudstore;
 
 public class ConsoleProgressListenerFactory
-    implements OverallProgressListenerFactory {
+  implements OverallProgressListenerFactory
+{
 
-    private long intervalInBytes = -1;
+  private long _intervalInBytes = -1;
 
-    private long getDefaultIntervalInBytes(long totalSizeInBytes) {
-        long mb = 1024 * 1024;
-        return (totalSizeInBytes >= 50 * mb) ? 10 * mb : mb;
+  private long getDefaultIntervalInBytes(long totalSizeInBytes)
+  {
+    long mb = 1024 * 1024;
+    return (totalSizeInBytes >= 50 * mb) ? 10 * mb : mb;
+  }
+
+  public ConsoleProgressListenerFactory setIntervalInBytes(long intervalInBytes)
+  {
+    _intervalInBytes = intervalInBytes;
+    return this;
+  }
+
+  public OverallProgressListener create(ProgressOptions progressOptions)
+  {
+    if(_intervalInBytes <= 0)
+    {
+      _intervalInBytes = getDefaultIntervalInBytes(progressOptions.getFileSizeInBytes());
     }
-
-    public ConsoleProgressListenerFactory setIntervalInBytes(long intervalInBytes) {
-        this.intervalInBytes = intervalInBytes;
-        return this;
-    }
-
-    public OverallProgressListener create(ProgressOptions progressOptions) {
-        if (intervalInBytes <= 0)
-            intervalInBytes = getDefaultIntervalInBytes(
-              progressOptions.getFileSizeInBytes());
-        return new ConsoleProgressListener(progressOptions, intervalInBytes);
-    }
+    return new ConsoleProgressListener(progressOptions, _intervalInBytes);
+  }
 }

@@ -16,57 +16,100 @@
 
 package com.logicblox.cloudstore;
 
-public class ListOptionsBuilder extends CommandOptionsBuilder {
-  private String bucket;
-  private String objectKey;
-  private boolean recursive;
-  private boolean includeVersions;
-  private boolean excludeDirs;
+/**
+ * {@code ListOptionsBuilder} is used to create and set properties for {@code ListOptions} 
+ * objects used to control behavior of the cloud-store list command.
+ * <p>
+ * Setting {@code bucketName} is mandatory.  Other properties are optional.
+ * <p>
+ * @see ListOptions
+ * @see CloudStoreClient#getOptionsBuilderFactory()
+ * @see CloudStoreClient#listObjects()
+ * @see OptionsBuilderFactory#newListOptionsBuilder()
+ */
+public class ListOptionsBuilder
+  extends CommandOptionsBuilder
+{
+  private String _bucketName;
+  private String _objectKey;
+  private boolean _recursive;
+  private boolean _includeVersions;
+  private boolean _excludeDirs;
 
-  ListOptionsBuilder(CloudStoreClient client) {
+  ListOptionsBuilder(CloudStoreClient client)
+  {
     _cloudStoreClient = client;
   }
 
-  public ListOptionsBuilder setBucketName(String bucket) {
-    this.bucket = bucket;
+  /**
+   * Set the name of the bucket containing files to list.
+   */
+  public ListOptionsBuilder setBucketName(String bucket)
+  {
+    _bucketName = bucket;
     return this;
   }
-  
-  public ListOptionsBuilder setObjectKey(String objectKey) {
-    this.objectKey = objectKey;
+
+  /**
+   * Set the key of the file or file prefix to be matched to files to be listed.
+   */
+  public ListOptionsBuilder setObjectKey(String objectKey)
+  {
+    _objectKey = objectKey;
     return this;
   }
-  
-  public ListOptionsBuilder setRecursive(boolean recursive) {
-    this.recursive = recursive;
+
+  /**
+   * Set recursive option for the command.  If true, recursively list files
+   * from all subdirectories as well as top-level directories.
+   */
+  public ListOptionsBuilder setRecursive(boolean recursive)
+  {
+    _recursive = recursive;
     return this;
   }
-  
-  public ListOptionsBuilder setIncludeVersions(boolean includeVersions) {
-    this.includeVersions = includeVersions;
+
+  /**
+   * If set to true, list all version information for files.
+   */
+  public ListOptionsBuilder setIncludeVersions(boolean includeVersions)
+  {
+    _includeVersions = includeVersions;
     return this;
   }
-  
-  public ListOptionsBuilder setExcludeDirs(boolean excludeDirs) {
-    this.excludeDirs = excludeDirs;
+
+  /**
+   * If set to true, do not list any files that look like directories
+   * (end with '/').
+   */
+  public ListOptionsBuilder setExcludeDirs(boolean excludeDirs)
+  {
+    _excludeDirs = excludeDirs;
     return this;
   }
 
   private void validateOptions()
   {
-    if (_cloudStoreClient == null) {
+    if(_cloudStoreClient == null)
+    {
       throw new UsageException("CloudStoreClient has to be set");
     }
-    else if (bucket == null) {
+    else if(_bucketName == null)
+    {
       throw new UsageException("Bucket has to be set");
     }
   }
 
+  /**
+   * Validate that all required parameters are set and if so return a new {@link ListOptions}
+   * object.
+   */
   @Override
-  public ListOptions createOptions() {
+  public ListOptions createOptions()
+  {
     validateOptions();
 
-    return new ListOptions(_cloudStoreClient, bucket, objectKey, recursive,
-      includeVersions, excludeDirs);
+    return new ListOptions(_cloudStoreClient, _bucketName, _objectKey, _recursive, _includeVersions,
+      _excludeDirs);
   }
 }

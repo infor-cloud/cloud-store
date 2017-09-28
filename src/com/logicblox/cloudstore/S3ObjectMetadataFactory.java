@@ -26,50 +26,47 @@ import java.util.concurrent.Callable;
 
 class S3ObjectMetadataFactory
 {
-  private ListeningExecutorService executor;
-  private AmazonS3 client;
+  private ListeningExecutorService _executor;
+  private AmazonS3 _client;
 
-  public S3ObjectMetadataFactory(AmazonS3 client,
-                                 ListeningExecutorService executor)
+  public S3ObjectMetadataFactory(AmazonS3 client, ListeningExecutorService executor)
   {
-    this.client = client;
-    this.executor = executor;
+    _client = client;
+    _executor = executor;
   }
 
-  public ListenableFuture<S3ObjectMetadata> create(String bucketName,
-                                                   String key,
-                                                   String version)
+  public ListenableFuture<S3ObjectMetadata> create(String bucketName, String key, String version)
   {
-    return executor.submit(new S3ObjectMetadataCallable(bucketName, key, version));
+    return _executor.submit(new S3ObjectMetadataCallable(bucketName, key, version));
   }
 
-  private class S3ObjectMetadataCallable implements Callable<S3ObjectMetadata>
+  private class S3ObjectMetadataCallable
+    implements Callable<S3ObjectMetadata>
   {
-    private String bucketName;
-    private String key;
-    private String version;
+    private String _bucketName;
+    private String _objectKey;
+    private String _version;
 
-    public S3ObjectMetadataCallable(String bucketName, String key, String version)
+    public S3ObjectMetadataCallable(String bucketName, String objectKey, String version)
     {
-      this.bucketName = bucketName;
-      this.key = key;
-      this.version = version;
+      _bucketName = bucketName;
+      _objectKey = objectKey;
+      _version = version;
     }
 
     public S3ObjectMetadata call()
     {
       GetObjectMetadataRequest req;
-      if (version == null)
+      if(_version == null)
       {
-        req = new GetObjectMetadataRequest(bucketName, key);
+        req = new GetObjectMetadataRequest(_bucketName, _objectKey);
       }
       else
       {
-        req = new GetObjectMetadataRequest(bucketName, key, version);
+        req = new GetObjectMetadataRequest(_bucketName, _objectKey, _version);
       }
-      ObjectMetadata metadata = client.getObjectMetadata(req);
-      return new S3ObjectMetadata(client, key, bucketName, version, metadata,
-        executor);
+      ObjectMetadata metadata = _client.getObjectMetadata(req);
+      return new S3ObjectMetadata(_client, _objectKey, _bucketName, _version, metadata, _executor);
     }
   }
 }

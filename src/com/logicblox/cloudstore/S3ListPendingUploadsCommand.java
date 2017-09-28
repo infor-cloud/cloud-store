@@ -25,7 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-public class S3ListPendingUploadsCommand extends Command
+public class S3ListPendingUploadsCommand
+  extends Command
 {
   private PendingUploadsOptions _options;
 
@@ -37,83 +38,68 @@ public class S3ListPendingUploadsCommand extends Command
 
   public ListenableFuture<List<Upload>> run()
   {
-    ListenableFuture<List<Upload>> future =
-      executeWithRetry(
-        _client.getInternalExecutor(),
-        new Callable<ListenableFuture<List<Upload>>>()
+    ListenableFuture<List<Upload>> future = executeWithRetry(_client.getInternalExecutor(),
+      new Callable<ListenableFuture<List<Upload>>>()
+      {
+        public ListenableFuture<List<Upload>> call()
         {
-          public ListenableFuture<List<Upload>> call()
-          {
-            return runActual();
-          }
+          return runActual();
+        }
 
-          public String toString()
-          {
-            return "list pending uploads of " + getUri(_options.getBucketName(),
-              _options.getObjectKey());
-          }
-        });
+        public String toString()
+        {
+          return "list pending uploads of " +
+            getUri(_options.getBucketName(), _options.getObjectKey());
+        }
+      });
 
     return future;
   }
 
   private ListenableFuture<List<Upload>> runActual()
   {
-    return _client.getApiExecutor().submit(
-      new Callable<List<Upload>>()
+    return _client.getApiExecutor().submit(new Callable<List<Upload>>()
+    {
+      public List<Upload> call()
       {
-        public List<Upload> call()
+        ListMultipartUploadsRequest listMultipartUploadsRequest = new ListMultipartUploadsRequest(
+          _options.getBucketName());
+
+        listMultipartUploadsRequest.setPrefix(_options.getObjectKey());
+
+        MultipartUploadListing multipartUploadListing = getS3Client().listMultipartUploads(
+          listMultipartUploadsRequest);
+        List<Upload> uploadsList = new ArrayList<Upload>();
+
+        while(multipartUploadListing.isTruncated())
         {
-          ListMultipartUploadsRequest listMultipartUploadsRequest =
-              new ListMultipartUploadsRequest(_options.getBucketName());
-
-          listMultipartUploadsRequest.setPrefix(_options.getObjectKey());
-
-          MultipartUploadListing multipartUploadListing = getS3Client()
-              .listMultipartUploads(listMultipartUploadsRequest);
-          List<Upload> uploadsList = new ArrayList<Upload>();
-
-          while (multipartUploadListing.isTruncated())
-          {
-            appendMultipartUploadList(uploadsList,
-                multipartUploadListing.getMultipartUploads(),
-                _options.getBucketName());
-            listMultipartUploadsRequest.setKeyMarker(
-                multipartUploadListing.getNextKeyMarker());
-            multipartUploadListing = getS3Client()
-                .listMultipartUploads(listMultipartUploadsRequest);
-          }
-          appendMultipartUploadList(uploadsList,
-              multipartUploadListing.getMultipartUploads(),
-              _options.getBucketName());
-
-          return uploadsList;
+          appendMultipartUploadList(uploadsList, multipartUploadListing.getMultipartUploads(),
+            _options.getBucketName());
+          listMultipartUploadsRequest.setKeyMarker(multipartUploadListing.getNextKeyMarker());
+          multipartUploadListing = getS3Client().listMultipartUploads(listMultipartUploadsRequest);
         }
-      });
+        appendMultipartUploadList(uploadsList, multipartUploadListing.getMultipartUploads(),
+          _options.getBucketName());
+
+        return uploadsList;
+      }
+    });
   }
 
-  private List<Upload> appendMultipartUploadList(List<Upload> mailList,
-                                                 List<MultipartUpload>
-                                                     appendList,
-                                                 String bucket)
+  private List<Upload> appendMultipartUploadList(
+    List<Upload> mailList, List<MultipartUpload> appendList, String bucket)
   {
-    for (MultipartUpload u : appendList)
+    for(MultipartUpload u : appendList)
       mailList.add(S3MultipartUploadToUpload(u, bucket));
 
     return mailList;
   }
 
-  private Upload S3MultipartUploadToUpload(MultipartUpload multipartUpload,
-                                           String bucket)
+  private Upload S3MultipartUploadToUpload(MultipartUpload multipartUpload, String bucket)
   {
-    Upload u = new S3MultipartUpload(
-        getS3Client(),
-        bucket,
-        multipartUpload.getKey(),
-        multipartUpload.getUploadId(),
-        multipartUpload.getInitiated(),
-        _client.getApiExecutor(),
-        _client.getOptionsBuilderFactory().newUploadOptionsBuilder().createOptions());
+    Upload u = new S3MultipartUpload(getS3Client(), bucket, multipartUpload.getKey(),
+      multipartUpload.getUploadId(), multipartUpload.getInitiated(), _client.getApiExecutor(),
+      _client.getOptionsBuilderFactory().newUploadOptionsBuilder().createOptions());
 
     return u;
   }

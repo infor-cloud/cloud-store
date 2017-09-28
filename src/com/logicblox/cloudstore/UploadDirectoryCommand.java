@@ -30,7 +30,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-public class UploadDirectoryCommand extends Command
+public class UploadDirectoryCommand
+  extends Command
 {
   private UploadOptions _options;
 
@@ -41,7 +42,7 @@ public class UploadDirectoryCommand extends Command
   }
 
   public ListenableFuture<List<StoreFile>> run()
-  throws ExecutionException, InterruptedException, IOException
+    throws ExecutionException, InterruptedException, IOException
   {
     final IOFileFilter noSymlinks = new IOFileFilter()
     {
@@ -55,14 +56,14 @@ public class UploadDirectoryCommand extends Command
       {
         try
         {
-          boolean res = ! FileUtils.isSymlink(file);
+          boolean res = !FileUtils.isSymlink(file);
           return res;
         }
-        catch (FileNotFoundException e)
+        catch(FileNotFoundException e)
         {
           return false;
         }
-        catch (IOException e)
+        catch(IOException e)
         {
           return false;
         }
@@ -78,27 +79,27 @@ public class UploadDirectoryCommand extends Command
     Collection<File> found = FileUtils.listFiles(_options.getFile(), noSymlinks, noSymlinks);
 
     List<ListenableFuture<StoreFile>> files = new ArrayList<ListenableFuture<StoreFile>>();
-    for (File file : found)
+    for(File file : found)
     {
-      String relPath = file.getPath().substring(_options.getFile().getPath().length()+1);
+      String relPath = file.getPath().substring(_options.getFile().getPath().length() + 1);
       String key = Paths.get(_options.getObjectKey(), relPath).toString();
 
       UploadOptions options = _client.getOptionsBuilderFactory()
-          .newUploadOptionsBuilder()
-          .setFile(file)
-          .setBucketName(_options.getBucketName())
-          .setObjectKey(key)
-          .setChunkSize(_options.getChunkSize())
-          .setEncKey(_options.getEncKey().orElse(null))
-          .setCannedAcl(_options.getCannedAcl())
-          .setOverallProgressListenerFactory(_options
-            .getOverallProgressListenerFactory().orElse(null))
-          .createOptions();
+        .newUploadOptionsBuilder()
+        .setFile(file)
+        .setBucketName(_options.getBucketName())
+        .setObjectKey(key)
+        .setChunkSize(_options.getChunkSize())
+        .setEncKey(_options.getEncKey().orElse(null))
+        .setCannedAcl(_options.getCannedAcl())
+        .setOverallProgressListenerFactory(
+          _options.getOverallProgressListenerFactory().orElse(null))
+        .createOptions();
 
       if(_options.isDryRun())
       {
-        System.out.println("<DRYRUN> uploading '" + file.getAbsolutePath()
-                           + "' to '" + getUri(_options.getBucketName(), key) + "'");
+        System.out.println("<DRYRUN> uploading '" + file.getAbsolutePath() + "' to '" +
+          getUri(_options.getBucketName(), key) + "'");
       }
       else
       {

@@ -20,102 +20,162 @@ import java.io.File;
 
 
 /**
- * {@code UploadOptionsBuilder} is a builder for {@code UploadOptions} objects.
+ * {@code UploadOptionsBuilder} is used to create and set properties for {@code UploadOptions} objects
+ * that control the behavior of cloud-store upload commands.
  * <p>
- * Setting fields {@code file}, {@code bucket} and {@code objectKey} is
- * mandatory. All the others are optional.
+ * Setting fields {@code _file}, {@code _bucketName} and {@code _objectKey} is mandatory. All the others
+ * are optional.
+ * <p>
+ * @see UploadOptions
+ * @see CloudStoreClient#getOptionsBuilderFactory()
+ * @see CloudStoreClient#upload()
+ * @see CloudStoreClient#uploadDirectory()
+ * @see OptionsBuilderFactory#newUploadOptionsBuilder()
  */
-public class UploadOptionsBuilder extends CommandOptionsBuilder {
-    private File file;
-    private String bucket;
-    private String objectKey;
-    private long chunkSize = -1;
-    private String encKey;
-    private String cannedAcl;
-    private OverallProgressListenerFactory overallProgressListenerFactory;
-    private boolean dryRun = false;
-    private boolean ignoreAbortInjection = false;
+public class UploadOptionsBuilder
+  extends CommandOptionsBuilder
+{
+  private File _file;
+  private String _bucketName;
+  private String _objectKey;
+  private long _chunkSize = -1;
+  private String _encKey;
+  private String _cannedAcl;
+  private OverallProgressListenerFactory _overallProgressListenerFactory;
+  private boolean _dryRun = false;
+  private boolean _ignoreAbortInjection = false;
 
-    UploadOptionsBuilder(CloudStoreClient client) {
-        _cloudStoreClient = client;
-     }
+  UploadOptionsBuilder(CloudStoreClient client)
+  {
+    _cloudStoreClient = client;
+  }
 
-    public UploadOptionsBuilder setFile(File file) {
-        this.file = file;
-        return this;
+  /**
+   * Set the local file to be uploaded.
+   */
+  public UploadOptionsBuilder setFile(File file)
+  {
+    _file = file;
+    return this;
+  }
+
+  /**
+   * Set the name of the bucket to receive the uploaded file.
+   */
+  public UploadOptionsBuilder setBucketName(String bucket)
+  {
+    _bucketName = bucket;
+    return this;
+  }
+
+  /**
+   * Set the key of the uploaded file.
+   */
+  public UploadOptionsBuilder setObjectKey(String objectKey)
+  {
+    _objectKey = objectKey;
+    return this;
+  }
+
+  /**
+   * Set the chunk size used to control concurrent parallel file upload.
+   */
+  public UploadOptionsBuilder setChunkSize(long chunkSize)
+  {
+    _chunkSize = chunkSize;
+    return this;
+  }
+
+  /**
+   * Set the name of the encryption key used to encrypt data in the file.
+   * The public key for the named key pair must be in the local key directory.
+   */
+  public UploadOptionsBuilder setEncKey(String encKey)
+  {
+    _encKey = encKey;
+    return this;
+  }
+
+  /**
+   * Set the name of access control list given to the uploaded file.  If not
+   * specified, the default access control list for the service is used.
+   */
+  public UploadOptionsBuilder setCannedAcl(String acl)
+  {
+    _cannedAcl = acl;
+    return this;
+  }
+
+  /**
+   * Set a progress listener used to track upload progress.
+   */
+  public UploadOptionsBuilder setOverallProgressListenerFactory(
+    OverallProgressListenerFactory overallProgressListenerFactory)
+  {
+    _overallProgressListenerFactory = overallProgressListenerFactory;
+    return this;
+  }
+
+  /**
+   * If set to true, print operations that would be executed, but do not perform them.
+   */
+  public UploadOptionsBuilder setDryRun(boolean dryRun)
+  {
+    _dryRun = dryRun;
+    return this;
+  }
+
+  /**
+   * Used by test framework to control abort injection behavior.
+   */
+  public UploadOptionsBuilder setIgnoreAbortInjection(boolean ignore)
+  {
+    _ignoreAbortInjection = ignore;
+    return this;
+  }
+
+  private void validateOptions()
+  {
+    if(_cloudStoreClient == null)
+    {
+      throw new UsageException("CloudStoreClient has to be set");
+    }
+    else if(_file == null)
+    {
+      throw new UsageException("File has to be set");
+    }
+    else if(_bucketName == null)
+    {
+      throw new UsageException("Bucket has to be set");
+    }
+    else if(_objectKey == null)
+    {
+      throw new UsageException("Object key has to be set");
     }
 
-    public UploadOptionsBuilder setBucketName(String bucket) {
-        this.bucket = bucket;
-        return this;
+    if(_cannedAcl != null)
+    {
+      if(!_cloudStoreClient.getAclHandler().isCannedAclValid(_cannedAcl))
+      {
+        throw new UsageException("Invalid canned ACL '" + _cannedAcl + "'");
+      }
     }
-
-    public UploadOptionsBuilder setObjectKey(String objectKey) {
-        this.objectKey = objectKey;
-        return this;
+    else
+    {
+      _cannedAcl = _cloudStoreClient.getAclHandler().getDefaultAcl();
     }
+  }
 
-    public UploadOptionsBuilder setChunkSize(long chunkSize) {
-        this.chunkSize = chunkSize;
-        return this;
-    }
+  /**
+   * Validate that all required parameters are set and if so return a new {@link UploadOptions}
+   * object.
+   */
+  @Override
+  public UploadOptions createOptions()
+  {
+    validateOptions();
 
-    public UploadOptionsBuilder setEncKey(String encKey) {
-        this.encKey = encKey;
-        return this;
-    }
-
-    public UploadOptionsBuilder setCannedAcl(String acl) {
-        this.cannedAcl = acl;
-        return this;
-    }
-
-    public UploadOptionsBuilder setOverallProgressListenerFactory
-        (OverallProgressListenerFactory overallProgressListenerFactory) {
-        this.overallProgressListenerFactory = overallProgressListenerFactory;
-        return this;
-    }
-
-    public UploadOptionsBuilder setDryRun(boolean dryRun) {
-        this.dryRun = dryRun;
-        return this;
-    }
-
-    public UploadOptionsBuilder setIgnoreAbortInjection(boolean ignore) {
-        this.ignoreAbortInjection = ignore;
-        return this;
-    }
-
-    private void validateOptions() {
-        if (_cloudStoreClient == null) {
-            throw new UsageException("CloudStoreClient has to be set");
-        }
-        else if (file == null) {
-            throw new UsageException("File has to be set");
-        }
-        else if (bucket == null) {
-            throw new UsageException("Bucket has to be set");
-        }
-        else if (objectKey == null) {
-            throw new UsageException("Object key has to be set");
-        }
-
-        if (cannedAcl != null) {
-            if (!_cloudStoreClient.getAclHandler().isCannedAclValid(cannedAcl)) {
-                throw new UsageException("Invalid canned ACL '" + cannedAcl + "'");
-            }
-        }
-        else {
-            cannedAcl = _cloudStoreClient.getAclHandler().getDefaultAcl();
-        }
-    }
-
-    @Override
-    public UploadOptions createOptions() {
-        validateOptions();
-
-        return new UploadOptions(_cloudStoreClient, file, bucket, objectKey,
-          chunkSize, encKey, cannedAcl, dryRun, ignoreAbortInjection,
-          overallProgressListenerFactory);
-    }
+    return new UploadOptions(_cloudStoreClient, _file, _bucketName, _objectKey, _chunkSize, _encKey,
+      _cannedAcl, _dryRun, _ignoreAbortInjection, _overallProgressListenerFactory);
+  }
 }

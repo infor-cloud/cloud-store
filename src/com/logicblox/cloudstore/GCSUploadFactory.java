@@ -16,7 +16,6 @@
 
 package com.logicblox.cloudstore;
 
-import com.google.api.client.googleapis.media.MediaHttpUploaderProgressListener;
 import com.google.api.services.storage.Storage;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -25,45 +24,55 @@ import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-class GCSUploadFactory implements UploadFactory {
-    private Storage client;
-    private ListeningExecutorService executor;
+class GCSUploadFactory
+  implements UploadFactory
+{
+  private Storage _client;
+  private ListeningExecutorService _executor;
 
-    public GCSUploadFactory(Storage client, ListeningExecutorService executor) {
-        if (client == null)
-            throw new IllegalArgumentException("non-null client is required");
-        if (executor == null)
-            throw new IllegalArgumentException("non-null executor is required");
-
-        this.client = client;
-        this.executor = executor;
-    }
-
-    public ListenableFuture<Upload> startUpload(String bucketName, String key,
-      Map<String, String> meta, UploadOptions options)
+  public GCSUploadFactory(Storage client, ListeningExecutorService executor)
+  {
+    if(client == null)
     {
-        return executor.submit(new StartCallable(bucketName, key, meta, options));
+      throw new IllegalArgumentException("non-null client is required");
+    }
+    if(executor == null)
+    {
+      throw new IllegalArgumentException("non-null executor is required");
     }
 
-    private class StartCallable implements Callable<Upload> {
-        private String key;
-        private String bucketName;
-        private Map<String, String> meta;
-        private UploadOptions options;
+    _client = client;
+    _executor = executor;
+  }
 
-        public StartCallable(String bucketName, String key, Map<String, String> meta,
-          UploadOptions options)
-        {
-            this.bucketName = bucketName;
-            this.key = key;
-            this.meta = meta;
-            this.options = options;
-        }
+  public ListenableFuture<Upload> startUpload(
+    String bucketName, String key, Map<String, String> meta, UploadOptions options)
+  {
+    return _executor.submit(new StartCallable(bucketName, key, meta, options));
+  }
 
-        public Upload call() throws Exception
-        {
-            return new GCSUpload(client, bucketName, key, this.meta,
-              new Date(), executor, options);
-        }
+  private class StartCallable
+    implements Callable<Upload>
+  {
+    private String _objectKey;
+    private String _bucketName;
+    private Map<String, String> _meta;
+    private UploadOptions _options;
+
+    public StartCallable(
+      String bucketName, String objectKey, Map<String, String> meta, UploadOptions options)
+    {
+      _bucketName = bucketName;
+      _objectKey = objectKey;
+      _meta = meta;
+      _options = options;
     }
+
+    public Upload call()
+      throws Exception
+    {
+      return new GCSUpload(_client, _bucketName, _objectKey, _meta, new Date(), _executor,
+        _options);
+    }
+  }
 }

@@ -25,9 +25,9 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
-public class ThrowableRetriableTask<V> implements Callable<ListenableFuture<V>>
+public class ThrowableRetriableTask<V>
+  implements Callable<ListenableFuture<V>>
 {
   private final Callable<ListenableFuture<V>> _callable;
   private final ListeningScheduledExecutorService _executor;
@@ -37,9 +37,9 @@ public class ThrowableRetriableTask<V> implements Callable<ListenableFuture<V>>
   // for testing
   private static Set<RetryListener> _retryListeners = new HashSet<RetryListener>();
 
-  public ThrowableRetriableTask(Callable<ListenableFuture<V>> callable,
-                                ListeningScheduledExecutorService executor,
-                                ThrowableRetryPolicy retryPolicy)
+  public ThrowableRetriableTask(
+    Callable<ListenableFuture<V>> callable, ListeningScheduledExecutorService executor,
+    ThrowableRetryPolicy retryPolicy)
   {
     _callable = callable;
     _executor = executor;
@@ -59,33 +59,30 @@ public class ThrowableRetriableTask<V> implements Callable<ListenableFuture<V>>
       future = Futures.immediateFailedFuture(exc);
     }
 
-    return Futures.withFallback(
-      future,
-      new FutureFallback<V>()
+    return Futures.withFallback(future, new FutureFallback<V>()
+    {
+      public ListenableFuture<V> create(Throwable t)
       {
-        public ListenableFuture<V> create(Throwable t)
+        _retryCount++;
+        if(_retryPolicy.shouldRetry(t, _retryCount))
         {
-          _retryCount++;
-          if(_retryPolicy.shouldRetry(t, _retryCount))
-          {
-            String msg = "Info: Retriable exception: " + _callable.toString() +
-              ": " + t.getMessage();
-            System.err.println(msg);
-            sendRetryNotifications(_callable.toString(), t);
+          String msg = "Info: Retriable exception: " + _callable.toString() + ": " + t.getMessage();
+          System.err.println(msg);
+          sendRetryNotifications(_callable.toString(), t);
 
-            long delay = _retryPolicy.getDelay(t, _retryCount);
-            // TODO: actually use the scheduled executor once Guava 15 is out
-            // Futures.dereference(_executor.schedule(_callable, delay, TimeUnit.MILLISECONDS));
-            sleep(delay);
+          long delay = _retryPolicy.getDelay(t, _retryCount);
+          // TODO: actually use the scheduled executor once Guava 15 is out
+          // Futures.dereference(_executor.schedule(_callable, delay, TimeUnit.MILLISECONDS));
+          sleep(delay);
 
-            return call();
-          }
-          else
-          {
-            return Futures.immediateFailedFuture(t);
-          }
+          return call();
         }
-      });
+        else
+        {
+          return Futures.immediateFailedFuture(t);
+        }
+      }
+    });
   }
 
   // for testing
@@ -110,7 +107,8 @@ public class ThrowableRetriableTask<V> implements Callable<ListenableFuture<V>>
         Thread.sleep(delay);
       }
       catch(InterruptedException ignored)
-      {}
+      {
+      }
     }
   }
 }

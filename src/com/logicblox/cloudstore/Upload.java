@@ -16,18 +16,17 @@
 
 package com.logicblox.cloudstore;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import java.io.InputStream;
 import java.util.Date;
 import java.util.concurrent.Callable;
 
-import com.google.common.util.concurrent.ListenableFuture;
-
 interface Upload
 {
-  ListenableFuture<Void> uploadPart(int partNumber,
-                                    long partSize,
-                                    Callable<InputStream> streamCallable,
-                                    OverallProgressListener opl);
+  ListenableFuture<Void> uploadPart(
+    int partNumber, long partSize, Callable<InputStream> streamCallable,
+    OverallProgressListener opl);
 
   ListenableFuture<String> completeUpload();
 

@@ -31,7 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-public class S3CopyCommand extends Command
+public class S3CopyCommand
+  extends Command
 {
   private CopyOptions _options;
   private OverallProgressListenerFactory _progressListenerFactory;
@@ -48,31 +49,28 @@ public class S3CopyCommand extends Command
   {
     if(_options.isDryRun())
     {
-      System.out.println("<DRYRUN> copying '" + getUri(
-        _options.getSourceBucketName(), _options.getSourceObjectKey()) +
-        "' to '" + getUri(_options.getDestinationBucketName(),
-        _options.getDestinationObjectKey()) + "'");
+      System.out.println("<DRYRUN> copying '" +
+        getUri(_options.getSourceBucketName(), _options.getSourceObjectKey()) + "' to '" +
+        getUri(_options.getDestinationBucketName(), _options.getDestinationObjectKey()) + "'");
       return Futures.immediateFuture(null);
     }
     else
     {
       ListenableFuture<Copy> copy = startCopy();
       copy = Futures.transform(copy, startPartsAsyncFunction());
-      ListenableFuture<String> result = Futures.transform(copy,
-        completeAsyncFunction());
-      return Futures.transform(
-        result,
-        new Function<String, StoreFile>() {
-          public StoreFile apply(String etag) {
-            StoreFile f = new StoreFile();
-            f.setLocalFile(null);
-            f.setETag(etag);
-            f.setBucketName(_options.getDestinationBucketName());
-            f.setKey(_options.getDestinationObjectKey());
-            return f;
-          }
+      ListenableFuture<String> result = Futures.transform(copy, completeAsyncFunction());
+      return Futures.transform(result, new Function<String, StoreFile>()
+      {
+        public StoreFile apply(String etag)
+        {
+          StoreFile f = new StoreFile();
+          f.setLocalFile(null);
+          f.setETag(etag);
+          f.setBucketName(_options.getDestinationBucketName());
+          f.setKey(_options.getDestinationObjectKey());
+          return f;
         }
-      );
+      });
     }
   }
 
@@ -81,33 +79,29 @@ public class S3CopyCommand extends Command
    */
   private ListenableFuture<Copy> startCopy()
   {
-    return executeWithRetry(
-      _client.getInternalExecutor(),
-      new Callable<ListenableFuture<Copy>>()
+    return executeWithRetry(_client.getInternalExecutor(), new Callable<ListenableFuture<Copy>>()
+    {
+      public ListenableFuture<Copy> call()
       {
-        public ListenableFuture<Copy> call()
-        {
-          return startCopyActual();
-        }
+        return startCopyActual();
+      }
 
-        public String toString()
-        {
-          return "starting copy of " + getUri(
-            _options.getSourceBucketName(), _options.getSourceObjectKey()) + " to " + getUri(
-            _options.getDestinationBucketName(), _options.getDestinationObjectKey());
-        }
-      });
+      public String toString()
+      {
+        return "starting copy of " +
+          getUri(_options.getSourceBucketName(), _options.getSourceObjectKey()) + " to " +
+          getUri(_options.getDestinationBucketName(), _options.getDestinationObjectKey());
+      }
+    });
   }
 
   private ListenableFuture<Copy> startCopyActual()
   {
-    S3MultipartCopyFactory factory = new S3MultipartCopyFactory(
-      getS3Client(), _client.getApiExecutor());
+    S3MultipartCopyFactory factory = new S3MultipartCopyFactory(getS3Client(),
+      _client.getApiExecutor());
 
-    return factory.startCopy(
-      _options.getSourceBucketName(), _options.getSourceObjectKey(),
-      _options.getDestinationBucketName(), _options.getDestinationObjectKey(),
-      _options);
+    return factory.startCopy(_options.getSourceBucketName(), _options.getSourceObjectKey(),
+      _options.getDestinationBucketName(), _options.getDestinationObjectKey(), _options);
   }
 
   /**
@@ -117,7 +111,8 @@ public class S3CopyCommand extends Command
   {
     return new AsyncFunction<Copy, Copy>()
     {
-      public ListenableFuture<Copy> apply(final Copy copy) throws Exception
+      public ListenableFuture<Copy> apply(final Copy copy)
+        throws Exception
       {
         return startParts(copy);
       }
@@ -129,37 +124,36 @@ public class S3CopyCommand extends Command
   {
     String srcUri = getUri(copy.getSourceBucketName(), copy.getSourceObjectKey());
     String destUri = getUri(copy.getDestinationBucketName(), copy.getDestinationObjectKey());
-    
-    Map<String,String> meta = copy.getMeta();
+
+    Map<String, String> meta = copy.getMeta();
     String errPrefix = "Copy of " + srcUri + " to " + destUri + ": ";
 
     // cloudstore-specific metadata should already be set by factory.startCopy
     String objectVersion = meta.get("s3tool-version");
 
-    if (!String.valueOf(Version.CURRENT).equals(objectVersion))
+    if(!String.valueOf(Version.CURRENT).equals(objectVersion))
+    {
       throw new UsageException(
-        errPrefix + "unsupported version: " +  objectVersion +
-            ", should be " + Version.CURRENT);
+        errPrefix + "unsupported version: " + objectVersion + ", should be " + Version.CURRENT);
+    }
 
     setFileLength(Long.valueOf(meta.get("s3tool-file-length")));
     setChunkSize(Long.valueOf(meta.get("s3tool-chunk-size")));
 
     OverallProgressListener opl = null;
-    if (_progressListenerFactory != null) {
-      opl = _progressListenerFactory.create(
-          new ProgressOptionsBuilder()
-              .setObjectUri(getUri(copy.getDestinationBucketName(),
-                  copy.getDestinationObjectKey()))
-              .setOperation("copy")
-              .setFileSizeInBytes(fileLength)
-              .createProgressOptions());
+    if(_progressListenerFactory != null)
+    {
+      opl = _progressListenerFactory.create(new ProgressOptionsBuilder().setObjectUri(
+        getUri(copy.getDestinationBucketName(), copy.getDestinationObjectKey()))
+        .setOperation("copy")
+        .setFileSizeInBytes(fileLength)
+        .createProgressOptions());
     }
 
     List<ListenableFuture<Void>> parts = new ArrayList<>();
 
-    for (long position = 0;
-         position < fileLength || (position == 0 && fileLength == 0);
-         position += chunkSize)
+    for(long position = 0; position < fileLength || (position == 0 && fileLength == 0);
+        position += chunkSize)
     {
       parts.add(startPartCopy(copy, position, opl));
     }
@@ -167,29 +161,27 @@ public class S3CopyCommand extends Command
     return Futures.transform(Futures.allAsList(parts), Functions.constant(copy));
   }
 
-  private ListenableFuture<Void> startPartCopy(final Copy copy,
-                                               final long position,
-                                               final OverallProgressListener opl)
+  private ListenableFuture<Void> startPartCopy(
+    final Copy copy, final long position, final OverallProgressListener opl)
   {
     final int partNumber = (int) (position / chunkSize);
 
-    return executeWithRetry(
-        _client.getInternalExecutor(),
-        new Callable<ListenableFuture<Void>>() {
-          public ListenableFuture<Void> call() {
-            return startPartCopyActual(copy, position, partNumber, opl);
-          }
+    return executeWithRetry(_client.getInternalExecutor(), new Callable<ListenableFuture<Void>>()
+    {
+      public ListenableFuture<Void> call()
+      {
+        return startPartCopyActual(copy, position, partNumber, opl);
+      }
 
-          public String toString() {
-            return "copying part " + (partNumber + 1);
-          }
-        });
+      public String toString()
+      {
+        return "copying part " + (partNumber + 1);
+      }
+    });
   }
 
-  private ListenableFuture<Void> startPartCopyActual(final Copy copy,
-                                                     final long position,
-                                                     final int partNumber,
-                                                     OverallProgressListener opl)
+  private ListenableFuture<Void> startPartCopyActual(
+    final Copy copy, final long position, final int partNumber, OverallProgressListener opl)
   {
     // support for testing failures
     String srcUri = getUri(copy.getSourceBucketName(), copy.getSourceObjectKey());
@@ -199,21 +191,21 @@ public class S3CopyCommand extends Command
     Long end;
     long partSize;
 
-    if (copy.getMeta().containsKey("s3tool-key-name"))
+    if(copy.getMeta().containsKey("s3tool-key-name"))
     {
       long blockSize;
       try
       {
         blockSize = Cipher.getInstance("AES/CBC/PKCS5Padding").getBlockSize();
       }
-      catch (NoSuchAlgorithmException | NoSuchPaddingException e)
+      catch(NoSuchAlgorithmException | NoSuchPaddingException e)
       {
         throw new RuntimeException(e);
       }
 
       long postCryptSize = Math.min(fileLength - position, chunkSize);
-      start = partNumber * blockSize * (chunkSize/blockSize + 2);
-      partSize = blockSize * (postCryptSize/blockSize + 2);
+      start = partNumber * blockSize * (chunkSize / blockSize + 2);
+      partSize = blockSize * (postCryptSize / blockSize + 2);
     }
     else
     {
@@ -222,14 +214,13 @@ public class S3CopyCommand extends Command
     }
     end = start + partSize - 1;
 
-    if (fileLength == 0)
+    if(fileLength == 0)
     {
       start = null;
       end = null;
     }
 
-    ListenableFuture<Void> copyPartFuture = copy.copyPart(partNumber, start,
-        end, opl);
+    ListenableFuture<Void> copyPartFuture = copy.copyPart(partNumber, start, end, opl);
 
     return copyPartFuture;
   }
@@ -251,26 +242,23 @@ public class S3CopyCommand extends Command
   /**
    * Execute completeActual with retry
    */
-  private ListenableFuture<String> complete(final Copy copy,
-                                            final int retryCount)
+  private ListenableFuture<String> complete(final Copy copy, final int retryCount)
   {
-    return executeWithRetry(_client.getInternalExecutor(),
-        new Callable<ListenableFuture<String>>()
-        {
-          public ListenableFuture<String> call()
-          {
-            return completeActual(copy, retryCount);
-          }
+    return executeWithRetry(_client.getInternalExecutor(), new Callable<ListenableFuture<String>>()
+    {
+      public ListenableFuture<String> call()
+      {
+        return completeActual(copy, retryCount);
+      }
 
-          public String toString()
-          {
-            return "completing copy";
-          }
-        });
+      public String toString()
+      {
+        return "completing copy";
+      }
+    });
   }
 
-  private ListenableFuture<String> completeActual(final Copy copy,
-                                                  final int retryCount)
+  private ListenableFuture<String> completeActual(final Copy copy, final int retryCount)
   {
     return copy.completeCopy();
   }

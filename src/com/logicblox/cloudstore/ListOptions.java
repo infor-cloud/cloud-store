@@ -18,45 +18,75 @@ package com.logicblox.cloudstore;
 
 import java.util.Optional;
 
-public class ListOptions extends CommandOptions {
-  private String bucket;
-  private String objectKey;
-  private boolean recursive;
-  private boolean includeVersions;
-  private boolean excludeDirs;
-  
-  ListOptions(CloudStoreClient cloudStoreClient,
-              String bucket,
-              String objectKey,
-              boolean recursive,
-              boolean includeVersions,
-              boolean excludeDirs) {
+/**
+ * {@code ListOptions} contains all the details needed by the cloud-store list command.
+ * <p>
+ * @see ListOptionsBuilder
+ * @see CloudStoreClient#getOptionsBuilderFactory()
+ * @see CloudStoreClient#listObjects()
+ * @see OptionsBuilderFactory#newListOptionsBuilder()
+ */
+public class ListOptions
+  extends CommandOptions
+{
+  private String _bucketName;
+  private String _objectKey;
+  private boolean _recursive;
+  private boolean _includeVersions;
+  private boolean _excludeDirs;
+
+  ListOptions(
+    CloudStoreClient cloudStoreClient, String bucketName, String objectKey, boolean recursive,
+    boolean includeVersions, boolean excludeDirs)
+  {
     super(cloudStoreClient);
-    this.bucket = bucket;
-    this.objectKey = objectKey;
-    this.recursive = recursive;
-    this.includeVersions = includeVersions;
-    this.excludeDirs = excludeDirs;
+    _bucketName = bucketName;
+    _objectKey = objectKey;
+    _recursive = recursive;
+    _includeVersions = includeVersions;
+    _excludeDirs = excludeDirs;
   }
 
-  public String getBucketName() {
-    return bucket;
+  /**
+   * Return the name of the bucket containing files to list.
+   */
+  public String getBucketName()
+  {
+    return _bucketName;
   }
-  
-  public Optional<String> getObjectKey() {
-    return Optional.ofNullable(objectKey);
+
+  /**
+   * Return the key of the file or file prefix to be matched to files to be listed.
+   */
+  public Optional<String> getObjectKey()
+  {
+    return Optional.ofNullable(_objectKey);
   }
-  
-  public boolean isRecursive() {
-    return recursive;
+
+  /**
+   * Return the recursive option for the command.  If true, recursively list files
+   * from all subdirectories as well as top-level directories.
+   */
+  public boolean isRecursive()
+  {
+    return _recursive;
   }
-  
-  public boolean versionsIncluded() {
-    return includeVersions;
+
+  /**
+   * If set to true, list all version information for files.
+   */
+  public boolean versionsIncluded()
+  {
+    return _includeVersions;
   }
-  
-  public boolean dirsExcluded() {
-    return excludeDirs;
+
+  /**
+   * If set to true, do not list any files that look like directories
+   * (end with '/').
+   */
+  public boolean dirsExcluded()
+  {
+    return _excludeDirs;
   }
-  
+
 }

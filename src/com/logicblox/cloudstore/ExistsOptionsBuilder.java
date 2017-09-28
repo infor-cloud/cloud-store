@@ -16,7 +16,19 @@
 
 package com.logicblox.cloudstore;
 
-public class ExistsOptionsBuilder extends CommandOptionsBuilder
+/**
+ * {@code ExistsOptionsBuilder} is used to create and set properties for {@code ExistsOptions} 
+ * objects used to control behavior of the cloud-store exists command.
+ * <p>
+ * Setting {@code bucketName} and {@code objectKey} are mandatory.
+ * <p>
+ * @see ExistsOptions
+ * @see CloudStoreClient#getOptionsBuilderFactory()
+ * @see CloudStoreClient#exists()
+ * @see OptionsBuilderFactory#newExistsOptionsBuilder()
+ */
+public class ExistsOptionsBuilder
+  extends CommandOptionsBuilder
 {
   private String _bucket;
   private String _objectKey;
@@ -26,12 +38,18 @@ public class ExistsOptionsBuilder extends CommandOptionsBuilder
     _cloudStoreClient = client;
   }
 
+  /**
+   * Set the name of the bucket containing the file to check.
+   */
   public ExistsOptionsBuilder setBucketName(String bucket)
   {
     _bucket = bucket;
     return this;
   }
-  
+
+  /**
+   * Set the key of the file to check.
+   */
   public ExistsOptionsBuilder setObjectKey(String objectKey)
   {
     _objectKey = objectKey;
@@ -40,17 +58,24 @@ public class ExistsOptionsBuilder extends CommandOptionsBuilder
 
   private void validateOptions()
   {
-    if (_cloudStoreClient == null) {
+    if(_cloudStoreClient == null)
+    {
       throw new UsageException("CloudStoreClient has to be set");
     }
-    else if (_bucket == null) {
+    else if(_bucket == null)
+    {
       throw new UsageException("Bucket has to be set");
     }
-    else if (_objectKey == null) {
+    else if(_objectKey == null)
+    {
       throw new UsageException("Object key has to be set");
     }
   }
 
+  /**
+   * Validate that all required parameters are set and if so return a new {@link ExistsOptions}
+   * object.
+   */
   @Override
   public ExistsOptions createOptions()
   {

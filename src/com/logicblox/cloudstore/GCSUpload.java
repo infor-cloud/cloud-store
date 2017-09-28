@@ -31,153 +31,164 @@ import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-class GCSUpload implements Upload {
-    private String md5;
-    private Storage client;
-    private String bucketName;
-    private String key;
-    private Map<String, String> meta;
-    private Date initiated;
-    private ListeningExecutorService executor;
-    private UploadOptions options;
+class GCSUpload
+  implements Upload
+{
+  private String _md5;
+  private Storage _client;
+  private String _bucketName;
+  private String _objectKey;
+  private Map<String, String> _meta;
+  private Date _initiated;
+  private ListeningExecutorService _executor;
+  private UploadOptions _options;
 
-    // for testing
-    private String uploadId;
+  // for testing
+  private String _uploadId;
 
-    public GCSUpload(Storage client,
-                     String bucketName,
-                     String key,
-                     Map<String, String> meta,
-                     Date initiated,
-                     ListeningExecutorService executor,
-                     UploadOptions options)
+  public GCSUpload(
+    Storage client, String bucketName, String objectKey, Map<String, String> meta, Date initiated,
+    ListeningExecutorService executor, UploadOptions options)
+  {
+    _client = client;
+    _bucketName = bucketName;
+    _objectKey = objectKey;
+    _meta = meta;
+    _initiated = initiated;
+    _executor = executor;
+    _uploadId = bucketName + "/" + objectKey;
+    _options = options;
+  }
+
+  public ListenableFuture<Void> uploadPart(
+    int partNumber, long partSize, Callable<InputStream> stream,
+    OverallProgressListener progressListener)
+  {
+    // added to support retry testing
+    _options.injectAbort(_uploadId);
+
+    return _executor.submit(new UploadCallable(partNumber, partSize, stream, progressListener));
+  }
+
+  public ListenableFuture<String> completeUpload()
+  {
+    return _executor.submit(new CompleteCallable());
+  }
+
+  public ListenableFuture<Void> abort()
+  {
+    return _executor.submit(new AbortCallable());
+  }
+
+  public String getBucket()
+  {
+    return _bucketName;
+  }
+
+  public String getKey()
+  {
+    return _objectKey;
+  }
+
+  public String getId()
+  {
+    return null;
+  }
+
+  public Date getInitiationDate()
+  {
+    return _initiated;
+  }
+
+  private class AbortCallable
+    implements Callable<Void>
+  {
+    public Void call()
+      throws Exception
     {
-        this.client = client;
-        this.bucketName = bucketName;
-        this.key = key;
-        this.meta = meta;
-        this.initiated = initiated;
-        this.executor = executor;
-        this.uploadId = bucketName + "/" + key;
-        this.options = options;
+      return null;
     }
+  }
 
-    public ListenableFuture<Void> uploadPart(int partNumber,
-                                             long partSize,
-                                             Callable<InputStream> stream,
-                                             OverallProgressListener
-                                                 progressListener) {
-        // added to support retry testing
-        options.injectAbort(uploadId);
-
-        return executor.submit(new UploadCallable(partNumber, partSize, stream,
-            progressListener));
-    }
-
-    public ListenableFuture<String> completeUpload() {
-        return executor.submit(new CompleteCallable());
-    }
-
-    public ListenableFuture<Void> abort() {
-        return executor.submit(new AbortCallable());
-    }
-
-    public String getBucket()
+  private class CompleteCallable
+    implements Callable<String>
+  {
+    public String call()
+      throws Exception
     {
-        return bucketName;
+      return _md5;
+    }
+  }
+
+  private class UploadCallable
+    implements Callable<Void>
+  {
+    private int _partNumber;
+    private long _partSize;
+    private Callable<InputStream> _streamCallable;
+    private OverallProgressListener _progressListener;
+
+    public UploadCallable(
+      int partNumber, long partSize, Callable<InputStream> streamCallable,
+      OverallProgressListener progressListener)
+    {
+      _partNumber = partNumber;
+      _partSize = partSize;
+      _streamCallable = streamCallable;
+      _progressListener = progressListener;
     }
 
-    public String getKey()
+    public Void call()
+      throws Exception
     {
-        return key;
+      try(HashingInputStream stream = new HashingInputStream(_streamCallable.call()))
+      {
+        return upload(stream);
+      }
     }
 
-    public String getId()
+    private Void upload(HashingInputStream stream)
+      throws IOException, BadHashException
     {
+      InputStreamContent mediaContent = new InputStreamContent("application/octet-stream", stream);
+
+      // Not strictly necessary, but allows optimization in the cloud.
+      mediaContent.setLength(_partSize);
+
+      StorageObject objectMetadata = new StorageObject().setName(_objectKey)
+        .setMetadata(ImmutableMap.copyOf(_meta));
+
+      Storage.Objects.Insert insertObject = _client.objects()
+        .insert(_bucketName, objectMetadata, mediaContent);
+
+      insertObject.setPredefinedAcl(_options.getCannedAcl());
+      insertObject.getMediaHttpUploader().setDisableGZipContent(true);
+      //              .setDisableGZipContent(true).setDirectUploadEnabled(true);
+
+      if(_progressListener != null)
+      {
+        PartProgressEvent ppe = new PartProgressEvent(Integer.toString(_partNumber));
+        MediaHttpUploaderProgressListener gcspl = new GCSProgressListener(_progressListener, ppe);
+        insertObject.getMediaHttpUploader().setProgressListener(gcspl);
+      }
+
+      StorageObject res = insertObject.execute();
+
+      // GCS supports MD5 integrity check at server-sid. Since we are computing
+      // MD5 on-the-fly, we can only do the check at the client-side.
+      String serverMD5 = res.getMd5Hash();
+      String clientMD5 = new String(Base64.encodeBase64(stream.getDigest()));
+      if(serverMD5.equals(clientMD5))
+      {
+        _md5 = serverMD5;
         return null;
+      }
+      else
+      {
+        throw new BadHashException(
+          "Failed upload validation for " + "'gs://" + _bucketName + "/" + _objectKey + "'. " +
+            "Calculated MD5: " + clientMD5 + ", Expected MD5: " + serverMD5);
+      }
     }
-
-    public Date getInitiationDate()
-    {
-        return initiated;
-    }
-
-    private class AbortCallable implements Callable<Void> {
-        public Void call() throws Exception {
-            return null;
-        }
-    }
-
-    private class CompleteCallable implements Callable<String> {
-        public String call() throws Exception {
-            return md5;
-        }
-    }
-
-    private class UploadCallable implements Callable<Void> {
-        private int partNumber;
-        private long partSize;
-        private Callable<InputStream> streamCallable;
-        private OverallProgressListener progressListener;
-
-        public UploadCallable(int partNumber,
-                              long partSize,
-                              Callable<InputStream> streamCallable,
-                              OverallProgressListener progressListener) {
-            this.partNumber = partNumber;
-            this.partSize = partSize;
-            this.streamCallable = streamCallable;
-            this.progressListener = progressListener;
-        }
-
-        public Void call() throws Exception {
-            try (HashingInputStream stream = new HashingInputStream(streamCallable.call())) {
-                return upload(stream);
-            }
-        }
-
-        private Void upload(HashingInputStream stream) throws IOException, BadHashException {
-            InputStreamContent mediaContent = new InputStreamContent(
-                "application/octet-stream", stream);
-
-            // Not strictly necessary, but allows optimization in the cloud.
-            mediaContent.setLength(this.partSize);
-
-            StorageObject objectMetadata = new StorageObject()
-                .setName(key)
-                .setMetadata(ImmutableMap.copyOf(meta));
-
-            Storage.Objects.Insert insertObject =
-                client.objects()
-                    .insert(bucketName, objectMetadata, mediaContent);
-
-            insertObject.setPredefinedAcl(options.getCannedAcl());
-            insertObject.getMediaHttpUploader().setDisableGZipContent(true);
-//              .setDisableGZipContent(true).setDirectUploadEnabled(true);
-
-            if (progressListener != null) {
-                PartProgressEvent ppe = new PartProgressEvent(Integer.toString(partNumber));
-                MediaHttpUploaderProgressListener gcspl =
-                    new GCSProgressListener(progressListener, ppe);
-                insertObject.getMediaHttpUploader()
-                    .setProgressListener(gcspl);
-            }
-
-            StorageObject res = insertObject.execute();
-
-            // GCS supports MD5 integrity check at server-sid. Since we are computing
-            // MD5 on-the-fly, we can only do the check at the client-side.
-            String serverMD5 = res.getMd5Hash();
-            String clientMD5 = new String(Base64.encodeBase64(stream.getDigest()));
-            if (serverMD5.equals(clientMD5)) {
-                md5 = serverMD5;
-                return null;
-            } else {
-                throw new BadHashException("Failed upload validation for " +
-                    "'gs://" + bucketName + "/" + key + "'. " +
-                    "Calculated MD5: " + clientMD5 +
-                    ", Expected MD5: " + serverMD5);
-            }
-        }
-    }
+  }
 }

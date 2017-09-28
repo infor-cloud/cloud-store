@@ -21,13 +21,15 @@ import com.google.api.services.storage.model.StorageObject;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
 
-public class GCSCopyDirCommand extends Command
+public class GCSCopyDirCommand
+  extends Command
 {
   private CopyOptions _options;
 
@@ -40,22 +42,26 @@ public class GCSCopyDirCommand extends Command
   public ListenableFuture<List<StoreFile>> run()
     throws IOException
   {
-    if(!_options.getDestinationObjectKey().endsWith("/") && !_options.getDestinationObjectKey().equals(""))
+    if(!_options.getDestinationObjectKey().endsWith("/") &&
+      !_options.getDestinationObjectKey().equals(""))
+    {
       throw new UsageException("Destination directory key should end with a '/'");
+    }
 
     String baseDirPath = "";
     if(_options.getSourceObjectKey().length() > 0)
     {
       int endIndex = _options.getSourceObjectKey().lastIndexOf("/");
       if(endIndex != -1)
+      {
         baseDirPath = _options.getSourceObjectKey().substring(0, endIndex + 1);
+      }
     }
     final String baseDirPathF = baseDirPath;
 
-    ListenableFuture<List<StoreFile>> listFuture = getListFuture(
-      _options.getSourceBucketName(), _options.getSourceObjectKey(), _options.isRecursive());
-    ListenableFuture<List<StoreFile>> result = Futures.transform(
-      listFuture,
+    ListenableFuture<List<StoreFile>> listFuture = getListFuture(_options.getSourceBucketName(),
+      _options.getSourceObjectKey(), _options.isRecursive());
+    ListenableFuture<List<StoreFile>> result = Futures.transform(listFuture,
       new AsyncFunction<List<StoreFile>, List<StoreFile>>()
       {
         public ListenableFuture<List<StoreFile>> apply(List<StoreFile> filesToCopy)
@@ -66,9 +72,13 @@ public class GCSCopyDirCommand extends Command
             createCopyOp(futures, src, baseDirPathF);
 
           if(_options.isDryRun())
+          {
             return Futures.immediateFuture(null);
+          }
           else
+          {
             return Futures.allAsList(futures);
+          }
         }
       });
     return result;
@@ -84,10 +94,9 @@ public class GCSCopyDirCommand extends Command
       final String destKey = _options.getDestinationObjectKey() + destKeyLastPart;
       if(_options.isDryRun())
       {
-        System.out.println("<DRYRUN> copying '"
-          + getUri(_options.getSourceBucketName(), src.getKey())
-          + "' to '"
-          + getUri(_options.getDestinationBucketName(), destKey) + "'");
+        System.out.println(
+          "<DRYRUN> copying '" + getUri(_options.getSourceBucketName(), src.getKey()) + "' to '" +
+            getUri(_options.getDestinationBucketName(), destKey) + "'");
       }
       else
       {
@@ -96,22 +105,23 @@ public class GCSCopyDirCommand extends Command
     }
   }
 
-  private ListenableFuture<StoreFile> wrapCopyWithRetry(
-    final StoreFile src, final String destKey)
+  private ListenableFuture<StoreFile> wrapCopyWithRetry(final StoreFile src, final String destKey)
   {
-    return executeWithRetry(_client.getInternalExecutor(), new Callable<ListenableFuture<StoreFile>>()
-    {
-      public ListenableFuture<StoreFile> call()
+    return executeWithRetry(_client.getInternalExecutor(),
+      new Callable<ListenableFuture<StoreFile>>()
       {
-        return _client.getApiExecutor().submit(new Callable<StoreFile>()
+        public ListenableFuture<StoreFile> call()
         {
-          public StoreFile call() throws IOException
+          return _client.getApiExecutor().submit(new Callable<StoreFile>()
           {
-            return performCopy(src, destKey);
-          }
-        });
-      }
-    });
+            public StoreFile call()
+              throws IOException
+            {
+              return performCopy(src, destKey);
+            }
+          });
+        }
+      });
   }
 
   private StoreFile performCopy(StoreFile src, String destKey)
@@ -121,10 +131,9 @@ public class GCSCopyDirCommand extends Command
     String srcUri = getUri(_options.getSourceBucketName(), src.getKey());
     _options.injectAbort(srcUri);
 
-    Storage.Objects.Copy cmd = getGCSClient().objects().copy(
-      _options.getSourceBucketName(), src.getKey(),
-      _options.getDestinationBucketName(), destKey,
-      null);
+    Storage.Objects.Copy cmd = getGCSClient().objects()
+      .copy(_options.getSourceBucketName(), src.getKey(), _options.getDestinationBucketName(),
+        destKey, null);
     StorageObject resp = cmd.execute();
     return createStoreFile(resp, false);
   }
@@ -152,7 +161,9 @@ public class GCSCopyDirCommand extends Command
     f.setBucketName(obj.getBucket());
     f.setSize(obj.getSize().longValue());
     if(includeVersion && (null != obj.getGeneration()))
+    {
       f.setVersionId(obj.getGeneration().toString());
+    }
     f.setTimestamp(new java.util.Date(obj.getUpdated().getValue()));
     return f;
   }

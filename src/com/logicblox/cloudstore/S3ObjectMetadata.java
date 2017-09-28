@@ -25,67 +25,63 @@ import java.util.Map;
 
 class S3ObjectMetadata
 {
-  private AmazonS3 client;
-  private ListeningExecutorService executor;
-  private ObjectMetadata meta;
-  private String key;
-  private String bucketName;
-  private String version;
+  private AmazonS3 _client;
+  private ListeningExecutorService _executor;
+  private ObjectMetadata _meta;
+  private String _objectKey;
+  private String _bucketName;
+  private String _version;
 
   public S3ObjectMetadata(
-    AmazonS3 client,
-    String key,
-    String bucketName,
-    String version,
-    ObjectMetadata meta,
+    AmazonS3 client, String objectKey, String bucketName, String version, ObjectMetadata meta,
     ListeningExecutorService executor)
   {
-    this.client = client;
-    this.key = key;
-    this.bucketName = bucketName;
-    this.version = version;
-    this.executor = executor;
-    this.meta = meta;
+    _client = client;
+    _objectKey = objectKey;
+    _bucketName = bucketName;
+    _version = version;
+    _executor = executor;
+    _meta = meta;
   }
 
   public String getBucket()
   {
-    return bucketName;
+    return _bucketName;
   }
 
-  public String getKey()
+  public String getObjectKey()
   {
-    return key;
+    return _objectKey;
   }
 
   public ObjectMetadata getAllMetadata()
   {
-    return meta;
+    return _meta;
   }
 
   // make sure all metadata keys are lowercase.  some servers (minio) return
   // mixed case keys
-  public Map<String,String> getUserMetadata()
+  public Map<String, String> getUserMetadata()
   {
-    Map<String,String> userData = meta.getUserMetadata();
-    Map<String,String> fixed = new HashMap<String,String>();
-    for(Map.Entry<String,String> e : userData.entrySet())
+    Map<String, String> userData = _meta.getUserMetadata();
+    Map<String, String> fixed = new HashMap<String, String>();
+    for(Map.Entry<String, String> e : userData.entrySet())
       fixed.put(e.getKey().toLowerCase(), e.getValue());
     return fixed;
   }
 
   public String getETag()
   {
-    return meta.getETag();
+    return _meta.getETag();
   }
 
   public long getLength()
   {
-    return meta.getContentLength();
+    return _meta.getContentLength();
   }
 
   public String getVersion()
   {
-    return version;
+    return _version;
   }
 }

@@ -27,61 +27,64 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
-public class KeyGenCommand {
+public class KeyGenCommand
+{
 
-    private KeyPairGenerator keypairGen;
-    private KeyPair keypair;
-    private PublicKey publickey;
-    private PrivateKey privateKey;
+  private KeyPairGenerator _keyPairGenerator;
+  private KeyPair _keyPair;
+  private PublicKey _publicKey;
+  private PrivateKey _privateKey;
 
-    public KeyGenCommand(String algo, int nbits)
-            throws NoSuchAlgorithmException {
-        keypairGen = KeyPairGenerator.getInstance(algo);
-        keypairGen.initialize(nbits);
-        keypair = keypairGen.generateKeyPair();
-        publickey = keypair.getPublic();
-        privateKey = keypair.getPrivate();
-    }
+  public KeyGenCommand(String algo, int nbits)
+    throws NoSuchAlgorithmException
+  {
+    _keyPairGenerator = KeyPairGenerator.getInstance(algo);
+    _keyPairGenerator.initialize(nbits);
+    _keyPair = _keyPairGenerator.generateKeyPair();
+    _publicKey = _keyPair.getPublic();
+    _privateKey = _keyPair.getPrivate();
+  }
 
-    public void savePemKeypair(File pemf) throws IOException {
-        String pem = getPemPublicKey() + "\n" + getPemPrivateKey();
+  public void savePemKeypair(File pemf)
+    throws IOException
+  {
+    String pem = getPemPublicKey() + "\n" + getPemPrivateKey();
 
-        FileUtils.writeStringToFile(pemf, pem, "UTF-8");
-    }
+    FileUtils.writeStringToFile(pemf, pem, "UTF-8");
+  }
 
-    public String getPemPrivateKey() {
-        // pkcs8_der is PKCS#8-encoded binary (DER) private key
-        byte[] pkcs8_der = privateKey.getEncoded();
+  public String getPemPrivateKey()
+  {
+    // pkcs8_der is PKCS#8-encoded binary (DER) private key
+    byte[] pkcs8_der = _privateKey.getEncoded();
 
-        // DER to PEM conversion
-        String pem_encoded = pemEncode(pkcs8_der,
-                "-----BEGIN PRIVATE KEY-----\n",
-                "-----END PRIVATE KEY-----\n");
+    // DER to PEM conversion
+    String pem_encoded = pemEncode(pkcs8_der, "-----BEGIN PRIVATE KEY-----\n",
+      "-----END PRIVATE KEY-----\n");
 
-        return pem_encoded;
-    }
+    return pem_encoded;
+  }
 
-    public String getPemPublicKey() {
-        // x509_der is X.509-encoded binary (DER) public key
-        byte[] x509_der = publickey.getEncoded();
+  public String getPemPublicKey()
+  {
+    // x509_der is X.509-encoded binary (DER) public key
+    byte[] x509_der = _publicKey.getEncoded();
 
-        // DER to PEM conversion
-        String pem_encoded = pemEncode(x509_der,
-                "-----BEGIN PUBLIC KEY-----\n",
-                "-----END PUBLIC KEY-----\n");
+    // DER to PEM conversion
+    String pem_encoded = pemEncode(x509_der, "-----BEGIN PUBLIC KEY-----\n",
+      "-----END PUBLIC KEY-----\n");
 
-        return pem_encoded;
-    }
+    return pem_encoded;
+  }
 
-    private String pemEncode(byte[] keyBytes,
-                             String startArmour,
-                             String endArmour) {
-        int lineLength = Base64.PEM_CHUNK_SIZE;
-        byte[] lineSeparator = {'\n'};
-        Base64 b64 = new Base64(lineLength, lineSeparator);
-        String encoded = b64.encodeToString(keyBytes);
+  private String pemEncode(byte[] keyBytes, String startArmour, String endArmour)
+  {
+    int lineLength = Base64.PEM_CHUNK_SIZE;
+    byte[] lineSeparator = {'\n'};
+    Base64 b64 = new Base64(lineLength, lineSeparator);
+    String encoded = b64.encodeToString(keyBytes);
 
-        return startArmour + encoded + endArmour;
-    }
+    return startArmour + encoded + endArmour;
+  }
 
 }

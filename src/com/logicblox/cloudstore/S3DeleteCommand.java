@@ -24,7 +24,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import java.util.concurrent.Callable;
 
 
-public class S3DeleteCommand extends Command
+public class S3DeleteCommand
+  extends Command
 {
   private DeleteOptions _options;
 
@@ -49,9 +50,8 @@ public class S3DeleteCommand extends Command
 
     ListenableFuture<Metadata> existsFuture = _client.exists(opts);
 
-    ListenableFuture<StoreFile> result = Futures.transform(
-      existsFuture,
-      new AsyncFunction<Metadata,StoreFile>()
+    ListenableFuture<StoreFile> result = Futures.transform(existsFuture,
+      new AsyncFunction<Metadata, StoreFile>()
       {
         public ListenableFuture<StoreFile> apply(Metadata mdata)
           throws UsageException
@@ -59,15 +59,19 @@ public class S3DeleteCommand extends Command
           if(null == mdata)
           {
             if(forceDelete)
+            {
               return Futures.immediateFuture(new StoreFile());
+            }
             else
+            {
               throw new UsageException("Object not found at " + getUri(bucket, key));
+            }
           }
           return getDeleteFuture();
         }
       });
 
-      return result;
+    return result;
   }
 
 
@@ -76,8 +80,7 @@ public class S3DeleteCommand extends Command
     final String bucket = _options.getBucketName();
     final String key = _options.getObjectKey();
 
-    ListenableFuture<StoreFile> deleteFuture = executeWithRetry(
-      _client.getInternalExecutor(),
+    ListenableFuture<StoreFile> deleteFuture = executeWithRetry(_client.getInternalExecutor(),
       new Callable<ListenableFuture<StoreFile>>()
       {
         public ListenableFuture<StoreFile> call()
@@ -104,24 +107,23 @@ public class S3DeleteCommand extends Command
     }
     else
     {
-      return _client.getApiExecutor().submit(
-        new Callable<StoreFile>()
+      return _client.getApiExecutor().submit(new Callable<StoreFile>()
+      {
+        public StoreFile call()
         {
-          public StoreFile call()
-          {
-            // support for testing failures
-            _options.injectAbort(srcUri);
+          // support for testing failures
+          _options.injectAbort(srcUri);
 
-            String bucket = _options.getBucketName();
-            String key = _options.getObjectKey();
-            DeleteObjectRequest req = new DeleteObjectRequest(bucket, key);
-            getS3Client().deleteObject(req);
-            StoreFile file = new StoreFile();
-            file.setBucketName(bucket);
-            file.setKey(key);
-            return file;
-          }
-        });
+          String bucket = _options.getBucketName();
+          String key = _options.getObjectKey();
+          DeleteObjectRequest req = new DeleteObjectRequest(bucket, key);
+          getS3Client().deleteObject(req);
+          StoreFile file = new StoreFile();
+          file.setBucketName(bucket);
+          file.setKey(key);
+          return file;
+        }
+      });
     }
   }
 }

@@ -20,13 +20,15 @@ import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.model.Objects;
 import com.google.api.services.storage.model.StorageObject;
 import com.google.common.util.concurrent.ListenableFuture;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
 
-public class GCSListCommand extends Command
+public class GCSListCommand
+  extends Command
 {
 
   private ListOptions _options;
@@ -40,24 +42,24 @@ public class GCSListCommand extends Command
 
   public ListenableFuture<List<StoreFile>> run()
   {
-    ListenableFuture<List<StoreFile>> future =
-        executeWithRetry(_client.getInternalExecutor(), new Callable<ListenableFuture<List<StoreFile>>>()
+    ListenableFuture<List<StoreFile>> future = executeWithRetry(_client.getInternalExecutor(),
+      new Callable<ListenableFuture<List<StoreFile>>>()
+      {
+        public ListenableFuture<List<StoreFile>> call()
         {
-          public ListenableFuture<List<StoreFile>> call()
-          {
-            return runActual();
-          }
-          
-          public String toString()
-          {
-            return "listing objects and directories for "
-                + getUri(_options.getBucketName(), _options.getObjectKey().orElse(""));
-          }
-        });
-    
+          return runActual();
+        }
+
+        public String toString()
+        {
+          return "listing objects and directories for " +
+            getUri(_options.getBucketName(), _options.getObjectKey().orElse(""));
+        }
+      });
+
     return future;
   }
-  
+
 
   private ListenableFuture<List<StoreFile>> runActual()
   {
@@ -71,7 +73,9 @@ public class GCSListCommand extends Command
         Storage.Objects.List cmd = getGCSClient().objects().list(_options.getBucketName());
         cmd.setPrefix(_options.getObjectKey().orElse(null));
         if(!_options.isRecursive())
+        {
           cmd.setDelimiter("/");
+        }
         boolean ver = _options.versionsIncluded();
         cmd.setVersions(ver);
         Objects objs;
@@ -80,9 +84,12 @@ public class GCSListCommand extends Command
           objs = cmd.execute();
           List<StorageObject> items = objs.getItems();
           if(items != null)
+          {
             allObjs.addAll(items);
+          }
           cmd.setPageToken(objs.getNextPageToken());
-        } while (objs.getNextPageToken() != null);
+        }
+        while(objs.getNextPageToken() != null);
 
         for(StorageObject s : allObjs)
           s3files.add(createStoreFile(s, ver));
@@ -99,7 +106,9 @@ public class GCSListCommand extends Command
     f.setBucketName(obj.getBucket());
     f.setSize(obj.getSize().longValue());
     if(includeVersion && (null != obj.getGeneration()))
+    {
       f.setVersionId(obj.getGeneration().toString());
+    }
     f.setTimestamp(new java.util.Date(obj.getUpdated().getValue()));
     return f;
   }

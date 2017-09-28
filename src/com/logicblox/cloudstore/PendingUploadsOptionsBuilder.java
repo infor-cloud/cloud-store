@@ -18,7 +18,20 @@ package com.logicblox.cloudstore;
 
 import java.util.Date;
 
-public class PendingUploadsOptionsBuilder extends CommandOptionsBuilder
+/**
+ * {@code PendingUploadingOptionsBuilder} is used to create and set properties for {@code PendingUploadingOptions} 
+ * objects used to control behavior of the cloud-store commands for managing pending uploads.
+ * <p>
+ * Setting {@code bucketName} and {@code objectKey} is mandatory.  Other properties are optional.
+ * <p>
+ * @see PendingUploadingOptions
+ * @see CloudStoreClient#getOptionsBuilderFactory()
+ * @see CloudStoreClient#listPendingUploads()
+ * @see CloudStoreClient#abortPendingUploads()
+ * @see OptionsBuilderFactory#newPendingUploadingOptionsBuilder()
+ */
+public class PendingUploadsOptionsBuilder
+  extends CommandOptionsBuilder
 {
   private String _bucket;
   private String _objectKey;
@@ -30,24 +43,36 @@ public class PendingUploadsOptionsBuilder extends CommandOptionsBuilder
     _cloudStoreClient = client;
   }
 
+  /**
+   * Set the name of the bucket in which to check for pending uploads.
+   */
   public PendingUploadsOptionsBuilder setBucketName(String bucket)
   {
     _bucket = bucket;
     return this;
   }
-  
+
+  /**
+   * Set the key of the file to check for pending uploads.
+   */
   public PendingUploadsOptionsBuilder setObjectKey(String objectKey)
   {
     _objectKey = objectKey;
     return this;
   }
-  
+
+  /**
+   * Set the upload ID for an upload to be aborted.
+   */
   public PendingUploadsOptionsBuilder setUploadId(String uploadId)
   {
     _uploadId = uploadId;
     return this;
   }
-  
+
+  /**
+   * Set the date of an upload to be aborted.
+   */
   public PendingUploadsOptionsBuilder setDate(Date date)
   {
     _date = date;
@@ -56,23 +81,29 @@ public class PendingUploadsOptionsBuilder extends CommandOptionsBuilder
 
   private void validateOptions()
   {
-    if (_cloudStoreClient == null) {
+    if(_cloudStoreClient == null)
+    {
       throw new UsageException("CloudStoreClient has to be set");
     }
-    else if (_bucket == null) {
+    else if(_bucket == null)
+    {
       throw new UsageException("Bucket has to be set");
     }
-    else if (_objectKey == null) {
+    else if(_objectKey == null)
+    {
       throw new UsageException("Object key has to be set");
     }
   }
 
+  /**
+   * Validate that all required parameters are set and if so return a new {@link PendingUploadOptions}
+   * object.
+   */
   @Override
   public PendingUploadsOptions createOptions()
   {
     validateOptions();
 
-    return new PendingUploadsOptions(_cloudStoreClient, _bucket, _objectKey,
-      _uploadId, _date);
+    return new PendingUploadsOptions(_cloudStoreClient, _bucket, _objectKey, _uploadId, _date);
   }
 }

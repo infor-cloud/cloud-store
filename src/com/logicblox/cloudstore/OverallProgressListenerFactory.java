@@ -16,6 +16,7 @@
 
 package com.logicblox.cloudstore;
 
-public interface OverallProgressListenerFactory {
-    OverallProgressListener create(ProgressOptions progressOptions);
+public interface OverallProgressListenerFactory
+{
+  OverallProgressListener create(ProgressOptions progressOptions);
 }

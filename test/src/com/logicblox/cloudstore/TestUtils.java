@@ -19,30 +19,27 @@ package com.logicblox.cloudstore;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.lang.Class;
-import java.lang.reflect.Method;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Files;
+import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.FileVisitResult;
-import java.nio.file.SimpleFileVisitor;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.security.GeneralSecurityException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.lang.InterruptedException;
-import java.net.URI;
-import java.net.URL;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-import java.security.GeneralSecurityException;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 
@@ -138,7 +135,9 @@ public class TestUtils
       _testBucket = Utils.getBucket(destUri);
       _prefix = Utils.getObjectKey(destUri);
       if(!_prefix.endsWith("/"))
+      {
         _prefix = _prefix + "/";
+      }
     }
   }
 
@@ -148,7 +147,9 @@ public class TestUtils
     destroyDirs();
 
     if(null != _prefix)
+    {
       clearBucket(_testBucket, _prefix);
+    }
 
     destroyBuckets();
     _testBucket = null;
@@ -156,7 +157,7 @@ public class TestUtils
     destroyClient(_client);
     _client = null;
   }
-  
+
 
   public static CloudStoreClient getClient()
   {
@@ -174,13 +175,13 @@ public class TestUtils
   {
     return _prefix;
   }
-  
-  
+
+
   public static void resetRetryCount()
   {
     _client.setRetryCount(_defaultRetryCount);
   }
-  
+
 
   // return URL representing the endpoint used to connect to storage 
   // service, or null if not passed as a command line parameter
@@ -188,9 +189,13 @@ public class TestUtils
     throws MalformedURLException
   {
     if(null == _endpoint)
+    {
       return null;
+    }
     else
+    {
       return new URL(_endpoint);
+    }
   }
 
 
@@ -200,9 +205,13 @@ public class TestUtils
     throws MalformedURLException
   {
     if(null == _endpoint)
+    {
       return null;
+    }
     else
+    {
       return getEndpoint().toString();
+    }
   }
 
 
@@ -224,12 +233,18 @@ public class TestUtils
   {
     String ep = _endpoint;
     if((null == ep) && _service.equals("s3"))
+    {
       ep = "AWS";
+    }
     else if((null == ep) && _service.equals("gs"))
+    {
       ep = "GCS";
-    String svc =_service + " (" + ep + ")";
+    }
+    String svc = _service + " (" + ep + ")";
     if(null != _destUri)
-       svc = svc + ", in " + _destUri;
+    {
+      svc = svc + ", in " + _destUri;
+    }
     return svc;
   }
 
@@ -237,8 +252,7 @@ public class TestUtils
   // create a new CloudStoreClient from service name and endpoint parameters.
   // use default retry count
   public static CloudStoreClient createClient()
-    throws MalformedURLException, URISyntaxException, GeneralSecurityException,
-           IOException
+    throws MalformedURLException, URISyntaxException, GeneralSecurityException, IOException
   {
     return Utils.createCloudStoreClient(getService(), getEndpointString());
   }
@@ -247,11 +261,9 @@ public class TestUtils
   // create a new CloudStoreClient from service name and endpoint parameters.
   // use specified retry count
   public static CloudStoreClient createClient(int retryCount)
-    throws MalformedURLException, URISyntaxException, GeneralSecurityException,
-           IOException
+    throws MalformedURLException, URISyntaxException, GeneralSecurityException, IOException
   {
-    CloudStoreClient client =
-      Utils.createCloudStoreClient(getService(), getEndpointString());
+    CloudStoreClient client = Utils.createCloudStoreClient(getService(), getEndpointString());
     client.setRetryCount(retryCount);
     return client;
   }
@@ -261,7 +273,9 @@ public class TestUtils
   public static void destroyClient(CloudStoreClient client)
   {
     if(null != client)
+    {
       client.shutdown();
+    }
   }
 
 
@@ -286,8 +300,7 @@ public class TestUtils
         lastException = t;
       }
     }
-    throw new RuntimeException(
-      "failed to create a test bucket: " + lastException.getMessage(), 
+    throw new RuntimeException("failed to create a test bucket: " + lastException.getMessage(),
       lastException);
   }
 
@@ -298,7 +311,9 @@ public class TestUtils
     throws InterruptedException, ExecutionException
   {
     if(SKIP_CLEANUP || (null == bucket) || bucket.isEmpty())
+    {
       return;
+    }
 
     clearBucket(bucket, null);
     _client.destroyBucket(bucket);
@@ -309,8 +324,10 @@ public class TestUtils
     throws InterruptedException, ExecutionException
   {
     if(SKIP_CLEANUP)
+    {
       return;
-      
+    }
+
     ListOptionsBuilder builder = _client.getOptionsBuilderFactory()
       .newListOptionsBuilder()
       .setBucketName(bucket)
@@ -318,7 +335,9 @@ public class TestUtils
       .setIncludeVersions(false)
       .setExcludeDirs(false);
     if((null != prefix) && !prefix.isEmpty())
+    {
       builder.setObjectKey(prefix);
+    }
     ListOptions lsOpts = builder.createOptions();
     List<StoreFile> objs = _client.listObjects(lsOpts).get();
     for(StoreFile f : objs)
@@ -346,13 +365,15 @@ public class TestUtils
       .createOptions();
     return _client.delete(opts).get();
   }
-  
+
   public static boolean findObject(List<StoreFile> objs, String key)
   {
     for(StoreFile o : objs)
     {
       if(o.getKey().equals(key))
+      {
         return true;
+      }
     }
     return false;
   }
@@ -370,8 +391,8 @@ public class TestUtils
   }
 
 
-  public static StoreFile updateObjectUserMetadata(String bucket, String key,
-                                                Map<String,String> userMetadata)
+  public static StoreFile updateObjectUserMetadata(
+    String bucket, String key, Map<String, String> userMetadata)
     throws InterruptedException, ExecutionException
   {
     CopyOptions options = _client.getOptionsBuilderFactory()
@@ -402,7 +423,7 @@ public class TestUtils
 
 
   public static StoreFile uploadEncryptedFile(File src, URI dest, String keyName)
-      throws Throwable
+    throws Throwable
   {
     UploadOptions upOpts = _client.getOptionsBuilderFactory()
       .newUploadOptionsBuilder()
@@ -436,7 +457,7 @@ public class TestUtils
 
 
   public static StoreFile downloadFile(URI src, File dest, boolean overwrite)
-      throws Throwable
+    throws Throwable
   {
 
     DownloadOptions dlOpts = _client.getOptionsBuilderFactory()
@@ -452,7 +473,7 @@ public class TestUtils
 
 
   public static List<StoreFile> downloadDir(URI src, File dest, boolean recursive)
-      throws Throwable
+    throws Throwable
   {
     DownloadOptions dlOpts = _client.getOptionsBuilderFactory()
       .newDownloadOptionsBuilder()
@@ -466,8 +487,9 @@ public class TestUtils
   }
 
 
-  public static List<StoreFile> downloadDir(URI src, File dest, boolean recursive, boolean overwrite)
-      throws Throwable
+  public static List<StoreFile> downloadDir(
+    URI src, File dest, boolean recursive, boolean overwrite)
+    throws Throwable
   {
     DownloadOptions dlOpts = _client.getOptionsBuilderFactory()
       .newDownloadOptionsBuilder()
@@ -487,7 +509,7 @@ public class TestUtils
     return listObjects(_testBucket, _prefix);
   }
 
-  
+
   public static List<StoreFile> listObjects(String bucket)
     throws Throwable
   {
@@ -505,24 +527,30 @@ public class TestUtils
       .setIncludeVersions(false)
       .setExcludeDirs(false);
     if(null != key)
+    {
       builder.setObjectKey(key);
+    }
     ListOptions lsOpts = builder.createOptions();
     return _client.listObjects(lsOpts).get();
   }
 
-  
+
   public static boolean compareFiles(File f1, File f2)
     throws FileNotFoundException, IOException
   {
     if(f1.length() != f2.length())
+    {
       return false;
+    }
     FileReader r1 = new FileReader(f1);
     FileReader r2 = new FileReader(f2);
     int c = -1;
     while((c = r1.read()) != -1)
     {
       if(c != r2.read())
+      {
         return false;
+      }
     }
     return true;
   }
@@ -532,12 +560,18 @@ public class TestUtils
     throws URISyntaxException
   {
     if(!prefix.startsWith("/"))
+    {
       prefix = "/" + prefix;
+    }
     if(!prefix.endsWith("/"))
+    {
       prefix = prefix + "/";
+    }
     String end = "";
     if(src.isDirectory())
+    {
       end = "/";
+    }
     return new URI(TestUtils.getService() + "://" + bucket + prefix + src.getName() + end);
   }
 
@@ -546,9 +580,13 @@ public class TestUtils
     throws URISyntaxException
   {
     if(!prefix.startsWith("/"))
+    {
       prefix = "/" + prefix;
+    }
     if(!prefix.endsWith("/"))
+    {
       prefix = prefix + "/";
+    }
     String end = "";
     return new URI(TestUtils.getService() + "://" + bucket + prefix + filePath + end);
   }
@@ -564,9 +602,13 @@ public class TestUtils
   public static int getExpectedPartCount(int fileSize, int chunkSize)
   {
     if(supportsMultiPart())
+    {
       return (int) Math.ceil(((double) fileSize) / chunkSize);
+    }
     else
+    {
       return 1;
+    }
   }
 
 
@@ -618,7 +660,9 @@ public class TestUtils
   {
     File tmp = Files.createTempDirectory("cloud-store-ut").toFile();
     if(autoDelete)
+    {
       _autoDeleteDirs.add(tmp);
+    }
     return tmp;
   }
 
@@ -635,7 +679,9 @@ public class TestUtils
   {
     File tmp = Files.createTempDirectory(parent.toPath(), "cloud-store-ut").toFile();
     if(autoDelete)
+    {
       _autoDeleteDirs.add(tmp);
+    }
     return tmp;
   }
 
@@ -646,28 +692,30 @@ public class TestUtils
     for(File dir : _autoDeleteDirs)
       destroyDir(dir);
     _autoDeleteDirs.clear();
-  }  
+  }
 
 
   public static void destroyDir(File dirF)
     throws IOException
   {
     if((null == dirF) || !dirF.exists())
+    {
       return;
+    }
 
     Path directory = dirF.toPath();
-    Files.walkFileTree(directory, new SimpleFileVisitor<Path>() 
+    Files.walkFileTree(directory, new SimpleFileVisitor<Path>()
     {
       @Override
-      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) 
-        throws IOException 
+      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+        throws IOException
       {
         Files.delete(file);
         return FileVisitResult.CONTINUE;
       }
 
       @Override
-      public FileVisitResult postVisitDirectory(Path dir, IOException exc) 
+      public FileVisitResult postVisitDirectory(Path dir, IOException exc)
         throws IOException
       {
         Files.delete(dir);
@@ -682,12 +730,14 @@ public class TestUtils
     return createTestBucket(true);
   }
 
-  
+
   public static String createTestBucket(boolean destroy)
   {
     String bucket = createBucket();
     if(destroy)
+    {
       _bucketsToDestroy.add(bucket);
+    }
     return bucket;
   }
 
@@ -696,7 +746,7 @@ public class TestUtils
     throws InterruptedException, ExecutionException
   {
     for(String bucket : _bucketsToDestroy)
-       destroyBucket(bucket);
+      destroyBucket(bucket);
     _bucketsToDestroy.clear();
   }
 
@@ -727,12 +777,14 @@ public class TestUtils
     throws IOException
   {
     if(f.exists())
+    {
       f.delete();
+    }
     FileWriter fw = new FileWriter(f);
     fw.write(data);
     fw.close();
   }
-  
+
 
   public static String[] parsePem(File keyfile)
     throws Throwable
@@ -764,10 +816,14 @@ public class TestUtils
       {
         inPrivateSection = line.equals(privateBegin);
         if(inPrivateSection)
+        {
           privateKey.append(line).append("\n");
+        }
         inPublicSection = line.equals(publicBegin);
         if(inPublicSection)
+        {
           publicKey.append(line).append("\n");
+        }
       }
     }
     r.close();
@@ -778,24 +834,27 @@ public class TestUtils
     return keys;
   }
 
-  
+
   // add _prefix to this if it is defined to create files within a
   // specific location in a pre-existing bucket.  assumes _prefix ends
   // with a / and the path passed in does not start with a /
   public static String addPrefix(String path)
   {
     if(null == _prefix)
+    {
       return path;
+    }
     else
+    {
       return _prefix + path;
+    }
   }
 
 
   /**
-   * Create a new .pem key file in the specified directory that contains a new
-   * RSA public/private key pair.  Returns a String array of length two, the
-   * first string containing the private key and the second holding the public
-   * key.
+   * Create a new .pem key file in the specified directory that contains a new RSA public/private
+   * key pair.  Returns a String array of length two, the first string containing the private key
+   * and the second holding the public key.
    */
   public static String[] createEncryptionKey(File keydir, String keyName)
     throws Throwable
@@ -830,23 +889,29 @@ public class TestUtils
     while(t.getCause() != null)
     {
       if(t.getCause().getClass().equals(cls))
+      {
         return true;
+      }
       t = t.getCause();
     }
     return false;
   }
 
-  
+
   private static void setDest(String destPrefix)
     throws Throwable
   {
     _destUri = null;
     if((null == destPrefix) || destPrefix.isEmpty())
+    {
       return;
+    }
 
     // strip trailing slash, if exists, for consistency
     if(destPrefix.endsWith("/"))
+    {
       destPrefix = destPrefix.substring(0, destPrefix.length() - 1);
+    }
 
     // make sure that the bucket exists but folder does not if --dest-prefix
     // is passed in so we don't accidentally trash an existing folder
@@ -860,8 +925,7 @@ public class TestUtils
       }
       catch(URISyntaxException ex)
       {
-        throw new RuntimeException("could not parse --dest-prefix URL ["
-          + ex.getMessage() + "]");
+        throw new RuntimeException("could not parse --dest-prefix URL [" + ex.getMessage() + "]");
       }
 
       _service = destUri.getScheme();
@@ -876,8 +940,7 @@ public class TestUtils
         .setIncludeVersions(false)
         .setExcludeDirs(false)
         .setObjectKey(key);
-      List<StoreFile> matches =
-        client.listObjects(builder.createOptions()).get();
+      List<StoreFile> matches = client.listObjects(builder.createOptions()).get();
       boolean found = false;
       for(StoreFile f : matches)
       {
@@ -888,11 +951,13 @@ public class TestUtils
         }
       }
       if(found)
+      {
         throw new RuntimeException(
-           "Folder '" + destPrefix + "' specified by --dest-prefix already exists.");
+          "Folder '" + destPrefix + "' specified by --dest-prefix already exists.");
+      }
 
-     // set the URI that will be used as a prefix by test functions
-     _destUri = destUri;
+      // set the URI that will be used as a prefix by test functions
+      _destUri = destUri;
 
     }
     finally
@@ -905,14 +970,18 @@ public class TestUtils
   private static Random getRand()
   {
     if(_rand == null)
+    {
       _rand = new Random(System.currentTimeMillis());
+    }
     return _rand;
   }
 
 
   private static void usage()
   {
-    System.out.println("usage:  TestRunner {--help || -h} {--service s3|gs} {--endpoint url} {--dest-prefix url} {--keydir dir}");
+    System.out.println(
+      "usage:  TestRunner {--help || -h} {--service s3|gs} {--endpoint url} {--dest-prefix url} " +
+        "{--keydir dir}");
   }
 
 }

@@ -17,22 +17,27 @@
 package com.logicblox.cloudstore;
 
 /**
- * {@code EncryptionKeyOptions} contains all the options needed for
- * adding/removing encryption keys.
- *
+ * {@code EncryptionKeyOptions} contains all the options needed for adding or removing encryption
+ * keys to or from files in a cloud store service.
+ * <p>
  * {@code EncryptionKeyOptions} objects are meant to be built by {@code
- * EncryptionKeyOptionsBuilder}. This class provides only public getter methods.
+ * EncryptionKeyOptionsBuilder}. This class provides only public accessor methods.
+ * <p>
+ * @see EncryptionOptionsBuilder
+ * @see CloudStoreClient#getOptionsBuilderFactory()
+ * @see CloudStoreClient#addEncryptionKey()
+ * @see CloudStoreClient#removeEncryptionKey()
+ * @see OptionsBuilderFactory#newEncryptionOptionsBuilder()
  */
-public class EncryptionKeyOptions extends CommandOptions
+public class EncryptionKeyOptions
+  extends CommandOptions
 {
   private final String _bucket;
   private final String _objectKey;
   private final String _encryptionKey;
 
-  EncryptionKeyOptions(CloudStoreClient cloudStoreClient,
-                       String bucket,
-                       String objectKey,
-                       String encryptionKey)
+  EncryptionKeyOptions(
+    CloudStoreClient cloudStoreClient, String bucket, String objectKey, String encryptionKey)
   {
     super(cloudStoreClient);
     _bucket = bucket;
@@ -40,16 +45,26 @@ public class EncryptionKeyOptions extends CommandOptions
     _encryptionKey = encryptionKey;
   }
 
+  /**
+   * Return the key of the file to be modified.
+   */
   public String getBucketName()
   {
     return _bucket;
   }
 
+  /**
+   * Return the key of the file to be modified.
+   */
   public String getObjectKey()
   {
     return _objectKey;
   }
 
+  /**
+   * Return the name of the public/private key pair to be added to or removed
+   * from a file.  The key pair file must exist in the local key directory.
+   */
   public String getEncryptionKey()
   {
     return _encryptionKey;

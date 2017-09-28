@@ -16,7 +16,8 @@
 
 package com.logicblox.cloudstore;
 
-public class GCSAclHandler implements AclHandler
+public class GCSAclHandler
+  implements AclHandler
 {
   @Override
   public boolean isCannedAclValid(String cannedAcl)

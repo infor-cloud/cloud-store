@@ -16,67 +16,74 @@
 
 package com.logicblox.cloudstore;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
+import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
-import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
-
-class S3MultipartUploadFactory implements UploadFactory
+class S3MultipartUploadFactory
+  implements UploadFactory
 {
-  private AmazonS3 client;
-  private ListeningExecutorService executor;
+  private AmazonS3 _client;
+  private ListeningExecutorService _executor;
 
-  public S3MultipartUploadFactory(AmazonS3 client,
-                                  ListeningExecutorService executor)
+  public S3MultipartUploadFactory(AmazonS3 client, ListeningExecutorService executor)
   {
     if(client == null)
-      throw new IllegalArgumentException("non-null client is required");
-    if(executor == null)
-      throw new IllegalArgumentException("non-null executor is required");
-
-    this.client = client;
-    this.executor = executor;
-  }
-
-  public ListenableFuture<Upload> startUpload(String bucketName, String key,
-                                              Map<String,String> meta, UploadOptions options)
-  {
-    return executor.submit(new StartCallable(bucketName, key, meta, options));
-  }
-
-  private class StartCallable implements Callable<Upload>
-  {
-    private String key;
-    private String bucketName;
-    private Map<String,String> meta;
-    private UploadOptions options;
-
-    public StartCallable(String bucketName, String key, Map<String,String> meta, UploadOptions options)
     {
-      this.bucketName = bucketName;
-      this.key = key;
-      this.meta = meta;
-      this.options = options;
+      throw new IllegalArgumentException("non-null client is required");
+    }
+    if(executor == null)
+    {
+      throw new IllegalArgumentException("non-null executor is required");
     }
 
-    public Upload call() throws Exception
+    _client = client;
+    _executor = executor;
+  }
+
+  public ListenableFuture<Upload> startUpload(
+    String bucketName, String key, Map<String, String> meta, UploadOptions options)
+  {
+    return _executor.submit(new StartCallable(bucketName, key, meta, options));
+  }
+
+  private class StartCallable
+    implements Callable<Upload>
+  {
+    private String _objectKey;
+    private String _bucketName;
+    private Map<String, String> _meta;
+    private UploadOptions _options;
+
+    public StartCallable(
+      String bucketName, String objectKey, Map<String, String> meta, UploadOptions options)
+    {
+      _bucketName = bucketName;
+      _objectKey = objectKey;
+      _meta = meta;
+      _options = options;
+    }
+
+    public Upload call()
+      throws Exception
     {
       ObjectMetadata metadata = new ObjectMetadata();
-      metadata.setUserMetadata(meta);
-      InitiateMultipartUploadRequest req = new InitiateMultipartUploadRequest(
-        bucketName, key, metadata);
-      req.setCannedACL(S3Client.getCannedAcl(options.getCannedAcl()));
+      metadata.setUserMetadata(_meta);
+      InitiateMultipartUploadRequest req = new InitiateMultipartUploadRequest(_bucketName,
+        _objectKey,
+        metadata);
+      req.setCannedACL(S3Client.getCannedAcl(_options.getCannedAcl()));
 
-      InitiateMultipartUploadResult res = client.initiateMultipartUpload(req);
-      return new S3MultipartUpload(client, bucketName, key,
-          res.getUploadId(), new Date(), executor, options);
+      InitiateMultipartUploadResult res = _client.initiateMultipartUpload(req);
+      return new S3MultipartUpload(_client, _bucketName, _objectKey, res.getUploadId(), new Date(),
+        _executor, _options);
     }
   }
 }

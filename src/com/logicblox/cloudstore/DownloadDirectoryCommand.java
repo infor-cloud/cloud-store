@@ -28,7 +28,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-public class DownloadDirectoryCommand extends Command
+public class DownloadDirectoryCommand
+  extends Command
 {
   private DownloadOptions _options;
   private File _destination;
@@ -36,7 +37,7 @@ public class DownloadDirectoryCommand extends Command
   private java.util.Set<File> _filesToCleanup;
   private List<File> _dirsToCleanup;
   private boolean _dryRun = false;
-  
+
 
   public DownloadDirectoryCommand(DownloadOptions options)
   {
@@ -51,7 +52,7 @@ public class DownloadDirectoryCommand extends Command
   }
 
   public ListenableFuture<List<StoreFile>> run()
-      throws ExecutionException, InterruptedException, IOException
+    throws ExecutionException, InterruptedException, IOException
   {
     _futures.clear();
     _filesToCleanup.clear();
@@ -68,8 +69,7 @@ public class DownloadDirectoryCommand extends Command
     }
 
     ListenableFuture<List<StoreFile>> listObjs = querySourceFiles();
-    ListenableFuture<List<StoreFile>> result = Futures.transform(
-      listObjs,
+    ListenableFuture<List<StoreFile>> result = Futures.transform(listObjs,
       new AsyncFunction<List<StoreFile>, List<StoreFile>>()
       {
         public ListenableFuture<List<StoreFile>> apply(List<StoreFile> srcFiles)
@@ -77,13 +77,20 @@ public class DownloadDirectoryCommand extends Command
         {
           prepareFutures(srcFiles);
           if(srcFiles.isEmpty())
-            throw new UsageException("No objects found for '" + getUri(
-              _options.getBucketName(), _options.getObjectKey()) + "'");
+          {
+            throw new UsageException(
+              "No objects found for '" + getUri(_options.getBucketName(), _options.getObjectKey()) +
+                "'");
+          }
 
           if(_options.isDryRun())
+          {
             return Futures.immediateFuture(null);
+          }
           else
+          {
             return scheduleExecution();
+          }
         }
       });
     return result;
@@ -96,16 +103,14 @@ public class DownloadDirectoryCommand extends Command
     // one fails, even if explicitly cancelled.  This seems to be the only way
     // to clean up all the newly created files reliably.
     ListenableFuture<List<StoreFile>> futureList = Futures.allAsList(_futures);
-    return Futures.withFallback(
-      futureList,
-      new FutureFallback<List<StoreFile>>()
+    return Futures.withFallback(futureList, new FutureFallback<List<StoreFile>>()
+    {
+      public ListenableFuture<List<StoreFile>> create(Throwable t)
       {
-        public ListenableFuture<List<StoreFile>> create(Throwable t)
-        {
-           cleanup();
-           return Futures.immediateFailedFuture(t);
-        }
-      });
+        cleanup();
+        return Futures.immediateFailedFuture(t);
+      }
+    });
   }
 
 
@@ -113,12 +118,12 @@ public class DownloadDirectoryCommand extends Command
   {
     // find all files that need to be downloaded
     ListOptionsBuilder lob = _client.getOptionsBuilderFactory()
-        .newListOptionsBuilder()
-        .setBucketName(_options.getBucketName())
-        .setObjectKey(_options.getObjectKey())
-        .setRecursive(_options.isRecursive())
-        .setIncludeVersions(false)
-        .setExcludeDirs(false);
+      .newListOptionsBuilder()
+      .setBucketName(_options.getBucketName())
+      .setObjectKey(_options.getObjectKey())
+      .setRecursive(_options.isRecursive())
+      .setIncludeVersions(false)
+      .setExcludeDirs(false);
     return _client.listObjects(lob.createOptions());
   }
 
@@ -135,14 +140,20 @@ public class DownloadDirectoryCommand extends Command
         if(_options.doesOverwrite())
         {
           if(_dryRun)
-            System.out.println("<DRYRUN> overwriting existing file '" + _destination.getAbsolutePath()
-              + "' with new directory");
+          {
+            System.out.println(
+              "<DRYRUN> overwriting existing file '" + _destination.getAbsolutePath() +
+                "' with new directory");
+          }
           else
+          {
             _destination.delete();
+          }
         }
         else
         {
-          throw new UsageException("Existing destination '" + _destination + "' must be a directory");
+          throw new UsageException(
+            "Existing destination '" + _destination + "' must be a directory");
         }
       }
     }
@@ -154,8 +165,8 @@ public class DownloadDirectoryCommand extends Command
       }
       catch(IOException ex)
       {
-        throw new UsageException("Could not create directory '" + _destination + "': "
-          + ex.getMessage());
+        throw new UsageException(
+          "Could not create directory '" + _destination + "': " + ex.getMessage());
       }
     }
   }
@@ -168,16 +179,17 @@ public class DownloadDirectoryCommand extends Command
       for(File f : newDirs)
       {
         if(!_dirsToCleanup.contains(f))
-          System.out.println("<DRYRUN> creating missing directory '"
-            + f.getAbsolutePath() + "'");
+        {
+          System.out.println("<DRYRUN> creating missing directory '" + f.getAbsolutePath() + "'");
+        }
       }
     }
     _dirsToCleanup.addAll(newDirs);
   }
-  
-  
+
+
   private void prepareFutures(List<StoreFile> potentialFiles)
-      throws IOException
+    throws IOException
   {
     File destAbs = _destination.getAbsoluteFile();
     for(StoreFile src : potentialFiles)
@@ -194,8 +206,8 @@ public class DownloadDirectoryCommand extends Command
         }
         catch(IOException ex)
         {
-          throw new UsageException("Could not create directory '" + outputPath + "': "
-            + ex.getMessage());
+          throw new UsageException(
+            "Could not create directory '" + outputPath + "': " + ex.getMessage());
         }
       }
 
@@ -207,13 +219,15 @@ public class DownloadDirectoryCommand extends Command
           {
             if(_dryRun)
             {
-              System.out.println("<DRYRUN> overwrite existing file '" + outputFile.getAbsolutePath() + "'");
+              System.out.println(
+                "<DRYRUN> overwrite existing file '" + outputFile.getAbsolutePath() + "'");
             }
             else
             {
               if(!outputFile.delete())
-                throw new UsageException("Could not overwrite existing file '" + outputFile
-                  + "'");
+              {
+                throw new UsageException("Could not overwrite existing file '" + outputFile + "'");
+              }
             }
           }
           else
@@ -224,8 +238,9 @@ public class DownloadDirectoryCommand extends Command
         }
         if(_dryRun)
         {
-          System.out.println("<DRYRUN> downloading '" + getUri(_options.getBucketName(), src.getKey())
-            + "' to '" + outputFile.getAbsolutePath() + "'");
+          System.out.println(
+            "<DRYRUN> downloading '" + getUri(_options.getBucketName(), src.getKey()) + "' to '" +
+              outputFile.getAbsolutePath() + "'");
         }
         else
         {
@@ -245,7 +260,7 @@ public class DownloadDirectoryCommand extends Command
       }
     }
   }
-  
+
 
   private void cleanup()
   {
@@ -258,7 +273,9 @@ public class DownloadDirectoryCommand extends Command
     for(File f : _filesToCleanup)
     {
       if(f.exists())
+      {
         f.delete();
+      }
     }
     _filesToCleanup.clear();
 

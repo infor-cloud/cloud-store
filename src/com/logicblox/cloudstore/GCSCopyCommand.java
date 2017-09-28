@@ -21,12 +21,14 @@ import com.google.api.services.storage.model.StorageObject;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
 
-public class GCSCopyCommand extends Command
+public class GCSCopyCommand
+  extends Command
 {
   private CopyOptions _options;
 
@@ -40,71 +42,69 @@ public class GCSCopyCommand extends Command
   {
     if(_options.isDryRun())
     {
-      System.out.println("<DRYRUN> copying '"
-                         + getUri(_options.getSourceBucketName(), _options.getSourceObjectKey())
-                         + "' to '"
-                         + getUri(_options.getDestinationBucketName(), _options.getDestinationObjectKey()) + "'");
+      System.out.println("<DRYRUN> copying '" +
+        getUri(_options.getSourceBucketName(), _options.getSourceObjectKey()) + "' to '" +
+        getUri(_options.getDestinationBucketName(), _options.getDestinationObjectKey()) + "'");
       return Futures.immediateFuture(null);
     }
     else
     {
-      ListenableFuture<StoreFile> future =
-        executeWithRetry(_client.getInternalExecutor(), new Callable<ListenableFuture<StoreFile>>()
+      ListenableFuture<StoreFile> future = executeWithRetry(_client.getInternalExecutor(),
+        new Callable<ListenableFuture<StoreFile>>()
         {
           public ListenableFuture<StoreFile> call()
           {
             return runActual();
           }
-          
+
           public String toString()
           {
-            return "copying object from "
-                   + getUri(_options.getSourceBucketName(), _options
-              .getSourceObjectKey()) + " to "
-                   + getUri(_options.getDestinationBucketName(), _options.getDestinationObjectKey());
+            return "copying object from " +
+              getUri(_options.getSourceBucketName(), _options.getSourceObjectKey()) + " to " +
+              getUri(_options.getDestinationBucketName(), _options.getDestinationObjectKey());
           }
         });
-    
+
       return future;
     }
   }
-  
+
 
   private ListenableFuture<StoreFile> runActual()
   {
     return _client.getApiExecutor().submit(new Callable<StoreFile>()
     {
-      public StoreFile call() throws IOException
+      public StoreFile call()
+        throws IOException
       {
         // support for testing failures
         String srcUri = getUri(_options.getSourceBucketName(), _options.getSourceObjectKey());
         _options.injectAbort(srcUri);
 
         StorageObject objectMetadata = null;
-        Map<String,String> userMetadata = _options.getUserMetadata().orElse(null);
-        if (userMetadata != null)
+        Map<String, String> userMetadata = _options.getUserMetadata().orElse(null);
+        if(userMetadata != null)
         {
-          Storage.Objects.Get get = getGCSClient().objects().get(
-            _options.getSourceBucketName(), _options.getSourceObjectKey());
+          Storage.Objects.Get get = getGCSClient().objects()
+            .get(_options.getSourceBucketName(), _options.getSourceObjectKey());
           StorageObject sourceObject = get.execute();
           // Map<String,String> sourceUserMetadata = sourceObject.getMetadata();
 
-          objectMetadata = new StorageObject()
-            .setMetadata(ImmutableMap.copyOf(userMetadata))
+          objectMetadata = new StorageObject().setMetadata(ImmutableMap.copyOf(userMetadata))
             .setContentType(sourceObject.getContentType());
-            // .setContentDisposition(sourceObject.getContentDisposition())
-            // other metadata to be set?
+          // .setContentDisposition(sourceObject.getContentDisposition())
+          // other metadata to be set?
 
-          if (!_options.getCannedAcl().isPresent())
+          if(!_options.getCannedAcl().isPresent())
           {
             objectMetadata.setAcl(sourceObject.getAcl());
           }
         }
 
-        Storage.Objects.Copy cmd = getGCSClient().objects().copy(
-          _options.getSourceBucketName(), _options.getSourceObjectKey(),
-          _options.getDestinationBucketName(), _options.getDestinationObjectKey(),
-          objectMetadata);
+        Storage.Objects.Copy cmd = getGCSClient().objects()
+          .copy(_options.getSourceBucketName(), _options.getSourceObjectKey(),
+            _options.getDestinationBucketName(), _options.getDestinationObjectKey(),
+            objectMetadata);
 
         _options.getCannedAcl().ifPresent(cmd::setDestinationPredefinedAcl);
 
@@ -122,7 +122,9 @@ public class GCSCopyCommand extends Command
     f.setBucketName(obj.getBucket());
     f.setSize(obj.getSize().longValue());
     if(includeVersion && (null != obj.getGeneration()))
+    {
       f.setVersionId(obj.getGeneration().toString());
+    }
     f.setTimestamp(new java.util.Date(obj.getUpdated().getValue()));
     return f;
   }

@@ -16,6 +16,13 @@
 
 package com.logicblox.cloudstore;
 
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.google.api.services.storage.Storage;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -32,15 +39,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.s3.AmazonS3Client;
-
-import com.google.api.services.storage.Storage;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 public class Command
 {
@@ -118,25 +116,28 @@ public class Command
     return _gcsClient;
   }
 
-  protected static Key readKeyFromFile(String encKeyName, File encKeyFile) throws IOException, ClassNotFoundException
+  protected static Key readKeyFromFile(String encKeyName, File encKeyFile)
+    throws IOException, ClassNotFoundException
   {
     FileInputStream fs = new FileInputStream(encKeyFile);
     ObjectInputStream in = new ObjectInputStream(fs);
-    Map<String,Key> keys = (HashMap<String,Key>) in.readObject();
+    Map<String, Key> keys = (HashMap<String, Key>) in.readObject();
     in.close();
-    if (keys.containsKey(encKeyName)) {
+    if(keys.containsKey(encKeyName))
+    {
       return keys.get(encKeyName);
     }
     return null;
   }
 
-  protected <V> ListenableFuture<V> executeWithRetry(ListeningScheduledExecutorService executor, Callable<ListenableFuture<V>> callable)
+  protected <V> ListenableFuture<V> executeWithRetry(
+    ListeningScheduledExecutorService executor, Callable<ListenableFuture<V>> callable)
   {
     int initialDelay = 300;
     int maxDelay = 20 * 1000;
 
-    ThrowableRetryPolicy trp = new ExpBackoffRetryPolicy(
-      initialDelay, maxDelay, _retryCount, TimeUnit.MILLISECONDS)
+    ThrowableRetryPolicy trp = new ExpBackoffRetryPolicy(initialDelay, maxDelay, _retryCount,
+      TimeUnit.MILLISECONDS)
     {
       @Override
       public boolean retryOnThrowable(Throwable thrown)
@@ -145,7 +146,9 @@ public class Command
         {
           AmazonServiceException exc = (AmazonServiceException) thrown;
           if(exc.getErrorType() == AmazonServiceException.ErrorType.Client)
+          {
             return false;
+          }
         }
 
         return true;
@@ -158,7 +161,7 @@ public class Command
     {
       f = rt.call();
     }
-    catch (Exception e)
+    catch(Exception e)
     {
       f = Futures.immediateFailedFuture(e);
     }
@@ -166,32 +169,39 @@ public class Command
     return f;
   }
 
-  protected static void rethrow(Throwable thrown) throws Exception
+  protected static void rethrow(Throwable thrown)
+    throws Exception
   {
     if(thrown instanceof Exception)
+    {
       throw (Exception) thrown;
+    }
     if(thrown instanceof Error)
+    {
       throw (Error) thrown;
+    }
     else
+    {
       throw new RuntimeException(thrown);
+    }
   }
 
   public static PublicKey getPublicKey(PrivateKey privateKey)
-  throws NoSuchKeyException
+    throws NoSuchKeyException
   {
     try
     {
-      RSAPrivateCrtKey privateCrtKey = (RSAPrivateCrtKey)privateKey;
-      RSAPublicKeySpec publicKeySpec = new RSAPublicKeySpec(
-        privateCrtKey.getModulus(), privateCrtKey.getPublicExponent());
+      RSAPrivateCrtKey privateCrtKey = (RSAPrivateCrtKey) privateKey;
+      RSAPublicKeySpec publicKeySpec = new RSAPublicKeySpec(privateCrtKey.getModulus(),
+        privateCrtKey.getPublicExponent());
       KeyFactory keyFactory = KeyFactory.getInstance("RSA");
       return keyFactory.generatePublic(publicKeySpec);
     }
-    catch (NoSuchAlgorithmException exc)
+    catch(NoSuchAlgorithmException exc)
     {
       throw new RuntimeException(exc);
     }
-    catch (InvalidKeySpecException exc)
+    catch(InvalidKeySpecException exc)
     {
       throw new NoSuchKeyException(exc);
     }

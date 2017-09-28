@@ -16,13 +16,13 @@
 
 package com.logicblox.cloudstore;
 
-public class GCSStorageClassHandler implements StorageClassHandler
+public class GCSStorageClassHandler
+  implements StorageClassHandler
 {
   @Override
   public boolean isStorageClassValid(String storageClass)
   {
     // TODO: GCS does support something similar. Add support.
-    throw new UsageException("Storage classes are not supported " +
-                             "on GCS currently.");
+    throw new UsageException("Storage classes are not supported " + "on GCS currently.");
   }
 }

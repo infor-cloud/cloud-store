@@ -20,26 +20,36 @@ import java.util.HashMap;
 import java.util.Map;
 
 
-public class AbortCounters
+/**
+ * Internal class used to manage injection of aborts into command
+ * execution, allowing testing of command abort behavior.
+ */
+class AbortCounters
 {
   private int _abortInjectionCounter = 0;
   private boolean _globalAbortCounter = false;
   private Object _abortSync = new Object();
-  private Map<String,Integer> _injectionCounters = new HashMap<String,Integer>();
+  private Map<String, Integer> _injectionCounters = new HashMap<String, Integer>();
 
 
-  public int decrementInjectionCounter(String id)
+  int decrementInjectionCounter(String id)
   {
     synchronized(_abortSync)
     {
       if(_abortInjectionCounter <= 0)
+      {
         return 0;
+      }
 
       if(_globalAbortCounter)
+      {
         id = "";
+      }
 
       if(!_injectionCounters.containsKey(id))
+      {
         _injectionCounters.put(id, _abortInjectionCounter);
+      }
       int current = _injectionCounters.get(id);
       _injectionCounters.put(id, current - 1);
       return current;
@@ -47,7 +57,7 @@ public class AbortCounters
   }
 
 
-  public void setInjectionCounter(int counter)
+  void setInjectionCounter(int counter)
   {
     synchronized(_abortSync)
     {
@@ -56,7 +66,7 @@ public class AbortCounters
   }
 
 
-  public void clearInjectionCounters()
+  void clearInjectionCounters()
   {
     synchronized(_abortSync)
     {
@@ -68,7 +78,7 @@ public class AbortCounters
   // if true, use a single abort counter for all operations in a type (copy,
   // delete, upload, etc).  otherwise (default), use a separate counter for 
   // each operation type
-  public boolean useGlobalCounter(boolean b)
+  boolean useGlobalCounter(boolean b)
   {
     synchronized(_abortSync)
     {

@@ -16,45 +16,43 @@
 
 package com.logicblox.cloudstore;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
-
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+
 
 /**
- * Provides the client for accessing the Amazon S3 or S3-compatible web
- * service.
+ * Provides the client for accessing the Amazon S3 or S3-compatible web service.
  * <p>
- * Captures the full configuration independent of concrete operations like
- * uploads or downloads.
+ * Captures the full configuration independent of concrete operations like uploads or downloads.
  * <p>
- * For more information about Amazon S3, please see
- * <a href="http://aws.amazon.com/s3">http://aws.amazon.com/s3</a>
+ * For more information about Amazon S3, please see <a href="http://aws.amazon.com/s3">http://aws
+ * .amazon.com/s3</a>
  */
-public class S3Client implements CloudStoreClient {
+public class S3Client
+  implements CloudStoreClient
+{
   /**
-   * Responsible for executing S3 HTTP API calls asynchronously. It, also,
-   * determines the level of parallelism of an operation, e.g. number of
-   * threads used for uploading/downloading a file.
+   * Responsible for executing S3 HTTP API calls asynchronously. It, also, determines the level of
+   * parallelism of an operation, e.g. number of threads used for uploading/downloading a file.
    */
   ListeningExecutorService _s3Executor;
 
   /**
-   * Responsible for executing internal cloud-store tasks asynchronously. Such
-   * tasks include file I/O, file encryption, file splitting and error handling.
+   * Responsible for executing internal cloud-store tasks asynchronously. Such tasks include file
+   * I/O, file encryption, file splitting and error handling.
    */
   ListeningScheduledExecutorService _executor;
 
@@ -62,14 +60,12 @@ public class S3Client implements CloudStoreClient {
   AWSCredentialsProvider _credentials;
 
   /**
-   * Low-level AWS S3 client responsible for authentication, proxying and
-   * HTTP requests.
+   * Low-level AWS S3 client responsible for authentication, proxying and HTTP requests.
    */
   AmazonS3Client _client;
 
   /**
-   * The provider of key-pairs used to encrypt/decrypt files during
-   * upload/download.
+   * The provider of key-pairs used to encrypt/decrypt files during upload/download.
    */
   KeyProvider _keyProvider;
 
@@ -83,114 +79,94 @@ public class S3Client implements CloudStoreClient {
   int _retryCount = 15;
 
   /**
-   * Constructs a new high-level S3 client to invoke operations on S3 or
-   * compatible service.
+   * Constructs a new high-level S3 client to invoke operations on S3 or compatible service.
    * <p>
-   * Objects created by this constructor will:
-   * <ul>
-   *   <li>use a thread pool of 10 threads to execute S3 HTTP API calls
-   *   asynchronously</li>
-   *   <li>use a thread pool of 50 threads to execute internal tasks
-   *   asynchronously</li>
-   *   <li>use a 5MB chunk-size for multi-part upload/download operations</li>
-   *   <li>search {@code ~/.s3lib-keys} for specified cryptographic key-pair
-   *   used to encrypt/decrypt files during upload/download</li>
-   *   <li>retry a task 10 times in case of an error</li>
-   * </ul>
+   * Objects created by this constructor will: <ul> <li>use a thread pool of 10 threads to execute
+   * S3 HTTP API calls asynchronously</li> <li>use a thread pool of 50 threads to execute internal
+   * tasks asynchronously</li> <li>use a 5MB chunk-size for multi-part upload/download
+   * operations</li> <li>search {@code ~/.s3lib-keys} for specified cryptographic key-pair used to
+   * encrypt/decrypt files during upload/download</li> <li>retry a task 10 times in case of an
+   * error</li> </ul>
    *
-   * @param s3Client Low-level AWS S3 client responsible for authentication,
-   *                 proxying and HTTP requests
-   * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService,
-   * ListeningScheduledExecutorService, KeyProvider)
+   * @param s3Client Low-level AWS S3 client responsible for authentication, proxying and HTTP
+   *                 requests
+   * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService, *
+   * ListeningScheduledExecutorService, * KeyProvider)
    */
   public S3Client(AmazonS3Client s3Client)
   {
-    this(s3Client,
-        Utils.createApiExecutor(10),
-        Utils.createInternalExecutor(50),
-        Utils.createKeyProvider(Utils.getDefaultKeyDirectory()));
+    this(s3Client, Utils.createApiExecutor(10), Utils.createInternalExecutor(50),
+      Utils.createKeyProvider(Utils.getDefaultKeyDirectory()));
     this.setRetryCount(10);
   }
 
   /**
-   * Constructs a new high-level S3 client to invoke operations on S3 or
-   * compatible service.
+   * Constructs a new high-level S3 client to invoke operations on S3 or compatible service.
    *
-   * @param s3Client    Low-level AWS S3 client responsible for authentication,
-   *                    proxying and HTTP requests
-   * @param keyProvider The provider of key-pairs used to encrypt/decrypt files
-   *                    during upload/download.
+   * @param s3Client    Low-level AWS S3 client responsible for authentication, proxying and HTTP
+   *                    requests
+   * @param keyProvider The provider of key-pairs used to encrypt/decrypt files during
+   *                    upload/download.
    * @see S3Client#S3Client(AmazonS3Client)
-   * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService,
-   * ListeningScheduledExecutorService, KeyProvider)
+   * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService, *
+   * ListeningScheduledExecutorService, * KeyProvider)
    */
-  public S3Client(AmazonS3Client s3Client,
-                  KeyProvider keyProvider)
+  public S3Client(AmazonS3Client s3Client, KeyProvider keyProvider)
   {
-    this(s3Client,
-        Utils.createApiExecutor(10),
-        Utils.createInternalExecutor(50),
-        keyProvider);
+    this(s3Client, Utils.createApiExecutor(10), Utils.createInternalExecutor(50), keyProvider);
     this.setRetryCount(10);
   }
 
   /**
-   * Constructs a new high-level S3 client to invoke operations on S3 or
-   * compatible service.
+   * Constructs a new high-level S3 client to invoke operations on S3 or compatible service.
    *
-   * @param credentials The AWS credentials to use when making requests to the
-   *                    service.
-   * @param s3Executor  Responsible for executing S3 HTTP API calls
-   *                    asynchronously. It, also, determines the level of
-   *                    parallelism of an operation, e.g. number of threads
+   * @param credentials The AWS credentials to use when making requests to the service.
+   * @param s3Executor  Responsible for executing S3 HTTP API calls asynchronously. It, also,
+   *                    determines the level of parallelism of an operation, e.g. number of threads
    *                    used for uploading/downloading a file.
-   * @param executor    Responsible for executing internal cloud-store tasks
-   *                    asynchrounsly. Such tasks include file I/O, file
-   *                    encryption, file splitting and error handling.
-   * @param keyProvider The provider of key-pairs used to encrypt/decrypt files
-   *                    during upload/download.
+   * @param executor    Responsible for executing internal cloud-store tasks asynchrounsly. Such
+   *                    tasks include file I/O, file encryption, file splitting and error handling.
+   * @param keyProvider The provider of key-pairs used to encrypt/decrypt files during
+   *                    upload/download.
    * @see S3Client#S3Client(AmazonS3Client)
-   * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService,
-   * ListeningScheduledExecutorService, KeyProvider)
+   * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService, *
+   * ListeningScheduledExecutorService, * KeyProvider)
    */
   public S3Client(
-    AWSCredentialsProvider credentials,
-    ListeningExecutorService s3Executor,
-    ListeningScheduledExecutorService executor,
-    KeyProvider keyProvider)
+    AWSCredentialsProvider credentials, ListeningExecutorService s3Executor,
+    ListeningScheduledExecutorService executor, KeyProvider keyProvider)
   {
     _executor = executor;
     _s3Executor = s3Executor;
     _keyProvider = keyProvider;
     _credentials = credentials;
     if(_credentials != null)
+    {
       _client = new AmazonS3Client(_credentials);
+    }
     else
+    {
       _client = new AmazonS3Client();
+    }
   }
 
   /**
-   * Constructs a new high-level S3 client to invoke operations on S3 or
-   * compatible service.
+   * Constructs a new high-level S3 client to invoke operations on S3 or compatible service.
    *
-   * @param s3Client    Low-level AWS S3 client responsible for authentication,
-   *                    proxying and HTTP requests
-   * @param s3Executor  Responsible for executing S3 HTTP API calls
-   *                    asynchronously. It, also, determines the level of
-   *                    parallelism of an operation, e.g. number of threads used
-   *                    for uploading/downloading a file.
-   * @param executor    Responsible for executing internal cloud-store tasks
-   *                    asynchrounsly. Such tasks include file I/O, file
-   *                    encryption, file splitting and error handling.
-   * @param keyProvider The provider of key-pairs used to encrypt/decrypt files
-   *                    during upload/download.
+   * @param s3Client    Low-level AWS S3 client responsible for authentication, proxying and HTTP
+   *                    requests
+   * @param s3Executor  Responsible for executing S3 HTTP API calls asynchronously. It, also,
+   *                    determines the level of parallelism of an operation, e.g. number of threads
+   *                    used for uploading/downloading a file.
+   * @param executor    Responsible for executing internal cloud-store tasks asynchrounsly. Such
+   *                    tasks include file I/O, file encryption, file splitting and error handling.
+   * @param keyProvider The provider of key-pairs used to encrypt/decrypt files during
+   *                    upload/download.
    * @see S3Client#S3Client(AmazonS3Client)
    */
   public S3Client(
-      AmazonS3Client s3Client,
-      ListeningExecutorService s3Executor,
-      ListeningScheduledExecutorService executor,
-      KeyProvider keyProvider)
+    AmazonS3Client s3Client, ListeningExecutorService s3Executor,
+    ListeningScheduledExecutorService executor, KeyProvider keyProvider)
   {
     _executor = executor;
     _s3Executor = s3Executor;
@@ -206,29 +182,27 @@ public class S3Client implements CloudStoreClient {
   public static final List<String> ALL_CANNED_ACLS = initCannedAcls();
 
   /**
-   * {@code CANNED_ACLS_DESC_CONST} has to be a compile-time String constant
-   * expression. That's why e.g. we cannot re-use {@code ALL_CANNED_ACLS} to
-   * construct it.
+   * {@code CANNED_ACLS_DESC_CONST} has to be a compile-time String constant expression. That's why
+   * e.g. we cannot re-use {@code ALL_CANNED_ACLS} to construct it.
    */
   static final String CANNED_ACLS_DESC_CONST = "For Amazon S3, choose one of: " +
-      "private, public-read, public-read-write, authenticated-read, " +
-      "bucket-owner-read, bucket-owner-full-control.";
+    "private, public-read, public-read-write, authenticated-read, " +
+    "bucket-owner-read, bucket-owner-full-control.";
 
   private static List<String> initCannedAcls()
   {
     List<String> l = new ArrayList<>();
-    for (CannedAccessControlList acl : CannedAccessControlList.values())
+    for(CannedAccessControlList acl : CannedAccessControlList.values())
       l.add(acl.toString());
     return l;
   }
 
   /**
-   * {@code STORAGE_CLASSES_DESC_CONST} has to be a compile-time String constant
-   * expression. That's why e.g. we cannot re-use {@code StorageClass.values()}
-   * to construct it.
+   * {@code STORAGE_CLASSES_DESC_CONST} has to be a compile-time String constant expression. That's
+   * why e.g. we cannot re-use {@code StorageClass.values()} to construct it.
    */
   static final String STORAGE_CLASSES_DESC_CONST = "For Amazon S3, choose one of: " +
-      "STANDARD, REDUCED_REDUNDANCY, GLACIER, STANDARD_IA.";
+    "STANDARD, REDUCED_REDUNDANCY, GLACIER, STANDARD_IA.";
 
   @Override
   public void setRetryCount(int retryCount)
@@ -291,9 +265,8 @@ public class S3Client implements CloudStoreClient {
   }
 
   // returns null if the store does not support acl (like minio)
-  static AccessControlList getObjectAcl(
-    AmazonS3Client client, String bucket, String key)
-  throws AmazonS3Exception
+  static AccessControlList getObjectAcl(AmazonS3Client client, String bucket, String key)
+    throws AmazonS3Exception
   {
     AccessControlList acl = null;
     try
@@ -303,16 +276,18 @@ public class S3Client implements CloudStoreClient {
     catch(AmazonS3Exception ex)
     {
       if(!ex.getErrorCode().equalsIgnoreCase("NotImplemented"))
+      {
         throw ex;
+      }
     }
     return acl;
   }
 
   static CannedAccessControlList getCannedAcl(String value)
   {
-    for (CannedAccessControlList acl : CannedAccessControlList.values())
+    for(CannedAccessControlList acl : CannedAccessControlList.values())
     {
-      if (acl.toString().equals(value))
+      if(acl.toString().equals(value))
       {
         return acl;
       }
@@ -330,7 +305,7 @@ public class S3Client implements CloudStoreClient {
 
   @Override
   public ListenableFuture<StoreFile> upload(UploadOptions options)
-      throws IOException
+    throws IOException
   {
     S3UploadCommand cmd = new S3UploadCommand(options);
     configure(cmd);
@@ -339,7 +314,8 @@ public class S3Client implements CloudStoreClient {
 
   @Override
   public ListenableFuture<List<StoreFile>> uploadDirectory(UploadOptions options)
-      throws IOException, ExecutionException, InterruptedException {
+    throws IOException, ExecutionException, InterruptedException
+  {
     UploadDirectoryCommand cmd = new UploadDirectoryCommand(options);
     configure(cmd);
     return cmd.run();
@@ -369,9 +345,7 @@ public class S3Client implements CloudStoreClient {
     List<Bucket> buckets = new ArrayList<Bucket>();
     for(com.amazonaws.services.s3.model.Bucket b : s3Buckets)
     {
-      buckets.add(new Bucket(
-        b.getName(),
-        b.getCreationDate(),
+      buckets.add(new Bucket(b.getName(), b.getCreationDate(),
         new Owner(b.getOwner().getId(), b.getOwner().getDisplayName())));
     }
     return Futures.immediateFuture(buckets);
@@ -387,7 +361,7 @@ public class S3Client implements CloudStoreClient {
 
   @Override
   public ListenableFuture<StoreFile> download(DownloadOptions options)
-  throws IOException
+    throws IOException
   {
     S3DownloadCommand cmd = new S3DownloadCommand(options);
     configure(cmd);
@@ -395,9 +369,8 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> downloadDirectory(DownloadOptions
-                                                                options)
-  throws IOException, ExecutionException, InterruptedException
+  public ListenableFuture<List<StoreFile>> downloadDirectory(DownloadOptions options)
+    throws IOException, ExecutionException, InterruptedException
   {
     DownloadDirectoryCommand cmd = new DownloadDirectoryCommand(options);
     configure(cmd);
@@ -413,13 +386,14 @@ public class S3Client implements CloudStoreClient {
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> copyToDir(CopyOptions options) throws
-      InterruptedException, ExecutionException, IOException {
+  public ListenableFuture<List<StoreFile>> copyToDir(CopyOptions options)
+    throws InterruptedException, ExecutionException, IOException
+  {
     S3CopyDirCommand cmd = new S3CopyDirCommand(options);
     configure(cmd);
     return cmd.run();
   }
-  
+
   @Override
   public ListenableFuture<StoreFile> rename(RenameOptions options)
   {
@@ -436,15 +410,19 @@ public class S3Client implements CloudStoreClient {
     configure(cmd);
     return cmd.run();
   }
-  
+
   @Override
-  public ListenableFuture<List<StoreFile>> listObjects(ListOptions options) {
+  public ListenableFuture<List<StoreFile>> listObjects(ListOptions options)
+  {
     ListenableFuture<List<StoreFile>> results = null;
-    if (options.versionsIncluded()) {
+    if(options.versionsIncluded())
+    {
       S3ListVersionsCommand cmd = new S3ListVersionsCommand(options);
       configure(cmd);
       results = cmd.run();
-    } else {
+    }
+    else
+    {
       S3ListCommand cmd = new S3ListCommand(options);
       configure(cmd);
       results = cmd.run();
@@ -455,29 +433,29 @@ public class S3Client implements CloudStoreClient {
   @Override
   public ListenableFuture<List<Upload>> listPendingUploads(PendingUploadsOptions options)
   {
-      S3ListPendingUploadsCommand cmd = new S3ListPendingUploadsCommand(options);
-      configure(cmd);
-      return cmd.run();
+    S3ListPendingUploadsCommand cmd = new S3ListPendingUploadsCommand(options);
+    configure(cmd);
+    return cmd.run();
   }
 
   @Override
   public ListenableFuture<List<Void>> abortPendingUploads(PendingUploadsOptions options)
   {
-      S3AbortPendingUploadsCommand cmd = new S3AbortPendingUploadsCommand(options);
-      configure(cmd);
-      return cmd.run();
+    S3AbortPendingUploadsCommand cmd = new S3AbortPendingUploadsCommand(options);
+    configure(cmd);
+    return cmd.run();
   }
 
   @Override
   public ListenableFuture<StoreFile> addEncryptionKey(EncryptionKeyOptions options)
-      throws IOException
+    throws IOException
   {
     S3AddEncryptionKeyCommand cmd = createAddKeyCommand(options);
     return cmd.run();
   }
 
   protected S3AddEncryptionKeyCommand createAddKeyCommand(EncryptionKeyOptions options)
-      throws IOException
+    throws IOException
   {
     S3AddEncryptionKeyCommand cmd = new S3AddEncryptionKeyCommand(options);
     configure(cmd);
@@ -502,17 +480,15 @@ public class S3Client implements CloudStoreClient {
 
 
   /**
-   * Returns cloudstore package version in this format:
-   * "Version.RevNum-RevHash_BuildDatetime"
+   * Returns cloudstore package version in this format: "Version.RevNum-RevHash_BuildDatetime"
    * <p>
-   * Example:
-   *   "1.0.272-2dab7d1c9c69_201502181542"
+   * Example: "1.0.272-2dab7d1c9c69_201502181542"
    */
   public static String version()
   {
     Package p = S3Client.class.getPackage();
     String v = p.getSpecificationVersion() + '.' + p.getImplementationVersion();
-    
+
     return v;
   }
 

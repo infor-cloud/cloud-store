@@ -16,12 +16,12 @@
 
 package com.logicblox.cloudstore;
 
-import java.net.URL;
-import java.util.List;
 import junit.framework.Assert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.List;
 
 
 public class BucketTests
@@ -63,7 +63,9 @@ public class BucketTests
     for(Bucket b : buckets)
     {
       if(b.getName().equals(testBucket))
+      {
         found = true;
+      }
     }
     Assert.assertTrue(found);
 

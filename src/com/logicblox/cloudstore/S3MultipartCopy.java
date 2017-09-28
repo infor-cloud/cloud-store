@@ -37,144 +37,147 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 
-class S3MultipartCopy implements Copy
+class S3MultipartCopy
+  implements Copy
 {
-  private ConcurrentMap<Integer, PartETag> etags = new ConcurrentSkipListMap<Integer, PartETag>();
-  private AmazonS3 client;
-  private String sourceBucketName;
-  private String sourceObjectKey;
-  private String destinationBucketName;
-  private String destinationObjectKey;
-  private String uploadId;
-  private ObjectMetadata meta;
-  private ListeningExecutorService executor;
+  private ConcurrentMap<Integer, PartETag> _etags = new ConcurrentSkipListMap<Integer, PartETag>();
+  private AmazonS3 _client;
+  private String _sourceBucketName;
+  private String _sourceObjectKey;
+  private String _destinationBucketName;
+  private String _destinationObjectKey;
+  private String _uploadId;
+  private ObjectMetadata _meta;
+  private ListeningExecutorService _executor;
 
-  public S3MultipartCopy(AmazonS3 client,
-                         String sourceBucketName, String sourceObjectKey,
-                         String destinationBucketName, String destinationObjectKey,
-                         String uploadId,
-                         ObjectMetadata meta,
-                         ListeningExecutorService executor)
+  public S3MultipartCopy(
+    AmazonS3 client, String sourceBucketName, String sourceObjectKey, String destinationBucketName,
+    String destinationObjectKey, String uploadId, ObjectMetadata meta,
+    ListeningExecutorService executor)
   {
-    this.sourceBucketName = sourceBucketName;
-    this.sourceObjectKey = sourceObjectKey;
-    this.destinationBucketName = destinationBucketName;
-    this.destinationObjectKey = destinationObjectKey;
-    this.client = client;
-    this.uploadId = uploadId;
-    this.meta = meta;
-    this.executor = executor;
+    _sourceBucketName = sourceBucketName;
+    _sourceObjectKey = sourceObjectKey;
+    _destinationBucketName = destinationBucketName;
+    _destinationObjectKey = destinationObjectKey;
+    _client = client;
+    _uploadId = uploadId;
+    _meta = meta;
+    _executor = executor;
   }
 
-  public ListenableFuture<Void> copyPart(int partNumber, Long startByte, Long
-      endByte, OverallProgressListener progressListener)
+  public ListenableFuture<Void> copyPart(
+    int partNumber, Long startByte, Long endByte, OverallProgressListener progressListener)
   {
-    return executor.submit(new CopyCallable(partNumber, startByte, endByte,
-        progressListener));
+    return _executor.submit(new CopyCallable(partNumber, startByte, endByte, progressListener));
   }
 
   public ListenableFuture<String> completeCopy()
   {
-    return executor.submit(new CompleteCallable());
+    return _executor.submit(new CompleteCallable());
   }
 
   public String getSourceBucketName()
   {
-    return sourceBucketName;
+    return _sourceBucketName;
   }
 
   public String getSourceObjectKey()
   {
-    return sourceObjectKey;
+    return _sourceObjectKey;
   }
 
   public String getDestinationBucketName()
   {
-    return destinationBucketName;
+    return _destinationBucketName;
   }
 
   public String getDestinationObjectKey()
   {
-    return destinationObjectKey;
+    return _destinationObjectKey;
   }
 
   public Long getObjectSize()
   {
-    return meta.getContentLength();
+    return _meta.getContentLength();
   }
 
-  public Map<String,String> getMeta()
+  public Map<String, String> getMeta()
   {
-    return meta.getUserMetadata();
+    return _meta.getUserMetadata();
   }
 
-  private class CompleteCallable implements Callable<String>
+  private class CompleteCallable
+    implements Callable<String>
   {
-    public String call() throws Exception
+    public String call()
+      throws Exception
     {
       String multipartDigest;
       CompleteMultipartUploadRequest req;
 
-      req = new CompleteMultipartUploadRequest(destinationBucketName,
-          destinationObjectKey, uploadId, new ArrayList<PartETag>(etags.values()));
+      req = new CompleteMultipartUploadRequest(_destinationBucketName, _destinationObjectKey,
+        _uploadId, new ArrayList<PartETag>(_etags.values()));
       ByteArrayOutputStream os = new ByteArrayOutputStream();
-      for (Integer pNum : etags.keySet()) {
-        os.write(DatatypeConverter.parseHexBinary(etags.get(pNum).getETag()));
+      for(Integer pNum : _etags.keySet())
+      {
+        os.write(DatatypeConverter.parseHexBinary(_etags.get(pNum).getETag()));
       }
 
-      multipartDigest = DigestUtils.md5Hex(os.toByteArray()) + "-" + etags.size();
+      multipartDigest = DigestUtils.md5Hex(os.toByteArray()) + "-" + _etags.size();
 
-      CompleteMultipartUploadResult res = client.completeMultipartUpload(req);
+      CompleteMultipartUploadResult res = _client.completeMultipartUpload(req);
 
-      if(res.getETag().equals(multipartDigest)) {
+      if(res.getETag().equals(multipartDigest))
+      {
         return res.getETag();
       }
-      else {
-        throw new BadHashException("Failed checksum validation for " +
-            destinationBucketName + "/" + destinationObjectKey + ". " +
-            "Calculated MD5: " + multipartDigest +
-            ", Expected MD5: " + res.getETag());
+      else
+      {
+        throw new BadHashException(
+          "Failed checksum validation for " + _destinationBucketName + "/" + _destinationObjectKey +
+            ". " + "Calculated MD5: " + multipartDigest + ", Expected MD5: " + res.getETag());
       }
     }
   }
 
-  private class CopyCallable implements Callable<Void>
+  private class CopyCallable
+    implements Callable<Void>
   {
-    private int partNumber;
-    private Long startByte;
-    private Long endByte;
-    private OverallProgressListener progressListener;
+    private int _partNumber;
+    private Long _startByte;
+    private Long _endByte;
+    private OverallProgressListener _progressListener;
 
-    public CopyCallable(int partNumber, Long startByte, Long endByte,
-                        OverallProgressListener progressListener)
+    public CopyCallable(
+      int partNumber, Long startByte, Long endByte, OverallProgressListener progressListener)
     {
-      this.partNumber = partNumber;
-      this.startByte = startByte;
-      this.endByte = endByte;
-      this.progressListener = progressListener;
+      _partNumber = partNumber;
+      _startByte = startByte;
+      _endByte = endByte;
+      _progressListener = progressListener;
     }
 
-    public Void call() throws Exception
+    public Void call()
+      throws Exception
     {
-      CopyPartRequest req = new CopyPartRequest()
-          .withSourceBucketName(sourceBucketName)
-          .withSourceKey(sourceObjectKey)
-          .withDestinationBucketName(destinationBucketName)
-          .withDestinationKey(destinationObjectKey)
-          .withUploadId(uploadId)
-          .withFirstByte(startByte)
-          .withLastByte(endByte)
-          .withPartNumber(partNumber + 1);
-      
-      if (progressListener != null) {
-        PartProgressEvent ppe = new PartProgressEvent(Integer.toString(partNumber));
-        ProgressListener s3pl = new S3ProgressListener(progressListener, ppe);
+      CopyPartRequest req = new CopyPartRequest().withSourceBucketName(_sourceBucketName)
+        .withSourceKey(_sourceObjectKey)
+        .withDestinationBucketName(_destinationBucketName)
+        .withDestinationKey(_destinationObjectKey)
+        .withUploadId(_uploadId)
+        .withFirstByte(_startByte)
+        .withLastByte(_endByte)
+        .withPartNumber(_partNumber + 1);
+
+      if(_progressListener != null)
+      {
+        PartProgressEvent ppe = new PartProgressEvent(Integer.toString(_partNumber));
+        ProgressListener s3pl = new S3ProgressListener(_progressListener, ppe);
         req.setGeneralProgressListener(s3pl);
       }
 
-      CopyPartResult res = client.copyPart(req);
-      etags.put(res.getPartNumber(),
-          new PartETag(res.getPartNumber(), res.getETag()));
+      CopyPartResult res = _client.copyPart(req);
+      _etags.put(res.getPartNumber(), new PartETag(res.getPartNumber(), res.getETag()));
 
       return null;
     }

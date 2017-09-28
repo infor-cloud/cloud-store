@@ -25,7 +25,8 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 
-public class DeleteDirCommand extends Command
+public class DeleteDirCommand
+  extends Command
 {
   private DeleteOptions _options;
 
@@ -39,8 +40,7 @@ public class DeleteDirCommand extends Command
     throws InterruptedException, ExecutionException
   {
     ListenableFuture<List<StoreFile>> listObjs = queryFiles();
-    ListenableFuture<List<StoreFile>> result = Futures.transform(
-      listObjs,
+    ListenableFuture<List<StoreFile>> result = Futures.transform(listObjs,
       new AsyncFunction<List<StoreFile>, List<StoreFile>>()
       {
         public ListenableFuture<List<StoreFile>> apply(List<StoreFile> potential)
@@ -49,20 +49,26 @@ public class DeleteDirCommand extends Command
           for(StoreFile f : potential)
           {
             if(!f.getKey().endsWith("/"))
+            {
               matches.add(f);
+            }
           }
           if(!_options.forceDelete() && matches.isEmpty())
           {
-            throw new UsageException("No objects found that match '"
-                                     + getUri(_options.getBucketName(), _options.getObjectKey()) + "'");
+            throw new UsageException("No objects found that match '" +
+              getUri(_options.getBucketName(), _options.getObjectKey()) + "'");
           }
 
           List<ListenableFuture<StoreFile>> futures = prepareFutures(matches);
 
           if(_options.isDryRun())
+          {
             return Futures.immediateFuture(null);
+          }
           else
+          {
             return Futures.allAsList(futures);
+          }
         }
       });
     return result;
@@ -76,8 +82,7 @@ public class DeleteDirCommand extends Command
     {
       if(_options.isDryRun())
       {
-        System.out.println("<DRYRUN> deleting '"
-          + getUri(src.getBucketName(), src.getKey()) + "'");
+        System.out.println("<DRYRUN> deleting '" + getUri(src.getBucketName(), src.getKey()) + "'");
       }
       else
       {
@@ -97,11 +102,11 @@ public class DeleteDirCommand extends Command
   {
     // find all files that need to be deleted
     ListOptions opts = _client.getOptionsBuilderFactory()
-        .newListOptionsBuilder()
-        .setBucketName(_options.getBucketName())
-        .setObjectKey(_options.getObjectKey())
-        .setRecursive(_options.isRecursive())
-        .createOptions();
+      .newListOptionsBuilder()
+      .setBucketName(_options.getBucketName())
+      .setObjectKey(_options.getObjectKey())
+      .setRecursive(_options.isRecursive())
+      .createOptions();
     return _client.listObjects(opts);
   }
 }

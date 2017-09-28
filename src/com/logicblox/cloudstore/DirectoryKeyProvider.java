@@ -16,19 +16,20 @@
 
 package com.logicblox.cloudstore;
 
+import com.google.common.base.Charsets;
+import com.google.common.io.Closeables;
+
+import javax.xml.bind.DatatypeConverter;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.InputStreamReader;
 import java.io.IOException;
-import java.io.Reader;
-
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import java.io.InputStreamReader;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -36,21 +37,22 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.regex.Pattern;
-import javax.xml.bind.DatatypeConverter;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.Closeables;
-
-public class DirectoryKeyProvider implements KeyProvider
+public class DirectoryKeyProvider
+  implements KeyProvider
 {
-  private static final Pattern beginPublic = Pattern.compile("^----[\\-\\ ]BEGIN PUBLIC KEY---[-]+$");
-  private static final Pattern endPublic = Pattern.compile("^----[\\-\\ ]END PUBLIC KEY---[-]+$");
+  private static final Pattern _BEGIN_PUBLIC = Pattern.compile(
+    "^----[\\-\\ ]BEGIN PUBLIC KEY---[-]+$");
+  private static final Pattern _END_PUBLIC = Pattern.compile("^----[\\-\\ ]END PUBLIC KEY---[-]+$");
 
-  private static final Pattern beginPrivate = Pattern.compile("^----[\\-\\ ]BEGIN PRIVATE KEY---[-]+$");
-  private static final Pattern endPrivate = Pattern.compile("^----[\\-\\ ]END PRIVATE KEY---[-]+$");
+  private static final Pattern _BEGIN_PRIVATE = Pattern.compile(
+    "^----[\\-\\ ]BEGIN PRIVATE KEY---[-]+$");
+  private static final Pattern _END_PRIVATE = Pattern.compile("^----[\\-\\ ]END PRIVATE KEY---[-]+$");
 
-  private static final Pattern beginCertificate = Pattern.compile("^----[\\-\\ ]BEGIN CERTIFICATE---[-]+$");
-  private static final Pattern endCertificate = Pattern.compile("^----[\\-\\ ]END CERTIFICATE---[-]+$");
+  private static final Pattern _BEGIN_CERTIFICATE = Pattern.compile(
+    "^----[\\-\\ ]BEGIN CERTIFICATE---[-]+$");
+  private static final Pattern _END_CERTIFICATE = Pattern.compile(
+    "^----[\\-\\ ]END CERTIFICATE---[-]+$");
 
   private File _directory;
 
@@ -60,11 +62,11 @@ public class DirectoryKeyProvider implements KeyProvider
   }
 
   public PrivateKey getPrivateKey(String alias)
-  throws NoSuchKeyException
+    throws NoSuchKeyException
   {
     try
     {
-      byte[] bytes = extractKey(getFile(alias, "pem"), beginPrivate, endPrivate);
+      byte[] bytes = extractKey(getFile(alias, "pem"), _BEGIN_PRIVATE, _END_PRIVATE);
       PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(bytes);
       KeyFactory keyFactory = KeyFactory.getInstance("RSA");
       return keyFactory.generatePrivate(keySpec);
@@ -84,11 +86,11 @@ public class DirectoryKeyProvider implements KeyProvider
   }
 
   public PublicKey getPublicKey(String alias)
-  throws NoSuchKeyException
+    throws NoSuchKeyException
   {
     try
     {
-      byte[] bytes = extractKey(getFile(alias, "pem"), beginPublic, endPublic);
+      byte[] bytes = extractKey(getFile(alias, "pem"), _BEGIN_PUBLIC, _END_PUBLIC);
       X509EncodedKeySpec keySpec = new X509EncodedKeySpec(bytes);
       KeyFactory keyFactory = KeyFactory.getInstance("RSA");
       return keyFactory.generatePublic(keySpec);
@@ -108,11 +110,11 @@ public class DirectoryKeyProvider implements KeyProvider
   }
 
   public Certificate getCertificate(String alias)
-  throws NoSuchKeyException
+    throws NoSuchKeyException
   {
     try
     {
-      byte[] bytes = extractKey(getFile(alias, "cer"), beginCertificate, endCertificate);
+      byte[] bytes = extractKey(getFile(alias, "cer"), _BEGIN_CERTIFICATE, _END_CERTIFICATE);
       CertificateFactory certFact = CertificateFactory.getInstance("X.509");
       ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
       return certFact.generateCertificate(bis);
@@ -123,7 +125,7 @@ public class DirectoryKeyProvider implements KeyProvider
     }
     catch(IOException exc)
     {
-      throw new NoSuchKeyException(exc);      
+      throw new NoSuchKeyException(exc);
     }
   }
 
@@ -131,29 +133,35 @@ public class DirectoryKeyProvider implements KeyProvider
    * Returns the .pem file for the given alias.
    */
   private File getFile(String alias, String extension)
-  throws NoSuchKeyException
+    throws NoSuchKeyException
   {
     File result = null;
 
-    if( !_directory.exists() || !_directory.isDirectory() )
-        throw new NoSuchKeyException("Invalid key directory: " + _directory.getPath());
+    if(!_directory.exists() || !_directory.isDirectory())
+    {
+      throw new NoSuchKeyException("Invalid key directory: " + _directory.getPath());
+    }
 
     // iterate of the actual files to avoid security issues with alias
     // that are not simple file names.
     for(File file : _directory.listFiles())
     {
       if(file.getName().equals(alias + "." + extension))
+      {
         result = file;
+      }
     }
 
     if(result == null)
+    {
       throw new NoSuchKeyException("No such key: " + alias);
+    }
 
     return result;
   }
 
   private byte[] extractKey(File file, Pattern begin, Pattern end)
-  throws NoSuchKeyException, IOException
+    throws NoSuchKeyException, IOException
   {
     int state = 0;
     StringBuilder keyPem = new StringBuilder();
@@ -175,7 +183,7 @@ public class DirectoryKeyProvider implements KeyProvider
         {
           state = 2;
         }
-        
+
         if(state == 1)
         {
           keyPem.append(line);
@@ -191,7 +199,9 @@ public class DirectoryKeyProvider implements KeyProvider
     }
 
     if(state != 2)
+    {
       throw new NoSuchKeyException("Incorrect file format: " + file.getPath());
+    }
 
 
     byte[] keyBytes = DatatypeConverter.parseBase64Binary(keyPem.toString());

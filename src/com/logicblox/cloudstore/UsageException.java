@@ -17,11 +17,11 @@
 package com.logicblox.cloudstore;
 
 /**
- * A usage exception is thrown for incorrect usage of the
- * tool. Reporting a stack trace is not considered useful, and only
- * the message needs to be reported to the user/
+ * A usage exception is thrown for incorrect usage of the tool. Reporting a stack trace is not
+ * considered useful, and only the message needs to be reported to the user/
  */
-public class UsageException extends RuntimeException
+public class UsageException
+  extends RuntimeException
 {
   public UsageException(String msg)
   {

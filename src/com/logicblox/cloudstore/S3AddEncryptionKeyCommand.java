@@ -41,14 +41,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-public class S3AddEncryptionKeyCommand extends Command
+public class S3AddEncryptionKeyCommand
+  extends Command
 {
   private EncryptionKeyOptions _options;
   private String _encKeyName;
   private KeyProvider _encKeyProvider;
 
   public S3AddEncryptionKeyCommand(EncryptionKeyOptions options)
-  throws IOException
+    throws IOException
   {
     super(options);
     _options = options;
@@ -61,23 +62,21 @@ public class S3AddEncryptionKeyCommand extends Command
     // TODO(geokollias): Handle versions?
     ListenableFuture<S3ObjectMetadata> objMeta = getMetadata();
     objMeta = Futures.transform(objMeta, addNewEncryptionKeyFn());
-    ListenableFuture<StoreFile> res = Futures.transform(objMeta,
-      updateObjectMetadataFn());
+    ListenableFuture<StoreFile> res = Futures.transform(objMeta, updateObjectMetadataFn());
 
-    return Futures.withFallback(
-      res,
-      new FutureFallback<StoreFile>()
+    return Futures.withFallback(res, new FutureFallback<StoreFile>()
+    {
+      public ListenableFuture<StoreFile> create(Throwable t)
       {
-        public ListenableFuture<StoreFile> create(Throwable t)
+        if(t instanceof UsageException)
         {
-          if (t instanceof UsageException) {
-            return Futures.immediateFailedFuture(t);
-          }
-          return Futures.immediateFailedFuture(new Exception("Error " +
-              "adding new encryption key to " + getUri(_options.getBucketName(),
-            _options.getObjectKey())+ ".", t));
+          return Futures.immediateFailedFuture(t);
         }
-      });
+        return Futures.immediateFailedFuture(new Exception(
+          "Error " + "adding new encryption key to " +
+            getUri(_options.getBucketName(), _options.getObjectKey()) + ".", t));
+      }
+    });
   }
 
   /**
@@ -85,8 +84,7 @@ public class S3AddEncryptionKeyCommand extends Command
    */
   private ListenableFuture<S3ObjectMetadata> getMetadata()
   {
-    return executeWithRetry(
-      _client.getInternalExecutor(),
+    return executeWithRetry(_client.getInternalExecutor(),
       new Callable<ListenableFuture<S3ObjectMetadata>>()
       {
         public ListenableFuture<S3ObjectMetadata> call()
@@ -97,7 +95,7 @@ public class S3AddEncryptionKeyCommand extends Command
         public String toString()
         {
           return "Starting addition of new encryption key to " +
-                 getUri(_options.getBucketName(), _options.getObjectKey());
+            getUri(_options.getBucketName(), _options.getObjectKey());
         }
       });
   }
@@ -106,28 +104,28 @@ public class S3AddEncryptionKeyCommand extends Command
   {
     S3ObjectMetadataFactory f = new S3ObjectMetadataFactory(getS3Client(),
       _client.getApiExecutor());
-    ListenableFuture<S3ObjectMetadata> metadataFactory = f.create(
-      _options.getBucketName(), _options.getObjectKey(), null);
+    ListenableFuture<S3ObjectMetadata> metadataFactory = f.create(_options.getBucketName(),
+      _options.getObjectKey(), null);
 
-    AsyncFunction<S3ObjectMetadata, S3ObjectMetadata> checkMetadata = new
-      AsyncFunction<S3ObjectMetadata, S3ObjectMetadata>()
+    AsyncFunction<S3ObjectMetadata, S3ObjectMetadata> checkMetadata
+      = new AsyncFunction<S3ObjectMetadata, S3ObjectMetadata>()
+    {
+      public ListenableFuture<S3ObjectMetadata> apply(S3ObjectMetadata metadata)
       {
-        public ListenableFuture<S3ObjectMetadata> apply(S3ObjectMetadata metadata)
+        Map<String, String> userMetadata = metadata.getUserMetadata();
+        String obj = getUri(metadata.getBucket(), metadata.getObjectKey());
+        if(!userMetadata.containsKey("s3tool-key-name"))
         {
-          Map<String, String> userMetadata = metadata.getUserMetadata();
-          String obj = getUri(metadata.getBucket(), metadata.getKey());
-          if (!userMetadata.containsKey("s3tool-key-name"))
-          {
-            throw new UsageException("Object doesn't seem to be encrypted");
-          }
-           if (!userMetadata.containsKey("s3tool-pubkey-hash"))
-          {
-            throw new UsageException("Public key hashes are required when " +
-                                     "object has multiple encryption keys");
-          }
-          return Futures.immediateFuture(metadata);
+          throw new UsageException("Object doesn't seem to be encrypted");
         }
-      };
+        if(!userMetadata.containsKey("s3tool-pubkey-hash"))
+        {
+          throw new UsageException(
+            "Public key hashes are required when " + "object has multiple encryption keys");
+        }
+        return Futures.immediateFuture(metadata);
+      }
+    };
 
     return Futures.transform(metadataFactory, checkMetadata);
   }
@@ -157,48 +155,48 @@ public class S3AddEncryptionKeyCommand extends Command
 
   private S3ObjectMetadata addNewEncryptionKey(S3ObjectMetadata metadata)
   {
-    String errPrefix = getUri(metadata.getBucket(), metadata.getKey()) + ": ";
-    if (_encKeyProvider == null)
+    String errPrefix = getUri(metadata.getBucket(), metadata.getObjectKey()) + ": ";
+    if(_encKeyProvider == null)
     {
-      throw new UsageException(errPrefix + "No encryption key provider is " +
-                               "specified");
+      throw new UsageException(errPrefix + "No encryption key provider is " + "specified");
     }
-    if (_encKeyName == null)
+    if(_encKeyName == null)
     {
-      throw new UsageException(errPrefix + "No encryption key name is " +
-                                 "specified");
+      throw new UsageException(errPrefix + "No encryption key name is " + "specified");
     }
     Map<String, String> userMetadata = metadata.getUserMetadata();
     String keyNamesStr = userMetadata.get("s3tool-key-name");
     if(null == keyNamesStr)
+    {
       keyNamesStr = "";
+    }
     List<String> keyNames = new ArrayList<>(Arrays.asList(keyNamesStr.split(",")));
     String pubKeyHashesStr = userMetadata.get("s3tool-pubkey-hash");
     if(null == pubKeyHashesStr)
+    {
       pubKeyHashesStr = "";
-    List<String> pubKeyHashes = new ArrayList<>(Arrays.asList(
-      pubKeyHashesStr.split(",")));
-    if (keyNames.contains(_encKeyName))
+    }
+    List<String> pubKeyHashes = new ArrayList<>(Arrays.asList(pubKeyHashesStr.split(",")));
+    if(keyNames.contains(_encKeyName))
     {
       throw new UsageException(errPrefix + _encKeyName + " already exists.");
     }
     int maxAllowedKeys = 4;
-    if (keyNames.size() >= maxAllowedKeys)
+    if(keyNames.size() >= maxAllowedKeys)
     {
-      throw new UsageException(errPrefix + "No more than " + maxAllowedKeys +
-        " keys are allowed.");
+      throw new UsageException(errPrefix + "No more than " + maxAllowedKeys + " keys are allowed.");
     }
     PrivateKey privKey = null;
     int privKeyIndex = -1;
     boolean privKeyFound = false;
-    for (String kn : keyNames)
+    for(String kn : keyNames)
     {
       privKeyIndex++;
       try
       {
         privKey = _encKeyProvider.getPrivateKey(kn);
       }
-      catch (NoSuchKeyException e)
+      catch(NoSuchKeyException e)
       {
         // We might find an eligible key later.
         continue;
@@ -210,21 +208,21 @@ public class S3AddEncryptionKeyCommand extends Command
         String pubKeyHashLocal = DatatypeConverter.printBase64Binary(
           DigestUtils.sha256(pubKey.getEncoded())).substring(0, 8);
 
-        if (pubKeyHashLocal.equals(pubKeyHashes.get(privKeyIndex)))
+        if(pubKeyHashLocal.equals(pubKeyHashes.get(privKeyIndex)))
         {
           // Successfully-read, validated key.
           privKeyFound = true;
           break;
         }
       }
-      catch (NoSuchKeyException e)
+      catch(NoSuchKeyException e)
       {
-        throw new UsageException(errPrefix + "Cannot generate the public key " +
-                                 "out of the private one for '" + kn);
+        throw new UsageException(
+          errPrefix + "Cannot generate the public key " + "out of the private one for '" + kn);
       }
     }
 
-    if (privKey == null || !privKeyFound)
+    if(privKey == null || !privKeyFound)
     {
       // No private key found
       throw new UsageException(errPrefix + "No eligible private key found");
@@ -233,23 +231,17 @@ public class S3AddEncryptionKeyCommand extends Command
     Cipher cipher;
     byte[] encKeyBytes;
     String symKeysStr = userMetadata.get("s3tool-symmetric-key");
-    List<String> symKeys = new ArrayList<>(Arrays.asList(
-      symKeysStr.split(",")));
+    List<String> symKeys = new ArrayList<>(Arrays.asList(symKeysStr.split(",")));
     try
     {
       cipher = Cipher.getInstance("RSA");
       cipher.init(Cipher.DECRYPT_MODE, privKey);
       // TODO(geokollias): Is it possible to have "privKey != null" &&
       // privKeyIndex out of symKeys bounds? Add assertion.
-      encKeyBytes = cipher.doFinal(DatatypeConverter.parseBase64Binary(
-        symKeys.get(privKeyIndex)));
+      encKeyBytes = cipher.doFinal(DatatypeConverter.parseBase64Binary(symKeys.get(privKeyIndex)));
     }
-    catch (
-      InvalidKeyException |
-      BadPaddingException |
-      NoSuchPaddingException |
-      NoSuchAlgorithmException |
-      IllegalBlockSizeException e)
+    catch(InvalidKeyException | BadPaddingException | NoSuchPaddingException |
+      NoSuchAlgorithmException | IllegalBlockSizeException e)
     {
       throw new RuntimeException(e);
     }
@@ -260,30 +252,24 @@ public class S3AddEncryptionKeyCommand extends Command
     try
     {
       PublicKey pubKey = _encKeyProvider.getPublicKey(_encKeyName);
-      pubKeyHash = DatatypeConverter.printBase64Binary(
-        DigestUtils.sha256(pubKey.getEncoded())).substring(0, 8);
+      pubKeyHash = DatatypeConverter.printBase64Binary(DigestUtils.sha256(pubKey.getEncoded()))
+        .substring(0, 8);
 
       cipher = Cipher.getInstance("RSA");
       cipher.init(Cipher.ENCRYPT_MODE, pubKey);
-      encSymKeyString = DatatypeConverter.printBase64Binary(
-        cipher.doFinal(encKeyBytes));
+      encSymKeyString = DatatypeConverter.printBase64Binary(cipher.doFinal(encKeyBytes));
     }
-    catch (NoSuchKeyException e)
+    catch(NoSuchKeyException e)
     {
-      throw new UsageException(errPrefix + "Missing encryption key " +
-                                 _encKeyName);
+      throw new UsageException(errPrefix + "Missing encryption key " + _encKeyName);
     }
-    catch (
-      InvalidKeyException |
-      BadPaddingException |
-      NoSuchPaddingException |
-      NoSuchAlgorithmException |
-      IllegalBlockSizeException e)
+    catch(InvalidKeyException | BadPaddingException | NoSuchPaddingException |
+      NoSuchAlgorithmException | IllegalBlockSizeException e)
     {
       throw new RuntimeException(e);
     }
 
-    if ((pubKeyHash == null) || (encSymKeyString == null))
+    if((pubKeyHash == null) || (encSymKeyString == null))
     {
       throw new RuntimeException(errPrefix + " Failed to add new key");
     }
@@ -292,16 +278,13 @@ public class S3AddEncryptionKeyCommand extends Command
     ObjectMetadata allMeta = metadata.getAllMetadata();
 
     keyNames.add(_encKeyName);
-    allMeta.addUserMetadata("s3tool-key-name",
-      Joiner.on(",").join(keyNames));
+    allMeta.addUserMetadata("s3tool-key-name", Joiner.on(",").join(keyNames));
 
     symKeys.add(encSymKeyString);
-    allMeta.addUserMetadata("s3tool-symmetric-key",
-      Joiner.on(",").join(symKeys));
+    allMeta.addUserMetadata("s3tool-symmetric-key", Joiner.on(",").join(symKeys));
 
     pubKeyHashes.add(pubKeyHash);
-    allMeta.addUserMetadata("s3tool-pubkey-hash",
-      Joiner.on(",").join(pubKeyHashes));
+    allMeta.addUserMetadata("s3tool-pubkey-hash", Joiner.on(",").join(pubKeyHashes));
 
     return metadata;
   }
@@ -311,52 +294,51 @@ public class S3AddEncryptionKeyCommand extends Command
    */
   private AsyncFunction<S3ObjectMetadata, StoreFile> updateObjectMetadataFn()
   {
-    AsyncFunction<S3ObjectMetadata, StoreFile> update = new
-      AsyncFunction<S3ObjectMetadata, StoreFile>()
-      {
-        public ListenableFuture<StoreFile> apply(final S3ObjectMetadata metadata)
+    AsyncFunction<S3ObjectMetadata, StoreFile> update
+      = new AsyncFunction<S3ObjectMetadata, StoreFile>()
+    {
+      public ListenableFuture<StoreFile> apply(final S3ObjectMetadata metadata)
         throws IOException
+      {
+        if(null == getGCSClient())
         {
-          if(null == getGCSClient())
-          {
-            // It seems for AWS there is no way to update an object's metadata
-            // without re-uploading/copying the whole object. Here, we
-            // copy the object to itself in order to add the new
-            // user-metadata.
-            CopyOptions options = _client.getOptionsBuilderFactory()
-              .newCopyOptionsBuilder()
-              .setSourceBucketName(metadata.getBucket())
-              .setSourceObjectKey(metadata.getKey())
-              .setDestinationBucketName(metadata.getBucket())
-              .setDestinationObjectKey(metadata.getKey())
-              .setUserMetadata(metadata.getUserMetadata())
-              .createOptions();
+          // It seems for AWS there is no way to update an object's metadata
+          // without re-uploading/copying the whole object. Here, we
+          // copy the object to itself in order to add the new
+          // user-metadata.
+          CopyOptions options = _client.getOptionsBuilderFactory()
+            .newCopyOptionsBuilder()
+            .setSourceBucketName(metadata.getBucket())
+            .setSourceObjectKey(metadata.getObjectKey())
+            .setDestinationBucketName(metadata.getBucket())
+            .setDestinationObjectKey(metadata.getObjectKey())
+            .setUserMetadata(metadata.getUserMetadata())
+            .createOptions();
 
-            return _client.copy(options);
-          }
-          else
-          {
-            return executeWithRetry(
-              _client.getInternalExecutor(),
-              new Callable<ListenableFuture<StoreFile>>()
-              {
-                public ListenableFuture<StoreFile> call()
-                {
-                  return _client.getApiExecutor().submit(new Callable<StoreFile>()
-                  {
-                    public StoreFile call()
-                    throws IOException
-                    {
-                      GCSClient.patchMetaData(getGCSClient(), metadata.getBucket(),
-                        metadata.getKey(), metadata.getUserMetadata());
-                      return new StoreFile(metadata.getBucket(), metadata.getKey());
-                    }
-                  });
-                }
-              });
-          }
+          return _client.copy(options);
         }
-      };
+        else
+        {
+          return executeWithRetry(_client.getInternalExecutor(),
+            new Callable<ListenableFuture<StoreFile>>()
+            {
+              public ListenableFuture<StoreFile> call()
+              {
+                return _client.getApiExecutor().submit(new Callable<StoreFile>()
+                {
+                  public StoreFile call()
+                    throws IOException
+                  {
+                    GCSClient.patchMetaData(getGCSClient(), metadata.getBucket(), metadata.getObjectKey(),
+                      metadata.getUserMetadata());
+                    return new StoreFile(metadata.getBucket(), metadata.getObjectKey());
+                  }
+                });
+              }
+            });
+        }
+      }
+    };
 
     return update;
   }

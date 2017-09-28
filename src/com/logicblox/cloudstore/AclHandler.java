@@ -16,9 +16,24 @@
 
 package com.logicblox.cloudstore;
 
-interface AclHandler
+/**
+ * AclHandler is an interface that abstracts over the access control functionality
+ * provided by different cloud store services.  
+ *
+ * @see CloudStoreClient#getAclHandler()
+ */
+public interface AclHandler
 {
+  /**
+   * Return true if the specified {@code cannedAcl} is a valid known ACL name
+   * for a cloud store service.
+   *
+   * @param cannedAcl Name of an access control list to check for validity
+   */
   boolean isCannedAclValid(String cannedAcl);
 
+  /**
+   * Return the name of the default access control list used by a store service.
+   */
   String getDefaultAcl();
 }

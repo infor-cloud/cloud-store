@@ -19,88 +19,144 @@ package com.logicblox.cloudstore;
 import java.io.File;
 
 /**
- * {@code DownloadOptionsBuilder} is a builder for {@code DownloadOptions}
- * objects.
+ * {@code DownloadOptionsBuilder} is a builder for {@code DownloadOptions} objects, used
+ * to control the behavior of the cloud-store download command.  This can be used to
+ * download both individual files and all files in directories.
  * <p>
- * Setting fields {@code file}, {@code bucket} and {@code objectKey} is
- * mandatory. All the others are optional.
+ * Fields {@code _file}, {@code _bucketName} and {@code _objectKey} are mandatory. All the others
+ * are optional.
+ * <p>
+ * @see DownloadOptions
+ * @see CloudStoreClient#getOptionsBuilderFactory()
+ * @see CloudStoreClient#download()
+ * @see CloudStoreClient#downloadDirectory()
+ * @see OptionsBuilderFactory#newDownloadOptionsBuilder()
  */
-public class DownloadOptionsBuilder extends CommandOptionsBuilder {
-    private File file;
-    private String bucket;
-    private String objectKey;
-    private String version;
-    private boolean recursive = false;
-    private boolean overwrite = false;
-    private boolean dryRun = false;
-    private OverallProgressListenerFactory overallProgressListenerFactory;
+public class DownloadOptionsBuilder
+  extends CommandOptionsBuilder
+{
+  private File _file;
+  private String _bucketName;
+  private String _objectKey;
+  private String _version;
+  private boolean _recursive = false;
+  private boolean _overwrite = false;
+  private boolean _dryRun = false;
+  private OverallProgressListenerFactory _overallProgressListenerFactory;
 
-    DownloadOptionsBuilder(CloudStoreClient client) {
-        _cloudStoreClient = client;
-    }
+  DownloadOptionsBuilder(CloudStoreClient client)
+  {
+    _cloudStoreClient = client;
+  }
 
-    public DownloadOptionsBuilder setFile(File file) {
-        this.file = file;
-        return this;
-    }
+  /**
+   * Set the local file (or directory) that will receive the data in the file from the cloud
+   * store service.
+   */
+  public DownloadOptionsBuilder setFile(File file)
+  {
+    _file = file;
+    return this;
+  }
 
-    public DownloadOptionsBuilder setBucketName(String bucket) {
-        this.bucket = bucket;
-        return this;
-    }
+  /**
+   * Set the name of the bucket containing the file to download.
+   */
+  public DownloadOptionsBuilder setBucketName(String bucket)
+  {
+    _bucketName = bucket;
+    return this;
+  }
 
-    public DownloadOptionsBuilder setObjectKey(String objectKey) {
-        this.objectKey = objectKey;
-        return this;
-    }
+  /**
+   * Set the key of the file to be downloaded.
+   */
+  public DownloadOptionsBuilder setObjectKey(String objectKey)
+  {
+    _objectKey = objectKey;
+    return this;
+  }
 
-    public DownloadOptionsBuilder setRecursive(boolean recursive) {
-        this.recursive = recursive;
-        return this;
-    }
-    
-    public DownloadOptionsBuilder setVersion(String version) {
-        this.version = version;
-        return this;
-    }
+  /**
+   * Set the recursive property of the command.  If this property is true
+   * and the key looks like a directory (ends in '/'), all "top-level"
+   * and "subdirectory" files will be downloaded.
+   */
+  public DownloadOptionsBuilder setRecursive(boolean recursive)
+  {
+    _recursive = recursive;
+    return this;
+  }
 
-    public DownloadOptionsBuilder setOverwrite(boolean overwrite) {
-        this.overwrite = overwrite;
-        return this;
-    }
+  /**
+   * Set the version of the file to be downloaded.
+   */
+  public DownloadOptionsBuilder setVersion(String version)
+  {
+    _version = version;
+    return this;
+  }
 
-    public DownloadOptionsBuilder setDryRun(boolean dryRun) {
-        this.dryRun = dryRun;
-        return this;
-    }
+  /**
+   * Set the overwrite property for the download operation.  If false,
+   * downloads will fail if they need to overwrite a file that is
+   * already on the local file system.
+   */
+  public DownloadOptionsBuilder setOverwrite(boolean overwrite)
+  {
+    _overwrite = overwrite;
+    return this;
+  }
 
-    public DownloadOptionsBuilder setOverallProgressListenerFactory
-        (OverallProgressListenerFactory overallProgressListenerFactory) {
-        this.overallProgressListenerFactory = overallProgressListenerFactory;
-        return this;
-    }
+  /**
+   * If set to true, print operations that would be executed, but do not perform them.
+   */
+  public DownloadOptionsBuilder setDryRun(boolean dryRun)
+  {
+    _dryRun = dryRun;
+    return this;
+  }
 
-    private void validateOptions()
+  /**
+   * Set a progress listener that can be used to track download progress.
+   */
+  public DownloadOptionsBuilder setOverallProgressListenerFactory(
+    OverallProgressListenerFactory overallProgressListenerFactory)
+  {
+    _overallProgressListenerFactory = overallProgressListenerFactory;
+    return this;
+  }
+
+  private void validateOptions()
+  {
+    if(_cloudStoreClient == null)
     {
-        if (_cloudStoreClient == null) {
-            throw new UsageException("CloudStoreClient has to be set");
-        }
-        else if (file == null) {
-            throw new UsageException("File has to be set");
-        }
-        else if (bucket == null) {
-            throw new UsageException("Bucket has to be set");
-        }
-        else if (objectKey == null) {
-            throw new UsageException("Object key has to be set");
-        }
+      throw new UsageException("CloudStoreClient has to be set");
     }
-
-    @Override
-    public DownloadOptions createOptions() {
-        validateOptions();
-
-        return new DownloadOptions(_cloudStoreClient, file, bucket, objectKey,
-          version, recursive, overwrite, dryRun, overallProgressListenerFactory);
+    else if(_file == null)
+    {
+      throw new UsageException("File has to be set");
     }
+    else if(_bucketName == null)
+    {
+      throw new UsageException("Bucket has to be set");
+    }
+    else if(_objectKey == null)
+    {
+      throw new UsageException("Object key has to be set");
+    }
+  }
+
+  /**
+   * Validate that all required parameters are set and if so return a new {@link DownloadOptions}
+   * object.
+   */
+  @Override
+  public DownloadOptions createOptions()
+  {
+    validateOptions();
+
+    return new DownloadOptions(_cloudStoreClient, _file, _bucketName, _objectKey, _version,
+      _recursive, _overwrite, _dryRun, _overallProgressListenerFactory);
+  }
 }

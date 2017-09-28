@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-public class S3CopyDirCommand
+class S3CopyDirCommand
   extends Command
 {
   private CopyOptions _options;

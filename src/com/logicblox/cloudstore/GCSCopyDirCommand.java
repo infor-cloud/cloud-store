@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 
-public class GCSCopyDirCommand
+class GCSCopyDirCommand
   extends Command
 {
   private CopyOptions _options;

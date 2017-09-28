@@ -48,7 +48,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
-public class S3DownloadCommand
+class S3DownloadCommand
   extends Command
 {
   private DownloadOptions _options;

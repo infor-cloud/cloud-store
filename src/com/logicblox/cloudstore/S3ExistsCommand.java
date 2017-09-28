@@ -24,7 +24,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.concurrent.Callable;
 
-public class S3ExistsCommand
+class S3ExistsCommand
   extends Command
 {
   private ExistsOptions _options;

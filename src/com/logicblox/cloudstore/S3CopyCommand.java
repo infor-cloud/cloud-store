@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-public class S3CopyCommand
+class S3CopyCommand
   extends Command
 {
   private CopyOptions _options;

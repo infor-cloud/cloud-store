@@ -30,7 +30,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-public class UploadDirectoryCommand
+class UploadDirectoryCommand
   extends Command
 {
   private UploadOptions _options;

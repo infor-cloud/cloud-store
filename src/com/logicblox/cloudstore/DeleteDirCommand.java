@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 
-public class DeleteDirCommand
+class DeleteDirCommand
   extends Command
 {
   private DeleteOptions _options;

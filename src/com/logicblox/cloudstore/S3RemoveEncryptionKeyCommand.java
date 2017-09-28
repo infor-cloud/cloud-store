@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-public class S3RemoveEncryptionKeyCommand
+class S3RemoveEncryptionKeyCommand
   extends Command
 {
   private EncryptionKeyOptions _options;

@@ -28,7 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-public class DownloadDirectoryCommand
+class DownloadDirectoryCommand
   extends Command
 {
   private DownloadOptions _options;

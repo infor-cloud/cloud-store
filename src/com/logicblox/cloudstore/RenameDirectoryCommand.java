@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 
-public class RenameDirectoryCommand
+class RenameDirectoryCommand
   extends Command
 {
   private RenameOptions _options;

@@ -17,7 +17,7 @@
 package com.logicblox.cloudstore;
 
 
-public interface RetryListener
+interface RetryListener
 {
-  public void retryTriggered(RetryEvent e);
+  void retryTriggered(RetryEvent e);
 }

@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-public class S3AddEncryptionKeyCommand
+class S3AddEncryptionKeyCommand
   extends Command
 {
   private EncryptionKeyOptions _options;

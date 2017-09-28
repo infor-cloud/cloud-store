@@ -24,7 +24,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import java.util.concurrent.Callable;
 
 
-public class S3DeleteCommand
+class S3DeleteCommand
   extends Command
 {
   private DeleteOptions _options;

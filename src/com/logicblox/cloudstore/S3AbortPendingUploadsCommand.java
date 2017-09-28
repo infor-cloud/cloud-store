@@ -27,7 +27,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 
-public class S3AbortPendingUploadsCommand
+class S3AbortPendingUploadsCommand
   extends Command
 {
   private PendingUploadsOptions _options;

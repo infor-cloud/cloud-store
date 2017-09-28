@@ -27,7 +27,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
-public class KeyGenCommand
+class KeyGenCommand
 {
 
   private KeyPairGenerator _keyPairGenerator;

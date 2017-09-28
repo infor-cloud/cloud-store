@@ -17,7 +17,7 @@
 package com.logicblox.cloudstore;
 
 
-public class RetryEvent
+class RetryEvent
 {
   private String _callableId;
   private Throwable _throwable;

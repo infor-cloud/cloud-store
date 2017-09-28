@@ -40,7 +40,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-public class Command
+class Command
 {
   protected boolean _stubborn = true;
   protected int _retryCount = 15;

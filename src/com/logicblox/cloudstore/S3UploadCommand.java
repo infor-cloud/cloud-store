@@ -45,7 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-public class S3UploadCommand
+class S3UploadCommand
   extends Command
 {
   private String _encKeyName;

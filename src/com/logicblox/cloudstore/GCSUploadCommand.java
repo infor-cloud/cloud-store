@@ -43,7 +43,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 
-public class GCSUploadCommand
+class GCSUploadCommand
   extends Command
 {
   private String _encKeyName;

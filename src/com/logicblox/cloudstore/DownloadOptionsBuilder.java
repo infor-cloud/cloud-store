@@ -25,7 +25,7 @@ import java.io.File;
  * <p>
  * Fields {@code _file}, {@code _bucketName} and {@code _objectKey} are mandatory. All the others
  * are optional.
- * <p>
+ * 
  * @see DownloadOptions
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#download(DownloadOptions)
@@ -52,6 +52,9 @@ public class DownloadOptionsBuilder
   /**
    * Set the local file (or directory) that will receive the data in the file from the cloud
    * store service.
+   *
+   * @param file local file to receive data from cloud file
+   * @return this builder
    */
   public DownloadOptionsBuilder setFile(File file)
   {
@@ -61,6 +64,9 @@ public class DownloadOptionsBuilder
 
   /**
    * Set the name of the bucket containing the file to download.
+   *
+   * @param bucket name of bucket
+   * @return this builder
    */
   public DownloadOptionsBuilder setBucketName(String bucket)
   {
@@ -70,6 +76,9 @@ public class DownloadOptionsBuilder
 
   /**
    * Set the key of the file to be downloaded.
+   *
+   * @param objectKey key of file to download
+   * @return this builder
    */
   public DownloadOptionsBuilder setObjectKey(String objectKey)
   {
@@ -81,6 +90,9 @@ public class DownloadOptionsBuilder
    * Set the recursive property of the command.  If this property is true
    * and the key looks like a directory (ends in '/'), all "top-level"
    * and "subdirectory" files will be downloaded.
+   *
+   * @param recursive recursive flag
+   * @return this builder
    */
   public DownloadOptionsBuilder setRecursive(boolean recursive)
   {
@@ -90,6 +102,9 @@ public class DownloadOptionsBuilder
 
   /**
    * Set the version of the file to be downloaded.
+   *
+   * @param version version of file to download
+   * @return this builder
    */
   public DownloadOptionsBuilder setVersion(String version)
   {
@@ -101,6 +116,9 @@ public class DownloadOptionsBuilder
    * Set the overwrite property for the download operation.  If false,
    * downloads will fail if they need to overwrite a file that is
    * already on the local file system.
+   *
+   * @param overwrite overwrite flag
+   * @return this builder
    */
   public DownloadOptionsBuilder setOverwrite(boolean overwrite)
   {
@@ -110,6 +128,9 @@ public class DownloadOptionsBuilder
 
   /**
    * If set to true, print operations that would be executed, but do not perform them.
+   *
+   * @param dryRun dry-run flag
+   * @return this builder
    */
   public DownloadOptionsBuilder setDryRun(boolean dryRun)
   {
@@ -119,6 +140,9 @@ public class DownloadOptionsBuilder
 
   /**
    * Set a progress listener that can be used to track download progress.
+   *
+   * @param overallProgressListenerFactory factory to create progress listeners
+   * @return this builder
    */
   public DownloadOptionsBuilder setOverallProgressListenerFactory(
     OverallProgressListenerFactory overallProgressListenerFactory)
@@ -150,6 +174,8 @@ public class DownloadOptionsBuilder
   /**
    * Validate that all required parameters are set and if so return a new {@link DownloadOptions}
    * object.
+   *
+   * @return immutable options object with values from this builder
    */
   @Override
   public DownloadOptions createOptions()

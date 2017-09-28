@@ -58,6 +58,8 @@ public class StoreFile
 
   /**
    * Return the local File object for an upload or download operation.
+   *
+   * @return local file object
    */
   public File getLocalFile()
   {
@@ -66,6 +68,8 @@ public class StoreFile
 
   /**
    * Set the local File for an upload or download operation.
+   * 
+   * @param f local file object
    */
   public void setLocalFile(File f)
   {
@@ -74,6 +78,8 @@ public class StoreFile
 
   /**
    * Return the ETag (checksum) associated with a file in a cloud store service.
+   *
+   * @return file checksum
    */
   public String getETag()
   {
@@ -82,6 +88,8 @@ public class StoreFile
 
   /**
    * Set the ETag (checksum) associated with a file in a cloud store service.
+   *
+   * @param tag file checksum
    */
   public void setETag(String tag)
   {
@@ -90,6 +98,8 @@ public class StoreFile
 
   /**
    * Return the key of the file represented by this StoreFile.
+   *
+   * @return file key
    */
   public String getKey()
   {
@@ -98,6 +108,8 @@ public class StoreFile
 
   /**
    * Set the key of the file represented by this StoreFile.
+   *
+   * @param key file key
    */
   public void setKey(String key)
   {
@@ -106,6 +118,8 @@ public class StoreFile
 
   /**
    * Return the name of the bucket containing a file represented by this StoreFile.
+   *
+   * @return bucket name
    */
   public String getBucketName()
   {
@@ -114,6 +128,8 @@ public class StoreFile
 
   /**
    * Set the name of the bucket containing a file represented by this StoreFile.
+   * 
+   * @param bucket name of bucket
    */
   public void setBucketName(String bucket)
   {
@@ -122,6 +138,8 @@ public class StoreFile
 
   /**
    * Return the version ID of a file in a cloud store service.
+   *
+   * @return version ID for a file
    */
   public Optional<String> getVersionId()
   {
@@ -130,6 +148,8 @@ public class StoreFile
 
   /**
    * Set the version ID of a file in a cloud store service.
+   *
+   * @param versionId version ID for a file
    */
   public void setVersionId(String versionId)
     throws IllegalArgumentException
@@ -143,6 +163,8 @@ public class StoreFile
 
   /**
    * Return the size of a file in a cloud store service.
+   *
+   * @return size of file
    */
   public Optional<Long> getSize()
   {
@@ -151,6 +173,8 @@ public class StoreFile
 
   /**
    * Set the size of a file in a cloud store service.
+   *
+   * @param size size of file
    */
   public void setSize(Long size)
     throws IllegalArgumentException
@@ -165,6 +189,8 @@ public class StoreFile
 
   /**
    * Return the modification time for a file in a cloud store service.
+   *
+   * @return modification time for file
    */
   public Optional<Date> getTimestamp()
   {
@@ -173,6 +199,8 @@ public class StoreFile
 
   /**
    * Set the modification time for a file in a cloud store service.
+   *
+   * @param timestamp modification time for file
    */
   public void setTimestamp(Date timestamp)
     throws IllegalArgumentException

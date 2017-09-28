@@ -22,7 +22,7 @@ package com.logicblox.cloudstore;
  * <p>
  * Setting {@code sourceBucketName}, {@code sourceObjectKey}, {@code destinationBucket} and 
  * {@code destinationObjectKey} is mandatory. All the others are optional.
- * <p>
+ * 
  * @see RenameOptions
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#rename(RenameOptions)
@@ -47,6 +47,9 @@ public class RenameOptionsBuilder
 
   /**
    * Set the name of the bucket containing the file to be renamed.
+   *
+   * @param sourceBucketName name of source bucket
+   * @return this builder
    */
   public RenameOptionsBuilder setSourceBucketName(String sourceBucketName)
   {
@@ -56,6 +59,9 @@ public class RenameOptionsBuilder
 
   /**
    * Set the key of the file to be renamed.
+   *
+   * @param sourceObjectKey key of source file
+   * @return this builder
    */
   public RenameOptionsBuilder setSourceObjectKey(String sourceObjectKey)
   {
@@ -65,6 +71,9 @@ public class RenameOptionsBuilder
 
   /**
    * Set the name fo the bucket that will receive the renamed file.
+   *
+   * @param destinationBucket name of destination bucket
+   * @return this builder
    */
   public RenameOptionsBuilder setDestinationBucketName(String destinationBucket)
   {
@@ -74,6 +83,9 @@ public class RenameOptionsBuilder
 
   /**
    * Set the key of the new file to be created.
+   *
+   * @param destinationObjectKey key of destination file
+   * @return this builder
    */
   public RenameOptionsBuilder setDestinationObjectKey(String destinationObjectKey)
   {
@@ -84,6 +96,9 @@ public class RenameOptionsBuilder
   /**
    * Set the name of an access control list for the renamed file.  If not specified, 
    * the access control list for the original file will be used.
+   *
+   * @param cannedAcl name of access control list to apply to renamed file
+   * @return this builder
    */
   public RenameOptionsBuilder setCannedAcl(String cannedAcl)
   {
@@ -97,6 +112,9 @@ public class RenameOptionsBuilder
    * a directory (ends with a '/').  If not set and the key ends in a '/', then all
    * "top-level" files matching the key will be renamed.  If recursive is set and the
    * key ends in '/', all "top-level" and all matching "sub-directory" files will be renamed.
+   *
+   * @param recursive true if rename operation should be recursive
+   * @return this builder
    */
   public RenameOptionsBuilder setRecursive(boolean recursive)
   {
@@ -106,6 +124,9 @@ public class RenameOptionsBuilder
 
   /**
    * If set to true, print operations that would be executed, but do not perform them.
+   *
+   * @param dryRun true if operations should be printed but not executed
+   * @return this builder
    */
   public RenameOptionsBuilder setDryRun(boolean dryRun)
   {
@@ -148,6 +169,8 @@ public class RenameOptionsBuilder
   /**
    * Validate that all required parameters are set and if so return a new {@link RenameOptions}
    * object.
+   *
+   * @return immutable options object with values from this builder
    */
   @Override
   public RenameOptions createOptions()

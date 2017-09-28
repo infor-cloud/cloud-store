@@ -22,7 +22,7 @@ package com.logicblox.cloudstore;
  * <p>
  * {@code EncryptionKeyOptions} objects are meant to be built by {@code
  * EncryptionKeyOptionsBuilder}. This class provides only public accessor methods.
- * <p>
+ * 
  * @see EncryptionKeyOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#addEncryptionKey(EncryptionKeyOptions)
@@ -46,7 +46,9 @@ public class EncryptionKeyOptions
   }
 
   /**
-   * Return the key of the file to be modified.
+   * Return the name of bucket containing file to be modified.
+   *
+   * @return bucket name
    */
   public String getBucketName()
   {
@@ -55,6 +57,8 @@ public class EncryptionKeyOptions
 
   /**
    * Return the key of the file to be modified.
+   *
+   * @return file key
    */
   public String getObjectKey()
   {
@@ -64,6 +68,8 @@ public class EncryptionKeyOptions
   /**
    * Return the name of the public/private key pair to be added to or removed
    * from a file.  The key pair file must exist in the local key directory.
+   *
+   * @return encryption key name
    */
   public String getEncryptionKey()
   {

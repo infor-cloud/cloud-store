@@ -40,6 +40,8 @@ public class Metadata
   /**
    * Gets the optional Cache-Control HTTP header which allows the user to specify caching behavior
    * along the HTTP request/reply chain.
+   *
+   * @return cache control value
    */
   public String getCacheControl()
   {
@@ -49,6 +51,8 @@ public class Metadata
   /**
    * Gets the optional Content-Disposition HTTP header, which specifies presentation information for
    * the object such as the recommended filename for the object to be saved as.
+   *
+   * @return content disposition value
    */
   public String getContentDisposition()
   {
@@ -59,6 +63,8 @@ public class Metadata
    * Gets the optional Content-Encoding HTTP header specifying what content encodings have been
    * applied to the object and what decoding mechanisms must be applied in order to obtain the
    * media-type referenced by the Content-Type field.
+   *
+   * @return content encoding value
    */
   public String getContentEncoding()
   {
@@ -68,6 +74,8 @@ public class Metadata
   /**
    * Gets the Content-Language HTTP header, which describes the natural language(s) of the intended
    * audience for the enclosed entity.
+   *
+   * @return content language value
    */
   public String getContentLanguage()
   {
@@ -76,6 +84,8 @@ public class Metadata
 
   /**
    * Gets the Content-Length HTTP header indicating the size of the associated object in bytes.
+   *
+   * @return content length
    */
   public long getContentLength()
   {
@@ -85,6 +95,8 @@ public class Metadata
   /**
    * Gets the base64 encoded 128-bit MD5 digest of the associated object (content - not including
    * headers) according to RFC 1864.
+   *
+   * @return content MD5 value
    */
   public String getContentMD5()
   {
@@ -93,6 +105,8 @@ public class Metadata
 
   /**
    * Returns the content range of the object if response contains the Content-Range header.
+   *
+   * @return content-range values
    */
   public Long[] getContentRange()
   {
@@ -102,6 +116,8 @@ public class Metadata
   /**
    * Gets the Content-Type HTTP header, which indicates the type of content stored in the associated
    * object.
+   *
+   * @return content type value
    */
   public String getContentType()
   {
@@ -110,6 +126,8 @@ public class Metadata
 
   /**
    * Gets the hex encoded 128-bit MD5 digest of the associated object according to RFC 1864.
+   *
+   * @return encoded MD5 value
    */
   public String getETag()
   {
@@ -118,6 +136,8 @@ public class Metadata
 
   /**
    * Returns the time this object will expire and be completely removed from the store.
+   *
+   * @return file expiration time
    */
   public Date getExpirationTime()
   {
@@ -126,6 +146,8 @@ public class Metadata
 
   /**
    * Returns the store-specific rule ID for this object's expiration, or null if it doesn't expire.
+   *
+   * @return file expiration rule ID
    */
   public String getExpirationTimeRuleId()
   {
@@ -134,6 +156,8 @@ public class Metadata
 
   /**
    * Returns the date when the object is no longer cacheable.
+   *
+   * @return HTTP cache expiration date
    */
   public Date getHttpExpiresDate()
   {
@@ -142,6 +166,8 @@ public class Metadata
 
   /**
    * Returns the physical length of the entire object in the store.
+   *
+   * @return file length
    */
   public long getInstanceLength()
   {
@@ -151,6 +177,8 @@ public class Metadata
   /**
    * Gets the value of the Last-Modified header, indicating the date and time at which the store
    * last recorded a modification to the associated object.
+   *
+   * @return last modification date of a file
    */
   public Date getLastModified()
   {
@@ -159,6 +187,8 @@ public class Metadata
 
   /**
    * Returns the boolean value which indicates whether there is ongoing restore request.
+   *
+   * @return true if file is currently being restored
    */
   public Boolean getOngoingRestore()
   {
@@ -167,6 +197,8 @@ public class Metadata
 
   /**
    * Returns the number of parts used to upload the object.
+   *
+   * @return upload part count for a file
    */
   public Integer getPartCount()
   {
@@ -175,6 +207,8 @@ public class Metadata
 
   /**
    * Gets a map of the raw metadata/headers for the associated object.
+   *
+   * @return file metadata
    */
   public Map<String, Object> getRawMetadata()
   {
@@ -184,6 +218,8 @@ public class Metadata
   /**
    * Return he replication status of the object if it is from a bucket that is the source 
    * or destination in a cross-region replication.
+   *
+   * @return replication status of a file
    */
   public String getReplicationStatus()
   {
@@ -194,6 +230,8 @@ public class Metadata
    * Returns the time at which an object that has been temporarily restored from a long term backing
    * store (i.e. AWS Glacier) will expire, and will need to be restored again in order to be
    * accessed.
+   *
+   * @return date that a temporarily restored file will expire
    */
   public Date getRestoreExpirationTime()
   {
@@ -203,6 +241,8 @@ public class Metadata
   /**
    * Returns the server-side encryption algorithm when encrypting the object using keys managed by
    * the store.
+   *
+   * @return server-side encryption algorithm name
    */
   public String getSSEAlgorithm()
   {
@@ -212,6 +252,8 @@ public class Metadata
   /**
    * Returns the server-side encryption algorithm if the object is encrypted using customer-provided
    * keys.
+   *
+   * @return server-side encryption algorithm name
    */
   public String getSSECustomerAlgorithm()
   {
@@ -220,6 +262,8 @@ public class Metadata
 
   /**
    * Return the storage class of the object.
+   *
+   * @return file's storeage class
    */
   public String getStorageClass()
   {
@@ -228,6 +272,8 @@ public class Metadata
 
   /**
    * Gets the custom user-metadata for the associated object.
+   *
+   * @return user metadata for a file
    */
   public Map<String, String> getUserMetadata()
   {
@@ -236,6 +282,7 @@ public class Metadata
 
   /**
    * Gets the version ID of the associated object if available.
+   * @return version ID for a file
    */
   public String getVersionId()
   {
@@ -245,6 +292,8 @@ public class Metadata
   /**
    * Returns true if the user has enabled Requester Pays option when conducting this operation from
    * Requester Pays Bucket; else false.
+   *
+   * @return true if requestor is charged for operations on a file
    */
   public boolean isRequesterCharged()
   {

@@ -25,7 +25,7 @@ import java.io.File;
  * <p>
  * Setting fields {@code _file}, {@code _bucketName} and {@code _objectKey} is mandatory. All the others
  * are optional.
- * <p>
+ * 
  * @see UploadOptions
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#upload(UploadOptions)
@@ -52,6 +52,9 @@ public class UploadOptionsBuilder
 
   /**
    * Set the local file to be uploaded.
+   *
+   * @param file local file to be uploaded
+   * @return this builder
    */
   public UploadOptionsBuilder setFile(File file)
   {
@@ -61,6 +64,9 @@ public class UploadOptionsBuilder
 
   /**
    * Set the name of the bucket to receive the uploaded file.
+   *
+   * @param bucket name of bucket to receive file
+   * @return this builder
    */
   public UploadOptionsBuilder setBucketName(String bucket)
   {
@@ -70,6 +76,9 @@ public class UploadOptionsBuilder
 
   /**
    * Set the key of the uploaded file.
+   *
+   * @param objectKey key of file to create
+   * @return this builder
    */
   public UploadOptionsBuilder setObjectKey(String objectKey)
   {
@@ -79,6 +88,9 @@ public class UploadOptionsBuilder
 
   /**
    * Set the chunk size used to control concurrent parallel file upload.
+   *
+   * @param chunkSize size in bytes of chunks to use when uploading
+   * @return this builder
    */
   public UploadOptionsBuilder setChunkSize(long chunkSize)
   {
@@ -89,6 +101,9 @@ public class UploadOptionsBuilder
   /**
    * Set the name of the encryption key used to encrypt data in the file.
    * The public key for the named key pair must be in the local key directory.
+   *
+   * @param encKey name of key used to encrypt file
+   * @return this builder
    */
   public UploadOptionsBuilder setEncKey(String encKey)
   {
@@ -99,6 +114,9 @@ public class UploadOptionsBuilder
   /**
    * Set the name of access control list given to the uploaded file.  If not
    * specified, the default access control list for the service is used.
+   *
+   * @param acl name of access control list to apply to uploaded file
+   * @return this builder
    */
   public UploadOptionsBuilder setCannedAcl(String acl)
   {
@@ -108,6 +126,9 @@ public class UploadOptionsBuilder
 
   /**
    * Set a progress listener used to track upload progress.
+   *
+   * @param overallProgressListenerFactory factory used to create progress listeners
+   * @return this builder
    */
   public UploadOptionsBuilder setOverallProgressListenerFactory(
     OverallProgressListenerFactory overallProgressListenerFactory)
@@ -118,6 +139,9 @@ public class UploadOptionsBuilder
 
   /**
    * If set to true, print operations that would be executed, but do not perform them.
+   *
+   * @param dryRun true if operations should be printed but not executed
+   * @return this builder
    */
   public UploadOptionsBuilder setDryRun(boolean dryRun)
   {
@@ -127,6 +151,9 @@ public class UploadOptionsBuilder
 
   /**
    * Used by test framework to control abort injection behavior.
+   *
+   * @param ignore true if abort injection checks should be skipped
+   * @return this builder
    */
   public UploadOptionsBuilder setIgnoreAbortInjection(boolean ignore)
   {
@@ -169,6 +196,8 @@ public class UploadOptionsBuilder
   /**
    * Validate that all required parameters are set and if so return a new {@link UploadOptions}
    * object.
+   *
+   * @return immutable options object with values from this builder
    */
   @Override
   public UploadOptions createOptions()

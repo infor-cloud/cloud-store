@@ -34,6 +34,7 @@ public interface KeyProvider
    * {@link NoSuchKeyException} if the key pair cannot be located.
    *
    * @param alias The name of the key pair to search for.
+   * @return PrivateKey for the given alias
    */
   public PrivateKey getPrivateKey(String alias)
     throws NoSuchKeyException;
@@ -43,6 +44,7 @@ public interface KeyProvider
    * {@link NoSuchKeyException} if the key pair cannot be located.
    *
    * @param alias The name of the key pair to search for.
+   * @return PublicKey for the given alias
    */
   public PublicKey getPublicKey(String alias)
     throws NoSuchKeyException;
@@ -52,6 +54,7 @@ public interface KeyProvider
    * {@link NoSuchKeyException} if the key pair cannot be located.
    *
    * @param alias The name of the key pair to search for.
+   * @return Certificate for the given alias
    */
   public Certificate getCertificate(String alias)
     throws NoSuchKeyException;

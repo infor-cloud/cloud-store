@@ -20,7 +20,7 @@ import java.util.Optional;
 
 /**
  * {@code ListOptions} contains all the details needed by the cloud-store list command.
- * <p>
+ * 
  * @see ListOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#listObjects(ListOptions)
@@ -49,6 +49,8 @@ public class ListOptions
 
   /**
    * Return the name of the bucket containing files to list.
+   *
+   * @return bucket name
    */
   public String getBucketName()
   {
@@ -57,6 +59,8 @@ public class ListOptions
 
   /**
    * Return the key of the file or file prefix to be matched to files to be listed.
+   *
+   * @return file key
    */
   public Optional<String> getObjectKey()
   {
@@ -66,6 +70,8 @@ public class ListOptions
   /**
    * Return the recursive option for the command.  If true, recursively list files
    * from all subdirectories as well as top-level directories.
+   *
+   * @return recursive flag
    */
   public boolean isRecursive()
   {
@@ -74,6 +80,8 @@ public class ListOptions
 
   /**
    * If set to true, list all version information for files.
+   *
+   * @return include versions flag
    */
   public boolean versionsIncluded()
   {
@@ -83,6 +91,8 @@ public class ListOptions
   /**
    * If set to true, do not list any files that look like directories
    * (end with '/').
+   *
+   * @return exclude directory flag
    */
   public boolean dirsExcluded()
   {

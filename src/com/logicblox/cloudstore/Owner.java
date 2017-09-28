@@ -26,6 +26,9 @@ public class Owner
 
   /**
    * Create a new Owner.
+   *
+   * @param id ID of a file owner
+   * @param displayName human-friendly owner name
    */
   public Owner(String id, String displayName)
   {
@@ -35,6 +38,8 @@ public class Owner
 
   /**
    * Return this Owner's ID.
+   *
+   * @return owner ID
    */
   public String getId()
   {
@@ -43,6 +48,8 @@ public class Owner
 
   /**
    * Return this Owner's name.
+   *
+   * @return human-friendly owner name
    */
   public String getDisplayName()
   {

@@ -28,7 +28,7 @@ import java.util.Optional;
  * <p>
  * {@code PendingUploadsOptions} objects are meant to be built by {@code
  * PendingUploadsOptionsBuilder}. This class provides only public accessor methods.
- * <p>
+ * 
  * @see PendingUploadsOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#listPendingUploads(PendingUploadsOptions)
@@ -55,6 +55,8 @@ public class PendingUploadsOptions
 
   /**
    * Return the name of the bucket in which to check for pending uploads.
+   *
+   * @return bucket name
    */
   public String getBucketName()
   {
@@ -63,6 +65,8 @@ public class PendingUploadsOptions
 
   /**
    * Return the key of the file to check for pending uploads.
+   *
+   * @return file key
    */
   public String getObjectKey()
   {
@@ -71,6 +75,8 @@ public class PendingUploadsOptions
 
   /**
    * Return the upload ID for an upload to be aborted.
+   *
+   * @return ID of upload to abort
    */
   public Optional<String> getUploadId()
   {
@@ -79,6 +85,8 @@ public class PendingUploadsOptions
 
   /**
    * Return the date of an upload to be aborted.
+   * 
+   * @return date of upload to abort
    */
   public Optional<Date> getDate()
   {

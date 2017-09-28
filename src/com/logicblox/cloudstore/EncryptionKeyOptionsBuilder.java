@@ -23,7 +23,7 @@ package com.logicblox.cloudstore;
  * <p>
  * Setting {@code bucketName}, {@code objectKey}, and {@code encryptionKey} are mandatory. All 
  * the others are optional.
- * <p>
+ * 
  * @see EncryptionKeyOptions
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#addEncryptionKey(EncryptionKeyOptions)
@@ -44,6 +44,9 @@ public class EncryptionKeyOptionsBuilder
 
   /**
    * Set name of bucket containing file to be modified.
+   * 
+   * @param bucket name of bucket with file to be modified
+   * @return this builder
    */
   public EncryptionKeyOptionsBuilder setBucketName(String bucket)
   {
@@ -53,6 +56,9 @@ public class EncryptionKeyOptionsBuilder
 
   /**
    * Set the key of the file to be modified.
+   * 
+   * @param objectKey key of file to be modified
+   * @return this builder
    */
   public EncryptionKeyOptionsBuilder setObjectKey(String objectKey)
   {
@@ -63,6 +69,9 @@ public class EncryptionKeyOptionsBuilder
   /**
    * Set the name of the public/private key pair to be added to or removed
    * from a file.  The key pair file must exist in the local key directory.
+   * 
+   * @param encryptionKey name of encryption key
+   * @return this builder
    */
   public EncryptionKeyOptionsBuilder setEncryptionKey(String encryptionKey)
   {
@@ -93,6 +102,8 @@ public class EncryptionKeyOptionsBuilder
   /**
    * Validate that all required parameters are set and if so return a new {@link EncryptionKeyOptions}
    * object.
+   *
+   * @return immutable options with values from this builder
    */
   @Override
   public EncryptionKeyOptions createOptions()

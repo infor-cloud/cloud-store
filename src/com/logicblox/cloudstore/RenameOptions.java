@@ -27,7 +27,7 @@ import java.util.Optional;
  * <p>
  * {@code RenameOptions} objects are meant to be built by {@code RenameOptionsBuilder}. This class
  * provides only public accessor methods.
- * <p>
+ * 
  * @see RenameOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#rename(RenameOptions)
@@ -62,6 +62,8 @@ public class RenameOptions
 
   /**
    * Return the name of the bucket containing the file to be renamed.
+   *
+   * @return source bucket name
    */
   public String getSourceBucketName()
   {
@@ -70,6 +72,8 @@ public class RenameOptions
 
   /**
    * Return the key of the file to be renamed.
+   *
+   * @return source file key
    */
   public String getSourceObjectKey()
   {
@@ -78,6 +82,8 @@ public class RenameOptions
 
   /**
    * Return the name fo the bucket that will receive the renamed file.
+   *
+   * @return destination bucket name
    */
   public String getDestinationBucketName()
   {
@@ -86,6 +92,8 @@ public class RenameOptions
 
   /**
    * Return the key of the new file to be created.
+   *
+   * @return destination file key
    */
   public String getDestinationObjectKey()
   {
@@ -95,6 +103,8 @@ public class RenameOptions
   /**
    * Return the name of an access control list for the renamed file.  If not specified, 
    * the access control list for the original file will be used.
+   *
+   * @return optional canned access control list name
    */
   public Optional<String> getCannedAcl()
   {
@@ -107,6 +117,8 @@ public class RenameOptions
    * a directory (ends with a '/').  If not set and the key ends in a '/', then all
    * "top-level" files matching the key will be renamed.  If recursive is set and the
    * key ends in '/', all "top-level" and all matching "sub-directory" files will be renamed.
+   *
+   * @return recursive flag
    */
   public boolean isRecursive()
   {
@@ -115,6 +127,8 @@ public class RenameOptions
 
   /**
    * If set to true, print operations that would be executed, but do not perform them.
+   *
+   * @return dry-run flag
    */
   public boolean isDryRun()
   {

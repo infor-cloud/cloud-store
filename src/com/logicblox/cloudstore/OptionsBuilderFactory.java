@@ -38,6 +38,8 @@ public class OptionsBuilderFactory
 
   /**
    * Return a new builder for {@link CopyOptions}.
+   * 
+   * @return builder for CopyOptions
    */
   public CopyOptionsBuilder newCopyOptionsBuilder()
   {
@@ -46,6 +48,8 @@ public class OptionsBuilderFactory
 
   /**
    * Return a new builder for {@link DeleteOptions}.
+   * 
+   * @return builder for DeleteOptions
    */
   public DeleteOptionsBuilder newDeleteOptionsBuilder()
   {
@@ -54,6 +58,8 @@ public class OptionsBuilderFactory
 
   /**
    * Return a new builder for {@link DownloadOptions}.
+   * 
+   * @return builder for DownloadOptions
    */
   public DownloadOptionsBuilder newDownloadOptionsBuilder()
   {
@@ -62,6 +68,8 @@ public class OptionsBuilderFactory
 
   /**
    * Return a new builder for {@link EncryptionKeyOptions}.
+   * 
+   * @return builder for EncryptionKeyOptions
    */
   public EncryptionKeyOptionsBuilder newEncryptionKeyOptionsBuilder()
   {
@@ -70,6 +78,8 @@ public class OptionsBuilderFactory
 
   /**
    * Return a new builder for {@link ExistsOptions}.
+   * 
+   * @return builder for ExistsOptions
    */
   public ExistsOptionsBuilder newExistsOptionsBuilder()
   {
@@ -78,6 +88,8 @@ public class OptionsBuilderFactory
 
   /**
    * Return a new builder for {@link ListOptions}.
+   * 
+   * @return builder for ListOptions
    */
   public ListOptionsBuilder newListOptionsBuilder()
   {
@@ -86,6 +98,8 @@ public class OptionsBuilderFactory
 
   /**
    * Return a new builder for {@link PendingUploadsOptions}.
+   * 
+   * @return builder for PendingUploadsOptions
    */
   public PendingUploadsOptionsBuilder newPendingUploadsOptionsBuilder()
   {
@@ -94,6 +108,8 @@ public class OptionsBuilderFactory
 
   /**
    * Return a new builder for {@link RenameOptions}.
+   * 
+   * @return builder for RenameOptions
    */
   public RenameOptionsBuilder newRenameOptionsBuilder()
   {
@@ -102,6 +118,8 @@ public class OptionsBuilderFactory
 
   /**
    * Return a new builder for {@link UploadOptions}.
+   * 
+   * @return builder for UploadOptions
    */
   public UploadOptionsBuilder newUploadOptionsBuilder()
   {

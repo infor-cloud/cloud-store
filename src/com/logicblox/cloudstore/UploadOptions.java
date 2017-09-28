@@ -37,7 +37,7 @@ import java.util.Optional;
  * <p>
  * {@code UploadOptions} objects are meant to be built by {@code UploadOptionsBuilder}. This class
  * provides only public accessor methods.
- * <p>
+ * 
  * @see UploadOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#upload(UploadOptions)
@@ -95,6 +95,8 @@ public class UploadOptions
 
   /**
    * Return the local file to be uploaded.
+   *
+   * @return local file to be uploaded
    */
   public File getFile()
   {
@@ -103,6 +105,8 @@ public class UploadOptions
 
   /**
    * Return the name of the bucket to receive the uploaded file.
+   *
+   * @return bucket name
    */
   public String getBucketName()
   {
@@ -111,6 +115,8 @@ public class UploadOptions
 
   /**
    * Return the key of the uploaded file.
+   *
+   * @return file key
    */
   public String getObjectKey()
   {
@@ -119,6 +125,8 @@ public class UploadOptions
 
   /**
    * Return the chunk size used to control concurrent parallel file upload.
+   *
+   * @return size in bytes of upload chunks
    */
   public long getChunkSize()
   {
@@ -136,6 +144,8 @@ public class UploadOptions
   /**
    * Return the name of access control list given to the uploaded file.  If not
    * specified, the default access control list for the service is used.
+   *
+   * @return name of canned access control list applied to uploaded file
    */
   public String getCannedAcl()
   {
@@ -144,6 +154,8 @@ public class UploadOptions
 
   /**
    * If set to true, print operations that would be executed, but do not perform them.
+   *
+   * @return dry-run flag
    */
   public boolean isDryRun()
   {
@@ -153,6 +165,8 @@ public class UploadOptions
   /**
    * Return the name of the encryption key used to encrypt data in the file.
    * The public key for the named key pair must be in the local key directory.
+   *
+   * @return name of encryption key applied to uploaded file
    */
   public Optional<String> getEncKey()
   {
@@ -161,6 +175,8 @@ public class UploadOptions
 
   /**
    * Return the optional progress listener used to track upload progress.
+   *
+   * @return factory used to create progress listeners
    */
   public Optional<OverallProgressListenerFactory> getOverallProgressListenerFactory()
   {

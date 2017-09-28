@@ -482,6 +482,7 @@ public class Utils
    *
    * @param scheme Must be either "s3" or "gs" to create an interface to either
    *   an AWS S3 or GCS cloud store service, respectively.
+   * @return cloud store interface
    */
   public static CloudStoreClient createCloudStoreClient(String scheme)
     throws URISyntaxException, GeneralSecurityException, IOException
@@ -500,6 +501,7 @@ public class Utils
    * @param endpoint The endpoint URI, i.e. "http://127.0.0.1:9000/", used to connect 
    *   to the cloud store service.  It may be null, in which case the default endpoint 
    *   for the service will be used. 
+   * @return cloud store interface
    */
   public static CloudStoreClient createCloudStoreClient(String scheme, String endpoint)
     throws URISyntaxException, GeneralSecurityException, IOException
@@ -531,6 +533,7 @@ public class Utils
    *    manner as server-side errors.
    * @param retryCount Number of times an operation will be retried after failure
    *    before the operation is cancelled.
+   * @return cloud store interface
    */
   public static CloudStoreClient createCloudStoreClient(
     String scheme, String endpoint, int maxConcurrentConnections, String encKeyDirectory,

@@ -21,7 +21,7 @@ package com.logicblox.cloudstore;
  * objects used to control behavior of the cloud-store list command.
  * <p>
  * Setting {@code bucketName} is mandatory.  Other properties are optional.
- * <p>
+ * 
  * @see ListOptions
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#listObjects(ListOptions)
@@ -43,6 +43,9 @@ public class ListOptionsBuilder
 
   /**
    * Set the name of the bucket containing files to list.
+   *
+   * @param bucket bucket name
+   * @return this builder
    */
   public ListOptionsBuilder setBucketName(String bucket)
   {
@@ -52,6 +55,9 @@ public class ListOptionsBuilder
 
   /**
    * Set the key of the file or file prefix to be matched to files to be listed.
+   *
+   * @param objectKey file key
+   * @return this builder
    */
   public ListOptionsBuilder setObjectKey(String objectKey)
   {
@@ -62,6 +68,9 @@ public class ListOptionsBuilder
   /**
    * Set recursive option for the command.  If true, recursively list files
    * from all subdirectories as well as top-level directories.
+   *
+   * @param recursive true to set recursive list flag
+   * @return this builder
    */
   public ListOptionsBuilder setRecursive(boolean recursive)
   {
@@ -71,6 +80,9 @@ public class ListOptionsBuilder
 
   /**
    * If set to true, list all version information for files.
+   *
+   * @param includeVersions true to list all versions of files
+   * @return this builder
    */
   public ListOptionsBuilder setIncludeVersions(boolean includeVersions)
   {
@@ -81,6 +93,9 @@ public class ListOptionsBuilder
   /**
    * If set to true, do not list any files that look like directories
    * (end with '/').
+   *
+   * @param excludeDirs true to exclude directories from the list
+   * @return this builder
    */
   public ListOptionsBuilder setExcludeDirs(boolean excludeDirs)
   {
@@ -103,6 +118,8 @@ public class ListOptionsBuilder
   /**
    * Validate that all required parameters are set and if so return a new {@link ListOptions}
    * object.
+   *
+   * @return immutable options object with values from this builder
    */
   @Override
   public ListOptions createOptions()

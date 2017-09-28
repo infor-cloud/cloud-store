@@ -23,7 +23,7 @@ import java.util.Date;
  * objects used to control behavior of the cloud-store commands for managing pending uploads.
  * <p>
  * Setting {@code bucketName} and {@code objectKey} is mandatory.  Other properties are optional.
- * <p>
+ * 
  * @see PendingUploadsOptions
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#listPendingUploads(PendingUploadsOptions)
@@ -45,6 +45,9 @@ public class PendingUploadsOptionsBuilder
 
   /**
    * Set the name of the bucket in which to check for pending uploads.
+   *
+   * @param bucket name of bucket
+   * @return this builder
    */
   public PendingUploadsOptionsBuilder setBucketName(String bucket)
   {
@@ -54,6 +57,9 @@ public class PendingUploadsOptionsBuilder
 
   /**
    * Set the key of the file to check for pending uploads.
+   *
+   * @param objectKey file key
+   * @return this builder
    */
   public PendingUploadsOptionsBuilder setObjectKey(String objectKey)
   {
@@ -63,6 +69,9 @@ public class PendingUploadsOptionsBuilder
 
   /**
    * Set the upload ID for an upload to be aborted.
+   *
+   * @param uploadId indentifier of upload to be aborted
+   * @return this builder
    */
   public PendingUploadsOptionsBuilder setUploadId(String uploadId)
   {
@@ -72,6 +81,9 @@ public class PendingUploadsOptionsBuilder
 
   /**
    * Set the date of an upload to be aborted.
+   *
+   * @param date date of upload to be aborted
+   * @return this builder
    */
   public PendingUploadsOptionsBuilder setDate(Date date)
   {
@@ -98,6 +110,8 @@ public class PendingUploadsOptionsBuilder
   /**
    * Validate that all required parameters are set and if so return a new {@link PendingUploadsOptions}
    * object.
+   *
+   * @return immutable options object with values from this builder
    */
   @Override
   public PendingUploadsOptions createOptions()

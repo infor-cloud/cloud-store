@@ -19,7 +19,7 @@ package com.logicblox.cloudstore;
 
 /**
  * {@code ExistsOptions} contains all the details needed by the exists operation.
- * <p>
+ * 
  * @see ExistsOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#exists(ExistsOptions)
@@ -40,6 +40,8 @@ public class ExistsOptions
 
   /**
    * Return the name of the bucket containing the file to check.
+   * 
+   * @return name of bucket
    */
   public String getBucketName()
   {
@@ -48,6 +50,8 @@ public class ExistsOptions
 
   /**
    * Return the key of the file to check.
+   *
+   * @return file key
    */
   public String getObjectKey()
   {

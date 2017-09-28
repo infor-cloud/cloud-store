@@ -33,7 +33,7 @@ import java.util.Optional;
  * <p>
  * {@code DownloadOptions} objects are meant to be built by {@code DownloadOptionsBuilder}. This
  * class provides only public accessor methods.
- * <p>
+ * 
  * @see DownloadOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#download(DownloadOptions)
@@ -71,6 +71,8 @@ public class DownloadOptions
   /**
    * Return the local file (or directory) that will receive the data in the file from the cloud
    * store service.
+   *
+   * @return downloaded file object
    */
   public File getFile()
   {
@@ -79,6 +81,8 @@ public class DownloadOptions
 
   /**
    * Return the name of the bucket containing the file to download.
+   *
+   * @return bucket name
    */
   public String getBucketName()
   {
@@ -87,6 +91,8 @@ public class DownloadOptions
 
   /**
    * Return the key of the file to be downloaded.
+   *
+   * @return downloaded file key
    */
   public String getObjectKey()
   {
@@ -97,6 +103,8 @@ public class DownloadOptions
    * Return the recursive property of the command.  If this property is true
    * and the key looks like a directory (ends in '/'), all "top-level"
    * and "subdirectory" files will be downloaded.
+   *
+   * @return recursive flag
    */
   public boolean isRecursive()
   {
@@ -105,6 +113,8 @@ public class DownloadOptions
 
   /**
    * Return the version of the file to be downloaded.
+   *
+   * @return optional version of downloaded file
    */
   public Optional<String> getVersion()
   {
@@ -115,6 +125,8 @@ public class DownloadOptions
    * Return the overwrite property for the download operation.  If false,
    * downloads will fail if they need to overwrite a file that is
    * already on the local file system.
+   *
+   * @return overwrite flag
    */
   public boolean doesOverwrite()
   {
@@ -123,6 +135,8 @@ public class DownloadOptions
 
   /**
    * If set to true, print operations that would be executed, but do not perform them.
+   *
+   * @return dry-run flag
    */
   public boolean isDryRun()
   {
@@ -131,6 +145,8 @@ public class DownloadOptions
 
   /**
    * Return the progress listener that can be used to track download progress.
+   *
+   * @return optional factory used to create progress listeners
    */
   public Optional<OverallProgressListenerFactory> getOverallProgressListenerFactory()
   {

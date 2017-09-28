@@ -21,7 +21,7 @@ package com.logicblox.cloudstore;
  * objects used to control behavior of the cloud-store exists command.
  * <p>
  * Setting {@code bucketName} and {@code objectKey} are mandatory.
- * <p>
+ * 
  * @see ExistsOptions
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#exists(ExistsOptions)
@@ -40,6 +40,9 @@ public class ExistsOptionsBuilder
 
   /**
    * Set the name of the bucket containing the file to check.
+   * 
+   * @param bucket bucket name
+   * @return this builder
    */
   public ExistsOptionsBuilder setBucketName(String bucket)
   {
@@ -49,6 +52,9 @@ public class ExistsOptionsBuilder
 
   /**
    * Set the key of the file to check.
+   * 
+   * @param objectKey file key
+   * @return this builder
    */
   public ExistsOptionsBuilder setObjectKey(String objectKey)
   {
@@ -75,6 +81,8 @@ public class ExistsOptionsBuilder
   /**
    * Validate that all required parameters are set and if so return a new {@link ExistsOptions}
    * object.
+   *
+   * @return immutable options object with values from this builder
    */
   @Override
   public ExistsOptions createOptions()

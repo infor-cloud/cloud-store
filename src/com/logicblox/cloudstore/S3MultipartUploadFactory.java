@@ -30,8 +30,8 @@ import java.util.concurrent.Callable;
 class S3MultipartUploadFactory
   implements UploadFactory
 {
-  private AmazonS3 client;
-  private ListeningExecutorService executor;
+  private AmazonS3 _client;
+  private ListeningExecutorService _executor;
 
   public S3MultipartUploadFactory(AmazonS3 client, ListeningExecutorService executor)
   {
@@ -44,45 +44,46 @@ class S3MultipartUploadFactory
       throw new IllegalArgumentException("non-null executor is required");
     }
 
-    this.client = client;
-    this.executor = executor;
+    _client = client;
+    _executor = executor;
   }
 
   public ListenableFuture<Upload> startUpload(
     String bucketName, String key, Map<String, String> meta, UploadOptions options)
   {
-    return executor.submit(new StartCallable(bucketName, key, meta, options));
+    return _executor.submit(new StartCallable(bucketName, key, meta, options));
   }
 
   private class StartCallable
     implements Callable<Upload>
   {
-    private String key;
-    private String bucketName;
-    private Map<String, String> meta;
-    private UploadOptions options;
+    private String _objectKey;
+    private String _bucketName;
+    private Map<String, String> _meta;
+    private UploadOptions _options;
 
     public StartCallable(
-      String bucketName, String key, Map<String, String> meta, UploadOptions options)
+      String bucketName, String objectKey, Map<String, String> meta, UploadOptions options)
     {
-      this.bucketName = bucketName;
-      this.key = key;
-      this.meta = meta;
-      this.options = options;
+      _bucketName = bucketName;
+      _objectKey = objectKey;
+      _meta = meta;
+      _options = options;
     }
 
     public Upload call()
       throws Exception
     {
       ObjectMetadata metadata = new ObjectMetadata();
-      metadata.setUserMetadata(meta);
-      InitiateMultipartUploadRequest req = new InitiateMultipartUploadRequest(bucketName, key,
+      metadata.setUserMetadata(_meta);
+      InitiateMultipartUploadRequest req = new InitiateMultipartUploadRequest(_bucketName,
+        _objectKey,
         metadata);
-      req.setCannedACL(S3Client.getCannedAcl(options.getCannedAcl()));
+      req.setCannedACL(S3Client.getCannedAcl(_options.getCannedAcl()));
 
-      InitiateMultipartUploadResult res = client.initiateMultipartUpload(req);
-      return new S3MultipartUpload(client, bucketName, key, res.getUploadId(), new Date(), executor,
-        options);
+      InitiateMultipartUploadResult res = _client.initiateMultipartUpload(req);
+      return new S3MultipartUpload(_client, _bucketName, _objectKey, res.getUploadId(), new Date(),
+        _executor, _options);
     }
   }
 }

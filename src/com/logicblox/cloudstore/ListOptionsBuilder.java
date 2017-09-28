@@ -19,11 +19,11 @@ package com.logicblox.cloudstore;
 public class ListOptionsBuilder
   extends CommandOptionsBuilder
 {
-  private String bucket;
-  private String objectKey;
-  private boolean recursive;
-  private boolean includeVersions;
-  private boolean excludeDirs;
+  private String _bucketName;
+  private String _objectKey;
+  private boolean _recursive;
+  private boolean _includeVersions;
+  private boolean _excludeDirs;
 
   ListOptionsBuilder(CloudStoreClient client)
   {
@@ -32,31 +32,31 @@ public class ListOptionsBuilder
 
   public ListOptionsBuilder setBucketName(String bucket)
   {
-    this.bucket = bucket;
+    _bucketName = bucket;
     return this;
   }
 
   public ListOptionsBuilder setObjectKey(String objectKey)
   {
-    this.objectKey = objectKey;
+    _objectKey = objectKey;
     return this;
   }
 
   public ListOptionsBuilder setRecursive(boolean recursive)
   {
-    this.recursive = recursive;
+    _recursive = recursive;
     return this;
   }
 
   public ListOptionsBuilder setIncludeVersions(boolean includeVersions)
   {
-    this.includeVersions = includeVersions;
+    _includeVersions = includeVersions;
     return this;
   }
 
   public ListOptionsBuilder setExcludeDirs(boolean excludeDirs)
   {
-    this.excludeDirs = excludeDirs;
+    _excludeDirs = excludeDirs;
     return this;
   }
 
@@ -66,7 +66,7 @@ public class ListOptionsBuilder
     {
       throw new UsageException("CloudStoreClient has to be set");
     }
-    else if(bucket == null)
+    else if(_bucketName == null)
     {
       throw new UsageException("Bucket has to be set");
     }
@@ -77,7 +77,7 @@ public class ListOptionsBuilder
   {
     validateOptions();
 
-    return new ListOptions(_cloudStoreClient, bucket, objectKey, recursive, includeVersions,
-      excludeDirs);
+    return new ListOptions(_cloudStoreClient, _bucketName, _objectKey, _recursive, _includeVersions,
+      _excludeDirs);
   }
 }

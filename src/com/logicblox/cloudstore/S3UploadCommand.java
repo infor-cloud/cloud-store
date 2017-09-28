@@ -48,10 +48,10 @@ import java.util.concurrent.Callable;
 public class S3UploadCommand
   extends Command
 {
-  private String encKeyName;
-  private String encryptedSymmetricKeyString;
-  private OverallProgressListenerFactory progressListenerFactory;
-  private String pubKeyHash;
+  private String _encKeyName;
+  private String _encryptedSymmetricKeyString;
+  private OverallProgressListenerFactory _progressListenerFactory;
+  private String _pubKeyHash;
 
   private UploadOptions _options;
 
@@ -65,9 +65,9 @@ public class S3UploadCommand
     this.file = _options.getFile();
     setChunkSize(_options.getChunkSize());
     setFileLength(this.file.length());
-    this.encKeyName = _options.getEncKey().orElse(null);
+    _encKeyName = _options.getEncKey().orElse(null);
 
-    if(this.encKeyName != null)
+    if(_encKeyName != null)
     {
       byte[] encKeyBytes = new byte[32];
       new SecureRandom().nextBytes(encKeyBytes);
@@ -78,19 +78,19 @@ public class S3UploadCommand
         {
           throw new UsageException("No encryption key provider is specified");
         }
-        Key pubKey = _client.getKeyProvider().getPublicKey(this.encKeyName);
+        Key pubKey = _client.getKeyProvider().getPublicKey(_encKeyName);
 
-        this.pubKeyHash = DatatypeConverter.printBase64Binary(
+        _pubKeyHash = DatatypeConverter.printBase64Binary(
           DigestUtils.sha256(pubKey.getEncoded()));
 
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.ENCRYPT_MODE, pubKey);
-        this.encryptedSymmetricKeyString = DatatypeConverter.printBase64Binary(
+        _encryptedSymmetricKeyString = DatatypeConverter.printBase64Binary(
           cipher.doFinal(encKeyBytes));
       }
       catch(NoSuchKeyException e)
       {
-        throw new UsageException("Missing encryption key: " + this.encKeyName);
+        throw new UsageException("Missing encryption key: " + _encKeyName);
       }
       catch(NoSuchAlgorithmException e)
       {
@@ -114,7 +114,7 @@ public class S3UploadCommand
       }
     }
 
-    this.progressListenerFactory = _options.getOverallProgressListenerFactory().orElse(null);
+    _progressListenerFactory = _options.getOverallProgressListenerFactory().orElse(null);
   }
 
   /**
@@ -203,11 +203,11 @@ public class S3UploadCommand
 
     Map<String, String> meta = new HashMap<String, String>();
     meta.put("s3tool-version", String.valueOf(Version.CURRENT));
-    if(this.encKeyName != null)
+    if(_encKeyName != null)
     {
-      meta.put("s3tool-key-name", encKeyName);
-      meta.put("s3tool-symmetric-key", encryptedSymmetricKeyString);
-      meta.put("s3tool-pubkey-hash", pubKeyHash.substring(0, 8));
+      meta.put("s3tool-key-name", _encKeyName);
+      meta.put("s3tool-symmetric-key", _encryptedSymmetricKeyString);
+      meta.put("s3tool-pubkey-hash", _pubKeyHash.substring(0, 8));
     }
     meta.put("s3tool-chunk-size", Long.toString(chunkSize));
     meta.put("s3tool-file-length", Long.toString(fileLength));
@@ -232,9 +232,9 @@ public class S3UploadCommand
   private ListenableFuture<Upload> startParts(final Upload upload)
   {
     OverallProgressListener opl = null;
-    if(progressListenerFactory != null)
+    if(_progressListenerFactory != null)
     {
-      opl = progressListenerFactory.create(
+      opl = _progressListenerFactory.create(
         new ProgressOptionsBuilder().setObjectUri(getUri(upload.getBucket(), upload.getKey()))
           .setOperation("upload")
           .setFileSizeInBytes(fileLength)
@@ -300,7 +300,7 @@ public class S3UploadCommand
     final Cipher cipher;
 
     long partSize;
-    if(encKeyName != null)
+    if(_encKeyName != null)
     {
       cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 

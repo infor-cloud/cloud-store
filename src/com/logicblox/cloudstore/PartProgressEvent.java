@@ -24,18 +24,18 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class PartProgressEvent
 {
-  final String partId;
-  private AtomicLong lastTransferBytes = new AtomicLong();
-  private AtomicLong transferredBytes = new AtomicLong();
+  private final String _partId;
+  private AtomicLong _lastTransferBytes = new AtomicLong();
+  private AtomicLong _transferredBytes = new AtomicLong();
 
   PartProgressEvent(String partId)
   {
-    this.partId = partId;
+    _partId = partId;
   }
 
   public String getPartId()
   {
-    return partId;
+    return _partId;
   }
 
   /**
@@ -44,17 +44,17 @@ public class PartProgressEvent
    */
   synchronized public void setLastTransferBytes(long lastTransferBytes)
   {
-    this.lastTransferBytes.set(lastTransferBytes);
-    this.transferredBytes.addAndGet(lastTransferBytes);
+    _lastTransferBytes.set(lastTransferBytes);
+    _transferredBytes.addAndGet(lastTransferBytes);
   }
 
   public void setTransferredBytes(long transferredBytes)
   {
-    this.transferredBytes.set(transferredBytes);
+    _transferredBytes.set(transferredBytes);
   }
 
   public long getTransferredBytes()
   {
-    return transferredBytes.get();
+    return _transferredBytes.get();
   }
 }

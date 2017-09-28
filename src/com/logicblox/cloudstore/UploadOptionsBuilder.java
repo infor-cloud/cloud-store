@@ -22,21 +22,21 @@ import java.io.File;
 /**
  * {@code UploadOptionsBuilder} is a builder for {@code UploadOptions} objects.
  * <p>
- * Setting fields {@code file}, {@code bucket} and {@code objectKey} is mandatory. All the others
+ * Setting fields {@code _file}, {@code _bucketName} and {@code _objectKey} is mandatory. All the others
  * are optional.
  */
 public class UploadOptionsBuilder
   extends CommandOptionsBuilder
 {
-  private File file;
-  private String bucket;
-  private String objectKey;
-  private long chunkSize = -1;
-  private String encKey;
-  private String cannedAcl;
-  private OverallProgressListenerFactory overallProgressListenerFactory;
-  private boolean dryRun = false;
-  private boolean ignoreAbortInjection = false;
+  private File _file;
+  private String _bucketName;
+  private String _objectKey;
+  private long _chunkSize = -1;
+  private String _encKey;
+  private String _cannedAcl;
+  private OverallProgressListenerFactory _overallProgressListenerFactory;
+  private boolean _dryRun = false;
+  private boolean _ignoreAbortInjection = false;
 
   UploadOptionsBuilder(CloudStoreClient client)
   {
@@ -45,56 +45,56 @@ public class UploadOptionsBuilder
 
   public UploadOptionsBuilder setFile(File file)
   {
-    this.file = file;
+    _file = file;
     return this;
   }
 
   public UploadOptionsBuilder setBucketName(String bucket)
   {
-    this.bucket = bucket;
+    _bucketName = bucket;
     return this;
   }
 
   public UploadOptionsBuilder setObjectKey(String objectKey)
   {
-    this.objectKey = objectKey;
+    _objectKey = objectKey;
     return this;
   }
 
   public UploadOptionsBuilder setChunkSize(long chunkSize)
   {
-    this.chunkSize = chunkSize;
+    _chunkSize = chunkSize;
     return this;
   }
 
   public UploadOptionsBuilder setEncKey(String encKey)
   {
-    this.encKey = encKey;
+    _encKey = encKey;
     return this;
   }
 
   public UploadOptionsBuilder setCannedAcl(String acl)
   {
-    this.cannedAcl = acl;
+    _cannedAcl = acl;
     return this;
   }
 
   public UploadOptionsBuilder setOverallProgressListenerFactory(
     OverallProgressListenerFactory overallProgressListenerFactory)
   {
-    this.overallProgressListenerFactory = overallProgressListenerFactory;
+    _overallProgressListenerFactory = overallProgressListenerFactory;
     return this;
   }
 
   public UploadOptionsBuilder setDryRun(boolean dryRun)
   {
-    this.dryRun = dryRun;
+    _dryRun = dryRun;
     return this;
   }
 
   public UploadOptionsBuilder setIgnoreAbortInjection(boolean ignore)
   {
-    this.ignoreAbortInjection = ignore;
+    _ignoreAbortInjection = ignore;
     return this;
   }
 
@@ -104,29 +104,29 @@ public class UploadOptionsBuilder
     {
       throw new UsageException("CloudStoreClient has to be set");
     }
-    else if(file == null)
+    else if(_file == null)
     {
       throw new UsageException("File has to be set");
     }
-    else if(bucket == null)
+    else if(_bucketName == null)
     {
       throw new UsageException("Bucket has to be set");
     }
-    else if(objectKey == null)
+    else if(_objectKey == null)
     {
       throw new UsageException("Object key has to be set");
     }
 
-    if(cannedAcl != null)
+    if(_cannedAcl != null)
     {
-      if(!_cloudStoreClient.getAclHandler().isCannedAclValid(cannedAcl))
+      if(!_cloudStoreClient.getAclHandler().isCannedAclValid(_cannedAcl))
       {
-        throw new UsageException("Invalid canned ACL '" + cannedAcl + "'");
+        throw new UsageException("Invalid canned ACL '" + _cannedAcl + "'");
       }
     }
     else
     {
-      cannedAcl = _cloudStoreClient.getAclHandler().getDefaultAcl();
+      _cannedAcl = _cloudStoreClient.getAclHandler().getDefaultAcl();
     }
   }
 
@@ -135,7 +135,7 @@ public class UploadOptionsBuilder
   {
     validateOptions();
 
-    return new UploadOptions(_cloudStoreClient, file, bucket, objectKey, chunkSize, encKey,
-      cannedAcl, dryRun, ignoreAbortInjection, overallProgressListenerFactory);
+    return new UploadOptions(_cloudStoreClient, _file, _bucketName, _objectKey, _chunkSize, _encKey,
+      _cannedAcl, _dryRun, _ignoreAbortInjection, _overallProgressListenerFactory);
   }
 }

@@ -47,23 +47,23 @@ import java.util.Collections;
  */
 public class GCSClientBuilder
 {
-  private Storage gcsClient;
-  private AmazonS3Client s3Client;
-  private ListeningExecutorService apiExecutor;
-  private ListeningScheduledExecutorService internalExecutor;
-  private KeyProvider keyProvider;
+  private Storage _gcsClient;
+  private AmazonS3Client _s3Client;
+  private ListeningExecutorService _apiExecutor;
+  private ListeningScheduledExecutorService _internalExecutor;
+  private KeyProvider _keyProvider;
 
-  private final String APPLICATION_NAME = "LogicBlox-cloud-store/1.0";
-  private final JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
-  private HttpTransport httpTransport;
-  private HttpRequestInitializer requestInitializer;
-  private GoogleCredential credential;
+  private final String _APPLICATION_NAME = "LogicBlox-cloud-store/1.0";
+  private final JsonFactory _jsonFactory = JacksonFactory.getDefaultInstance();
+  private HttpTransport _httpTransport;
+  private HttpRequestInitializer _requestInitializer;
+  private GoogleCredential _credential;
 
   static final String CREDENTIAL_ENV_VAR = "GOOGLE_APPLICATION_CREDENTIALS";
 
   public GCSClientBuilder setInternalGCSClient(Storage gcsClient)
   {
-    this.gcsClient = gcsClient;
+    _gcsClient = gcsClient;
     return this;
   }
 
@@ -82,37 +82,37 @@ public class GCSClientBuilder
    */
   public GCSClientBuilder setInternalS3Client(AmazonS3Client s3Client)
   {
-    this.s3Client = s3Client;
+    _s3Client = s3Client;
     return this;
   }
 
   public GCSClientBuilder setApiExecutor(ListeningExecutorService apiExecutor)
   {
-    this.apiExecutor = apiExecutor;
+    _apiExecutor = apiExecutor;
     return this;
   }
 
   public GCSClientBuilder setInternalExecutor(ListeningScheduledExecutorService internalExecutor)
   {
-    this.internalExecutor = internalExecutor;
+    _internalExecutor = internalExecutor;
     return this;
   }
 
   public GCSClientBuilder setKeyProvider(KeyProvider keyProvider)
   {
-    this.keyProvider = keyProvider;
+    _keyProvider = keyProvider;
     return this;
   }
 
   public GCSClientBuilder setHttpTransport(HttpTransport httpTransport)
   {
-    this.httpTransport = httpTransport;
+    _httpTransport = httpTransport;
     return this;
   }
 
   public GCSClientBuilder setCredential(GoogleCredential credential)
   {
-    this.credential = credential;
+    _credential = credential;
     return this;
   }
 
@@ -146,14 +146,13 @@ public class GCSClientBuilder
 
   public GCSClientBuilder setHttpRequestInitializer(HttpRequestInitializer requestInitializer)
   {
-    this.requestInitializer = requestInitializer;
+    _requestInitializer = requestInitializer;
     return this;
   }
 
   private Storage getDefaultInternalGCSClient()
   {
-    Storage gcsClient0 = new Storage.Builder(httpTransport, jsonFactory,
-      requestInitializer).setApplicationName(APPLICATION_NAME).build();
+    Storage gcsClient0 = new Storage.Builder(_httpTransport, _jsonFactory, _requestInitializer).setApplicationName(_APPLICATION_NAME).build();
 
     return gcsClient0;
   }
@@ -252,11 +251,11 @@ public class GCSClientBuilder
         // valid credentials file at construction time. It's
         // useful for GCS clients that are constructed but never
         // used (e.g. in lb-web).
-        if(credential == null)
+        if(_credential == null)
         {
           setCredential(getDefaultCredential());
         }
-        credential.initialize(request);
+        _credential.initialize(request);
         request.setIOExceptionHandler(new HttpBackOffIOExceptionHandler(new ExponentialBackOff()));
       }
     };
@@ -267,34 +266,34 @@ public class GCSClientBuilder
   public GCSClient createGCSClient()
     throws IOException, GeneralSecurityException
   {
-    if(httpTransport == null)
+    if(_httpTransport == null)
     {
       setHttpTransport(getDefaultHttpTransport());
     }
-    if(requestInitializer == null)
+    if(_requestInitializer == null)
     {
       setHttpRequestInitializer(getDefaultHttpRequestInitializer());
     }
-    if(gcsClient == null)
+    if(_gcsClient == null)
     {
       setInternalGCSClient(getDefaultInternalGCSClient());
     }
-    if(s3Client == null)
+    if(_s3Client == null)
     {
       setInternalS3Client(new AmazonS3ClientForGCS());
     }
-    if(apiExecutor == null)
+    if(_apiExecutor == null)
     {
       setApiExecutor(Utils.createApiExecutor(10));
     }
-    if(internalExecutor == null)
+    if(_internalExecutor == null)
     {
       setInternalExecutor(Utils.createInternalExecutor(50));
     }
-    if(keyProvider == null)
+    if(_keyProvider == null)
     {
       setKeyProvider(Utils.createKeyProvider(Utils.getDefaultKeyDirectory()));
     }
-    return new GCSClient(gcsClient, s3Client, apiExecutor, internalExecutor, keyProvider);
+    return new GCSClient(_gcsClient, _s3Client, _apiExecutor, _internalExecutor, _keyProvider);
   }
 }

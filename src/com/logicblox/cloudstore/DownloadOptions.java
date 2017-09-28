@@ -21,12 +21,12 @@ import java.util.Optional;
 
 /**
  * {@code DownloadOptions} contains all the details needed by the download operation. The specified
- * {@code object}, under {@code bucket}, is downloaded to a local {@code file}.
+ * {@code object}, under {@code _bucketName}, is downloaded to a local {@code _file}.
  * <p>
- * If {@code recursive} is set, then all objects under {@code object} key will be downloaded.
+ * If {@code _recursive} is set, then all objects under {@code object} key will be downloaded.
  * Otherwise, only the first-level objects will be downloaded.
  * <p>
- * If {@code overwrite} is set, then newly downloaded files is possible to overwrite existing local
+ * If {@code _overwrite} is set, then newly downloaded files is possible to _overwrite existing local
  * files.
  * <p>
  * If progress listener factory has been set, then progress notifications will be recorded.
@@ -37,68 +37,68 @@ import java.util.Optional;
 public class DownloadOptions
   extends CommandOptions
 {
-  private File file;
-  private String bucket;
-  private String objectKey;
-  private boolean recursive;
-  private String version;
-  private boolean overwrite;
-  private boolean dryRun;
-  private OverallProgressListenerFactory overallProgressListenerFactory;
+  private File _file;
+  private String _bucketName;
+  private String _objectKey;
+  private boolean _recursive;
+  private String _version;
+  private boolean _overwrite;
+  private boolean _dryRun;
+  private OverallProgressListenerFactory _overallProgressListenerFactory;
 
   DownloadOptions(
-    CloudStoreClient cloudStoreClient, File file, String bucket, String objectKey, String version,
+    CloudStoreClient cloudStoreClient, File file, String bucketName, String objectKey, String version,
     boolean recursive, boolean overwrite, boolean dryRun,
     OverallProgressListenerFactory overallProgressListenerFactory)
   {
     super(cloudStoreClient);
-    this.file = file;
-    this.bucket = bucket;
-    this.objectKey = objectKey;
-    this.recursive = recursive;
-    this.version = version;
-    this.overwrite = overwrite;
-    this.dryRun = dryRun;
-    this.overallProgressListenerFactory = overallProgressListenerFactory;
+    _file = file;
+    _bucketName = bucketName;
+    _objectKey = objectKey;
+    _recursive = recursive;
+    _version = version;
+    _overwrite = overwrite;
+    _dryRun = dryRun;
+    _overallProgressListenerFactory = overallProgressListenerFactory;
   }
 
   public File getFile()
   {
-    return file;
+    return _file;
   }
 
   public String getBucketName()
   {
-    return bucket;
+    return _bucketName;
   }
 
   public String getObjectKey()
   {
-    return objectKey;
+    return _objectKey;
   }
 
   public boolean isRecursive()
   {
-    return recursive;
+    return _recursive;
   }
 
   public Optional<String> getVersion()
   {
-    return Optional.ofNullable(version);
+    return Optional.ofNullable(_version);
   }
 
   public boolean doesOverwrite()
   {
-    return overwrite;
+    return _overwrite;
   }
 
   public boolean isDryRun()
   {
-    return dryRun;
+    return _dryRun;
   }
 
   public Optional<OverallProgressListenerFactory> getOverallProgressListenerFactory()
   {
-    return Optional.ofNullable(overallProgressListenerFactory);
+    return Optional.ofNullable(_overallProgressListenerFactory);
   }
 }

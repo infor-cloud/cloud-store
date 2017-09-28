@@ -42,12 +42,12 @@ import java.util.concurrent.ExecutionException;
 public class GCSClient
   implements CloudStoreClient
 {
-  private static final String GCS_JSON_API_ENDPOINT = "https://www.googleapis.com";
-  private static final String GCS_XML_API_ENDPOINT = "https://storage.googleapis.com";
+  private static final String _GCS_JSON_API_ENDPOINT = "https://www.googleapis.com";
+  private static final String _GCS_XML_API_ENDPOINT = "https://storage.googleapis.com";
 
 
-  private final Storage gcsClient;
-  private final S3ClientDelegatee s3Client;
+  private final Storage _gcsClient;
+  private final S3ClientDelegatee _s3Client;
   private final GCSAclHandler _aclHandler;
   private final GCSStorageClassHandler _storageClassHandler;
 
@@ -63,9 +63,9 @@ public class GCSClient
     ListeningExecutorService apiExecutor, ListeningScheduledExecutorService internalExecutor,
     KeyProvider keyProvider)
   {
-    s3Client = new S3ClientDelegatee(internalS3Client, apiExecutor, internalExecutor, keyProvider);
-    gcsClient = internalGCSClient;
-    setEndpoint(GCS_XML_API_ENDPOINT);
+    _s3Client = new S3ClientDelegatee(internalS3Client, apiExecutor, internalExecutor, keyProvider);
+    _gcsClient = internalGCSClient;
+    setEndpoint(_GCS_XML_API_ENDPOINT);
     _aclHandler = new GCSAclHandler();
     _storageClassHandler = new GCSStorageClassHandler();
   }
@@ -88,19 +88,19 @@ public class GCSClient
   @Override
   public void setRetryCount(int retryCount)
   {
-    s3Client.setRetryCount(retryCount);
+    _s3Client.setRetryCount(retryCount);
   }
 
   @Override
   public void setRetryClientException(boolean retry)
   {
-    s3Client.setRetryClientException(retry);
+    _s3Client.setRetryClientException(retry);
   }
 
   @Override
   public void setEndpoint(String endpoint)
   {
-    s3Client.setEndpoint(endpoint);
+    _s3Client.setEndpoint(endpoint);
   }
 
   @Override
@@ -112,13 +112,13 @@ public class GCSClient
   @Override
   public ListeningExecutorService getApiExecutor()
   {
-    return s3Client.getApiExecutor();
+    return _s3Client.getApiExecutor();
   }
 
   @Override
   public ListeningScheduledExecutorService getInternalExecutor()
   {
-    return s3Client.getInternalExecutor();
+    return _s3Client.getInternalExecutor();
   }
 
   @Override
@@ -130,7 +130,7 @@ public class GCSClient
   @Override
   public KeyProvider getKeyProvider()
   {
-    return s3Client.getKeyProvider();
+    return _s3Client.getKeyProvider();
   }
 
   @Override
@@ -158,85 +158,85 @@ public class GCSClient
   public ListenableFuture<StoreFile> upload(UploadOptions options)
     throws IOException
   {
-    return s3Client.upload(options);
+    return _s3Client.upload(options);
   }
 
   @Override
   public ListenableFuture<List<StoreFile>> uploadDirectory(UploadOptions options)
     throws IOException, ExecutionException, InterruptedException
   {
-    return s3Client.uploadDirectory(options);
+    return _s3Client.uploadDirectory(options);
   }
 
   @Override
   public ListenableFuture<List<StoreFile>> deleteDir(DeleteOptions opts)
     throws InterruptedException, ExecutionException
   {
-    return s3Client.deleteDir(opts);
+    return _s3Client.deleteDir(opts);
   }
 
   @Override
   public ListenableFuture<StoreFile> delete(DeleteOptions opts)
   {
-    return s3Client.delete(opts);
+    return _s3Client.delete(opts);
   }
 
   @Override
   public ListenableFuture<List<Bucket>> listBuckets()
   {
-    return s3Client.listBuckets();
+    return _s3Client.listBuckets();
   }
 
   @Override
   public ListenableFuture<Metadata> exists(ExistsOptions options)
   {
-    return s3Client.exists(options);
+    return _s3Client.exists(options);
   }
 
   @Override
   public ListenableFuture<StoreFile> download(DownloadOptions options)
     throws IOException
   {
-    return s3Client.download(options);
+    return _s3Client.download(options);
   }
 
   @Override
   public ListenableFuture<List<StoreFile>> downloadDirectory(DownloadOptions options)
     throws IOException, ExecutionException, InterruptedException
   {
-    return s3Client.downloadDirectory(options);
+    return _s3Client.downloadDirectory(options);
   }
 
   @Override
   public ListenableFuture<StoreFile> copy(CopyOptions options)
   {
-    return s3Client.copy(options);
+    return _s3Client.copy(options);
   }
 
   @Override
   public ListenableFuture<List<StoreFile>> copyToDir(CopyOptions options)
     throws InterruptedException, ExecutionException, IOException
   {
-    return s3Client.copyToDir(options);
+    return _s3Client.copyToDir(options);
   }
 
   @Override
   public ListenableFuture<StoreFile> rename(RenameOptions options)
   {
-    return s3Client.rename(options);
+    return _s3Client.rename(options);
   }
 
   @Override
   public ListenableFuture<List<StoreFile>> renameDirectory(RenameOptions options)
     throws InterruptedException, ExecutionException, IOException
   {
-    return s3Client.renameDirectory(options);
+    return _s3Client.renameDirectory(options);
   }
 
   @Override
   public ListenableFuture<List<StoreFile>> listObjects(ListOptions lsOptions)
   {
-    return s3Client.listObjects(lsOptions);
+    return _s3Client.listObjects(lsOptions);
   }
 
   @Override
@@ -255,20 +255,20 @@ public class GCSClient
   public ListenableFuture<StoreFile> addEncryptionKey(EncryptionKeyOptions options)
     throws IOException
   {
-    return s3Client.addEncryptionKey(options);
+    return _s3Client.addEncryptionKey(options);
   }
 
   @Override
   public ListenableFuture<StoreFile> removeEncryptionKey(EncryptionKeyOptions options)
     throws IOException
   {
-    return s3Client.removeEncryptionKey(options);
+    return _s3Client.removeEncryptionKey(options);
   }
 
   @Override
   public void shutdown()
   {
-    s3Client.shutdown();
+    _s3Client.shutdown();
   }
 
   private class S3ClientDelegatee
@@ -286,7 +286,7 @@ public class GCSClient
       cmd.setRetryClientException(_retryClientException);
       cmd.setRetryCount(_retryCount);
       cmd.setS3Client(_client);
-      cmd.setGCSClient(gcsClient);
+      cmd.setGCSClient(_gcsClient);
       cmd.setScheme("gs://");
     }
 
@@ -300,7 +300,7 @@ public class GCSClient
       throws IOException
     {
       GCSUploadCommand cmd = new GCSUploadCommand(options);
-      s3Client.configure(cmd);
+      _s3Client.configure(cmd);
       return cmd.run();
     }
 
@@ -314,7 +314,7 @@ public class GCSClient
       throws IOException, ExecutionException, InterruptedException
     {
       UploadDirectoryCommand cmd = new UploadDirectoryCommand(options);
-      s3Client.configure(cmd);
+      _s3Client.configure(cmd);
       return cmd.run();
     }
 
@@ -385,6 +385,6 @@ public class GCSClient
   // needed for testing
   void setKeyProvider(KeyProvider kp)
   {
-    s3Client.setKeyProvider(kp);
+    _s3Client.setKeyProvider(kp);
   }
 }

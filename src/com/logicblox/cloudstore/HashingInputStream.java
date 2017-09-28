@@ -25,15 +25,15 @@ import java.security.NoSuchAlgorithmException;
 class HashingInputStream
   extends FilterInputStream
 {
-  private MessageDigest md;
-  private byte[] digest;
+  private MessageDigest _md;
+  private byte[] _digest;
 
   public HashingInputStream(InputStream in)
   {
     super(in);
     try
     {
-      md = MessageDigest.getInstance("MD5");
+      _md = MessageDigest.getInstance("MD5");
     }
     catch(NoSuchAlgorithmException e)
     {
@@ -44,12 +44,12 @@ class HashingInputStream
 
   public byte[] getDigest()
   {
-    if(digest == null)
+    if(_digest == null)
     {
-      digest = md.digest();
+      _digest = _md.digest();
     }
 
-    return digest;
+    return _digest;
   }
 
   @Override
@@ -59,7 +59,7 @@ class HashingInputStream
     int res = in.read();
     if(res != -1)
     {
-      md.update((byte) res);
+      _md.update((byte) res);
     }
     return res;
   }
@@ -71,7 +71,7 @@ class HashingInputStream
     int count = in.read(b);
     if(count != -1)
     {
-      md.update(b, 0, count);
+      _md.update(b, 0, count);
     }
     return count;
   }
@@ -83,7 +83,7 @@ class HashingInputStream
     int count = in.read(b, off, len);
     if(count != -1)
     {
-      md.update(b, off, count);
+      _md.update(b, off, count);
     }
     return count;
   }

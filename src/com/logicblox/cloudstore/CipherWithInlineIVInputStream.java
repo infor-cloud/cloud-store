@@ -29,29 +29,29 @@ import java.security.Key;
 class CipherWithInlineIVInputStream
   extends FilterInputStream
 {
-  private int opmode;
-  private int ivBytesWritten = 0;
-  private int ivLen;
-  private byte[] iv;
+  private int _opmode;
+  private int _ivBytesWritten = 0;
+  private int _ivLen;
+  private byte[] _iv;
 
   public CipherWithInlineIVInputStream(InputStream in, Cipher cipher, int opmode, Key key)
     throws IOException, InvalidKeyException, InvalidAlgorithmParameterException
   {
     super(in);
 
-    ivLen = cipher.getBlockSize();
+    _ivLen = cipher.getBlockSize();
 
-    this.opmode = opmode;
+    _opmode = opmode;
 
-    switch(this.opmode)
+    switch(_opmode)
     {
       case Cipher.DECRYPT_MODE:
-        iv = new byte[ivLen];
+        _iv = new byte[_ivLen];
         int offset = 0;
         // !!! Should this be in a background thread?
-        while(offset < ivLen)
+        while(offset < _ivLen)
         {
-          int result = in.read(iv, offset, ivLen - offset);
+          int result = in.read(_iv, offset, _ivLen - offset);
           if(result == -1)
           {
             // !!! What should we really do here?
@@ -59,12 +59,12 @@ class CipherWithInlineIVInputStream
           }
           offset += result;
         }
-        cipher.init(this.opmode, key, new IvParameterSpec(iv));
-        iv = null;
+        cipher.init(_opmode, key, new IvParameterSpec(_iv));
+        _iv = null;
         break;
       case Cipher.ENCRYPT_MODE:
-        cipher.init(this.opmode, key);
-        iv = cipher.getIV();
+        cipher.init(_opmode, key);
+        _iv = cipher.getIV();
         break;
       default:
         throw new IllegalArgumentException(CipherWithInlineIVInputStream.class.getCanonicalName() +
@@ -77,9 +77,9 @@ class CipherWithInlineIVInputStream
   public int available()
     throws IOException
   {
-    if(this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen)
+    if(_opmode == Cipher.ENCRYPT_MODE && _ivBytesWritten < _ivLen)
     {
-      return ivLen - ivBytesWritten;
+      return _ivLen - _ivBytesWritten;
     }
     return in.available();
   }
@@ -88,10 +88,10 @@ class CipherWithInlineIVInputStream
   public int read()
     throws IOException
   {
-    if(this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen)
+    if(_opmode == Cipher.ENCRYPT_MODE && _ivBytesWritten < _ivLen)
     {
-      ivBytesWritten++;
-      return (int) iv[ivBytesWritten - 1] & 0xFF;
+      _ivBytesWritten++;
+      return (int) _iv[_ivBytesWritten - 1] & 0xFF;
     }
     return in.read();
   }
@@ -100,11 +100,11 @@ class CipherWithInlineIVInputStream
   public int read(byte[] b)
     throws IOException
   {
-    if(this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen)
+    if(_opmode == Cipher.ENCRYPT_MODE && _ivBytesWritten < _ivLen)
     {
-      int readCount = Math.min(b.length, ivLen - ivBytesWritten);
-      System.arraycopy(iv, ivBytesWritten, b, 0, readCount);
-      ivBytesWritten += readCount;
+      int readCount = Math.min(b.length, _ivLen - _ivBytesWritten);
+      System.arraycopy(_iv, _ivBytesWritten, b, 0, readCount);
+      _ivBytesWritten += readCount;
       return readCount;
     }
     return in.read(b);
@@ -114,11 +114,11 @@ class CipherWithInlineIVInputStream
   public int read(byte[] b, int off, int len)
     throws IOException
   {
-    if(this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen)
+    if(_opmode == Cipher.ENCRYPT_MODE && _ivBytesWritten < _ivLen)
     {
-      int readCount = Math.min(len, ivLen - ivBytesWritten);
-      System.arraycopy(iv, ivBytesWritten, b, off, readCount);
-      ivBytesWritten += readCount;
+      int readCount = Math.min(len, _ivLen - _ivBytesWritten);
+      System.arraycopy(_iv, _ivBytesWritten, b, off, readCount);
+      _ivBytesWritten += readCount;
       return readCount;
     }
     return in.read(b, off, len);
@@ -128,10 +128,10 @@ class CipherWithInlineIVInputStream
   public long skip(long n)
     throws IOException
   {
-    if(this.opmode == Cipher.ENCRYPT_MODE && ivBytesWritten < ivLen)
+    if(_opmode == Cipher.ENCRYPT_MODE && _ivBytesWritten < _ivLen)
     {
-      long skipped = Math.min(ivLen - ivBytesWritten, n);
-      ivBytesWritten += skipped;
+      long skipped = Math.min(_ivLen - _ivBytesWritten, n);
+      _ivBytesWritten += skipped;
       return skipped;
     }
     return in.skip(n);

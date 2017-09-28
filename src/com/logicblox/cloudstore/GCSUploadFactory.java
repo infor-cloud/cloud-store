@@ -27,8 +27,8 @@ import java.util.concurrent.Callable;
 class GCSUploadFactory
   implements UploadFactory
 {
-  private Storage client;
-  private ListeningExecutorService executor;
+  private Storage _client;
+  private ListeningExecutorService _executor;
 
   public GCSUploadFactory(Storage client, ListeningExecutorService executor)
   {
@@ -41,37 +41,38 @@ class GCSUploadFactory
       throw new IllegalArgumentException("non-null executor is required");
     }
 
-    this.client = client;
-    this.executor = executor;
+    _client = client;
+    _executor = executor;
   }
 
   public ListenableFuture<Upload> startUpload(
     String bucketName, String key, Map<String, String> meta, UploadOptions options)
   {
-    return executor.submit(new StartCallable(bucketName, key, meta, options));
+    return _executor.submit(new StartCallable(bucketName, key, meta, options));
   }
 
   private class StartCallable
     implements Callable<Upload>
   {
-    private String key;
-    private String bucketName;
-    private Map<String, String> meta;
-    private UploadOptions options;
+    private String _objectKey;
+    private String _bucketName;
+    private Map<String, String> _meta;
+    private UploadOptions _options;
 
     public StartCallable(
-      String bucketName, String key, Map<String, String> meta, UploadOptions options)
+      String bucketName, String objectKey, Map<String, String> meta, UploadOptions options)
     {
-      this.bucketName = bucketName;
-      this.key = key;
-      this.meta = meta;
-      this.options = options;
+      _bucketName = bucketName;
+      _objectKey = objectKey;
+      _meta = meta;
+      _options = options;
     }
 
     public Upload call()
       throws Exception
     {
-      return new GCSUpload(client, bucketName, key, this.meta, new Date(), executor, options);
+      return new GCSUpload(_client, _bucketName, _objectKey, _meta, new Date(), _executor,
+        _options);
     }
   }
 }

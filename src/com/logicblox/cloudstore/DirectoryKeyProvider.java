@@ -41,17 +41,17 @@ import java.util.regex.Pattern;
 public class DirectoryKeyProvider
   implements KeyProvider
 {
-  private static final Pattern beginPublic = Pattern.compile(
+  private static final Pattern _BEGIN_PUBLIC = Pattern.compile(
     "^----[\\-\\ ]BEGIN PUBLIC KEY---[-]+$");
-  private static final Pattern endPublic = Pattern.compile("^----[\\-\\ ]END PUBLIC KEY---[-]+$");
+  private static final Pattern _END_PUBLIC = Pattern.compile("^----[\\-\\ ]END PUBLIC KEY---[-]+$");
 
-  private static final Pattern beginPrivate = Pattern.compile(
+  private static final Pattern _BEGIN_PRIVATE = Pattern.compile(
     "^----[\\-\\ ]BEGIN PRIVATE KEY---[-]+$");
-  private static final Pattern endPrivate = Pattern.compile("^----[\\-\\ ]END PRIVATE KEY---[-]+$");
+  private static final Pattern _END_PRIVATE = Pattern.compile("^----[\\-\\ ]END PRIVATE KEY---[-]+$");
 
-  private static final Pattern beginCertificate = Pattern.compile(
+  private static final Pattern _BEGIN_CERTIFICATE = Pattern.compile(
     "^----[\\-\\ ]BEGIN CERTIFICATE---[-]+$");
-  private static final Pattern endCertificate = Pattern.compile(
+  private static final Pattern _END_CERTIFICATE = Pattern.compile(
     "^----[\\-\\ ]END CERTIFICATE---[-]+$");
 
   private File _directory;
@@ -66,7 +66,7 @@ public class DirectoryKeyProvider
   {
     try
     {
-      byte[] bytes = extractKey(getFile(alias, "pem"), beginPrivate, endPrivate);
+      byte[] bytes = extractKey(getFile(alias, "pem"), _BEGIN_PRIVATE, _END_PRIVATE);
       PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(bytes);
       KeyFactory keyFactory = KeyFactory.getInstance("RSA");
       return keyFactory.generatePrivate(keySpec);
@@ -90,7 +90,7 @@ public class DirectoryKeyProvider
   {
     try
     {
-      byte[] bytes = extractKey(getFile(alias, "pem"), beginPublic, endPublic);
+      byte[] bytes = extractKey(getFile(alias, "pem"), _BEGIN_PUBLIC, _END_PUBLIC);
       X509EncodedKeySpec keySpec = new X509EncodedKeySpec(bytes);
       KeyFactory keyFactory = KeyFactory.getInstance("RSA");
       return keyFactory.generatePublic(keySpec);
@@ -114,7 +114,7 @@ public class DirectoryKeyProvider
   {
     try
     {
-      byte[] bytes = extractKey(getFile(alias, "cer"), beginCertificate, endCertificate);
+      byte[] bytes = extractKey(getFile(alias, "cer"), _BEGIN_CERTIFICATE, _END_CERTIFICATE);
       CertificateFactory certFact = CertificateFactory.getInstance("X.509");
       ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
       return certFact.generateCertificate(bis);

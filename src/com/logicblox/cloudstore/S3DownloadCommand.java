@@ -54,8 +54,8 @@ public class S3DownloadCommand
   private DownloadOptions _options;
   private KeyProvider _encKeyProvider;
   private boolean _dryRun;
-  private ConcurrentMap<Integer, byte[]> etags = new ConcurrentSkipListMap<>();
-  private OverallProgressListenerFactory progressListenerFactory;
+  private ConcurrentMap<Integer, byte[]> _etags = new ConcurrentSkipListMap<>();
+  private OverallProgressListenerFactory _progressListenerFactory;
 
   public S3DownloadCommand(DownloadOptions options)
     throws IOException
@@ -67,7 +67,7 @@ public class S3DownloadCommand
 
     this.file = _options.getFile();
     createNewFile();
-    this.progressListenerFactory = _options.getOverallProgressListenerFactory().orElse(null);
+    _progressListenerFactory = _options.getOverallProgressListenerFactory().orElse(null);
   }
 
   private void createNewFile()
@@ -413,9 +413,9 @@ public class S3DownloadCommand
     throws IOException, UsageException
   {
     OverallProgressListener opl = null;
-    if(progressListenerFactory != null)
+    if(_progressListenerFactory != null)
     {
-      opl = progressListenerFactory.create(
+      opl = _progressListenerFactory.create(
         new ProgressOptionsBuilder().setObjectUri(getUri(download.getBucket(), download.getKey()))
           .setOperation("download")
           .setFileSizeInBytes(fileLength)
@@ -581,7 +581,7 @@ public class S3DownloadCommand
     }
 
     cleanup.run();
-    etags.put(partNumber, stream.getDigest());
+    _etags.put(partNumber, stream.getDigest());
   }
 
   private int readSafe(InputStream in, byte[] buf, int offset, int len, Runnable cleanup)
@@ -676,12 +676,12 @@ public class S3DownloadCommand
             }
 
             ByteArrayOutputStream os = new ByteArrayOutputStream();
-            for(Integer pNum : etags.keySet())
+            for(Integer pNum : _etags.keySet())
             {
-              os.write(etags.get(pNum));
+              os.write(_etags.get(pNum));
             }
 
-            localDigest = DigestUtils.md5Hex(os.toByteArray()) + "-" + etags.size();
+            localDigest = DigestUtils.md5Hex(os.toByteArray()) + "-" + _etags.size();
           }
           else
           {
@@ -689,10 +689,10 @@ public class S3DownloadCommand
             // so its Etag should be equal to object's MD5.
             // Same should hold for objects uploaded to GCS (if "compose" operation
             // wasn't used).
-            if(etags.size() == 1)
+            if(_etags.size() == 1)
             {
               // Single-part download (1 range GET).
-              localDigest = DatatypeConverter.printHexBinary(etags.get(0)).toLowerCase();
+              localDigest = DatatypeConverter.printHexBinary(_etags.get(0)).toLowerCase();
             }
             else
             {

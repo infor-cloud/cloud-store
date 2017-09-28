@@ -29,23 +29,23 @@ import java.util.concurrent.Callable;
 
 class S3Download
 {
-  private AmazonS3 client;
-  private ListeningExecutorService executor;
-  private ObjectMetadata meta;
-  private String key;
-  private String bucketName;
-  private String version;
+  private AmazonS3 _client;
+  private ListeningExecutorService _executor;
+  private ObjectMetadata _meta;
+  private String _objectKey;
+  private String _bucketName;
+  private String _version;
 
   public S3Download(
-    AmazonS3 client, String key, String bucketName, String version, ObjectMetadata meta,
+    AmazonS3 client, String objectKey, String bucketName, String version, ObjectMetadata meta,
     ListeningExecutorService executor)
   {
-    this.client = client;
-    this.key = key;
-    this.bucketName = bucketName;
-    this.version = version;
-    this.executor = executor;
-    this.meta = meta;
+    _client = client;
+    _objectKey = objectKey;
+    _bucketName = bucketName;
+    _version = version;
+    _executor = executor;
+    _meta = meta;
   }
 
   public ListenableFuture<InputStream> getPart(long start, long end)
@@ -56,75 +56,75 @@ class S3Download
   public ListenableFuture<InputStream> getPart(
     long start, long end, OverallProgressListener progressListener)
   {
-    return executor.submit(new DownloadCallable(start, end, progressListener));
+    return _executor.submit(new DownloadCallable(start, end, progressListener));
   }
 
   public Map<String, String> getMeta()
   {
-    return meta.getUserMetadata();
+    return _meta.getUserMetadata();
   }
 
   public long getLength()
   {
-    return meta.getContentLength();
+    return _meta.getContentLength();
   }
 
   public String getETag()
   {
-    return meta.getETag();
+    return _meta.getETag();
   }
 
   public String getKey()
   {
-    return key;
+    return _objectKey;
   }
 
   public String getVersion()
   {
-    return version;
+    return _version;
   }
 
   public String getBucket()
   {
-    return bucketName;
+    return _bucketName;
   }
 
   private class DownloadCallable
     implements Callable<InputStream>
   {
-    private long start;
-    private long end;
-    private OverallProgressListener progressListener;
+    private long _start;
+    private long _end;
+    private OverallProgressListener _progressListener;
 
     public DownloadCallable(long start, long end, OverallProgressListener progressListener)
     {
-      this.start = start;
-      this.end = end;
-      this.progressListener = progressListener;
+      _start = start;
+      _end = end;
+      _progressListener = progressListener;
     }
 
     public InputStream call()
       throws Exception
     {
       GetObjectRequest req = null;
-      if(version == null)
+      if(_version == null)
       {
-        req = new GetObjectRequest(bucketName, key);
+        req = new GetObjectRequest(_bucketName, _objectKey);
       }
       else
       {
-        req = new GetObjectRequest(bucketName, key, version);
+        req = new GetObjectRequest(_bucketName, _objectKey, _version);
       }
-      req.setRange(start, end);
-      if(progressListener != null)
+      req.setRange(_start, _end);
+      if(_progressListener != null)
       {
         PartProgressEvent ppe = new PartProgressEvent(
-          Long.toString(start) + ':' + Long.toString(end));
-        ProgressListener s3pl = new S3ProgressListener(progressListener, ppe);
+          Long.toString(_start) + ':' + Long.toString(_end));
+        ProgressListener s3pl = new S3ProgressListener(_progressListener, ppe);
         req.setGeneralProgressListener(s3pl);
       }
 
-      return client.getObject(req).getObjectContent();
+      return _client.getObject(req).getObjectContent();
     }
   }
 }

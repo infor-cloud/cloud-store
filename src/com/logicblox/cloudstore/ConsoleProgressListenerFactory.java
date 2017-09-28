@@ -20,7 +20,7 @@ public class ConsoleProgressListenerFactory
   implements OverallProgressListenerFactory
 {
 
-  private long intervalInBytes = -1;
+  private long _intervalInBytes = -1;
 
   private long getDefaultIntervalInBytes(long totalSizeInBytes)
   {
@@ -30,16 +30,16 @@ public class ConsoleProgressListenerFactory
 
   public ConsoleProgressListenerFactory setIntervalInBytes(long intervalInBytes)
   {
-    this.intervalInBytes = intervalInBytes;
+    _intervalInBytes = intervalInBytes;
     return this;
   }
 
   public OverallProgressListener create(ProgressOptions progressOptions)
   {
-    if(intervalInBytes <= 0)
+    if(_intervalInBytes <= 0)
     {
-      intervalInBytes = getDefaultIntervalInBytes(progressOptions.getFileSizeInBytes());
+      _intervalInBytes = getDefaultIntervalInBytes(progressOptions.getFileSizeInBytes());
     }
-    return new ConsoleProgressListener(progressOptions, intervalInBytes);
+    return new ConsoleProgressListener(progressOptions, _intervalInBytes);
   }
 }

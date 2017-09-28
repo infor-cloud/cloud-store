@@ -30,19 +30,19 @@ import java.security.PublicKey;
 public class KeyGenCommand
 {
 
-  private KeyPairGenerator keypairGen;
-  private KeyPair keypair;
-  private PublicKey publickey;
-  private PrivateKey privateKey;
+  private KeyPairGenerator _keyPairGenerator;
+  private KeyPair _keyPair;
+  private PublicKey _publicKey;
+  private PrivateKey _privateKey;
 
   public KeyGenCommand(String algo, int nbits)
     throws NoSuchAlgorithmException
   {
-    keypairGen = KeyPairGenerator.getInstance(algo);
-    keypairGen.initialize(nbits);
-    keypair = keypairGen.generateKeyPair();
-    publickey = keypair.getPublic();
-    privateKey = keypair.getPrivate();
+    _keyPairGenerator = KeyPairGenerator.getInstance(algo);
+    _keyPairGenerator.initialize(nbits);
+    _keyPair = _keyPairGenerator.generateKeyPair();
+    _publicKey = _keyPair.getPublic();
+    _privateKey = _keyPair.getPrivate();
   }
 
   public void savePemKeypair(File pemf)
@@ -56,7 +56,7 @@ public class KeyGenCommand
   public String getPemPrivateKey()
   {
     // pkcs8_der is PKCS#8-encoded binary (DER) private key
-    byte[] pkcs8_der = privateKey.getEncoded();
+    byte[] pkcs8_der = _privateKey.getEncoded();
 
     // DER to PEM conversion
     String pem_encoded = pemEncode(pkcs8_der, "-----BEGIN PRIVATE KEY-----\n",
@@ -68,7 +68,7 @@ public class KeyGenCommand
   public String getPemPublicKey()
   {
     // x509_der is X.509-encoded binary (DER) public key
-    byte[] x509_der = publickey.getEncoded();
+    byte[] x509_der = _publicKey.getEncoded();
 
     // DER to PEM conversion
     String pem_encoded = pemEncode(x509_der, "-----BEGIN PUBLIC KEY-----\n",

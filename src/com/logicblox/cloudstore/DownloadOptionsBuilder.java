@@ -21,20 +21,20 @@ import java.io.File;
 /**
  * {@code DownloadOptionsBuilder} is a builder for {@code DownloadOptions} objects.
  * <p>
- * Setting fields {@code file}, {@code bucket} and {@code objectKey} is mandatory. All the others
+ * Setting fields {@code _file}, {@code _bucketName} and {@code _objectKey} is mandatory. All the others
  * are optional.
  */
 public class DownloadOptionsBuilder
   extends CommandOptionsBuilder
 {
-  private File file;
-  private String bucket;
-  private String objectKey;
-  private String version;
-  private boolean recursive = false;
-  private boolean overwrite = false;
-  private boolean dryRun = false;
-  private OverallProgressListenerFactory overallProgressListenerFactory;
+  private File _file;
+  private String _bucketName;
+  private String _objectKey;
+  private String _version;
+  private boolean _recursive = false;
+  private boolean _overwrite = false;
+  private boolean _dryRun = false;
+  private OverallProgressListenerFactory _overallProgressListenerFactory;
 
   DownloadOptionsBuilder(CloudStoreClient client)
   {
@@ -43,50 +43,50 @@ public class DownloadOptionsBuilder
 
   public DownloadOptionsBuilder setFile(File file)
   {
-    this.file = file;
+    _file = file;
     return this;
   }
 
   public DownloadOptionsBuilder setBucketName(String bucket)
   {
-    this.bucket = bucket;
+    _bucketName = bucket;
     return this;
   }
 
   public DownloadOptionsBuilder setObjectKey(String objectKey)
   {
-    this.objectKey = objectKey;
+    _objectKey = objectKey;
     return this;
   }
 
   public DownloadOptionsBuilder setRecursive(boolean recursive)
   {
-    this.recursive = recursive;
+    _recursive = recursive;
     return this;
   }
 
   public DownloadOptionsBuilder setVersion(String version)
   {
-    this.version = version;
+    _version = version;
     return this;
   }
 
   public DownloadOptionsBuilder setOverwrite(boolean overwrite)
   {
-    this.overwrite = overwrite;
+    _overwrite = overwrite;
     return this;
   }
 
   public DownloadOptionsBuilder setDryRun(boolean dryRun)
   {
-    this.dryRun = dryRun;
+    _dryRun = dryRun;
     return this;
   }
 
   public DownloadOptionsBuilder setOverallProgressListenerFactory(
     OverallProgressListenerFactory overallProgressListenerFactory)
   {
-    this.overallProgressListenerFactory = overallProgressListenerFactory;
+    _overallProgressListenerFactory = overallProgressListenerFactory;
     return this;
   }
 
@@ -96,15 +96,15 @@ public class DownloadOptionsBuilder
     {
       throw new UsageException("CloudStoreClient has to be set");
     }
-    else if(file == null)
+    else if(_file == null)
     {
       throw new UsageException("File has to be set");
     }
-    else if(bucket == null)
+    else if(_bucketName == null)
     {
       throw new UsageException("Bucket has to be set");
     }
-    else if(objectKey == null)
+    else if(_objectKey == null)
     {
       throw new UsageException("Object key has to be set");
     }
@@ -115,7 +115,7 @@ public class DownloadOptionsBuilder
   {
     validateOptions();
 
-    return new DownloadOptions(_cloudStoreClient, file, bucket, objectKey, version, recursive,
-      overwrite, dryRun, overallProgressListenerFactory);
+    return new DownloadOptions(_cloudStoreClient, _file, _bucketName, _objectKey, _version,
+      _recursive, _overwrite, _dryRun, _overallProgressListenerFactory);
   }
 }

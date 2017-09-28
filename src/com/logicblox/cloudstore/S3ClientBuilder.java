@@ -22,53 +22,53 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 public class S3ClientBuilder
 {
-  private AmazonS3Client s3Client;
-  private ListeningExecutorService apiExecutor;
-  private ListeningScheduledExecutorService internalExecutor;
-  private KeyProvider keyProvider;
+  private AmazonS3Client _client;
+  private ListeningExecutorService _apiExecutor;
+  private ListeningScheduledExecutorService _internalExecutor;
+  private KeyProvider _keyProvider;
 
   public S3ClientBuilder setInternalS3Client(AmazonS3Client s3Client)
   {
-    this.s3Client = s3Client;
+    _client = s3Client;
     return this;
   }
 
   public S3ClientBuilder setApiExecutor(ListeningExecutorService apiExecutor)
   {
-    this.apiExecutor = apiExecutor;
+    _apiExecutor = apiExecutor;
     return this;
   }
 
   public S3ClientBuilder setInternalExecutor(ListeningScheduledExecutorService internalExecutor)
   {
-    this.internalExecutor = internalExecutor;
+    _internalExecutor = internalExecutor;
     return this;
   }
 
   public S3ClientBuilder setKeyProvider(KeyProvider keyProvider)
   {
-    this.keyProvider = keyProvider;
+    _keyProvider = keyProvider;
     return this;
   }
 
   public S3Client createS3Client()
   {
-    if(s3Client == null)
+    if(_client == null)
     {
       setInternalS3Client(new AmazonS3Client());
     }
-    if(apiExecutor == null)
+    if(_apiExecutor == null)
     {
       setApiExecutor(Utils.createApiExecutor(10));
     }
-    if(internalExecutor == null)
+    if(_internalExecutor == null)
     {
       setInternalExecutor(Utils.createInternalExecutor(50));
     }
-    if(keyProvider == null)
+    if(_keyProvider == null)
     {
       setKeyProvider(Utils.createKeyProvider(Utils.getDefaultKeyDirectory()));
     }
-    return new S3Client(s3Client, apiExecutor, internalExecutor, keyProvider);
+    return new S3Client(_client, _apiExecutor, _internalExecutor, _keyProvider);
   }
 }

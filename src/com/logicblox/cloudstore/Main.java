@@ -954,7 +954,7 @@ class Main
     }
   }
 
-  private static final String[] units = new String[]{"", "K", "M", "G", "T", "P", "E"};
+  private static final String[] _UNITS = new String[]{"", "K", "M", "G", "T", "P", "E"};
 
   public String getReadableString(long bytes)
   {
@@ -963,7 +963,7 @@ class Main
       double step = Math.pow(1024, i);
       if(bytes > step)
       {
-        return new DecimalFormat("#,##0.##").format(bytes / step) + units[i];
+        return new DecimalFormat("#,##0.##").format(bytes / step) + _UNITS[i];
       }
     }
     return Long.toString(bytes);

@@ -21,17 +21,17 @@ import java.util.Optional;
 
 /**
  * {@code UploadOptions} contains all the details needed by the upload operation. The specified
- * {@code file} will be uploaded under the specified {@code bucket} and {@code objectKey}.
+ * {@code _file} will be uploaded under the specified {@code _bucketName} and {@code _objectKey}.
  * <p>
- * If the {@code chunkSize} is {@code null}, then {@code getChunkSize} will try to compute a chunk
+ * If the {@code _chunkSize} is {@code null}, then {@code getChunkSize} will try to compute a chunk
  * size so that the number of the uploaded parts be less than 10000 (current S3 limit). If the
- * {@code chunkSize} is explicit (i.e. not {@code null}, then no check will take place and any
+ * {@code _chunkSize} is explicit (i.e. not {@code null}, then no check will take place and any
  * possible failure due to more than 10000 parts will happen later.
  * <p>
- * The specified {@code cannedAcl} is applied to the uploaded file.
+ * The specified {@code _cannedAcl} is applied to the uploaded file.
  * <p>
  * If the {@code enckey} is present, the {@code keyProvider} will be asked to provide a public key
- * with that name. This key will be used to encrypt the {@code file} at the client side.
+ * with that name. This key will be used to encrypt the {@code _file} at the client side.
  * <p>
  * If progress listener factory has been set, then progress notifications will be recorded.
  * <p>
@@ -41,42 +41,42 @@ import java.util.Optional;
 public class UploadOptions
   extends CommandOptions
 {
-  private File file;
-  private String bucket;
-  private String objectKey;
-  private long chunkSize = -1;
-  private String encKey;
-  private String cannedAcl;
-  private boolean dryRun;
-  private boolean ignoreAbortInjection;
-  private OverallProgressListenerFactory overallProgressListenerFactory;
+  private File _file;
+  private String _bucketName;
+  private String _objectKey;
+  private long _chunkSize = -1;
+  private String _encKey;
+  private String _cannedAcl;
+  private boolean _dryRun;
+  private boolean _ignoreAbortInjection;
+  private OverallProgressListenerFactory _overallProgressListenerFactory;
 
   // for testing
   private static AbortCounters _abortCounters = new AbortCounters();
 
 
   UploadOptions(
-    CloudStoreClient cloudStoreClient, File file, String bucket, String objectKey, long chunkSize,
+    CloudStoreClient cloudStoreClient, File file, String bucketName, String objectKey, long chunkSize,
     String encKey, String cannedAcl, boolean dryRun, boolean ignoreAbortInjection,
     OverallProgressListenerFactory overallProgressListenerFactory)
   {
     super(cloudStoreClient);
-    this.file = file;
-    this.bucket = bucket;
-    this.objectKey = objectKey;
-    this.chunkSize = chunkSize;
-    this.encKey = encKey;
-    this.cannedAcl = cannedAcl;
-    this.dryRun = dryRun;
-    this.ignoreAbortInjection = ignoreAbortInjection;
-    this.overallProgressListenerFactory = overallProgressListenerFactory;
+    _file = file;
+    _bucketName = bucketName;
+    _objectKey = objectKey;
+    _chunkSize = chunkSize;
+    _encKey = encKey;
+    _cannedAcl = cannedAcl;
+    _dryRun = dryRun;
+    _ignoreAbortInjection = ignoreAbortInjection;
+    _overallProgressListenerFactory = overallProgressListenerFactory;
   }
 
 
   // for testing injection of aborts during a copy
   void injectAbort(String id)
   {
-    if(!this.ignoreAbortInjection && (_abortCounters.decrementInjectionCounter(id) > 0))
+    if(!_ignoreAbortInjection && (_abortCounters.decrementInjectionCounter(id) > 0))
     {
       throw new AbortInjection("forcing upload abort");
     }
@@ -89,49 +89,49 @@ public class UploadOptions
 
   public File getFile()
   {
-    return file;
+    return _file;
   }
 
   public String getBucketName()
   {
-    return bucket;
+    return _bucketName;
   }
 
   public String getObjectKey()
   {
-    return objectKey;
+    return _objectKey;
   }
 
   public long getChunkSize()
   {
-    if(file.isDirectory())
+    if(_file.isDirectory())
     {
       return -1;
     }
-    if(chunkSize == -1)
+    if(_chunkSize == -1)
     {
-      return Utils.getDefaultChunkSize(file.length());
+      return Utils.getDefaultChunkSize(_file.length());
     }
-    return chunkSize;
+    return _chunkSize;
   }
 
   public String getCannedAcl()
   {
-    return cannedAcl;
+    return _cannedAcl;
   }
 
   public boolean isDryRun()
   {
-    return dryRun;
+    return _dryRun;
   }
 
   public Optional<String> getEncKey()
   {
-    return Optional.ofNullable(encKey);
+    return Optional.ofNullable(_encKey);
   }
 
   public Optional<OverallProgressListenerFactory> getOverallProgressListenerFactory()
   {
-    return Optional.ofNullable(overallProgressListenerFactory);
+    return Optional.ofNullable(_overallProgressListenerFactory);
   }
 }

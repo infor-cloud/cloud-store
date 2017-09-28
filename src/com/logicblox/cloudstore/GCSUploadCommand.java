@@ -46,16 +46,16 @@ import java.util.concurrent.Callable;
 public class GCSUploadCommand
   extends Command
 {
-  private String encKeyName;
-  private String encryptedSymmetricKeyString;
+  private String _encKeyName;
+  private String _encryptedSymmetricKeyString;
 
   private UploadOptions _options;
 
-  private String key;
-  private String bucket;
+  private String _objectKey;
+  private String _bucketName;
 
-  private OverallProgressListenerFactory progressListenerFactory;
-  private String pubKeyHash;
+  private OverallProgressListenerFactory _progressListenerFactory;
+  private String _pubKeyHash;
 
 
   public GCSUploadCommand(UploadOptions options)
@@ -67,29 +67,29 @@ public class GCSUploadCommand
     this.file = _options.getFile();
     setChunkSize(_options.getChunkSize());
     setFileLength(this.file.length());
-    this.encKeyName = _options.getEncKey().orElse(null);
+    _encKeyName = _options.getEncKey().orElse(null);
 
-    this.bucket = _options.getBucketName();
-    this.key = _options.getObjectKey();
+    _bucketName = _options.getBucketName();
+    _objectKey = _options.getObjectKey();
 
-    if(this.encKeyName != null)
+    if(_encKeyName != null)
     {
       byte[] encKeyBytes = new byte[32];
       new SecureRandom().nextBytes(encKeyBytes);
       this.encKey = new SecretKeySpec(encKeyBytes, "AES");
       try
       {
-        Key pubKey = _client.getKeyProvider().getPublicKey(this.encKeyName);
-        this.pubKeyHash = DatatypeConverter.printBase64Binary(
+        Key pubKey = _client.getKeyProvider().getPublicKey(_encKeyName);
+        _pubKeyHash = DatatypeConverter.printBase64Binary(
           DigestUtils.sha256(pubKey.getEncoded()));
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.ENCRYPT_MODE, pubKey);
-        this.encryptedSymmetricKeyString = DatatypeConverter.printBase64Binary(
+        _encryptedSymmetricKeyString = DatatypeConverter.printBase64Binary(
           cipher.doFinal(encKeyBytes));
       }
       catch(NoSuchKeyException e)
       {
-        throw new UsageException("Missing encryption key: " + this.encKeyName);
+        throw new UsageException("Missing encryption key: " + _encKeyName);
       }
       catch(NoSuchAlgorithmException e)
       {
@@ -113,7 +113,7 @@ public class GCSUploadCommand
       }
     }
 
-    this.progressListenerFactory = _options.getOverallProgressListenerFactory().orElse(null);
+    _progressListenerFactory = _options.getOverallProgressListenerFactory().orElse(null);
   }
 
   /**
@@ -130,7 +130,7 @@ public class GCSUploadCommand
     if(_options.isDryRun())
     {
       System.out.println(
-        "<DRYRUN> uploading '" + this.file.getAbsolutePath() + "' to '" + getUri(bucket, key) +
+        "<DRYRUN> uploading '" + this.file.getAbsolutePath() + "' to '" + getUri(_bucketName, _objectKey) +
           "'");
       return Futures.immediateFuture(null);
     }
@@ -153,8 +153,8 @@ public class GCSUploadCommand
         StoreFile f = new StoreFile();
         f.setLocalFile(file);
         f.setETag(etag);
-        f.setBucketName(bucket);
-        f.setKey(key);
+        f.setBucketName(_bucketName);
+        f.setKey(_objectKey);
         return f;
       }
     });
@@ -174,7 +174,7 @@ public class GCSUploadCommand
 
       public String toString()
       {
-        return "starting upload " + bucket + "/" + key;
+        return "starting upload " + _bucketName + "/" + _objectKey;
       }
     });
   }
@@ -185,17 +185,17 @@ public class GCSUploadCommand
 
     Map<String, String> meta = new HashMap<String, String>();
     meta.put("s3tool-version", String.valueOf(Version.CURRENT));
-    if(this.encKeyName != null)
+    if(_encKeyName != null)
     {
-      meta.put("s3tool-key-name", encKeyName);
-      meta.put("s3tool-symmetric-key", encryptedSymmetricKeyString);
-      meta.put("s3tool-pubkey-hash", pubKeyHash.substring(0, 8));
+      meta.put("s3tool-key-name", _encKeyName);
+      meta.put("s3tool-symmetric-key", _encryptedSymmetricKeyString);
+      meta.put("s3tool-pubkey-hash", _pubKeyHash.substring(0, 8));
     }
     // single-part => chunk size == file size
     meta.put("s3tool-chunk-size", Long.toString(fileLength));
     meta.put("s3tool-file-length", Long.toString(fileLength));
 
-    return factory.startUpload(bucket, key, meta, _options);
+    return factory.startUpload(_bucketName, _objectKey, meta, _options);
   }
 
   /**
@@ -215,9 +215,9 @@ public class GCSUploadCommand
   private ListenableFuture<Upload> startParts(final Upload upload)
   {
     OverallProgressListener opl = null;
-    if(progressListenerFactory != null)
+    if(_progressListenerFactory != null)
     {
-      opl = progressListenerFactory.create(
+      opl = _progressListenerFactory.create(
         new ProgressOptionsBuilder().setObjectUri(getUri(upload.getBucket(), upload.getKey()))
           .setOperation("upload")
           .setFileSizeInBytes(fileLength)
@@ -278,7 +278,7 @@ public class GCSUploadCommand
     final Cipher cipher;
 
     long partSize;
-    if(encKeyName != null)
+    if(_encKeyName != null)
     {
       cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 

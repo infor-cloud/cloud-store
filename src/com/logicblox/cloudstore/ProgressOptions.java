@@ -18,29 +18,29 @@ package com.logicblox.cloudstore;
 
 public class ProgressOptions
 {
-  private final String objectUri;
-  private final String operation;
-  private final long fileSizeInBytes;
+  private final String _objectUri;
+  private final String _operation;
+  private final long _fileSizeInBytes;
 
   ProgressOptions(String objectUri, String operation, long fileSizeInBytes)
   {
-    this.objectUri = objectUri;
-    this.operation = operation;
-    this.fileSizeInBytes = fileSizeInBytes;
+    _objectUri = objectUri;
+    _operation = operation;
+    _fileSizeInBytes = fileSizeInBytes;
   }
 
   public String getObjectUri()
   {
-    return objectUri;
+    return _objectUri;
   }
 
   public String getOperation()
   {
-    return operation;
+    return _operation;
   }
 
   public long getFileSizeInBytes()
   {
-    return fileSizeInBytes;
+    return _fileSizeInBytes;
   }
 }

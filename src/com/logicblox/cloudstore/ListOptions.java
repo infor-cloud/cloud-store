@@ -21,47 +21,47 @@ import java.util.Optional;
 public class ListOptions
   extends CommandOptions
 {
-  private String bucket;
-  private String objectKey;
-  private boolean recursive;
-  private boolean includeVersions;
-  private boolean excludeDirs;
+  private String _bucketName;
+  private String _objectKey;
+  private boolean _recursive;
+  private boolean _includeVersions;
+  private boolean _excludeDirs;
 
   ListOptions(
-    CloudStoreClient cloudStoreClient, String bucket, String objectKey, boolean recursive,
+    CloudStoreClient cloudStoreClient, String bucketName, String objectKey, boolean recursive,
     boolean includeVersions, boolean excludeDirs)
   {
     super(cloudStoreClient);
-    this.bucket = bucket;
-    this.objectKey = objectKey;
-    this.recursive = recursive;
-    this.includeVersions = includeVersions;
-    this.excludeDirs = excludeDirs;
+    _bucketName = bucketName;
+    _objectKey = objectKey;
+    _recursive = recursive;
+    _includeVersions = includeVersions;
+    _excludeDirs = excludeDirs;
   }
 
   public String getBucketName()
   {
-    return bucket;
+    return _bucketName;
   }
 
   public Optional<String> getObjectKey()
   {
-    return Optional.ofNullable(objectKey);
+    return Optional.ofNullable(_objectKey);
   }
 
   public boolean isRecursive()
   {
-    return recursive;
+    return _recursive;
   }
 
   public boolean versionsIncluded()
   {
-    return includeVersions;
+    return _includeVersions;
   }
 
   public boolean dirsExcluded()
   {
-    return excludeDirs;
+    return _excludeDirs;
   }
 
 }

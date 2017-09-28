@@ -19,19 +19,19 @@ package com.logicblox.cloudstore;
 class S3ProgressListener
   implements com.amazonaws.event.ProgressListener
 {
-  final private OverallProgressListener opl;
-  final private PartProgressEvent ppe;
+  final private OverallProgressListener _opl;
+  final private PartProgressEvent _ppe;
 
   public S3ProgressListener(OverallProgressListener opl, PartProgressEvent ppe)
   {
-    this.opl = opl;
-    this.ppe = ppe;
+    _opl = opl;
+    _ppe = ppe;
   }
 
   @Override
   public void progressChanged(com.amazonaws.event.ProgressEvent event)
   {
-    ppe.setLastTransferBytes(event.getBytesTransferred());
-    opl.progress(ppe);
+    _ppe.setLastTransferBytes(event.getBytesTransferred());
+    _opl.progress(_ppe);
   }
 }

@@ -21,23 +21,23 @@ import java.util.Map;
 /**
  * {@code CopyOptionsBuilder} is a builder for {@code CopyOptions} objects.
  * <p>
- * Setting {@code sourceBucketName}, {@code sourceObjectKey}, {@code destinationBucketName} and
- * {@code destinationObjectKey} is mandatory. All the others are optional.
+ * Setting {@code _sourceBucketName}, {@code _sourceObjectKey}, {@code _destinationBucketName} and
+ * {@code _destinationObjectKey} is mandatory. All the others are optional.
  */
 public class CopyOptionsBuilder
   extends CommandOptionsBuilder
 {
-  private String sourceBucketName;
-  private String sourceObjectKey;
-  private String destinationBucketName;
-  private String destinationObjectKey;
-  private String storageClass;
-  private boolean recursive = false;
-  private String cannedAcl;
-  private Map<String, String> userMetadata;
-  private boolean dryRun = false;
-  private boolean ignoreAbortInjection = false;
-  private OverallProgressListenerFactory overallProgressListenerFactory;
+  private String _sourceBucketName;
+  private String _sourceObjectKey;
+  private String _destinationBucketName;
+  private String _destinationObjectKey;
+  private String _storageClass;
+  private boolean _recursive = false;
+  private String _cannedAcl;
+  private Map<String, String> _userMetadata;
+  private boolean _dryRun = false;
+  private boolean _ignoreAbortInjection = false;
+  private OverallProgressListenerFactory _overallProgressListenerFactory;
 
   CopyOptionsBuilder(CloudStoreClient client)
   {
@@ -46,70 +46,70 @@ public class CopyOptionsBuilder
 
   public CopyOptionsBuilder setSourceBucketName(String sourceBucketName)
   {
-    this.sourceBucketName = sourceBucketName;
+    _sourceBucketName = sourceBucketName;
     return this;
   }
 
   public CopyOptionsBuilder setSourceObjectKey(String sourceObjectKey)
   {
-    this.sourceObjectKey = sourceObjectKey;
+    _sourceObjectKey = sourceObjectKey;
     return this;
   }
 
   public CopyOptionsBuilder setDestinationBucketName(String destinationBucketName)
   {
-    this.destinationBucketName = destinationBucketName;
+    _destinationBucketName = destinationBucketName;
     return this;
   }
 
   public CopyOptionsBuilder setDestinationObjectKey(String destinationObjectKey)
   {
-    this.destinationObjectKey = destinationObjectKey;
+    _destinationObjectKey = destinationObjectKey;
     return this;
   }
 
   public CopyOptionsBuilder setCannedAcl(String cannedAcl)
   {
-    this.cannedAcl = cannedAcl;
+    _cannedAcl = cannedAcl;
     return this;
   }
 
   public CopyOptionsBuilder setUserMetadata(Map<String, String> userMetadata)
   {
-    this.userMetadata = userMetadata;
+    _userMetadata = userMetadata;
     return this;
   }
 
   public CopyOptionsBuilder setStorageClass(String storageClass)
   {
-    this.storageClass = storageClass;
+    _storageClass = storageClass;
     return this;
   }
 
   public CopyOptionsBuilder setRecursive(boolean recursive)
   {
-    this.recursive = recursive;
+    _recursive = recursive;
     return this;
   }
 
   public CopyOptionsBuilder setDryRun(boolean dryRun)
   {
-    this.dryRun = dryRun;
+    _dryRun = dryRun;
     return this;
   }
 
   public CopyOptionsBuilder setIgnoreAbortInjection(boolean ignore)
   {
-    this.ignoreAbortInjection = ignore;
+    _ignoreAbortInjection = ignore;
     return this;
   }
 
   // Disabled progress listener since AWS S3 copy progress indicator doesn't
   // notify about the copied bytes.
   //    public CopyOptionsBuilder setOverallProgressListenerFactory
-  //        (OverallProgressListenerFactory overallProgressListenerFactory) {
-  //        this.overallProgressListenerFactory = Optional.fromNullable
-  //            (overallProgressListenerFactory);
+  //        (OverallProgressListenerFactory _overallProgressListenerFactory) {
+  //            _overallProgressListenerFactory = Optional.fromNullable
+  //            (_overallProgressListenerFactory);
   //        return this;
   //    }
 
@@ -119,36 +119,36 @@ public class CopyOptionsBuilder
     {
       throw new UsageException("CloudStoreClient has to be set");
     }
-    else if(sourceBucketName == null)
+    else if(_sourceBucketName == null)
     {
       throw new UsageException("Source bucket name has to be set");
     }
-    else if(sourceObjectKey == null)
+    else if(_sourceObjectKey == null)
     {
       throw new UsageException("Source object key has to be set");
     }
-    else if(destinationBucketName == null)
+    else if(_destinationBucketName == null)
     {
       throw new UsageException("Destination bucket name key has to be set");
     }
-    else if(destinationObjectKey == null)
+    else if(_destinationObjectKey == null)
     {
       throw new UsageException("Destination object key has to be set");
     }
 
-    if(cannedAcl != null)
+    if(_cannedAcl != null)
     {
-      if(!_cloudStoreClient.getAclHandler().isCannedAclValid(cannedAcl))
+      if(!_cloudStoreClient.getAclHandler().isCannedAclValid(_cannedAcl))
       {
-        throw new UsageException("Invalid canned ACL '" + cannedAcl + "'");
+        throw new UsageException("Invalid canned ACL '" + _cannedAcl + "'");
       }
     }
 
-    if(storageClass != null)
+    if(_storageClass != null)
     {
-      if(!_cloudStoreClient.getStorageClassHandler().isStorageClassValid(storageClass))
+      if(!_cloudStoreClient.getStorageClassHandler().isStorageClassValid(_storageClass))
       {
-        throw new UsageException("Invalid storage class '" + storageClass + "'");
+        throw new UsageException("Invalid storage class '" + _storageClass + "'");
       }
     }
   }
@@ -158,8 +158,8 @@ public class CopyOptionsBuilder
   {
     validateOptions();
 
-    return new CopyOptions(_cloudStoreClient, sourceBucketName, sourceObjectKey,
-      destinationBucketName, destinationObjectKey, cannedAcl, storageClass, recursive, dryRun,
-      ignoreAbortInjection, userMetadata, overallProgressListenerFactory);
+    return new CopyOptions(_cloudStoreClient, _sourceBucketName, _sourceObjectKey,
+      _destinationBucketName, _destinationObjectKey, _cannedAcl, _storageClass, _recursive, _dryRun,
+      _ignoreAbortInjection, _userMetadata, _overallProgressListenerFactory);
   }
 }

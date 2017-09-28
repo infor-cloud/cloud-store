@@ -113,7 +113,7 @@ public class S3AddEncryptionKeyCommand
       public ListenableFuture<S3ObjectMetadata> apply(S3ObjectMetadata metadata)
       {
         Map<String, String> userMetadata = metadata.getUserMetadata();
-        String obj = getUri(metadata.getBucket(), metadata.getKey());
+        String obj = getUri(metadata.getBucket(), metadata.getObjectKey());
         if(!userMetadata.containsKey("s3tool-key-name"))
         {
           throw new UsageException("Object doesn't seem to be encrypted");
@@ -155,7 +155,7 @@ public class S3AddEncryptionKeyCommand
 
   private S3ObjectMetadata addNewEncryptionKey(S3ObjectMetadata metadata)
   {
-    String errPrefix = getUri(metadata.getBucket(), metadata.getKey()) + ": ";
+    String errPrefix = getUri(metadata.getBucket(), metadata.getObjectKey()) + ": ";
     if(_encKeyProvider == null)
     {
       throw new UsageException(errPrefix + "No encryption key provider is " + "specified");
@@ -309,9 +309,9 @@ public class S3AddEncryptionKeyCommand
           CopyOptions options = _client.getOptionsBuilderFactory()
             .newCopyOptionsBuilder()
             .setSourceBucketName(metadata.getBucket())
-            .setSourceObjectKey(metadata.getKey())
+            .setSourceObjectKey(metadata.getObjectKey())
             .setDestinationBucketName(metadata.getBucket())
-            .setDestinationObjectKey(metadata.getKey())
+            .setDestinationObjectKey(metadata.getObjectKey())
             .setUserMetadata(metadata.getUserMetadata())
             .createOptions();
 
@@ -329,9 +329,9 @@ public class S3AddEncryptionKeyCommand
                   public StoreFile call()
                     throws IOException
                   {
-                    GCSClient.patchMetaData(getGCSClient(), metadata.getBucket(), metadata.getKey(),
+                    GCSClient.patchMetaData(getGCSClient(), metadata.getBucket(), metadata.getObjectKey(),
                       metadata.getUserMetadata());
-                    return new StoreFile(metadata.getBucket(), metadata.getKey());
+                    return new StoreFile(metadata.getBucket(), metadata.getObjectKey());
                   }
                 });
               }

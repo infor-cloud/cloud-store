@@ -42,64 +42,64 @@ import java.util.concurrent.ConcurrentSkipListMap;
 class S3MultipartUpload
   implements Upload
 {
-  private ConcurrentMap<Integer, PartETag> etags = new ConcurrentSkipListMap<Integer, PartETag>();
-  private AmazonS3 client;
-  private String bucketName;
-  private String key;
-  private String uploadId;
-  private Date initiated;
-  private ListeningExecutorService executor;
-  private UploadOptions options;
+  private ConcurrentMap<Integer, PartETag> _etags = new ConcurrentSkipListMap<Integer, PartETag>();
+  private AmazonS3 _client;
+  private String _bucketName;
+  private String _objectKey;
+  private String _uploadId;
+  private Date _initiated;
+  private ListeningExecutorService _executor;
+  private UploadOptions _options;
 
 
   public S3MultipartUpload(
-    AmazonS3 client, String bucketName, String key, String uploadId, Date initiated,
+    AmazonS3 client, String bucketName, String objectKey, String uploadId, Date initiated,
     ListeningExecutorService executor, UploadOptions options)
   {
-    this.bucketName = bucketName;
-    this.key = key;
-    this.client = client;
-    this.uploadId = uploadId;
-    this.initiated = initiated;
-    this.executor = executor;
-    this.options = options;
+    _bucketName = bucketName;
+    _objectKey = objectKey;
+    _client = client;
+    _uploadId = uploadId;
+    _initiated = initiated;
+    _executor = executor;
+    _options = options;
   }
 
   public ListenableFuture<Void> uploadPart(
     int partNumber, long partSize, Callable<InputStream> stream,
     OverallProgressListener progressListener)
   {
-    return executor.submit(new UploadCallable(partNumber, partSize, stream, progressListener));
+    return _executor.submit(new UploadCallable(partNumber, partSize, stream, progressListener));
   }
 
   public ListenableFuture<String> completeUpload()
   {
-    return executor.submit(new CompleteCallable());
+    return _executor.submit(new CompleteCallable());
   }
 
   public ListenableFuture<Void> abort()
   {
-    return executor.submit(new AbortCallable());
+    return _executor.submit(new AbortCallable());
   }
 
   public String getBucket()
   {
-    return bucketName;
+    return _bucketName;
   }
 
   public String getKey()
   {
-    return key;
+    return _objectKey;
   }
 
   public String getId()
   {
-    return uploadId;
+    return _uploadId;
   }
 
   public Date getInitiationDate()
   {
-    return initiated;
+    return _initiated;
   }
 
   private class AbortCallable
@@ -108,8 +108,9 @@ class S3MultipartUpload
     public Void call()
       throws Exception
     {
-      AbortMultipartUploadRequest req = new AbortMultipartUploadRequest(bucketName, key, uploadId);
-      client.abortMultipartUpload(req);
+      AbortMultipartUploadRequest req = new AbortMultipartUploadRequest(_bucketName, _objectKey,
+        _uploadId);
+      _client.abortMultipartUpload(req);
       return null;
     }
   }
@@ -123,17 +124,17 @@ class S3MultipartUpload
       String multipartDigest;
       CompleteMultipartUploadRequest req;
 
-      req = new CompleteMultipartUploadRequest(bucketName, key, uploadId,
-        new ArrayList<PartETag>(etags.values()));
+      req = new CompleteMultipartUploadRequest(_bucketName, _objectKey, _uploadId,
+        new ArrayList<PartETag>(_etags.values()));
       ByteArrayOutputStream os = new ByteArrayOutputStream();
-      for(Integer pNum : etags.keySet())
+      for(Integer pNum : _etags.keySet())
       {
-        os.write(DatatypeConverter.parseHexBinary(etags.get(pNum).getETag()));
+        os.write(DatatypeConverter.parseHexBinary(_etags.get(pNum).getETag()));
       }
 
-      multipartDigest = DigestUtils.md5Hex(os.toByteArray()) + "-" + etags.size();
+      multipartDigest = DigestUtils.md5Hex(os.toByteArray()) + "-" + _etags.size();
 
-      CompleteMultipartUploadResult res = client.completeMultipartUpload(req);
+      CompleteMultipartUploadResult res = _client.completeMultipartUpload(req);
 
       if(res.getETag().equals(multipartDigest))
       {
@@ -142,7 +143,7 @@ class S3MultipartUpload
       else
       {
         throw new BadHashException(
-          "Failed checksum validation for " + bucketName + "/" + key + ". " + "Calculated MD5: " +
+          "Failed checksum validation for " + _bucketName + "/" + _objectKey + ". " + "Calculated MD5: " +
             multipartDigest + ", Expected MD5: " + res.getETag());
       }
     }
@@ -151,25 +152,25 @@ class S3MultipartUpload
   private class UploadCallable
     implements Callable<Void>
   {
-    private int partNumber;
-    private long partSize;
-    private Callable<InputStream> streamCallable;
-    private OverallProgressListener progressListener;
+    private int _partNumber;
+    private long _partSize;
+    private Callable<InputStream> _streamCallable;
+    private OverallProgressListener _progressListener;
 
     public UploadCallable(
       int partNumber, long partSize, Callable<InputStream> streamCallable,
       OverallProgressListener progressListener)
     {
-      this.partNumber = partNumber;
-      this.partSize = partSize;
-      this.streamCallable = streamCallable;
-      this.progressListener = progressListener;
+      _partNumber = partNumber;
+      _partSize = partSize;
+      _streamCallable = streamCallable;
+      _progressListener = progressListener;
     }
 
     public Void call()
       throws Exception
     {
-      try(HashingInputStream stream = new HashingInputStream(streamCallable.call()))
+      try(HashingInputStream stream = new HashingInputStream(_streamCallable.call()))
       {
         return upload(stream);
       }
@@ -180,15 +181,15 @@ class S3MultipartUpload
     {
 
       // added to support retry testing
-      options.injectAbort(uploadId);
+      _options.injectAbort(_uploadId);
 
       UploadPartRequest req = new UploadPartRequest();
-      req.setBucketName(bucketName);
+      req.setBucketName(_bucketName);
       req.setInputStream(stream);
-      req.setPartNumber(partNumber + 1);
-      req.setPartSize(partSize);
-      req.setUploadId(uploadId);
-      req.setKey(key);
+      req.setPartNumber(_partNumber + 1);
+      req.setPartSize(_partSize);
+      req.setUploadId(_uploadId);
+      req.setKey(_objectKey);
 
       // LB-2298: According to
       // https://github.com/aws/aws-sdk-java/issues/427#issuecomment-100518891
@@ -200,21 +201,21 @@ class S3MultipartUpload
       // maximum buffer size that could be consumed) as suggested in the
       // error message mentioned in LB-2298. That limit should be the
       // expected max size of our input stream in bytes, plus 1, hence
-      // partSize+1.
-      req.getRequestClientOptions().setReadLimit(Ints.checkedCast(partSize + 1));
+      // _partSize+1.
+      req.getRequestClientOptions().setReadLimit(Ints.checkedCast(_partSize + 1));
 
-      if(progressListener != null)
+      if(_progressListener != null)
       {
-        PartProgressEvent ppe = new PartProgressEvent(Integer.toString(partNumber));
-        ProgressListener s3pl = new S3ProgressListener(progressListener, ppe);
+        PartProgressEvent ppe = new PartProgressEvent(Integer.toString(_partNumber));
+        ProgressListener s3pl = new S3ProgressListener(_progressListener, ppe);
         req.setGeneralProgressListener(s3pl);
       }
 
-      UploadPartResult res = client.uploadPart(req);
+      UploadPartResult res = _client.uploadPart(req);
       byte[] etag = DatatypeConverter.parseHexBinary(res.getETag());
       if(Arrays.equals(etag, stream.getDigest()))
       {
-        etags.put(partNumber, res.getPartETag());
+        _etags.put(_partNumber, res.getPartETag());
 
         return null;
       }
@@ -222,8 +223,8 @@ class S3MultipartUpload
       {
         String calculatedMD5 = DatatypeConverter.printHexBinary(stream.getDigest()).toLowerCase();
         throw new BadHashException(
-          "Failed checksum validation for part " + (partNumber + 1) + " of " + bucketName + "/" +
-            key + ". " + "Calculated MD5: " + calculatedMD5 + ", Expected MD5: " + res.getETag());
+          "Failed checksum validation for part " + (_partNumber + 1) + " of " + _bucketName + "/" +
+            _objectKey + ". " + "Calculated MD5: " + calculatedMD5 + ", Expected MD5: " + res.getETag());
       }
     }
   }

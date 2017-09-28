@@ -21,10 +21,10 @@ import java.util.Optional;
 
 /**
  * {@code CopyOptions} contains all the details needed by the copy operation. The specified {@code
- * sourceObjectKey}, under {@code sourceBucketName} bucket, is copied to {@code
- * destinationObjectKey}, under {@code destinationBucketName}.
+ * _sourceObjectKey}, under {@code _sourceBucketName} bucket, is copied to {@code
+ * _destinationObjectKey}, under {@code _destinationBucketName}.
  * <p>
- * If {@code cannedAcl} is specified then it's applied to the destination object.
+ * If {@code _cannedAcl} is specified then it's applied to the destination object.
  * <p>
  * If progress listener factory has been set, then progress notifications will be recorded.
  * <p>
@@ -34,17 +34,17 @@ import java.util.Optional;
 public class CopyOptions
   extends CommandOptions
 {
-  private final String sourceBucketName;
-  private final String sourceObjectKey;
-  private final String destinationBucketName;
-  private final String destinationObjectKey;
-  private final boolean recursive;
-  private final boolean dryRun;
-  private final boolean ignoreAbortInjection;
-  private String cannedAcl;
-  private final String storageClass;
-  private final Map<String, String> userMetadata;
-  private final OverallProgressListenerFactory overallProgressListenerFactory;
+  private final String _sourceBucketName;
+  private final String _sourceObjectKey;
+  private final String _destinationBucketName;
+  private final String _destinationObjectKey;
+  private final boolean _recursive;
+  private final boolean _dryRun;
+  private final boolean _ignoreAbortInjection;
+  private String _cannedAcl;
+  private final String _storageClass;
+  private final Map<String, String> _userMetadata;
+  private final OverallProgressListenerFactory _overallProgressListenerFactory;
 
   // for testing injection of aborts during a copy
   private static AbortCounters _abortCounters = new AbortCounters();
@@ -57,23 +57,23 @@ public class CopyOptions
     Map<String, String> userMetadata, OverallProgressListenerFactory overallProgressListenerFactory)
   {
     super(cloudStoreClient);
-    this.sourceBucketName = sourceBucketName;
-    this.sourceObjectKey = sourceObjectKey;
-    this.destinationBucketName = destinationBucketName;
-    this.destinationObjectKey = destinationObjectKey;
-    this.recursive = recursive;
-    this.cannedAcl = cannedAcl;
-    this.storageClass = storageClass;
-    this.dryRun = dryRun;
-    this.ignoreAbortInjection = ignoreAbortInjection;
-    this.userMetadata = userMetadata;
-    this.overallProgressListenerFactory = overallProgressListenerFactory;
+    _sourceBucketName = sourceBucketName;
+    _sourceObjectKey = sourceObjectKey;
+    _destinationBucketName = destinationBucketName;
+    _destinationObjectKey = destinationObjectKey;
+    _recursive = recursive;
+    _cannedAcl = cannedAcl;
+    _storageClass = storageClass;
+    _dryRun = dryRun;
+    _ignoreAbortInjection = ignoreAbortInjection;
+    _userMetadata = userMetadata;
+    _overallProgressListenerFactory = overallProgressListenerFactory;
   }
 
   // for testing injection of aborts during a copy
   void injectAbort(String id)
   {
-    if(!this.ignoreAbortInjection && (_abortCounters.decrementInjectionCounter(id) > 0))
+    if(!_ignoreAbortInjection && (_abortCounters.decrementInjectionCounter(id) > 0))
     {
       throw new AbortInjection("forcing copy abort");
     }
@@ -86,51 +86,51 @@ public class CopyOptions
 
   public String getSourceBucketName()
   {
-    return sourceBucketName;
+    return _sourceBucketName;
   }
 
   public String getSourceObjectKey()
   {
-    return sourceObjectKey;
+    return _sourceObjectKey;
   }
 
   public String getDestinationBucketName()
   {
-    return destinationBucketName;
+    return _destinationBucketName;
   }
 
   public String getDestinationObjectKey()
   {
-    return destinationObjectKey;
+    return _destinationObjectKey;
   }
 
   public Optional<String> getCannedAcl()
   {
-    return Optional.ofNullable(cannedAcl);
+    return Optional.ofNullable(_cannedAcl);
   }
 
   public Optional<String> getStorageClass()
   {
-    return Optional.ofNullable(storageClass);
+    return Optional.ofNullable(_storageClass);
   }
 
   public boolean isRecursive()
   {
-    return recursive;
+    return _recursive;
   }
 
   public boolean isDryRun()
   {
-    return dryRun;
+    return _dryRun;
   }
 
   public Optional<Map<String, String>> getUserMetadata()
   {
-    return Optional.ofNullable(userMetadata);
+    return Optional.ofNullable(_userMetadata);
   }
 
   public Optional<OverallProgressListenerFactory> getOverallProgressListenerFactory()
   {
-    return Optional.ofNullable(overallProgressListenerFactory);
+    return Optional.ofNullable(_overallProgressListenerFactory);
   }
 }

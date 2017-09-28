@@ -24,7 +24,7 @@ import java.util.Map;
  * <p>
  * Setting {@code _sourceBucketName}, {@code _sourceObjectKey}, {@code _destinationBucketName} and
  * {@code _destinationObjectKey} are mandatory. All the others are optional.
- * <p>
+ * 
  * @see CopyOptions
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#copy(CopyOptions)
@@ -53,6 +53,9 @@ public class CopyOptionsBuilder
 
   /**
    * Set the bucket name containing the file to be copied.
+   *
+   * @param sourceBucketName name of source bucket
+   * @return this builder
    */
   public CopyOptionsBuilder setSourceBucketName(String sourceBucketName)
   {
@@ -62,6 +65,9 @@ public class CopyOptionsBuilder
 
   /**
    * Set the key of the file to be copied.
+   *
+   * @param sourceObjectKey key of source file
+   * @return this builder
    */
   public CopyOptionsBuilder setSourceObjectKey(String sourceObjectKey)
   {
@@ -71,6 +77,9 @@ public class CopyOptionsBuilder
 
   /**
    * Set the name of the bucket that will receive the copied file.
+   *
+   * @param destinationBucketName name of destination bucket
+   * @return this builder
    */
   public CopyOptionsBuilder setDestinationBucketName(String destinationBucketName)
   {
@@ -80,6 +89,9 @@ public class CopyOptionsBuilder
 
   /**
    * Set the key of the new file to be created.
+   *
+   * @param destinationObjectKey key of destination file
+   * @return this builder
    */
   public CopyOptionsBuilder setDestinationObjectKey(String destinationObjectKey)
   {
@@ -90,6 +102,9 @@ public class CopyOptionsBuilder
   /**
    * Set the name of an access control list for the copied file.  If not specified, 
    * the access control list for the original file will be used.
+   *
+   * @param cannedAcl name of access control list for the new file
+   * @return this builder
    */
   public CopyOptionsBuilder setCannedAcl(String cannedAcl)
   {
@@ -100,6 +115,9 @@ public class CopyOptionsBuilder
   /**
    * Set user metadata for the copied file.  If not specified, all user metadata
    * is copied to the new file.
+   *
+   * @param userMetadata map of user metadata for new file
+   * @return this builder
    */
   public CopyOptionsBuilder setUserMetadata(Map<String, String> userMetadata)
   {
@@ -110,6 +128,9 @@ public class CopyOptionsBuilder
   /**
    * Set the storage class for the copied file.  If not specified, the storage class
    * of the original file is used.
+   *
+   * @param storageClass storage class for new file
+   * @return this builder
    */
   public CopyOptionsBuilder setStorageClass(String storageClass)
   {
@@ -123,6 +144,9 @@ public class CopyOptionsBuilder
    * a directory (ends with a '/').  If not set and the key ends in a '/', then all
    * "top-level" files matching the key will be copied.  If recursive is set and the
    * key ends in '/', all "top-level" and all matching "sub-directory" files will be copied.
+   *
+   * @param recursive true if a recursive copy should be performed
+   * @return this builder
    */
   public CopyOptionsBuilder setRecursive(boolean recursive)
   {
@@ -132,6 +156,9 @@ public class CopyOptionsBuilder
 
   /**
    * If set to true, print operations that would be executed, but do not perform them.
+   *
+   * @param dryRun true if operations are to be printed but not executed
+   * @return this builder
    */
   public CopyOptionsBuilder setDryRun(boolean dryRun)
   {
@@ -141,6 +168,9 @@ public class CopyOptionsBuilder
 
   /**
    * Used by test framework to control abort injection testing.
+   *
+   * @param ignore true if abort injection checks shoudl be skipped
+   * @return this builder
    */
   public CopyOptionsBuilder setIgnoreAbortInjection(boolean ignore)
   {
@@ -200,6 +230,8 @@ public class CopyOptionsBuilder
   /**
    * Validate that all required parameters are set and if so return a new {@link CopyOptions}
    * object.
+   *
+   * @return immutable options with all values from this builder
    */
   @Override
   public CopyOptions createOptions()

@@ -45,6 +45,9 @@ public class DeleteOptionsBuilder
 
   /**
    * Set the name of the bucket containing the file to delete.
+   *
+   * @param bucket name of bucket
+   * @return this builder
    */
   public DeleteOptionsBuilder setBucketName(String bucket)
   {
@@ -54,6 +57,9 @@ public class DeleteOptionsBuilder
 
   /**
    * Set the key of the file to delete.
+   *
+   * @param objectKey key of file to delete
+   * @return this builder
    */
   public DeleteOptionsBuilder setObjectKey(String objectKey)
   {
@@ -65,6 +71,9 @@ public class DeleteOptionsBuilder
    * Set the recursive property of the command.  If true and if the object key
    * looks like a directory name (ends in '/'), all files that recursively
    * have the key as their prefix will be deleted.
+   *
+   * @param recursive true to recursively delete files
+   * @return this builder
    */
   public DeleteOptionsBuilder setRecursive(boolean recursive)
   {
@@ -74,6 +83,9 @@ public class DeleteOptionsBuilder
 
   /**
    * If set to true, print operations that would be executed, but do not perform them.
+   *
+   * @param dryRun true if operations should be printed but not executed
+   * @return this builder
    */
   public DeleteOptionsBuilder setDryRun(boolean dryRun)
   {
@@ -85,6 +97,9 @@ public class DeleteOptionsBuilder
    * If forceDelete is set to true, then delete command will complete successfully
    * even if the specified file does not exist.  Otherwise, the delete command
    * will fail when trying to delete a file that does not exist.
+   *
+   * @param force true of delete should succeed if file does not exist
+   * @return this builder
    */
   public DeleteOptionsBuilder setForceDelete(boolean force)
   {
@@ -94,6 +109,9 @@ public class DeleteOptionsBuilder
 
   /**
    * Used by test framework to control abort injection testing.
+   *
+   * @param ignore true if abort injection checks should be skipped
+   * @return this builder
    */
   public DeleteOptionsBuilder setIgnoreAbortInjection(boolean ignore)
   {
@@ -120,6 +138,8 @@ public class DeleteOptionsBuilder
   /**
    * Validate that all required parameters are set and if so return a new {@link DeleteOptions}
    * object.
+   *
+   * @return immutable options with values from this builder
    */
   @Override
   public DeleteOptions createOptions()

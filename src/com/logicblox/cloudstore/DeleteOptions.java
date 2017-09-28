@@ -26,7 +26,7 @@ package com.logicblox.cloudstore;
  * <p>
  * {@code DeleteOptions} objects are meant to be built by {@code DeleteOptionsBuilder}. This class
  * provides only public accessor methods.
- * <p>
+ * 
  * @see DeleteOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#delete(DeleteOptions)
@@ -76,6 +76,8 @@ public class DeleteOptions
 
   /**
    * Return the name of the bucket containing the file to delete.
+   *
+   * @return name of bucket
    */
   public String getBucketName()
   {
@@ -84,6 +86,8 @@ public class DeleteOptions
 
   /**
    * Return the key of the file to delete.
+   *
+   * @return file key
    */
   public String getObjectKey()
   {
@@ -94,6 +98,8 @@ public class DeleteOptions
    * Return the recursive property of the command.  If true and if the object key
    * looks like a directory name (ends in '/'), all files that recursively
    * have the key as their prefix will be deleted.
+   *
+   * @return recursive flag
    */
   public boolean isRecursive()
   {
@@ -102,6 +108,8 @@ public class DeleteOptions
 
   /**
    * If set to true, print operations that would be executed, but do not perform them.
+   * 
+   * @return dry-run flag
    */
   public boolean isDryRun()
   {
@@ -112,6 +120,8 @@ public class DeleteOptions
    * If forceDelete is set to true, then delete command will complete successfully
    * even if the specified file does not exist.  Otherwise, the delete command
    * will fail when trying to delete a file that does not exist.
+   *
+   * @return force delete flag
    */
   public boolean forceDelete()
   {

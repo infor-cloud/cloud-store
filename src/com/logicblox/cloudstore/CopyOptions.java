@@ -30,7 +30,7 @@ import java.util.Optional;
  * <p>
  * {@code CopyOptions} objects are meant to be built by {@code CopyOptionsBuilder}. This class
  * provides only public accessor methods.
- * <p>
+ * 
  * @see CopyOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#copy(CopyOptions)
@@ -92,6 +92,8 @@ public class CopyOptions
 
   /**
    * Return the bucket name containing the file to be copied.
+   *
+   * @return name of source bucket
    */
   public String getSourceBucketName()
   {
@@ -100,6 +102,8 @@ public class CopyOptions
 
   /**
    * Return the key of the file to be copied.
+   *
+   * @return key of source file
    */
   public String getSourceObjectKey()
   {
@@ -108,6 +112,8 @@ public class CopyOptions
 
   /**
    * Return the name of the bucket that will receive the copied file.
+   *
+   * @return name of destination bucket
    */
   public String getDestinationBucketName()
   {
@@ -116,6 +122,8 @@ public class CopyOptions
 
   /**
    * Return the key of the new file to be created.
+   *
+   * @return key of destination file
    */
   public String getDestinationObjectKey()
   {
@@ -125,6 +133,8 @@ public class CopyOptions
   /**
    * Return the name of an access control list for the copied file.  If not specified, 
    * the access control list for the original file will be used.
+   *
+   * @return optional canned access control list name
    */
   public Optional<String> getCannedAcl()
   {
@@ -134,6 +144,8 @@ public class CopyOptions
   /**
    * Return the storage class for the copied file.  If not specified, the storage class
    * of the original file is used.
+   *
+   * @return optional storage class
    */
   public Optional<String> getStorageClass()
   {
@@ -146,6 +158,8 @@ public class CopyOptions
    * a directory (ends with a '/').  If not sets and the key ends in a '/', then all
    * "top-level" files matching the key will be copied.  If recursive is set and the
    * key ends in '/', all "top-level" and all matching "sub-directory" files will be copied.
+   *
+   * @return recursive flag
    */
   public boolean isRecursive()
   {
@@ -155,6 +169,8 @@ public class CopyOptions
   /**
    * Return the dry-run property for the copy operation.  If set to true, print operations 
    * that would be executed, but do not perform them.
+   *
+   * @return dry-run flag
    */
   public boolean isDryRun()
   {
@@ -164,6 +180,8 @@ public class CopyOptions
   /**
    * Return user metadata for the copied file.  If not specified, all user metadata
    * is copied to the new file.
+   *
+   * @return optional map containing user metadata
    */
   public Optional<Map<String, String>> getUserMetadata()
   {
@@ -173,6 +191,7 @@ public class CopyOptions
   /**
    * Return an optional {@link OverallProgressListenerFactory progress listener} used to
    * report progress as files are copied.
+   * @return optional factory used to create progress listeners
    */
   public Optional<OverallProgressListenerFactory> getOverallProgressListenerFactory()
   {

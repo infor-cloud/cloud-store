@@ -27,6 +27,8 @@ public interface OverallProgressListener
    * This methods might be called from multiple different threads, each one transferring different
    * part of the file, so it has to be implemented in a thread-safe manner. Declaring it as {@code
    * synchronized} is suggested.
+   *
+   * @param partProgressEvent contains details about the progress of a cloud-store operation
    */
   public void progress(PartProgressEvent partProgressEvent);
 }

@@ -21,7 +21,7 @@ package com.logicblox.cloudstore;
  * objects used to control behavior of the cloud-store delete command.
  * <p>
  * Setting {@code bucketName} and {@code objectKey} are mandatory. All the others are optional.
- * <p>
+ * 
  * @see DeleteOptions
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#delete(DeleteOptions)

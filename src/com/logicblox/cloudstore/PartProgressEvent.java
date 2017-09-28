@@ -41,6 +41,8 @@ public class PartProgressEvent
   /**
    * We declare it as {@code synchronized} because, typically, it can be called by two threads that
    * transfer different chunks of the same part.
+   *
+   * @param lastTransferBytes number of bytes in last transferred part
    */
   synchronized public void setLastTransferBytes(long lastTransferBytes)
   {

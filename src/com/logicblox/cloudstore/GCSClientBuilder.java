@@ -79,6 +79,7 @@ public class GCSClientBuilder
    * object by default.
    *
    * @param s3Client Internal S3 client used for talking to GCS interoperable XML API
+   * @return this builder
    */
   public GCSClientBuilder setInternalS3Client(AmazonS3Client s3Client)
   {

@@ -29,6 +29,7 @@ public interface StorageClassHandler
    * a cloud store service.
    *
    * @param storageClass Name of a storage class to be checked for validity
+   * @return validity of a storage class name
    */
   boolean isStorageClassValid(String storageClass);
 }

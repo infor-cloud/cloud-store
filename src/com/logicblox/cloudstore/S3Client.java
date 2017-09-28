@@ -480,6 +480,8 @@ public class S3Client
    * Returns cloudstore package version in this format: "Version.RevNum-RevHash_BuildDatetime"
    * <p>
    * Example: "1.0.272-2dab7d1c9c69_201502181542"
+   *
+   * @return library version
    */
   public static String version()
   {

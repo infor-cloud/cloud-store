@@ -133,6 +133,7 @@ public interface CloudStoreClient
    *
    * @param options Set of options that control the upload operation
    * @return Future containing StoreFile with uploaded file information
+   * @throws IOException
    */
   ListenableFuture<StoreFile> upload(UploadOptions options)
     throws IOException;
@@ -158,6 +159,9 @@ public interface CloudStoreClient
    *
    * @param options Set of options that control the upload operation
    * @return Future containing list of StoreFiles with uploaded file information
+   * @throws IOException
+   * @throws ExecutionException
+   * @throws InterruptedException
    */
   ListenableFuture<List<StoreFile>> uploadDirectory(UploadOptions options)
     throws IOException, ExecutionException, InterruptedException;
@@ -180,6 +184,8 @@ public interface CloudStoreClient
    *
    * @param opts DeleteOptions that specify what to delete
    * @return Future containing list of StoreFiles with deleted file information
+   * @throws ExecutionException
+   * @throws InterruptedException
    */
   ListenableFuture<List<StoreFile>> deleteDir(DeleteOptions opts)
     throws InterruptedException, ExecutionException;
@@ -232,6 +238,7 @@ public interface CloudStoreClient
    *
    * @param options Set of options controlling the download operation
    * @return Future containing StoreFile with information about downloaded file
+   * @throws IOException
    */
   ListenableFuture<StoreFile> download(DownloadOptions options)
     throws IOException;
@@ -271,6 +278,9 @@ public interface CloudStoreClient
    *
    * @param options Set of options controlling the download operation
    * @return Future containing list of StoreFiles with information about downloaded files
+   * @throws IOException
+   * @throws ExecutionException
+   * @throws InterruptedException
    */
   ListenableFuture<List<StoreFile>> downloadDirectory(DownloadOptions options)
     throws IOException, ExecutionException, InterruptedException;
@@ -306,6 +316,9 @@ public interface CloudStoreClient
    *
    * @param options Set of options specifying files to copy along with their destination.
    * @return Future containing list of StoreFiles with information about copied files
+   * @throws IOException
+   * @throws ExecutionException
+   * @throws InterruptedException
    */
   ListenableFuture<List<StoreFile>> copyToDir(CopyOptions options)
     throws InterruptedException, ExecutionException, IOException;
@@ -343,6 +356,9 @@ public interface CloudStoreClient
    *
    * @param options Set of parameters specifying what files to copy and their destination prefix.
    * @return Future containing list of StoreFiles with information about renamed files
+   * @throws IOException
+   * @throws ExecutionException
+   * @throws InterruptedException
    */
   ListenableFuture<List<StoreFile>> renameDirectory(RenameOptions options)
     throws InterruptedException, ExecutionException, IOException;
@@ -414,6 +430,7 @@ public interface CloudStoreClient
    *
    * @param options Set of options specifying the new key and file to apply the key to
    * @return Future containing StoreFile with information on the updated file
+   * @throws IOException
    */
   ListenableFuture<StoreFile> addEncryptionKey(EncryptionKeyOptions options)
     throws IOException;
@@ -427,6 +444,7 @@ public interface CloudStoreClient
    *
    * @param options Set of options specifying the key to remove and file to remove it from
    * @return Future containing StoreFile with information on the updated file
+   * @throws IOException
    */
   ListenableFuture<StoreFile> removeEncryptionKey(EncryptionKeyOptions options)
     throws IOException;

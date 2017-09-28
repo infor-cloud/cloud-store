@@ -24,7 +24,7 @@ package com.logicblox.cloudstore;
  * <p>
  * @see ExistsOptions
  * @see CloudStoreClient#getOptionsBuilderFactory()
- * @see CloudStoreClient#exists()
+ * @see CloudStoreClient#exists(ExistsOptions)
  * @see OptionsBuilderFactory#newExistsOptionsBuilder()
  */
 public class ExistsOptionsBuilder

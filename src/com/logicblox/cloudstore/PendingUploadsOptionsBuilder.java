@@ -24,11 +24,11 @@ import java.util.Date;
  * <p>
  * Setting {@code bucketName} and {@code objectKey} is mandatory.  Other properties are optional.
  * <p>
- * @see PendingUploadingOptions
+ * @see PendingUploadsOptions
  * @see CloudStoreClient#getOptionsBuilderFactory()
- * @see CloudStoreClient#listPendingUploads()
- * @see CloudStoreClient#abortPendingUploads()
- * @see OptionsBuilderFactory#newPendingUploadingOptionsBuilder()
+ * @see CloudStoreClient#listPendingUploads(PendingUploadsOptions)
+ * @see CloudStoreClient#abortPendingUploads(PendingUploadsOptions)
+ * @see OptionsBuilderFactory#newPendingUploadsOptionsBuilder()
  */
 public class PendingUploadsOptionsBuilder
   extends CommandOptionsBuilder
@@ -96,7 +96,7 @@ public class PendingUploadsOptionsBuilder
   }
 
   /**
-   * Validate that all required parameters are set and if so return a new {@link PendingUploadOptions}
+   * Validate that all required parameters are set and if so return a new {@link PendingUploadsOptions}
    * object.
    */
   @Override

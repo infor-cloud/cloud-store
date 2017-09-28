@@ -23,7 +23,7 @@ import java.util.Optional;
  * <p>
  * @see ListOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
- * @see CloudStoreClient#listObjects()
+ * @see CloudStoreClient#listObjects(ListOptions)
  * @see OptionsBuilderFactory#newListOptionsBuilder()
  */
 public class ListOptions

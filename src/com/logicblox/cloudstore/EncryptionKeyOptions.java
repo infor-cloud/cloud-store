@@ -23,11 +23,11 @@ package com.logicblox.cloudstore;
  * {@code EncryptionKeyOptions} objects are meant to be built by {@code
  * EncryptionKeyOptionsBuilder}. This class provides only public accessor methods.
  * <p>
- * @see EncryptionOptionsBuilder
+ * @see EncryptionKeyOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
- * @see CloudStoreClient#addEncryptionKey()
- * @see CloudStoreClient#removeEncryptionKey()
- * @see OptionsBuilderFactory#newEncryptionOptionsBuilder()
+ * @see CloudStoreClient#addEncryptionKey(EncryptionKeyOptions)
+ * @see CloudStoreClient#removeEncryptionKey(EncryptionKeyOptions)
+ * @see OptionsBuilderFactory#newEncryptionKeyOptionsBuilder()
  */
 public class EncryptionKeyOptions
   extends CommandOptions

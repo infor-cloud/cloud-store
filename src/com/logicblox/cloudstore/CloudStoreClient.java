@@ -363,7 +363,7 @@ public interface CloudStoreClient
    * clean up pending uploads to avoid unnecessary service charges.  See 
    * {@link #listPendingUploads}.
    * <p>
-   * If only the upload id is specified in the {@link PendingUploadOptions}, then only one 
+   * If only the upload id is specified in the {@link PendingUploadsOptions}, then only one 
    * specific pending upload will be aborted.  If only the date is specified, then all pending 
    * uploads that were initiated before this date will be aborted.  If both upload id and date
    * are specified, then only one specific pending upload will be aborted, provided it had

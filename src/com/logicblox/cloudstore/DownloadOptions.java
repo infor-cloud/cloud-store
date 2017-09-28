@@ -36,8 +36,8 @@ import java.util.Optional;
  * <p>
  * @see DownloadOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
- * @see CloudStoreClient#download()
- * @see CloudStoreClient#downloadDirectory()
+ * @see CloudStoreClient#download(DownloadOptions)
+ * @see CloudStoreClient#downloadDirectory(DownloadOptions)
  * @see OptionsBuilderFactory#newDownloadOptionsBuilder()
  */
 public class DownloadOptions

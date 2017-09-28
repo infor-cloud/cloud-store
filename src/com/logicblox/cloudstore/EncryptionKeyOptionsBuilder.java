@@ -26,8 +26,8 @@ package com.logicblox.cloudstore;
  * <p>
  * @see EncryptionKeyOptions
  * @see CloudStoreClient#getOptionsBuilderFactory()
- * @see CloudStoreClient#addEncryptionKey()
- * @see CloudStoreClient#removeEncryptionKey()
+ * @see CloudStoreClient#addEncryptionKey(EncryptionKeyOptions)
+ * @see CloudStoreClient#removeEncryptionKey(EncryptionKeyOptions)
  * @see OptionsBuilderFactory#newEncryptionKeyOptionsBuilder()
  */
 public class EncryptionKeyOptionsBuilder

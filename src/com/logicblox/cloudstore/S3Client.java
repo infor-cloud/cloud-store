@@ -90,8 +90,7 @@ public class S3Client
    *
    * @param s3Client Low-level AWS S3 client responsible for authentication, proxying and HTTP
    *                 requests
-   * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService, *
-   * ListeningScheduledExecutorService, * KeyProvider)
+   * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService, ListeningScheduledExecutorService, KeyProvider)
    */
   public S3Client(AmazonS3Client s3Client)
   {
@@ -108,8 +107,7 @@ public class S3Client
    * @param keyProvider The provider of key-pairs used to encrypt/decrypt files during
    *                    upload/download.
    * @see S3Client#S3Client(AmazonS3Client)
-   * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService, *
-   * ListeningScheduledExecutorService, * KeyProvider)
+   * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService, ListeningScheduledExecutorService, KeyProvider)
    */
   public S3Client(AmazonS3Client s3Client, KeyProvider keyProvider)
   {
@@ -129,8 +127,7 @@ public class S3Client
    * @param keyProvider The provider of key-pairs used to encrypt/decrypt files during
    *                    upload/download.
    * @see S3Client#S3Client(AmazonS3Client)
-   * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService, *
-   * ListeningScheduledExecutorService, * KeyProvider)
+   * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService, ListeningScheduledExecutorService, KeyProvider)
    */
   public S3Client(
     AWSCredentialsProvider credentials, ListeningExecutorService s3Executor,

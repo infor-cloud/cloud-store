@@ -40,8 +40,8 @@ import java.util.Optional;
  * <p>
  * @see UploadOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
- * @see CloudStoreClient#upload()
- * @see CloudStoreClient#uploadDirectory()
+ * @see CloudStoreClient#upload(UploadOptions)
+ * @see CloudStoreClient#uploadDirectory(UploadOptions)
  * @see OptionsBuilderFactory#newUploadOptionsBuilder()
  */
 public class UploadOptions

@@ -28,8 +28,8 @@ import java.io.File;
  * <p>
  * @see UploadOptions
  * @see CloudStoreClient#getOptionsBuilderFactory()
- * @see CloudStoreClient#upload()
- * @see CloudStoreClient#uploadDirectory()
+ * @see CloudStoreClient#upload(UploadOptions)
+ * @see CloudStoreClient#uploadDirectory(UploadOptions)
  * @see OptionsBuilderFactory#newUploadOptionsBuilder()
  */
 public class UploadOptionsBuilder

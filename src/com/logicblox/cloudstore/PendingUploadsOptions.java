@@ -29,11 +29,11 @@ import java.util.Optional;
  * {@code PendingUploadsOptions} objects are meant to be built by {@code
  * PendingUploadsOptionsBuilder}. This class provides only public accessor methods.
  * <p>
- * @see PendingUploadingOptionsBuilder
+ * @see PendingUploadsOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
- * @see CloudStoreClient#listPendingUploads()
- * @see CloudStoreClient#abortPendingUploads()
- * @see OptionsBuilderFactory#newPendingUploadingOptionsBuilder()
+ * @see CloudStoreClient#listPendingUploads(PendingUploadsOptions)
+ * @see CloudStoreClient#abortPendingUploads(PendingUploadsOptions)
+ * @see OptionsBuilderFactory#newPendingUploadsOptionsBuilder()
  */
 public class PendingUploadsOptions
   extends CommandOptions

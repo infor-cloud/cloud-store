@@ -25,15 +25,18 @@ package com.logicblox.cloudstore;
 public interface AclHandler
 {
   /**
-   * Return true if the specified {@code cannedAcl} is a valid known ACL name
-   * for a cloud store service.
+   * Check validity of a canned access control list name.
    *
    * @param cannedAcl Name of an access control list to check for validity
+   * @return Returns true if the specified {@code cannedAcl} is a valid known ACL name
+   * for a cloud store service.
    */
   boolean isCannedAclValid(String cannedAcl);
 
   /**
-   * Return the name of the default access control list used by a store service.
+   * Get the name of the default access control list used by a store service.
+   *
+   * @return Returns default access control list name.
    */
   String getDefaultAcl();
 }

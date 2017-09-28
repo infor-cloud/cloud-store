@@ -33,8 +33,8 @@ import java.util.Optional;
  * <p>
  * @see CopyOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
- * @see CloudStoreClient#copy()
- * @see CloudStoreClient#copyToDir()
+ * @see CloudStoreClient#copy(CopyOptions)
+ * @see CloudStoreClient#copyToDir(CopyOptions)
  * @see OptionsBuilderFactory#newCopyOptionsBuilder()
  */
 public class CopyOptions
@@ -171,7 +171,7 @@ public class CopyOptions
   }
 
   /**
-   * Return an optional {@link OverallprogressListenerFactory progress listener} used to
+   * Return an optional {@link OverallProgressListenerFactory progress listener} used to
    * report progress as files are copied.
    */
   public Optional<OverallProgressListenerFactory> getOverallProgressListenerFactory()

@@ -24,7 +24,7 @@ package com.logicblox.cloudstore;
  * <p>
  * @see ListOptions
  * @see CloudStoreClient#getOptionsBuilderFactory()
- * @see CloudStoreClient#listObjects()
+ * @see CloudStoreClient#listObjects(ListOptions)
  * @see OptionsBuilderFactory#newListOptionsBuilder()
  */
 public class ListOptionsBuilder

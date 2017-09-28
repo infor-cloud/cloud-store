@@ -28,8 +28,8 @@ import java.io.File;
  * <p>
  * @see DownloadOptions
  * @see CloudStoreClient#getOptionsBuilderFactory()
- * @see CloudStoreClient#download()
- * @see CloudStoreClient#downloadDirectory()
+ * @see CloudStoreClient#download(DownloadOptions)
+ * @see CloudStoreClient#downloadDirectory(DownloadOptions)
  * @see OptionsBuilderFactory#newDownloadOptionsBuilder()
  */
 public class DownloadOptionsBuilder

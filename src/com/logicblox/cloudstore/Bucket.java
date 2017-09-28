@@ -31,6 +31,10 @@ public class Bucket
 
   /**
    * Create a new bucket.
+   *
+   * @param name Name of a bucket.
+   * @param creationDate Date the bucket was created
+   * @param owner Owner of the bucket
    */
   public Bucket(String name, Date creationDate, Owner owner)
   {
@@ -41,7 +45,9 @@ public class Bucket
 
 
   /**
-   * Return this bucket's name.
+   * Get this bucket's name.
+   *
+   * @return Returns bucket name.
    */
   public String getName()
   {
@@ -50,7 +56,9 @@ public class Bucket
 
 
   /**
-   * Return the date this bucket was created.
+   * Get the date this bucket was created.
+   *
+   * @return Returns bucket creating date.
    */
   public Date getCreationDate()
   {
@@ -58,7 +66,9 @@ public class Bucket
   }
 
   /**
-   * Return information about the bucket's owner.
+   * Get information about the bucket's owner.
+   *
+   * @return Returns the bucket owner.
    */
   public Owner getOwner()
   {

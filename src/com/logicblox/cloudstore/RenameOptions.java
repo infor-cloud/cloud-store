@@ -30,8 +30,8 @@ import java.util.Optional;
  * <p>
  * @see RenameOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
- * @see CloudStoreClient#rename()
- * @see CloudStoreClient#renameDirectory()
+ * @see CloudStoreClient#rename(RenameOptions)
+ * @see CloudStoreClient#renameDirectory(RenameOptions)
  * @see OptionsBuilderFactory#newRenameOptionsBuilder()
  */
 public class RenameOptions

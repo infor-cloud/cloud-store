@@ -27,8 +27,8 @@ import java.util.Map;
  * <p>
  * @see CopyOptions
  * @see CloudStoreClient#getOptionsBuilderFactory()
- * @see CloudStoreClient#copy()
- * @see CloudStoreClient#copyToDir()
+ * @see CloudStoreClient#copy(CopyOptions)
+ * @see CloudStoreClient#copyToDir(CopyOptions)
  * @see OptionsBuilderFactory#newCopyOptionsBuilder()
  */
 public class CopyOptionsBuilder

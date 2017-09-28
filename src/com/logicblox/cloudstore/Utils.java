@@ -480,7 +480,7 @@ public class Utils
    * values will be used for other parameters like maximum concurrent connections allowed,
    * encryption key directory, credential providers, and retry behavior.
    *
-   * @param schema Must be either "s3" or "gs" to create an interface to either
+   * @param scheme Must be either "s3" or "gs" to create an interface to either
    *   an AWS S3 or GCS cloud store service, respectively.
    */
   public static CloudStoreClient createCloudStoreClient(String scheme)
@@ -495,7 +495,7 @@ public class Utils
    * used for other parameters like maximum concurrent connections allowed,
    * encryption key directory, credential providers, and retry behavior.
    *
-   * @param schema Must be either "s3" or "gs" to create an interface to either
+   * @param scheme Must be either "s3" or "gs" to create an interface to either
    *   an AWS S3 or GCS cloud store service, respectively.
    * @param endpoint The endpoint URI, i.e. "http://127.0.0.1:9000/", used to connect 
    *   to the cloud store service.  It may be null, in which case the default endpoint 
@@ -514,7 +514,7 @@ public class Utils
    * configuration values for maximum concurrent connections allowed,
    * encryption key directory, credential providers, and retry behavior.
    *
-   * @param schema Must be either "s3" or "gs" to create an interface to either
+   * @param scheme Must be either "s3" or "gs" to create an interface to either
    *   an AWS S3 or GCS cloud store service, respectively.
    * @param endpoint The endpoint URI, i.e. "http://127.0.0.1:9000/", used to connect 
    *   to the cloud store service.  It may be null, in which case the default endpoint 

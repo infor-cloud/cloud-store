@@ -133,7 +133,7 @@ public interface CloudStoreClient
    *
    * @param options Set of options that control the upload operation
    * @return Future containing StoreFile with uploaded file information
-   * @throws IOException
+   * @throws IOException -
    */
   ListenableFuture<StoreFile> upload(UploadOptions options)
     throws IOException;
@@ -159,9 +159,9 @@ public interface CloudStoreClient
    *
    * @param options Set of options that control the upload operation
    * @return Future containing list of StoreFiles with uploaded file information
-   * @throws IOException
-   * @throws ExecutionException
-   * @throws InterruptedException
+   * @throws IOException -
+   * @throws ExecutionException -
+   * @throws InterruptedException -
    */
   ListenableFuture<List<StoreFile>> uploadDirectory(UploadOptions options)
     throws IOException, ExecutionException, InterruptedException;
@@ -173,21 +173,21 @@ public interface CloudStoreClient
    * {@link StoreFile} with metadata about the deleted file.  If a file matching the
    * options is not found, an exception will be thrown.
    *
-   * @param opts DeleteOptions that specify what to delete
+   * @param options DeleteOptions that specify what to delete
    * @return Future containing StoreFile with deleted file information
    */
-  ListenableFuture<StoreFile> delete(DeleteOptions opts);
+  ListenableFuture<StoreFile> delete(DeleteOptions options);
 
   /**
    * Delete a set of files from a cloud store service, where all the files match
    * a particular prefix.
    *
-   * @param opts DeleteOptions that specify what to delete
+   * @param options DeleteOptions that specify what to delete
    * @return Future containing list of StoreFiles with deleted file information
-   * @throws ExecutionException
-   * @throws InterruptedException
+   * @throws ExecutionException -
+   * @throws InterruptedException -
    */
-  ListenableFuture<List<StoreFile>> deleteDir(DeleteOptions opts)
+  ListenableFuture<List<StoreFile>> deleteDir(DeleteOptions options)
     throws InterruptedException, ExecutionException;
 
   /** 
@@ -224,7 +224,7 @@ public interface CloudStoreClient
    * <p>
    * If the file's size is bigger than the chunk size used for its upload, multiple
    * concurrent threads will be used to download parts of the file in parallel.  The level
-   * of parallelism is controled by the executor used to create the CloudStoreClient
+   * of parallelism is controlled by the executor used to create the CloudStoreClient
    * interface.  See {@link #getApiExecutor()} and {@link Utils#createCloudStoreClient(String)}.
    * <p>
    * Since a file can be uploaded, updated, and/or copied by tools other than cloud-store,
@@ -238,7 +238,7 @@ public interface CloudStoreClient
    *
    * @param options Set of options controlling the download operation
    * @return Future containing StoreFile with information about downloaded file
-   * @throws IOException
+   * @throws IOException -
    */
   ListenableFuture<StoreFile> download(DownloadOptions options)
     throws IOException;
@@ -264,7 +264,7 @@ public interface CloudStoreClient
    * <p>
    * If any file's size is bigger than the chunk size used for its upload, multiple
    * concurrent threads will be used to download parts of the file in parallel.  The level
-   * of parallelism is controled by the executor used to create the CloudStoreClient
+   * of parallelism is controlled by the executor used to create the CloudStoreClient
    * interface.  See {@link #getApiExecutor()} and {@link Utils#createCloudStoreClient(String)}.
    * <p>
    * Since a file can be uploaded, updated, and/or copied by tools other than cloud-store,
@@ -278,9 +278,9 @@ public interface CloudStoreClient
    *
    * @param options Set of options controlling the download operation
    * @return Future containing list of StoreFiles with information about downloaded files
-   * @throws IOException
-   * @throws ExecutionException
-   * @throws InterruptedException
+   * @throws IOException -
+   * @throws ExecutionException -
+   * @throws InterruptedException -
    */
   ListenableFuture<List<StoreFile>> downloadDirectory(DownloadOptions options)
     throws IOException, ExecutionException, InterruptedException;
@@ -316,9 +316,9 @@ public interface CloudStoreClient
    *
    * @param options Set of options specifying files to copy along with their destination.
    * @return Future containing list of StoreFiles with information about copied files
-   * @throws IOException
-   * @throws ExecutionException
-   * @throws InterruptedException
+   * @throws IOException -
+   * @throws ExecutionException -
+   * @throws InterruptedException -
    */
   ListenableFuture<List<StoreFile>> copyToDir(CopyOptions options)
     throws InterruptedException, ExecutionException, IOException;
@@ -356,9 +356,9 @@ public interface CloudStoreClient
    *
    * @param options Set of parameters specifying what files to copy and their destination prefix.
    * @return Future containing list of StoreFiles with information about renamed files
-   * @throws IOException
-   * @throws ExecutionException
-   * @throws InterruptedException
+   * @throws IOException -
+   * @throws ExecutionException -
+   * @throws InterruptedException -
    */
   ListenableFuture<List<StoreFile>> renameDirectory(RenameOptions options)
     throws InterruptedException, ExecutionException, IOException;
@@ -375,7 +375,7 @@ public interface CloudStoreClient
    * <p>
    * List results are returned in lexicographic order.
    * <p>
-   * If {@code includeIersions} is set in the options, then information about all versions of 
+   * If {@code includeVersions} is set in the options, then information about all versions of
    * the matched files will be included in the results.
    *
    * @param lsOptions Set of options controlling the behavior of the list operation
@@ -430,7 +430,7 @@ public interface CloudStoreClient
    *
    * @param options Set of options specifying the new key and file to apply the key to
    * @return Future containing StoreFile with information on the updated file
-   * @throws IOException
+   * @throws IOException -
    */
   ListenableFuture<StoreFile> addEncryptionKey(EncryptionKeyOptions options)
     throws IOException;
@@ -444,7 +444,7 @@ public interface CloudStoreClient
    *
    * @param options Set of options specifying the key to remove and file to remove it from
    * @return Future containing StoreFile with information on the updated file
-   * @throws IOException
+   * @throws IOException -
    */
   ListenableFuture<StoreFile> removeEncryptionKey(EncryptionKeyOptions options)
     throws IOException;

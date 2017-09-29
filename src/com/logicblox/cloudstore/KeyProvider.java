@@ -35,9 +35,9 @@ public interface KeyProvider
    *
    * @param alias The name of the key pair to search for.
    * @return PrivateKey for the given alias
-   * @throws NoSuchKeyException
+   * @throws NoSuchKeyException -
    */
-  public PrivateKey getPrivateKey(String alias)
+  PrivateKey getPrivateKey(String alias)
     throws NoSuchKeyException;
 
   /**
@@ -46,9 +46,9 @@ public interface KeyProvider
    *
    * @param alias The name of the key pair to search for.
    * @return PublicKey for the given alias
-   * @throws NoSuchKeyException
+   * @throws NoSuchKeyException -
    */
-  public PublicKey getPublicKey(String alias)
+  PublicKey getPublicKey(String alias)
     throws NoSuchKeyException;
 
   /**
@@ -57,8 +57,8 @@ public interface KeyProvider
    *
    * @param alias The name of the key pair to search for.
    * @return Certificate for the given alias
-   * @throws NoSuchKeyException
+   * @throws NoSuchKeyException -
    */
-  public Certificate getCertificate(String alias)
+  Certificate getCertificate(String alias)
     throws NoSuchKeyException;
 }

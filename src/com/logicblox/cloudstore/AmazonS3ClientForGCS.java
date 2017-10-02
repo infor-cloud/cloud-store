@@ -20,7 +20,6 @@ import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Request;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.Signer;
 import com.amazonaws.metrics.RequestMetricCollector;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -32,7 +31,6 @@ public class AmazonS3ClientForGCS
 {
   public AmazonS3ClientForGCS()
   {
-    super();
   }
 
   public AmazonS3ClientForGCS(AWSCredentials awsCredentials)
@@ -43,7 +41,7 @@ public class AmazonS3ClientForGCS
   public AmazonS3ClientForGCS(
     AWSCredentials awsCredentials, ClientConfiguration clientConfiguration)
   {
-    this(new AWSStaticCredentialsProvider(awsCredentials), clientConfiguration);
+    super(awsCredentials, clientConfiguration);
   }
 
   public AmazonS3ClientForGCS(AWSCredentialsProvider credentialsProvider)
@@ -54,7 +52,7 @@ public class AmazonS3ClientForGCS
   public AmazonS3ClientForGCS(
     AWSCredentialsProvider credentialsProvider, ClientConfiguration clientConfiguration)
   {
-    this(credentialsProvider, clientConfiguration, null);
+    super(credentialsProvider, clientConfiguration);
   }
 
   public AmazonS3ClientForGCS(

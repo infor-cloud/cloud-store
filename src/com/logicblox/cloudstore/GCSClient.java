@@ -16,7 +16,7 @@
 
 package com.logicblox.cloudstore;
 
-import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.model.StorageObject;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -59,7 +59,7 @@ public class GCSClient
    * @param keyProvider       Provider of encryption keys
    */
   GCSClient(
-    Storage internalGCSClient, AmazonS3 internalS3Client,
+    Storage internalGCSClient, AmazonS3Client internalS3Client,
     ListeningExecutorService apiExecutor, ListeningScheduledExecutorService internalExecutor,
     KeyProvider keyProvider)
   {
@@ -275,7 +275,7 @@ public class GCSClient
     extends S3Client
   {
     public S3ClientDelegatee(
-      AmazonS3 internalS3Client, ListeningExecutorService apiExecutor,
+      AmazonS3Client internalS3Client, ListeningExecutorService apiExecutor,
       ListeningScheduledExecutorService internalExecutor, KeyProvider keyProvider)
     {
       super(internalS3Client, apiExecutor, internalExecutor, keyProvider);

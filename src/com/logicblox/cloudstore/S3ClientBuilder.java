@@ -16,19 +16,18 @@
 
 package com.logicblox.cloudstore;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 public class S3ClientBuilder
 {
-  private AmazonS3 _client;
+  private AmazonS3Client _client;
   private ListeningExecutorService _apiExecutor;
   private ListeningScheduledExecutorService _internalExecutor;
   private KeyProvider _keyProvider;
 
-  public S3ClientBuilder setInternalS3Client(AmazonS3 s3Client)
+  public S3ClientBuilder setInternalS3Client(AmazonS3Client s3Client)
   {
     _client = s3Client;
     return this;
@@ -56,7 +55,7 @@ public class S3ClientBuilder
   {
     if(_client == null)
     {
-      setInternalS3Client(AmazonS3ClientBuilder.defaultClient());
+      setInternalS3Client(new AmazonS3Client());
     }
     if(_apiExecutor == null)
     {

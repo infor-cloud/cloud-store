@@ -17,8 +17,7 @@
 package com.logicblox.cloudstore;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
@@ -63,7 +62,7 @@ public class S3Client
   /**
    * Low-level AWS S3 client responsible for authentication, proxying and HTTP requests.
    */
-  AmazonS3 _client;
+  AmazonS3Client _client;
 
   /**
    * The provider of key-pairs used to encrypt/decrypt files during upload/download.
@@ -91,10 +90,9 @@ public class S3Client
    *
    * @param s3Client Low-level AWS S3 client responsible for authentication, proxying and HTTP
    *                 requests
-   * @see S3Client#S3Client(AmazonS3, ListeningExecutorService,
-   * ListeningScheduledExecutorService, KeyProvider)
+   * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService, ListeningScheduledExecutorService, KeyProvider)
    */
-  public S3Client(AmazonS3 s3Client)
+  public S3Client(AmazonS3Client s3Client)
   {
     this(s3Client, Utils.createApiExecutor(10), Utils.createInternalExecutor(50),
       Utils.createKeyProvider(Utils.getDefaultKeyDirectory()));
@@ -108,10 +106,10 @@ public class S3Client
    *                    requests
    * @param keyProvider The provider of key-pairs used to encrypt/decrypt files during
    *                    upload/download.
-   * @see S3Client#S3Client(AmazonS3)
-   * @see S3Client#S3Client(AmazonS3, ListeningExecutorService, ListeningScheduledExecutorService, KeyProvider)
+   * @see S3Client#S3Client(AmazonS3Client)
+   * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService, ListeningScheduledExecutorService, KeyProvider)
    */
-  public S3Client(AmazonS3 s3Client, KeyProvider keyProvider)
+  public S3Client(AmazonS3Client s3Client, KeyProvider keyProvider)
   {
     this(s3Client, Utils.createApiExecutor(10), Utils.createInternalExecutor(50), keyProvider);
     this.setRetryCount(10);
@@ -128,8 +126,8 @@ public class S3Client
    *                    tasks include file I/O, file encryption, file splitting and error handling.
    * @param keyProvider The provider of key-pairs used to encrypt/decrypt files during
    *                    upload/download.
-   * @see S3Client#S3Client(AmazonS3)
-   * @see S3Client#S3Client(AmazonS3, ListeningExecutorService, ListeningScheduledExecutorService, KeyProvider)
+   * @see S3Client#S3Client(AmazonS3Client)
+   * @see S3Client#S3Client(AmazonS3Client, ListeningExecutorService, ListeningScheduledExecutorService, KeyProvider)
    */
   public S3Client(
     AWSCredentialsProvider credentials, ListeningExecutorService s3Executor,
@@ -141,11 +139,11 @@ public class S3Client
     _credentials = credentials;
     if(_credentials != null)
     {
-      _client = AmazonS3ClientBuilder.standard().withCredentials(_credentials).build();
+      _client = new AmazonS3Client(_credentials);
     }
     else
     {
-      _client = AmazonS3ClientBuilder.defaultClient();
+      _client = new AmazonS3Client();
     }
   }
 
@@ -161,10 +159,10 @@ public class S3Client
    *                    tasks include file I/O, file encryption, file splitting and error handling.
    * @param keyProvider The provider of key-pairs used to encrypt/decrypt files during
    *                    upload/download.
-   * @see S3Client#S3Client(AmazonS3)
+   * @see S3Client#S3Client(AmazonS3Client)
    */
   public S3Client(
-    AmazonS3 s3Client, ListeningExecutorService s3Executor,
+    AmazonS3Client s3Client, ListeningExecutorService s3Executor,
     ListeningScheduledExecutorService executor, KeyProvider keyProvider)
   {
     _executor = executor;
@@ -264,7 +262,7 @@ public class S3Client
   }
 
   // returns null if the store does not support acl (like minio)
-  static AccessControlList getObjectAcl(AmazonS3 client, String bucket, String key)
+  static AccessControlList getObjectAcl(AmazonS3Client client, String bucket, String key)
     throws AmazonS3Exception
   {
     AccessControlList acl = null;
@@ -496,6 +494,15 @@ public class S3Client
   @Override
   public void shutdown()
   {
+    try
+    {
+      _client.shutdown();
+    }
+    catch(Exception exc)
+    {
+      exc.printStackTrace();
+    }
+
     try
     {
       _s3Executor.shutdown();

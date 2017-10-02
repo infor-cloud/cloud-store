@@ -496,7 +496,6 @@ public class S3Client
   @Override
   public void shutdown()
   {
-    _client.finalize();
     try
     {
       _s3Executor.shutdown();

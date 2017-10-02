@@ -30,7 +30,7 @@ package com.logicblox.cloudstore;
  * @see DeleteOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#delete(DeleteOptions)
- * @see CloudStoreClient#deleteDir(DeleteOptions)
+ * @see CloudStoreClient#deleteDirectory(DeleteOptions)
  * @see OptionsBuilderFactory#newDeleteOptionsBuilder()
  */
 public class DeleteOptions

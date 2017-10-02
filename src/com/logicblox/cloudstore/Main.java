@@ -462,7 +462,7 @@ class Main
           // (object URI is empty), then source URI acts as a prefix and this
           // operation will copy all keys that would be returned by the list
           // operation on the same prefix.
-          client.copyToDir(options).get();
+          client.copyDirectory(options).get();
         }
         else
         {
@@ -745,7 +745,7 @@ class Main
       {
         if(getObjectKey().endsWith("/"))
         {
-          client.deleteDir(opts).get();
+          client.deleteDirectory(opts).get();
         }
         else
         {

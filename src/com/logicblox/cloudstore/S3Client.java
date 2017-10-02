@@ -321,7 +321,7 @@ public class S3Client
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> deleteDir(DeleteOptions options)
+  public ListenableFuture<List<StoreFile>> deleteDirectory(DeleteOptions options)
     throws InterruptedException, ExecutionException
   {
     DeleteDirCommand cmd = new DeleteDirCommand(options);
@@ -385,7 +385,7 @@ public class S3Client
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> copyToDir(CopyOptions options)
+  public ListenableFuture<List<StoreFile>> copyDirectory(CopyOptions options)
     throws InterruptedException, ExecutionException, IOException
   {
     S3CopyDirCommand cmd = new S3CopyDirCommand(options);

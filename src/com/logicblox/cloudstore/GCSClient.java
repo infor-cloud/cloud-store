@@ -169,10 +169,10 @@ public class GCSClient
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> deleteDir(DeleteOptions opts)
+  public ListenableFuture<List<StoreFile>> deleteDirectory(DeleteOptions opts)
     throws InterruptedException, ExecutionException
   {
-    return _s3Client.deleteDir(opts);
+    return _s3Client.deleteDirectory(opts);
   }
 
   @Override
@@ -214,10 +214,10 @@ public class GCSClient
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> copyToDir(CopyOptions options)
+  public ListenableFuture<List<StoreFile>> copyDirectory(CopyOptions options)
     throws InterruptedException, ExecutionException, IOException
   {
-    return _s3Client.copyToDir(options);
+    return _s3Client.copyDirectory(options);
   }
 
   @Override
@@ -335,7 +335,7 @@ public class GCSClient
     }
 
     @Override
-    public ListenableFuture<List<StoreFile>> copyToDir(CopyOptions options)
+    public ListenableFuture<List<StoreFile>> copyDirectory(CopyOptions options)
       throws IOException
     {
       GCSCopyDirCommand cmd = new GCSCopyDirCommand(options);

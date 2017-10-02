@@ -100,10 +100,10 @@ class RenameDirectoryCommand
       .setCannedAcl(_options.getCannedAcl().orElse(null))
       .createOptions();
 
-    // hack -- exceptions are a bit of a mess.  copyToDir throws all sorts of stuff that 
+    // hack -- exceptions are a bit of a mess.  copyDirectory throws all sorts of stuff that
     //         should be collected into an ExecutionException?
     ListenableFuture<List<StoreFile>> copyFuture = null;
-    copyFuture = _client.copyToDir(copyOpts);
+    copyFuture = _client.copyDirectory(copyOpts);
 
     return Futures.transform(copyFuture, new AsyncFunction<List<StoreFile>, List<StoreFile>>()
     {
@@ -119,7 +119,7 @@ class RenameDirectoryCommand
           .createOptions();
 
         // need to return list of dest files
-        return Futures.transform(_client.deleteDir(delOpts),
+        return Futures.transform(_client.deleteDirectory(delOpts),
           new Function<List<StoreFile>, List<StoreFile>>()
           {
             public List<StoreFile> apply(List<StoreFile> deletedFiles)

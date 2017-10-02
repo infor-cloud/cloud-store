@@ -34,7 +34,7 @@ import java.util.Optional;
  * @see CopyOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#copy(CopyOptions)
- * @see CloudStoreClient#copyToDir(CopyOptions)
+ * @see CloudStoreClient#copyDirectory(CopyOptions)
  * @see OptionsBuilderFactory#newCopyOptionsBuilder()
  */
 public class CopyOptions

@@ -187,7 +187,7 @@ public interface CloudStoreClient
    * @throws ExecutionException -
    * @throws InterruptedException -
    */
-  ListenableFuture<List<StoreFile>> deleteDir(DeleteOptions options)
+  ListenableFuture<List<StoreFile>> deleteDirectory(DeleteOptions options)
     throws InterruptedException, ExecutionException;
 
   /** 
@@ -320,7 +320,7 @@ public interface CloudStoreClient
    * @throws ExecutionException -
    * @throws InterruptedException -
    */
-  ListenableFuture<List<StoreFile>> copyToDir(CopyOptions options)
+  ListenableFuture<List<StoreFile>> copyDirectory(CopyOptions options)
     throws InterruptedException, ExecutionException, IOException;
 
   /**

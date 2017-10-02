@@ -17,7 +17,7 @@
 package com.logicblox.cloudstore;
 
 
-interface ThrowableRetryPolicy
+public interface ThrowableRetryPolicy
 {
   long getDelay(Throwable thrown, int retryCount);
 

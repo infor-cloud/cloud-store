@@ -26,7 +26,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
-class ThrowableRetriableTask<V>
+public class ThrowableRetriableTask<V>
   implements Callable<ListenableFuture<V>>
 {
   private final Callable<ListenableFuture<V>> _callable;

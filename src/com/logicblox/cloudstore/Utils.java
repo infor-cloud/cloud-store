@@ -27,7 +27,8 @@ import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.auth.SystemPropertiesCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -306,7 +307,7 @@ public class Utils
           choices.add(new ProfileCredentialsProvider());
           break;
         case "ec2-metadata-service":
-          choices.add(new InstanceProfileCredentialsProvider());
+          choices.add(InstanceProfileCredentialsProvider.getInstance());
           break;
         default:
           break;
@@ -574,7 +575,8 @@ public class Utils
       ClientConfiguration clientCfg = new ClientConfiguration();
       clientCfg = setProxy(clientCfg);
       AWSCredentialsProvider credsProvider = getCredentialsProviderS3(credentialProviders);
-      AmazonS3Client s3Client = new AmazonS3Client(credsProvider, clientCfg);
+      AmazonS3 s3Client = AmazonS3ClientBuilder.standard().withCredentials(credsProvider)
+        .withClientConfiguration(clientCfg).build();
 
       client = new S3ClientBuilder().setInternalS3Client(s3Client)
         .setApiExecutor(uploadExecutor)

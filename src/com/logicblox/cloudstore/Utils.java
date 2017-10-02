@@ -27,6 +27,7 @@ import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.auth.SystemPropertiesCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -574,7 +575,7 @@ public class Utils
       ClientConfiguration clientCfg = new ClientConfiguration();
       clientCfg = setProxy(clientCfg);
       AWSCredentialsProvider credsProvider = getCredentialsProviderS3(credentialProviders);
-      AmazonS3Client s3Client = new AmazonS3Client(credsProvider, clientCfg);
+      AmazonS3 s3Client = new AmazonS3Client(credsProvider, clientCfg);
 
       client = new S3ClientBuilder().setInternalS3Client(s3Client)
         .setApiExecutor(uploadExecutor)

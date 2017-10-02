@@ -16,7 +16,7 @@
 
 package com.logicblox.cloudstore;
 
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.Headers;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
@@ -28,10 +28,10 @@ import java.util.concurrent.Callable;
 
 class S3MultipartCopyFactory
 {
-  private AmazonS3Client _client;
+  private AmazonS3 _client;
   private ListeningExecutorService _executor;
 
-  public S3MultipartCopyFactory(AmazonS3Client client, ListeningExecutorService executor)
+  public S3MultipartCopyFactory(AmazonS3 client, ListeningExecutorService executor)
   {
     if(client == null)
     {

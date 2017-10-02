@@ -16,7 +16,7 @@
 
 package com.logicblox.cloudstore;
 
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpBackOffIOExceptionHandler;
@@ -48,7 +48,7 @@ import java.util.Collections;
 public class GCSClientBuilder
 {
   private Storage _gcsClient;
-  private AmazonS3Client _s3Client;
+  private AmazonS3 _s3Client;
   private ListeningExecutorService _apiExecutor;
   private ListeningScheduledExecutorService _internalExecutor;
   private KeyProvider _keyProvider;
@@ -81,7 +81,7 @@ public class GCSClientBuilder
    * @param s3Client Internal S3 client used for talking to GCS interoperable XML API
    * @return this builder
    */
-  public GCSClientBuilder setInternalS3Client(AmazonS3Client s3Client)
+  public GCSClientBuilder setInternalS3Client(AmazonS3 s3Client)
   {
     _s3Client = s3Client;
     return this;

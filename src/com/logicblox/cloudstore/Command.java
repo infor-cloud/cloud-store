@@ -17,7 +17,7 @@
 package com.logicblox.cloudstore;
 
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3;
 import com.google.api.services.storage.Storage;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -51,7 +51,7 @@ class Command
   protected String scheme;
   protected CloudStoreClient _client;
 
-  private AmazonS3Client _s3Client = null;
+  private AmazonS3 _s3Client = null;
 
   private Storage _gcsClient = null;
 
@@ -96,12 +96,12 @@ class Command
     this.scheme = scheme;
   }
 
-  public void setS3Client(AmazonS3Client client)
+  public void setS3Client(AmazonS3 client)
   {
     _s3Client = client;
   }
 
-  protected AmazonS3Client getS3Client()
+  protected AmazonS3 getS3Client()
   {
     return _s3Client;
   }

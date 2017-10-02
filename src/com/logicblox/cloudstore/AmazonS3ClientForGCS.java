@@ -31,6 +31,7 @@ public class AmazonS3ClientForGCS
 {
   public AmazonS3ClientForGCS()
   {
+    super();
   }
 
   public AmazonS3ClientForGCS(AWSCredentials awsCredentials)

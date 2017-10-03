@@ -191,16 +191,16 @@ public class CopyTests
       CopyOptions copyOpts = _client.getOptionsBuilderFactory()
         .newCopyOptionsBuilder()
         .setSourceBucketName(_testBucket)
-        .setSourceObjectKey(f.getKey())
+        .setSourceObjectKey(f.getObjectKey())
         .setDestinationBucketName(_testBucket)
-        .setDestinationObjectKey(f.getKey() + "-COPY")
+        .setDestinationObjectKey(f.getObjectKey() + "-COPY")
         .createOptions();
       StoreFile copy = _client.copy(copyOpts).get();
       Assert.assertEquals(abortCount, getRetryCount());
 
       // check for the copy
-      String expectedKey = f.getKey() + "-COPY";
-      Assert.assertEquals(expectedKey, copy.getKey());
+      String expectedKey = f.getObjectKey() + "-COPY";
+      Assert.assertEquals(expectedKey, copy.getObjectKey());
       objs = TestUtils.listObjects(_testBucket, rootPrefix);
       Assert.assertEquals(originalCount + 2, objs.size());
       Assert.assertTrue(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
@@ -234,9 +234,9 @@ public class CopyTests
     CopyOptions opts = _client.getOptionsBuilderFactory()
       .newCopyOptionsBuilder()
       .setSourceBucketName(_testBucket)
-      .setSourceObjectKey(f.getKey())
+      .setSourceObjectKey(f.getObjectKey())
       .setDestinationBucketName(_testBucket)
-      .setDestinationObjectKey(f.getKey() + "-COPY")
+      .setDestinationObjectKey(f.getObjectKey() + "-COPY")
       .setDryRun(true)
       .createOptions();
     StoreFile copy = _client.copy(opts).get();
@@ -325,13 +325,13 @@ public class CopyTests
     CopyOptions copyOpts = _client.getOptionsBuilderFactory()
       .newCopyOptionsBuilder()
       .setSourceBucketName(_testBucket)
-      .setSourceObjectKey(f.getKey())
+      .setSourceObjectKey(f.getObjectKey())
       .setDestinationBucketName(_testBucket)
-      .setDestinationObjectKey(f.getKey() + "-COPY")
+      .setDestinationObjectKey(f.getObjectKey() + "-COPY")
       .createOptions();
     StoreFile copy = _client.copy(copyOpts).get();
     String expectedKey = TestUtils.addPrefix("simple-copy/" + toUpload.getName() + "-COPY");
-    Assert.assertEquals(expectedKey, copy.getKey());
+    Assert.assertEquals(expectedKey, copy.getObjectKey());
 
     // check for the copy
     objs = TestUtils.listTestBucketObjects();
@@ -347,9 +347,9 @@ public class CopyTests
     Assert.assertTrue(TestUtils.compareFiles(toUpload, f.getLocalFile()));
 
     // compare metadata
-    Metadata srcMeta = TestUtils.objectExists(Utils.getBucket(src), Utils.getObjectKey(src));
+    Metadata srcMeta = TestUtils.objectExists(Utils.getBucketName(src), Utils.getObjectKey(src));
     Assert.assertNotNull(srcMeta);
-    Metadata destMeta = TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest));
+    Metadata destMeta = TestUtils.objectExists(Utils.getBucketName(dest), Utils.getObjectKey(dest));
     Assert.assertNotNull(destMeta);
 
     Assert.assertEquals(srcMeta.getContentLength(), destMeta.getContentLength());
@@ -396,13 +396,13 @@ public class CopyTests
     CopyOptions copyOpts = _client.getOptionsBuilderFactory()
       .newCopyOptionsBuilder()
       .setSourceBucketName(_testBucket)
-      .setSourceObjectKey(f1.getKey())
+      .setSourceObjectKey(f1.getObjectKey())
       .setDestinationBucketName(_testBucket)
-      .setDestinationObjectKey(f2.getKey())
+      .setDestinationObjectKey(f2.getObjectKey())
       .createOptions();
     StoreFile copy = _client.copy(copyOpts).get();
     String expectedKey = TestUtils.addPrefix("copy-overwrite-file/" + file2.getName());
-    Assert.assertEquals(expectedKey, copy.getKey());
+    Assert.assertEquals(expectedKey, copy.getObjectKey());
 
     // same files should still exist
     objs = TestUtils.listTestBucketObjects();
@@ -475,18 +475,18 @@ public class CopyTests
         CopyOptions copyOpts = _client.getOptionsBuilderFactory()
           .newCopyOptionsBuilder()
           .setSourceBucketName(_testBucket)
-          .setSourceObjectKey(f.getKey())
+          .setSourceObjectKey(f.getObjectKey())
           .setDestinationBucketName(_testBucket)
           .setDestinationObjectKey(expectedKey)
           .createOptions();
         StoreFile copy = _client.copy(copyOpts).get();
-        Assert.assertEquals(expectedKey, copy.getKey());
+        Assert.assertEquals(expectedKey, copy.getObjectKey());
 
         // validate results, dest file should exist and original dir should be the same
         Assert.assertEquals(7 + originalCount, TestUtils.listTestBucketObjects().size());
         URI file = TestUtils.getUri(_testBucket, top.getName(), rootPrefix);
         Assert.assertNotNull(
-          TestUtils.objectExists(Utils.getBucket(file), Utils.getObjectKey(file)));
+          TestUtils.objectExists(Utils.getBucketName(file), Utils.getObjectKey(file)));
         List<StoreFile> objs = TestUtils.listObjects(_testBucket, Utils.getObjectKey(topUri));
         Assert.assertEquals(5, objs.size());
         return;
@@ -550,7 +550,7 @@ public class CopyTests
         CopyOptions copyOpts = _client.getOptionsBuilderFactory()
           .newCopyOptionsBuilder()
           .setSourceBucketName(_testBucket)
-          .setSourceObjectKey(f.getKey())
+          .setSourceObjectKey(f.getObjectKey())
           .setDestinationBucketName(_testBucket)
           .setDestinationObjectKey(expectedKey)
           .createOptions();
@@ -608,9 +608,9 @@ public class CopyTests
     CopyOptions copyOpts = _client.getOptionsBuilderFactory()
       .newCopyOptionsBuilder()
       .setSourceBucketName(_testBucket)
-      .setSourceObjectKey(f.getKey())
+      .setSourceObjectKey(f.getObjectKey())
       .setDestinationBucketName(bucket2)
-      .setDestinationObjectKey(f.getKey())
+      .setDestinationObjectKey(f.getObjectKey())
       .createOptions();
     StoreFile copy = _client.copy(copyOpts).get();
 
@@ -618,20 +618,20 @@ public class CopyTests
     List<StoreFile> copyObjs = TestUtils.listTestBucketObjects();
     Assert.assertEquals(objs.size(), copyObjs.size());
     for(StoreFile sf : copyObjs)
-      Assert.assertTrue(TestUtils.findObject(objs, sf.getKey()));
+      Assert.assertTrue(TestUtils.findObject(objs, sf.getObjectKey()));
 
     // check for the copy in 2nd bucket
     copyObjs = TestUtils.listObjects(bucket2, rootPrefix);
     Assert.assertEquals(1, copyObjs.size());
-    Assert.assertTrue(TestUtils.findObject(copyObjs, f.getKey()));
+    Assert.assertTrue(TestUtils.findObject(copyObjs, f.getObjectKey()));
 
     // download and compare copy
     File dlTemp = TestUtils.createTmpFile();
-    URI src = new URI(TestUtils.getService() + "://" + bucket2 + "/" + f.getKey());
+    URI src = new URI(TestUtils.getService() + "://" + bucket2 + "/" + f.getObjectKey());
     DownloadOptions dlOpts = _client.getOptionsBuilderFactory()
       .newDownloadOptionsBuilder()
       .setFile(dlTemp)
-      .setBucketName(Utils.getBucket(src))
+      .setBucketName(Utils.getBucketName(src))
       .setObjectKey(Utils.getObjectKey(src))
       .setRecursive(false)
       .setOverwrite(true)

@@ -117,7 +117,7 @@ class GCSCopyCommand
   private StoreFile createStoreFile(StorageObject obj, boolean includeVersion)
   {
     StoreFile f = new StoreFile();
-    f.setKey(obj.getName());
+    f.setObjectKey(obj.getName());
     f.setETag(obj.getEtag());
     f.setBucketName(obj.getBucket());
     f.setSize(obj.getSize().longValue());

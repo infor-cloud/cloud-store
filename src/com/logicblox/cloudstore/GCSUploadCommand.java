@@ -154,7 +154,7 @@ class GCSUploadCommand
         f.setLocalFile(file);
         f.setETag(etag);
         f.setBucketName(_bucketName);
-        f.setKey(_objectKey);
+        f.setObjectKey(_objectKey);
         return f;
       }
     });
@@ -218,7 +218,7 @@ class GCSUploadCommand
     if(_progressListenerFactory != null)
     {
       opl = _progressListenerFactory.create(
-        new ProgressOptionsBuilder().setObjectUri(getUri(upload.getBucket(), upload.getKey()))
+        new ProgressOptionsBuilder().setObjectUri(getUri(upload.getBucketName(), upload.getObjectKey()))
           .setOperation("upload")
           .setFileSizeInBytes(fileLength)
           .createProgressOptions());

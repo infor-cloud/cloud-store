@@ -67,7 +67,7 @@ class S3CopyCommand
           f.setLocalFile(null);
           f.setETag(etag);
           f.setBucketName(_options.getDestinationBucketName());
-          f.setKey(_options.getDestinationObjectKey());
+          f.setObjectKey(_options.getDestinationObjectKey());
           return f;
         }
       });

@@ -78,7 +78,7 @@ public class DeleteTests
     // delete the file
     DeleteOptions opts = _client.getOptionsBuilderFactory()
       .newDeleteOptionsBuilder()
-      .setBucketName(Utils.getBucket(dest))
+      .setBucketName(Utils.getBucketName(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .createOptions();
     try
@@ -144,7 +144,7 @@ public class DeleteTests
         // dryrun the delete and make sure the files still exist
         DeleteOptions opts = _client.getOptionsBuilderFactory()
           .newDeleteOptionsBuilder()
-          .setBucketName(Utils.getBucket(dest))
+          .setBucketName(Utils.getBucketName(dest))
           .setObjectKey(Utils.getObjectKey(dest))
           .setRecursive(true)
           .createOptions();
@@ -205,7 +205,7 @@ public class DeleteTests
     // dryrun the delete and make sure file still exists
     DeleteOptions opts = _client.getOptionsBuilderFactory()
       .newDeleteOptionsBuilder()
-      .setBucketName(Utils.getBucket(dest))
+      .setBucketName(Utils.getBucketName(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .setDryRun(true)
       .createOptions();
@@ -245,7 +245,7 @@ public class DeleteTests
         // dryrun the delete and make sure the files still exist
         DeleteOptions opts = _client.getOptionsBuilderFactory()
           .newDeleteOptionsBuilder()
-          .setBucketName(Utils.getBucket(dest))
+          .setBucketName(Utils.getBucketName(dest))
           .setObjectKey(Utils.getObjectKey(dest))
           .setRecursive(true)
           .setDryRun(true)
@@ -312,7 +312,7 @@ public class DeleteTests
           top.getName() + "/delete-basics-bad-" + System.currentTimeMillis(), rootPrefix);
         DeleteOptions opts = _client.getOptionsBuilderFactory()
           .newDeleteOptionsBuilder()
-          .setBucketName(Utils.getBucket(uri))
+          .setBucketName(Utils.getBucketName(uri))
           .setObjectKey(Utils.getObjectKey(uri))
           .createOptions();
         String msg = null;
@@ -332,7 +332,7 @@ public class DeleteTests
         // non-existent key with force should be ok
         opts = _client.getOptionsBuilderFactory()
           .newDeleteOptionsBuilder()
-          .setBucketName(Utils.getBucket(uri))
+          .setBucketName(Utils.getBucketName(uri))
           .setObjectKey(Utils.getObjectKey(uri))
           .setForceDelete(true)
           .createOptions();
@@ -346,7 +346,7 @@ public class DeleteTests
           top.getName() + "-delete-basics-bad-dir-" + System.currentTimeMillis(), rootPrefix);
         opts = _client.getOptionsBuilderFactory()
           .newDeleteOptionsBuilder()
-          .setBucketName(Utils.getBucket(uri))
+          .setBucketName(Utils.getBucketName(uri))
           .setObjectKey(Utils.getObjectKey(uri))
           .setRecursive(true)
           .createOptions();
@@ -366,7 +366,7 @@ public class DeleteTests
         // non-existent directory with force should be OK
         opts = _client.getOptionsBuilderFactory()
           .newDeleteOptionsBuilder()
-          .setBucketName(Utils.getBucket(uri))
+          .setBucketName(Utils.getBucketName(uri))
           .setObjectKey(Utils.getObjectKey(uri))
           .setRecursive(true)
           .setForceDelete(true)
@@ -379,7 +379,7 @@ public class DeleteTests
         uri = TestUtils.getUri(_testBucket, top, rootPrefix);
         opts = _client.getOptionsBuilderFactory()
           .newDeleteOptionsBuilder()
-          .setBucketName(Utils.getBucket(uri))
+          .setBucketName(Utils.getBucketName(uri))
           .setObjectKey(Utils.getObjectKey(uri))
           .setRecursive(false)
           .createOptions();
@@ -392,19 +392,19 @@ public class DeleteTests
           rootPrefix);
         opts = _client.getOptionsBuilderFactory()
           .newDeleteOptionsBuilder()
-          .setBucketName(Utils.getBucket(uri))
+          .setBucketName(Utils.getBucketName(uri))
           .setObjectKey(Utils.getObjectKey(uri))
           .createOptions();
         f = _client.delete(opts).get();
         Assert.assertNotNull(f);
         Assert.assertEquals(uploadCount - 3, TestUtils.listObjects(_testBucket, rootPrefix).size());
-        Assert.assertNull(TestUtils.objectExists(Utils.getBucket(uri), Utils.getObjectKey(uri)));
+        Assert.assertNull(TestUtils.objectExists(Utils.getBucketName(uri), Utils.getObjectKey(uri)));
 
         // recursively delete the rest of the files (should just be two left by now)
         uri = TestUtils.getUri(_testBucket, top, rootPrefix);
         opts = _client.getOptionsBuilderFactory()
           .newDeleteOptionsBuilder()
-          .setBucketName(Utils.getBucket(uri))
+          .setBucketName(Utils.getBucketName(uri))
           .setObjectKey(Utils.getObjectKey(uri))
           .setRecursive(true)
           .createOptions();

@@ -44,7 +44,7 @@ class S3ObjectMetadata
     _meta = meta;
   }
 
-  public String getBucket()
+  public String getBucketName()
   {
     return _bucketName;
   }

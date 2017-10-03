@@ -96,7 +96,7 @@ public class UploadDownloadTests
     UploadOptions opts = _client.getOptionsBuilderFactory()
       .newUploadOptionsBuilder()
       .setFile(toUpload)
-      .setBucketName(Utils.getBucket(dest))
+      .setBucketName(Utils.getBucketName(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .setDryRun(true)
       .createOptions();
@@ -131,7 +131,7 @@ public class UploadDownloadTests
         UploadOptions opts = _client.getOptionsBuilderFactory()
           .newUploadOptionsBuilder()
           .setFile(top)
-          .setBucketName(Utils.getBucket(dest))
+          .setBucketName(Utils.getBucketName(dest))
           .setObjectKey(Utils.getObjectKey(dest))
           .setDryRun(true)
           .createOptions();
@@ -172,7 +172,7 @@ public class UploadDownloadTests
     DownloadOptions opts = _client.getOptionsBuilderFactory()
       .newDownloadOptionsBuilder()
       .setFile(dlTemp)
-      .setBucketName(Utils.getBucket(src))
+      .setBucketName(Utils.getBucketName(src))
       .setObjectKey(Utils.getObjectKey(src))
       .setRecursive(false)
       .setOverwrite(true)
@@ -206,7 +206,7 @@ public class UploadDownloadTests
     DownloadOptions opts = _client.getOptionsBuilderFactory()
       .newDownloadOptionsBuilder()
       .setFile(dlDir)
-      .setBucketName(Utils.getBucket(src))
+      .setBucketName(Utils.getBucketName(src))
       .setObjectKey(Utils.getObjectKey(src))
       .setRecursive(true)
       .setOverwrite(true)
@@ -235,17 +235,17 @@ public class UploadDownloadTests
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     StoreFile f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
-    Assert.assertNotNull(TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest)));
+    Assert.assertNotNull(TestUtils.objectExists(Utils.getBucketName(dest), Utils.getObjectKey(dest)));
 
     // check for missing file key
     URI src = TestUtils.getUri(_testBucket, toUpload,
       rootPrefix + "-missing-" + System.currentTimeMillis());
-    Assert.assertNull(TestUtils.objectExists(Utils.getBucket(src), Utils.getObjectKey(src)));
+    Assert.assertNull(TestUtils.objectExists(Utils.getBucketName(src), Utils.getObjectKey(src)));
 
     // bad bucket should fail
     src = TestUtils.getUri(_testBucket + "-missing-" + System.currentTimeMillis(), toUpload,
       rootPrefix);
-    Assert.assertNull(TestUtils.objectExists(Utils.getBucket(src), Utils.getObjectKey(src)));
+    Assert.assertNull(TestUtils.objectExists(Utils.getBucketName(src), Utils.getObjectKey(src)));
   }
 
 
@@ -276,13 +276,13 @@ public class UploadDownloadTests
     Assert.assertTrue(TestUtils.compareFiles(toUpload, f.getLocalFile()));
 
     // test a few other misc cloud-store functions
-    Assert.assertNotNull(TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest)));
+    Assert.assertNotNull(TestUtils.objectExists(Utils.getBucketName(dest), Utils.getObjectKey(dest)));
     Assert.assertNotNull(TestUtils.objectExists(_testBucket, key));
     Assert.assertEquals(dest.toString(),
       Utils.getURI(_client.getScheme(), _testBucket, key).toString());
 
     Assert.assertNotNull(TestUtils.deleteObject(dest));
-    Assert.assertNull(TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest)));
+    Assert.assertNull(TestUtils.objectExists(Utils.getBucketName(dest), Utils.getObjectKey(dest)));
   }
 
 
@@ -313,7 +313,7 @@ public class UploadDownloadTests
       UploadOptions upOpts = _client.getOptionsBuilderFactory()
         .newUploadOptionsBuilder()
         .setFile(toUpload)
-        .setBucketName(Utils.getBucket(dest))
+        .setBucketName(Utils.getBucketName(dest))
         .setObjectKey(Utils.getObjectKey(dest))
         .setChunkSize(chunkSize)
         .createOptions();
@@ -374,7 +374,7 @@ public class UploadDownloadTests
       UploadOptions upOpts = _client.getOptionsBuilderFactory()
         .newUploadOptionsBuilder()
         .setFile(toUpload)
-        .setBucketName(Utils.getBucket(dest))
+        .setBucketName(Utils.getBucketName(dest))
         .setObjectKey(Utils.getObjectKey(dest))
         .setChunkSize(chunkSize)
         .createOptions();
@@ -392,7 +392,7 @@ public class UploadDownloadTests
       DownloadOptions dlOpts = _client.getOptionsBuilderFactory()
         .newDownloadOptionsBuilder()
         .setFile(dlTemp)
-        .setBucketName(Utils.getBucket(dest))
+        .setBucketName(Utils.getBucketName(dest))
         .setObjectKey(Utils.getObjectKey(dest))
         .setRecursive(false)
         .setOverwrite(true)
@@ -426,7 +426,7 @@ public class UploadDownloadTests
     Assert.assertNotNull(f);
     Assert.assertEquals(toUpload.getAbsolutePath(), f.getLocalFile().getAbsolutePath());
     Assert.assertNotNull(f.getETag());
-    Assert.assertEquals(Utils.getObjectKey(dest), f.getKey());
+    Assert.assertEquals(Utils.getObjectKey(dest), f.getObjectKey());
     Assert.assertEquals(_testBucket, f.getBucketName());
     //    Assert.assertTrue(f.getVersionId().isPresent());
     // FIXME - this info is not being populated right now
@@ -438,7 +438,7 @@ public class UploadDownloadTests
     List<StoreFile> objs = TestUtils.listTestBucketObjects();
     for(StoreFile o : objs)
     {
-      if(o.getKey().equals(TestUtils.addPrefix(toUpload.getName())))
+      if(o.getObjectKey().equals(TestUtils.addPrefix(toUpload.getName())))
       {
         Assert.assertNull(o.getLocalFile());
         //        Assert.asserTrue(o.getETag() != "");
@@ -452,7 +452,7 @@ public class UploadDownloadTests
       }
     }
 
-    Metadata meta = TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest));
+    Metadata meta = TestUtils.objectExists(Utils.getBucketName(dest), Utils.getObjectKey(dest));
     Assert.assertNotNull(meta.getLastModified());
     Assert.assertEquals(fileSize, meta.getContentLength());
     Assert.assertEquals(fileSize, meta.getInstanceLength());
@@ -477,7 +477,7 @@ public class UploadDownloadTests
     Assert.assertNotNull(f);
     Assert.assertEquals(dlTemp.getAbsolutePath(), f.getLocalFile().getAbsolutePath());
     Assert.assertNotNull(f.getETag());
-    Assert.assertEquals(Utils.getObjectKey(dest), f.getKey());
+    Assert.assertEquals(Utils.getObjectKey(dest), f.getObjectKey());
     Assert.assertEquals(_testBucket, f.getBucketName());
     //    Assert.assertTrue(f.getVersionId().isPresent());
     // FIXME - this info is not being populated right now
@@ -844,7 +844,7 @@ public class UploadDownloadTests
     UploadOptions upOpts = _client.getOptionsBuilderFactory()
       .newUploadOptionsBuilder()
       .setFile(toUpload)
-      .setBucketName(Utils.getBucket(dest))
+      .setBucketName(Utils.getBucketName(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .setOverallProgressListenerFactory(this)
       .setChunkSize(chunkSize)
@@ -865,7 +865,7 @@ public class UploadDownloadTests
     DownloadOptions dlOpts = _client.getOptionsBuilderFactory()
       .newDownloadOptionsBuilder()
       .setFile(dlTemp)
-      .setBucketName(Utils.getBucket(dest))
+      .setBucketName(Utils.getBucketName(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .setRecursive(false)
       .setOverwrite(true)
@@ -902,7 +902,7 @@ public class UploadDownloadTests
     UploadOptions upOpts = _client.getOptionsBuilderFactory()
       .newUploadOptionsBuilder()
       .setFile(toUpload)
-      .setBucketName(Utils.getBucket(dest))
+      .setBucketName(Utils.getBucketName(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .setOverallProgressListenerFactory(this)
       .setChunkSize(chunkSize)
@@ -923,7 +923,7 @@ public class UploadDownloadTests
     DownloadOptions dlOpts = _client.getOptionsBuilderFactory()
       .newDownloadOptionsBuilder()
       .setFile(dlTemp)
-      .setBucketName(Utils.getBucket(dest))
+      .setBucketName(Utils.getBucketName(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .setRecursive(false)
       .setOverwrite(true)

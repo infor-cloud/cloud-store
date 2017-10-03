@@ -82,12 +82,12 @@ class S3MultipartUpload
     return _executor.submit(new AbortCallable());
   }
 
-  public String getBucket()
+  public String getBucketName()
   {
     return _bucketName;
   }
 
-  public String getKey()
+  public String getObjectKey()
   {
     return _objectKey;
   }

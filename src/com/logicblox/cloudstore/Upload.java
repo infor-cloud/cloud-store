@@ -32,9 +32,9 @@ interface Upload
 
   ListenableFuture<Void> abort();
 
-  String getBucket();
+  String getBucketName();
 
-  String getKey();
+  String getObjectKey();
 
   String getId();
 

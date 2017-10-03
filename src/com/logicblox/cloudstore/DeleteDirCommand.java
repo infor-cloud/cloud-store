@@ -48,7 +48,7 @@ class DeleteDirCommand
           List<StoreFile> matches = new ArrayList<StoreFile>();
           for(StoreFile f : potential)
           {
-            if(!f.getKey().endsWith("/"))
+            if(!f.getObjectKey().endsWith("/"))
             {
               matches.add(f);
             }
@@ -82,14 +82,14 @@ class DeleteDirCommand
     {
       if(_options.isDryRun())
       {
-        System.out.println("<DRYRUN> deleting '" + getUri(src.getBucketName(), src.getKey()) + "'");
+        System.out.println("<DRYRUN> deleting '" + getUri(src.getBucketName(), src.getObjectKey()) + "'");
       }
       else
       {
         DeleteOptions opts = _client.getOptionsBuilderFactory()
           .newDeleteOptionsBuilder()
           .setBucketName(src.getBucketName())
-          .setObjectKey(src.getKey())
+          .setObjectKey(src.getObjectKey())
           .createOptions();
         futures.add(_client.delete(opts));
       }

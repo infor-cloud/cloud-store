@@ -154,7 +154,7 @@ class S3UploadCommand
         f.setLocalFile(file);
         f.setETag(etag);
         f.setBucketName(_options.getBucketName());
-        f.setKey(_options.getObjectKey());
+        f.setObjectKey(_options.getObjectKey());
         return f;
       }
     });
@@ -235,7 +235,7 @@ class S3UploadCommand
     if(_progressListenerFactory != null)
     {
       opl = _progressListenerFactory.create(
-        new ProgressOptionsBuilder().setObjectUri(getUri(upload.getBucket(), upload.getKey()))
+        new ProgressOptionsBuilder().setObjectUri(getUri(upload.getBucketName(), upload.getObjectKey()))
           .setOperation("upload")
           .setFileSizeInBytes(fileLength)
           .createProgressOptions());

@@ -132,7 +132,7 @@ public class TestUtils
     }
     else
     {
-      _testBucket = Utils.getBucket(destUri);
+      _testBucket = Utils.getBucketName(destUri);
       _prefix = Utils.getObjectKey(destUri);
       if(!_prefix.endsWith("/"))
       {
@@ -341,7 +341,7 @@ public class TestUtils
     ListOptions lsOpts = builder.createOptions();
     List<StoreFile> objs = _client.listObjects(lsOpts).get();
     for(StoreFile f : objs)
-      deleteObject(bucket, f.getKey());
+      deleteObject(bucket, f.getObjectKey());
   }
 
   public static StoreFile deleteObject(String bucket, String key)
@@ -360,7 +360,7 @@ public class TestUtils
   {
     DeleteOptions opts = _client.getOptionsBuilderFactory()
       .newDeleteOptionsBuilder()
-      .setBucketName(Utils.getBucket(uri))
+      .setBucketName(Utils.getBucketName(uri))
       .setObjectKey(Utils.getObjectKey(uri))
       .createOptions();
     return _client.delete(opts).get();
@@ -370,7 +370,7 @@ public class TestUtils
   {
     for(StoreFile o : objs)
     {
-      if(o.getKey().equals(key))
+      if(o.getObjectKey().equals(key))
       {
         return true;
       }
@@ -415,7 +415,7 @@ public class TestUtils
     UploadOptions upOpts = _client.getOptionsBuilderFactory()
       .newUploadOptionsBuilder()
       .setFile(src)
-      .setBucketName(Utils.getBucket(dest))
+      .setBucketName(Utils.getBucketName(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .createOptions();
     return _client.upload(upOpts).get();
@@ -428,7 +428,7 @@ public class TestUtils
     UploadOptions upOpts = _client.getOptionsBuilderFactory()
       .newUploadOptionsBuilder()
       .setFile(src)
-      .setBucketName(Utils.getBucket(dest))
+      .setBucketName(Utils.getBucketName(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .setEncKey(keyName)
       .createOptions();
@@ -442,7 +442,7 @@ public class TestUtils
     UploadOptions upOpts = _client.getOptionsBuilderFactory()
       .newUploadOptionsBuilder()
       .setFile(src)
-      .setBucketName(Utils.getBucket(dest))
+      .setBucketName(Utils.getBucketName(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .createOptions();
     return _client.uploadDirectory(upOpts).get();
@@ -463,7 +463,7 @@ public class TestUtils
     DownloadOptions dlOpts = _client.getOptionsBuilderFactory()
       .newDownloadOptionsBuilder()
       .setFile(dest)
-      .setBucketName(Utils.getBucket(src))
+      .setBucketName(Utils.getBucketName(src))
       .setObjectKey(Utils.getObjectKey(src))
       .setRecursive(false)
       .setOverwrite(overwrite)
@@ -478,7 +478,7 @@ public class TestUtils
     DownloadOptions dlOpts = _client.getOptionsBuilderFactory()
       .newDownloadOptionsBuilder()
       .setFile(dest)
-      .setBucketName(Utils.getBucket(src))
+      .setBucketName(Utils.getBucketName(src))
       .setObjectKey(Utils.getObjectKey(src))
       .setRecursive(recursive)
       .setOverwrite(true)
@@ -494,7 +494,7 @@ public class TestUtils
     DownloadOptions dlOpts = _client.getOptionsBuilderFactory()
       .newDownloadOptionsBuilder()
       .setFile(dest)
-      .setBucketName(Utils.getBucket(src))
+      .setBucketName(Utils.getBucketName(src))
       .setObjectKey(Utils.getObjectKey(src))
       .setRecursive(recursive)
       .setOverwrite(overwrite)
@@ -932,7 +932,7 @@ public class TestUtils
       client = createClient(_defaultRetryCount);
 
       String key = Utils.getObjectKey(destUri) + "/";
-      String bucket = Utils.getBucket(destUri);
+      String bucket = Utils.getBucketName(destUri);
       ListOptionsBuilder builder = client.getOptionsBuilderFactory()
         .newListOptionsBuilder()
         .setBucketName(bucket)
@@ -944,7 +944,7 @@ public class TestUtils
       boolean found = false;
       for(StoreFile f : matches)
       {
-        if(f.getKey().equals(key))
+        if(f.getObjectKey().equals(key))
         {
           found = true;
           break;

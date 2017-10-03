@@ -129,7 +129,7 @@ class S3ListVersionsCommand
   private StoreFile versionSummaryToStoreFile(S3VersionSummary o)
   {
     StoreFile of = new StoreFile();
-    of.setKey(o.getKey());
+    of.setObjectKey(o.getKey());
     of.setETag(o.getETag());
     of.setBucketName(o.getBucketName());
     if(!o.getVersionId().equals(Constants.NULL_VERSION_ID))
@@ -147,7 +147,7 @@ class S3ListVersionsCommand
   private StoreFile versionsDirStringToStoreFile(String dir, String bucket)
   {
     StoreFile df = new StoreFile();
-    df.setKey(dir);
+    df.setObjectKey(dir);
     df.setBucketName(bucket);
     return df;
   }

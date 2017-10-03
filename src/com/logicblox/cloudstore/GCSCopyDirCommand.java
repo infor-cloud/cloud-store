@@ -88,14 +88,14 @@ class GCSCopyDirCommand
   private void createCopyOp(
     List<ListenableFuture<StoreFile>> futures, final StoreFile src, String baseDirPath)
   {
-    if(!src.getKey().endsWith("/"))
+    if(!src.getObjectKey().endsWith("/"))
     {
-      String destKeyLastPart = src.getKey().substring(baseDirPath.length());
+      String destKeyLastPart = src.getObjectKey().substring(baseDirPath.length());
       final String destKey = _options.getDestinationObjectKey() + destKeyLastPart;
       if(_options.isDryRun())
       {
         System.out.println(
-          "<DRYRUN> copying '" + getUri(_options.getSourceBucketName(), src.getKey()) + "' to '" +
+          "<DRYRUN> copying '" + getUri(_options.getSourceBucketName(), src.getObjectKey()) + "' to '" +
             getUri(_options.getDestinationBucketName(), destKey) + "'");
       }
       else
@@ -128,11 +128,11 @@ class GCSCopyDirCommand
     throws IOException
   {
     // support for testing failures
-    String srcUri = getUri(_options.getSourceBucketName(), src.getKey());
+    String srcUri = getUri(_options.getSourceBucketName(), src.getObjectKey());
     _options.injectAbort(srcUri);
 
     Storage.Objects.Copy cmd = getGCSClient().objects()
-      .copy(_options.getSourceBucketName(), src.getKey(), _options.getDestinationBucketName(),
+      .copy(_options.getSourceBucketName(), src.getObjectKey(), _options.getDestinationBucketName(),
         destKey, null);
     StorageObject resp = cmd.execute();
     return createStoreFile(resp, false);
@@ -156,7 +156,7 @@ class GCSCopyDirCommand
   private StoreFile createStoreFile(StorageObject obj, boolean includeVersion)
   {
     StoreFile f = new StoreFile();
-    f.setKey(obj.getName());
+    f.setObjectKey(obj.getName());
     f.setETag(obj.getEtag());
     f.setBucketName(obj.getBucket());
     f.setSize(obj.getSize().longValue());

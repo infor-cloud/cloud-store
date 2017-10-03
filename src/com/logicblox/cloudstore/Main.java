@@ -188,10 +188,10 @@ class Main
       return Utils.getURI(urls.get(0));
     }
 
-    protected String getBucket()
+    protected String getBucketName()
       throws URISyntaxException
     {
-      return Utils.getBucket(getURI());
+      return Utils.getBucketName(getURI());
     }
 
     protected String getObjectKey()
@@ -242,7 +242,7 @@ class Main
         throw new UsageException("Two object URLs are required");
       }
 
-      return Utils.getBucket(getSourceURI());
+      return Utils.getBucketName(getSourceURI());
     }
 
     protected String getSourceObjectKey()
@@ -266,7 +266,7 @@ class Main
     protected String getDestinationBucket()
       throws URISyntaxException
     {
-      return Utils.getBucket(getDestinationURI());
+      return Utils.getBucketName(getDestinationURI());
     }
 
     protected String getDestinationObjectKey()
@@ -361,7 +361,7 @@ class Main
       throws Exception
     {
       CloudStoreClient client = createCloudStoreClient();
-      String bucket = getBucket();
+      String bucket = getBucketName();
       String key = getObjectKey();
 
       ExistsOptions opts = client.getOptionsBuilderFactory()
@@ -582,14 +582,14 @@ class Main
       if(f.isDirectory() && !getObjectKey().endsWith("/"))
       {
         throw new UsageException(
-          "Destination key " + Utils.getURI(client.getScheme(), getBucket(), getObjectKey()) +
+          "Destination key " + Utils.getURI(client.getScheme(), getBucketName(), getObjectKey()) +
             " should end with '/', since a directory is uploaded.");
       }
 
       UploadOptionsBuilder uob = client.getOptionsBuilderFactory()
         .newUploadOptionsBuilder()
         .setFile(f)
-        .setBucketName(getBucket())
+        .setBucketName(getBucketName())
         .setObjectKey(getObjectKey())
         .setChunkSize(chunkSize)
         .setEncKey(encKeyName)
@@ -645,7 +645,7 @@ class Main
       CloudStoreClient client = createCloudStoreClient();
       ListOptionsBuilder lob = client.getOptionsBuilderFactory()
         .newListOptionsBuilder()
-        .setBucketName(getBucket())
+        .setBucketName(getBucketName())
         .setObjectKey(getObjectKey())
         .setRecursive(recursive)
         .setIncludeVersions(includeVersions)
@@ -661,7 +661,7 @@ class Main
           for(int i = 0; i < listCommandResults.size(); i++)
           {
             StoreFile obj = listCommandResults.get(i);
-            table[i][0] = Utils.getURI(client.getScheme(), obj.getBucketName(), "") + obj.getKey();
+            table[i][0] = Utils.getURI(client.getScheme(), obj.getBucketName(), "") + obj.getObjectKey();
             table[i][1] = obj.getVersionId().orElse("No Version Id");
             if(obj.getTimestamp().isPresent())
             {
@@ -694,7 +694,7 @@ class Main
           for(StoreFile obj : listCommandResults)
           {
             System.out.println(
-              Utils.getURI(client.getScheme(), obj.getBucketName(), "") + obj.getKey());
+              Utils.getURI(client.getScheme(), obj.getBucketName(), "") + obj.getObjectKey());
           }
         }
       }
@@ -734,7 +734,7 @@ class Main
       CloudStoreClient client = createCloudStoreClient();
       DeleteOptions opts = client.getOptionsBuilderFactory()
         .newDeleteOptionsBuilder()
-        .setBucketName(getBucket())
+        .setBucketName(getBucketName())
         .setObjectKey(getObjectKey())
         .setRecursive(recursive)
         .setDryRun(dryRun)
@@ -786,7 +786,7 @@ class Main
       CloudStoreClient client = createCloudStoreClient();
       ListOptionsBuilder lob = client.getOptionsBuilderFactory()
         .newListOptionsBuilder()
-        .setBucketName(getBucket())
+        .setBucketName(getBucketName())
         .setObjectKey(getObjectKey())
         .setRecursive(true)
         .setIncludeVersions(false)
@@ -805,7 +805,7 @@ class Main
           totalSize += obj.getSize().orElse((long) 0);
           if(maxDepth > 0)
           {
-            String current = obj.getKey();
+            String current = obj.getObjectKey();
             String parent = findParent(current);
             long depth = current.split("/").length - baseDepth + 1;
             // add size to the parent Node if parent Node to be displayed
@@ -983,7 +983,7 @@ class Main
       {
         PendingUploadsOptions options = client.getOptionsBuilderFactory()
           .newPendingUploadsOptionsBuilder()
-          .setBucketName(getBucket())
+          .setBucketName(getBucketName())
           .setObjectKey(getObjectKey())
           .createOptions();
         List<Upload> pendingUploads = client.listPendingUploads(options).get();
@@ -992,8 +992,8 @@ class Main
         {
           public int compare(Upload u1, Upload u2)
           {
-            return (u1.getBucket() + '/' + u1.getKey()).toLowerCase()
-              .compareTo((u2.getBucket() + '/' + u2.getKey()).toLowerCase());
+            return (u1.getBucketName() + '/' + u1.getObjectKey()).toLowerCase()
+              .compareTo((u2.getBucketName() + '/' + u2.getObjectKey()).toLowerCase());
           }
         });
 
@@ -1005,7 +1005,7 @@ class Main
         for(int i = 0; i < pendingUploads.size(); i++)
         {
           Upload u = pendingUploads.get(i);
-          table[i][0] = Utils.getURI(client.getScheme(), u.getBucket(), u.getKey()).toString();
+          table[i][0] = Utils.getURI(client.getScheme(), u.getBucketName(), u.getObjectKey()).toString();
           table[i][1] = u.getId();
           table[i][2] = df.format(u.getInitiationDate());
 
@@ -1080,7 +1080,7 @@ class Main
         }
         PendingUploadsOptions options = client.getOptionsBuilderFactory()
           .newPendingUploadsOptionsBuilder()
-          .setBucketName(getBucket())
+          .setBucketName(getBucketName())
           .setObjectKey(getObjectKey())
           .setUploadId(id)
           .setDate(date)
@@ -1166,7 +1166,7 @@ class Main
       DownloadOptionsBuilder dob = client.getOptionsBuilderFactory()
         .newDownloadOptionsBuilder()
         .setFile(output)
-        .setBucketName(getBucket())
+        .setBucketName(getBucketName())
         .setObjectKey(getObjectKey())
         .setRecursive(recursive)
         .setVersion(version)
@@ -1228,7 +1228,7 @@ class Main
         {
           ExistsOptions opts = client.getOptionsBuilderFactory()
             .newExistsOptionsBuilder()
-            .setBucketName(getBucket())
+            .setBucketName(getBucketName())
             .setObjectKey(getObjectKey())
             .createOptions();
 
@@ -1238,7 +1238,7 @@ class Main
           }
           EncryptionKeyOptions options = client.getOptionsBuilderFactory()
             .newEncryptionKeyOptionsBuilder()
-            .setBucketName(getBucket())
+            .setBucketName(getBucketName())
             .setObjectKey(getObjectKey())
             .setEncryptionKey(encKeyName)
             .createOptions();
@@ -1279,7 +1279,7 @@ class Main
         {
           ExistsOptions opts = client.getOptionsBuilderFactory()
             .newExistsOptionsBuilder()
-            .setBucketName(getBucket())
+            .setBucketName(getBucketName())
             .setObjectKey(getObjectKey())
             .createOptions();
 
@@ -1289,7 +1289,7 @@ class Main
           }
           EncryptionKeyOptions options = client.getOptionsBuilderFactory()
             .newEncryptionKeyOptionsBuilder()
-            .setBucketName(getBucket())
+            .setBucketName(getBucketName())
             .setObjectKey(getObjectKey())
             .setEncryptionKey(encKeyName)
             .createOptions();

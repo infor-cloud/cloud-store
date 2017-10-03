@@ -120,7 +120,7 @@ class S3DeleteCommand
           getS3Client().deleteObject(req);
           StoreFile file = new StoreFile();
           file.setBucketName(bucket);
-          file.setKey(key);
+          file.setObjectKey(key);
           return file;
         }
       });

@@ -525,7 +525,7 @@ public class MultiKeyTests
     // remove "s3tool-pubkey-hash" from metadata to simulate files
     // uploaded by older cloud-store versions
     String objKey = rootPrefix + toUpload.getName();
-    Metadata destMeta = TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest));
+    Metadata destMeta = TestUtils.objectExists(Utils.getBucketName(dest), Utils.getObjectKey(dest));
     Assert.assertNotNull(destMeta);
     Map<String, String> destUserMeta = destMeta.getUserMetadata();
     Assert.assertNotNull(destUserMeta);
@@ -534,7 +534,7 @@ public class MultiKeyTests
     TestUtils.updateObjectUserMetadata(_testBucket, objKey, destUserMeta);
 
     // make sure "s3tool-pubkey-hash" has been removed
-    destMeta = TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest));
+    destMeta = TestUtils.objectExists(Utils.getBucketName(dest), Utils.getObjectKey(dest));
     Assert.assertNotNull(destMeta);
     destUserMeta = destMeta.getUserMetadata();
     Assert.assertNotNull(destUserMeta);

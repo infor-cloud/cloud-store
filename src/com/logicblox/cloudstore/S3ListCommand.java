@@ -125,7 +125,7 @@ class S3ListCommand
   private StoreFile S3ObjectSummaryToStoreFile(S3ObjectSummary o)
   {
     StoreFile of = new StoreFile();
-    of.setKey(o.getKey());
+    of.setObjectKey(o.getKey());
     of.setETag(o.getETag());
     of.setBucketName(o.getBucketName());
     of.setSize(o.getSize());
@@ -135,7 +135,7 @@ class S3ListCommand
   private StoreFile S3DirStringToStoreFile(String dir, String bucket)
   {
     StoreFile df = new StoreFile();
-    df.setKey(dir);
+    df.setObjectKey(dir);
     df.setBucketName(bucket);
     df.setSize(new Long(0));
 

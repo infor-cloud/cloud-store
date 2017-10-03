@@ -80,9 +80,9 @@ public class RenameTests
     dest = TestUtils.getUri(_testBucket, toUpload.getName() + "-RENAME", rootPrefix);
     RenameOptions opts = _client.getOptionsBuilderFactory()
       .newRenameOptionsBuilder()
-      .setSourceBucketName(Utils.getBucket(src))
+      .setSourceBucketName(Utils.getBucketName(src))
       .setSourceObjectKey(Utils.getObjectKey(src))
-      .setDestinationBucketName(Utils.getBucket(dest))
+      .setDestinationBucketName(Utils.getBucketName(dest))
       .setDestinationObjectKey(Utils.getObjectKey(dest))
       .setDryRun(true)
       .createOptions();
@@ -125,9 +125,9 @@ public class RenameTests
         dest = TestUtils.getUri(_testBucket, top.getName() + "-RENAME", rootPrefix);
         RenameOptions opts = _client.getOptionsBuilderFactory()
           .newRenameOptionsBuilder()
-          .setSourceBucketName(Utils.getBucket(src))
+          .setSourceBucketName(Utils.getBucketName(src))
           .setSourceObjectKey(Utils.getObjectKey(src))
-          .setDestinationBucketName(Utils.getBucket(dest))
+          .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
           .setRecursive(false)
           .setDryRun(true)
@@ -195,9 +195,9 @@ public class RenameTests
         dest = TestUtils.getUri(_testBucket, "subdir2", destPrefix);
         RenameOptions opts = _client.getOptionsBuilderFactory()
           .newRenameOptionsBuilder()
-          .setSourceBucketName(Utils.getBucket(src))
+          .setSourceBucketName(Utils.getBucketName(src))
           .setSourceObjectKey(Utils.getObjectKey(src))
-          .setDestinationBucketName(Utils.getBucket(dest))
+          .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
           .setRecursive(true)
           .createOptions();
@@ -288,9 +288,9 @@ public class RenameTests
         dest = TestUtils.getUri(_testBucket, "subdir2", destPrefix);
         RenameOptions opts = _client.getOptionsBuilderFactory()
           .newRenameOptionsBuilder()
-          .setSourceBucketName(Utils.getBucket(src))
+          .setSourceBucketName(Utils.getBucketName(src))
           .setSourceObjectKey(Utils.getObjectKey(src))
-          .setDestinationBucketName(Utils.getBucket(dest))
+          .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
           .setRecursive(true)
           .createOptions();
@@ -381,9 +381,9 @@ public class RenameTests
         dest = TestUtils.getUri(_testBucket, "subdir2", destPrefix);
         RenameOptions opts = _client.getOptionsBuilderFactory()
           .newRenameOptionsBuilder()
-          .setSourceBucketName(Utils.getBucket(src))
+          .setSourceBucketName(Utils.getBucketName(src))
           .setSourceObjectKey(Utils.getObjectKey(src))
-          .setDestinationBucketName(Utils.getBucket(dest))
+          .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
           .setRecursive(true)
           .createOptions();
@@ -470,9 +470,9 @@ public class RenameTests
         dest = TestUtils.getUri(_testBucket, "subdir2", destPrefix);
         RenameOptions opts = _client.getOptionsBuilderFactory()
           .newRenameOptionsBuilder()
-          .setSourceBucketName(Utils.getBucket(src))
+          .setSourceBucketName(Utils.getBucketName(src))
           .setSourceObjectKey(Utils.getObjectKey(src))
-          .setDestinationBucketName(Utils.getBucket(dest))
+          .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
           .setRecursive(true)
           .createOptions();
@@ -551,9 +551,9 @@ public class RenameTests
       dest = TestUtils.getUri(_testBucket, toUpload.getName() + "-RENAMED", rootPrefix);
       RenameOptions opts = _client.getOptionsBuilderFactory()
         .newRenameOptionsBuilder()
-        .setSourceBucketName(Utils.getBucket(src))
+        .setSourceBucketName(Utils.getBucketName(src))
         .setSourceObjectKey(Utils.getObjectKey(src))
-        .setDestinationBucketName(Utils.getBucket(dest))
+        .setDestinationBucketName(Utils.getBucketName(dest))
         .setDestinationObjectKey(Utils.getObjectKey(dest))
         .createOptions();
       f = _client.rename(opts).get();
@@ -561,7 +561,7 @@ public class RenameTests
       // verify that the rename succeeded and we triggered the right number of retries
       Assert.assertEquals(abortCount, getRetryCount());
       Assert.assertNotNull(f);
-      Assert.assertEquals(Utils.getObjectKey(dest), f.getKey());
+      Assert.assertEquals(Utils.getObjectKey(dest), f.getObjectKey());
       List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
       Assert.assertTrue(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
       Assert.assertFalse(TestUtils.findObject(objs, Utils.getObjectKey(src)));
@@ -604,9 +604,9 @@ public class RenameTests
       dest = TestUtils.getUri(_testBucket, toUpload.getName() + "-RENAMED", rootPrefix);
       RenameOptions opts = _client.getOptionsBuilderFactory()
         .newRenameOptionsBuilder()
-        .setSourceBucketName(Utils.getBucket(src))
+        .setSourceBucketName(Utils.getBucketName(src))
         .setSourceObjectKey(Utils.getObjectKey(src))
-        .setDestinationBucketName(Utils.getBucket(dest))
+        .setDestinationBucketName(Utils.getBucketName(dest))
         .setDestinationObjectKey(Utils.getObjectKey(dest))
         .createOptions();
       f = _client.rename(opts).get();
@@ -614,7 +614,7 @@ public class RenameTests
       // verify that the rename succeeded and we triggered the right number of retries
       Assert.assertEquals(abortCount, getRetryCount());
       Assert.assertNotNull(f);
-      Assert.assertEquals(Utils.getObjectKey(dest), f.getKey());
+      Assert.assertEquals(Utils.getObjectKey(dest), f.getObjectKey());
       List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
       Assert.assertTrue(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
       Assert.assertFalse(TestUtils.findObject(objs, Utils.getObjectKey(src)));
@@ -649,9 +649,9 @@ public class RenameTests
       dest = TestUtils.getUri(_testBucket, toUpload.getName() + "-RENAMED", rootPrefix);
       RenameOptions opts = _client.getOptionsBuilderFactory()
         .newRenameOptionsBuilder()
-        .setSourceBucketName(Utils.getBucket(src))
+        .setSourceBucketName(Utils.getBucketName(src))
         .setSourceObjectKey(Utils.getObjectKey(src))
-        .setDestinationBucketName(Utils.getBucket(dest))
+        .setDestinationBucketName(Utils.getBucketName(dest))
         .setDestinationObjectKey(Utils.getObjectKey(dest))
         .createOptions();
       CopyOptions.getAbortCounters().setInjectionCounter(1);
@@ -704,9 +704,9 @@ public class RenameTests
       dest = TestUtils.getUri(_testBucket, toUpload.getName() + "-RENAMED", rootPrefix);
       RenameOptions opts = _client.getOptionsBuilderFactory()
         .newRenameOptionsBuilder()
-        .setSourceBucketName(Utils.getBucket(src))
+        .setSourceBucketName(Utils.getBucketName(src))
         .setSourceObjectKey(Utils.getObjectKey(src))
-        .setDestinationBucketName(Utils.getBucket(dest))
+        .setDestinationBucketName(Utils.getBucketName(dest))
         .setDestinationObjectKey(Utils.getObjectKey(dest))
         .createOptions();
       DeleteOptions.getAbortCounters().setInjectionCounter(1);
@@ -769,21 +769,21 @@ public class RenameTests
         dest = TestUtils.getUri(_testBucket, "new-file.txt", newPrefix);
         RenameOptions opts = _client.getOptionsBuilderFactory()
           .newRenameOptionsBuilder()
-          .setSourceBucketName(Utils.getBucket(src))
+          .setSourceBucketName(Utils.getBucketName(src))
           .setSourceObjectKey(Utils.getObjectKey(src))
-          .setDestinationBucketName(Utils.getBucket(dest))
+          .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest))
           .createOptions();
         f = _client.rename(opts).get();
         Assert.assertNotNull(f);
-        Assert.assertEquals(Utils.getObjectKey(dest), f.getKey());
-        Assert.assertEquals(Utils.getBucket(dest), f.getBucketName());
+        Assert.assertEquals(Utils.getObjectKey(dest), f.getObjectKey());
+        Assert.assertEquals(Utils.getBucketName(dest), f.getBucketName());
 
         // verify that it moved
         Assert.assertEquals(originalCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
-        Assert.assertNull(TestUtils.objectExists(Utils.getBucket(src), Utils.getObjectKey(src)));
+        Assert.assertNull(TestUtils.objectExists(Utils.getBucketName(src), Utils.getObjectKey(src)));
         Assert.assertNotNull(
-          TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest)));
+          TestUtils.objectExists(Utils.getBucketName(dest), Utils.getObjectKey(dest)));
         List<StoreFile> objs = TestUtils.listObjects(_testBucket, newPrefix);
         Assert.assertEquals(newCount + 1, objs.size());
         Assert.assertTrue(TestUtils.findObject(objs, newPrefix + "new-file.txt"));
@@ -831,9 +831,9 @@ public class RenameTests
         URI dest = dest2;
         RenameOptions opts = _client.getOptionsBuilderFactory()
           .newRenameOptionsBuilder()
-          .setSourceBucketName(Utils.getBucket(src))
+          .setSourceBucketName(Utils.getBucketName(src))
           .setSourceObjectKey(Utils.getObjectKey(src))
-          .setDestinationBucketName(Utils.getBucket(dest))
+          .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest))
           .createOptions();
         String msg = null;
@@ -886,9 +886,9 @@ public class RenameTests
         URI src = dest;
         RenameOptions opts = _client.getOptionsBuilderFactory()
           .newRenameOptionsBuilder()
-          .setSourceBucketName(Utils.getBucket(src))
+          .setSourceBucketName(Utils.getBucketName(src))
           .setSourceObjectKey(Utils.getObjectKey(src))
-          .setDestinationBucketName(Utils.getBucket(dest))
+          .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest))
           .createOptions();
         String msg = null;
@@ -936,9 +936,9 @@ public class RenameTests
         URI dest = TestUtils.getUri(_testBucket, "dummy.txt", rootPrefix);
         RenameOptions opts = _client.getOptionsBuilderFactory()
           .newRenameOptionsBuilder()
-          .setSourceBucketName(Utils.getBucket(src))
+          .setSourceBucketName(Utils.getBucketName(src))
           .setSourceObjectKey(Utils.getObjectKey(src))
-          .setDestinationBucketName(Utils.getBucket(dest))
+          .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest))
           .createOptions();
         String msg = null;
@@ -1007,21 +1007,21 @@ public class RenameTests
         dest = TestUtils.getUri(bucket2, "new-file.txt", newPrefix);
         RenameOptions opts = _client.getOptionsBuilderFactory()
           .newRenameOptionsBuilder()
-          .setSourceBucketName(Utils.getBucket(src))
+          .setSourceBucketName(Utils.getBucketName(src))
           .setSourceObjectKey(Utils.getObjectKey(src))
-          .setDestinationBucketName(Utils.getBucket(dest))
+          .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest))
           .createOptions();
         f = _client.rename(opts).get();
-        Assert.assertEquals(Utils.getObjectKey(dest), f.getKey());
-        Assert.assertEquals(Utils.getBucket(dest), f.getBucketName());
+        Assert.assertEquals(Utils.getObjectKey(dest), f.getObjectKey());
+        Assert.assertEquals(Utils.getBucketName(dest), f.getBucketName());
 
         // verify that it moved
         Assert.assertNotNull(f);
         Assert.assertEquals(originalCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
-        Assert.assertNull(TestUtils.objectExists(Utils.getBucket(src), Utils.getObjectKey(src)));
+        Assert.assertNull(TestUtils.objectExists(Utils.getBucketName(src), Utils.getObjectKey(src)));
         Assert.assertNotNull(
-          TestUtils.objectExists(Utils.getBucket(dest), Utils.getObjectKey(dest)));
+          TestUtils.objectExists(Utils.getBucketName(dest), Utils.getObjectKey(dest)));
         List<StoreFile> objs = TestUtils.listObjects(bucket2, newPrefix);
         Assert.assertEquals(newCount + 1, objs.size());
         Assert.assertTrue(TestUtils.findObject(objs, newPrefix + "new-file.txt"));
@@ -1077,9 +1077,9 @@ public class RenameTests
         dest = TestUtils.getUri(_testBucket, "subdir2", newPrefix);
         RenameOptions opts = _client.getOptionsBuilderFactory()
           .newRenameOptionsBuilder()
-          .setSourceBucketName(Utils.getBucket(src))
+          .setSourceBucketName(Utils.getBucketName(src))
           .setSourceObjectKey(Utils.getObjectKey(src))
-          .setDestinationBucketName(Utils.getBucket(dest))
+          .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
           .setRecursive(false)
           .createOptions();
@@ -1088,7 +1088,7 @@ public class RenameTests
         // verify that top level objects moved (a and b), but others stayed
         Assert.assertEquals(2, renamedFiles.size());
         for(StoreFile f : renamedFiles)
-          Assert.assertEquals(Utils.getBucket(dest), f.getBucketName());
+          Assert.assertEquals(Utils.getBucketName(dest), f.getBucketName());
         List<StoreFile> newObjs = TestUtils.listObjects(_testBucket, newPrefix);
         Assert.assertEquals(newCount + renamedFiles.size(), newObjs.size());
         Assert.assertEquals(uploadCount - renamedFiles.size(),
@@ -1150,9 +1150,9 @@ public class RenameTests
         dest = TestUtils.getUri(_testBucket, "subdir2", newPrefix);
         RenameOptions opts = _client.getOptionsBuilderFactory()
           .newRenameOptionsBuilder()
-          .setSourceBucketName(Utils.getBucket(src))
+          .setSourceBucketName(Utils.getBucketName(src))
           .setSourceObjectKey(Utils.getObjectKey(src))
-          .setDestinationBucketName(Utils.getBucket(dest))
+          .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
           .setRecursive(true)
           .createOptions();
@@ -1161,7 +1161,7 @@ public class RenameTests
         // verify that everything moved
         Assert.assertEquals(uploadCount, renamedFiles.size());
         for(StoreFile f : renamedFiles)
-          Assert.assertEquals(Utils.getBucket(dest), f.getBucketName());
+          Assert.assertEquals(Utils.getBucketName(dest), f.getBucketName());
         List<StoreFile> newObjs = TestUtils.listObjects(_testBucket, newPrefix);
         Assert.assertEquals(newCount + renamedFiles.size(), newObjs.size());
         Assert.assertEquals(uploadCount - renamedFiles.size(),
@@ -1238,9 +1238,9 @@ public class RenameTests
         dest = TestUtils.getUri(bucket2, "subdir2", newPrefix);
         RenameOptions opts = _client.getOptionsBuilderFactory()
           .newRenameOptionsBuilder()
-          .setSourceBucketName(Utils.getBucket(src))
+          .setSourceBucketName(Utils.getBucketName(src))
           .setSourceObjectKey(Utils.getObjectKey(src))
-          .setDestinationBucketName(Utils.getBucket(dest))
+          .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
           .setRecursive(true)
           .createOptions();
@@ -1249,7 +1249,7 @@ public class RenameTests
         // verify that everything moved
         Assert.assertEquals(uploadCount, renamedFiles.size());
         for(StoreFile f : renamedFiles)
-          Assert.assertEquals(Utils.getBucket(dest), f.getBucketName());
+          Assert.assertEquals(Utils.getBucketName(dest), f.getBucketName());
         List<StoreFile> newObjs = TestUtils.listObjects(bucket2, newPrefix);
         Assert.assertEquals(newCount + renamedFiles.size(), newObjs.size());
         Assert.assertEquals(uploadCount - renamedFiles.size(),
@@ -1297,9 +1297,9 @@ public class RenameTests
         URI dest = TestUtils.getUri(_testBucket, "subdir", rootPrefix);
         RenameOptions opts = _client.getOptionsBuilderFactory()
           .newRenameOptionsBuilder()
-          .setSourceBucketName(Utils.getBucket(src))
+          .setSourceBucketName(Utils.getBucketName(src))
           .setSourceObjectKey(Utils.getObjectKey(src))
-          .setDestinationBucketName(Utils.getBucket(dest))
+          .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
           .createOptions();
         String msg = null;
@@ -1366,9 +1366,9 @@ public class RenameTests
         URI dest = destFile;
         RenameOptions opts = _client.getOptionsBuilderFactory()
           .newRenameOptionsBuilder()
-          .setSourceBucketName(Utils.getBucket(src))
+          .setSourceBucketName(Utils.getBucketName(src))
           .setSourceObjectKey(Utils.getObjectKey(src))
-          .setDestinationBucketName(Utils.getBucket(dest))
+          .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
           .createOptions();
         String msg = null;
@@ -1435,9 +1435,9 @@ public class RenameTests
         URI dest = destDir;
         RenameOptions opts = _client.getOptionsBuilderFactory()
           .newRenameOptionsBuilder()
-          .setSourceBucketName(Utils.getBucket(src))
+          .setSourceBucketName(Utils.getBucketName(src))
           .setSourceObjectKey(Utils.getObjectKey(src))
-          .setDestinationBucketName(Utils.getBucket(dest))
+          .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest))
           .createOptions();
         f = _client.rename(opts).get();

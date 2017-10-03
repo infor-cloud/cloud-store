@@ -168,7 +168,7 @@ class S3DownloadCommand
           f.setLocalFile(S3DownloadCommand.this.file);
           f.setETag(download.getETag());
           f.setBucketName(_options.getBucketName());
-          f.setKey(_options.getObjectKey());
+          f.setObjectKey(_options.getObjectKey());
           return f;
         }
       });
@@ -229,7 +229,7 @@ class S3DownloadCommand
       {
         Map<String, String> meta = download.getMeta();
 
-        String errPrefix = getUri(download.getBucket(), download.getKey()) + ": ";
+        String errPrefix = getUri(download.getBucketName(), download.getObjectKey()) + ": ";
         long len = download.getLength();
         long cs = chunkSize;
         if(meta.containsKey("s3tool-version"))
@@ -416,7 +416,7 @@ class S3DownloadCommand
     if(_progressListenerFactory != null)
     {
       opl = _progressListenerFactory.create(
-        new ProgressOptionsBuilder().setObjectUri(getUri(download.getBucket(), download.getKey()))
+        new ProgressOptionsBuilder().setObjectUri(getUri(download.getBucketName(), download.getObjectKey()))
           .setOperation("download")
           .setFileSizeInBytes(fileLength)
           .createProgressOptions());
@@ -635,7 +635,7 @@ class S3DownloadCommand
         {
           String remoteEtag = download.getETag();
           String localDigest = "";
-          String fn = "'s3://" + download.getBucket() + "/" + download.getKey() + "'";
+          String fn = "'s3://" + download.getBucketName() + "/" + download.getObjectKey() + "'";
 
           if(null == remoteEtag)
           {
@@ -710,7 +710,7 @@ class S3DownloadCommand
           else
           {
             throw new BadHashException(
-              "Failed checksum validation for " + download.getBucket() + "/" + download.getKey() +
+              "Failed checksum validation for " + download.getBucketName() + "/" + download.getObjectKey() +
                 ". " + "Calculated MD5: " + localDigest + ", Expected MD5: " + remoteEtag);
           }
         }

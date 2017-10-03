@@ -74,7 +74,7 @@ class S3Download
     return _meta.getETag();
   }
 
-  public String getKey()
+  public String getObjectKey()
   {
     return _objectKey;
   }
@@ -84,7 +84,7 @@ class S3Download
     return _version;
   }
 
-  public String getBucket()
+  public String getBucketName()
   {
     return _bucketName;
   }

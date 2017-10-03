@@ -101,7 +101,7 @@ public class StoreFile
    *
    * @return file key
    */
-  public String getKey()
+  public String getObjectKey()
   {
     return _key;
   }
@@ -111,7 +111,7 @@ public class StoreFile
    *
    * @param key file key
    */
-  public void setKey(String key)
+  public void setObjectKey(String key)
   {
     _key = key;
   }

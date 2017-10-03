@@ -364,7 +364,7 @@ public class Utils
     return new GCSXMLEnvironmentVariableCredentialsProvider();
   }
 
-  public static String getBucket(URI uri)
+  public static String getBucketName(URI uri)
   {
     if((!"s3".equals(uri.getScheme())) && (!"gs".equals(uri.getScheme())))
     {

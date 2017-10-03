@@ -194,7 +194,7 @@ class DownloadDirectoryCommand
     File destAbs = _destination.getAbsoluteFile();
     for(StoreFile src : potentialFiles)
     {
-      String relFile = src.getKey().substring(_options.getObjectKey().length());
+      String relFile = src.getObjectKey().substring(_options.getObjectKey().length());
       File outputFile = new File(destAbs, relFile);
       File outputPath = new File(outputFile.getParent());
 
@@ -211,7 +211,7 @@ class DownloadDirectoryCommand
         }
       }
 
-      if(!src.getKey().endsWith("/"))
+      if(!src.getObjectKey().endsWith("/"))
       {
         if(outputFile.exists())
         {
@@ -239,7 +239,7 @@ class DownloadDirectoryCommand
         if(_dryRun)
         {
           System.out.println(
-            "<DRYRUN> downloading '" + getUri(_options.getBucketName(), src.getKey()) + "' to '" +
+            "<DRYRUN> downloading '" + getUri(_options.getBucketName(), src.getObjectKey()) + "' to '" +
               outputFile.getAbsolutePath() + "'");
         }
         else
@@ -250,7 +250,7 @@ class DownloadDirectoryCommand
             .newDownloadOptionsBuilder()
             .setFile(outputFile)
             .setBucketName(_options.getBucketName())
-            .setObjectKey(src.getKey())
+            .setObjectKey(src.getObjectKey())
             .setOverallProgressListenerFactory(
               _options.getOverallProgressListenerFactory().orElse(null))
             .createOptions();

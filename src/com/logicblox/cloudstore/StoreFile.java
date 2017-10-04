@@ -33,9 +33,9 @@ public class StoreFile
   private String _eTag;
   private String _key;
   private String _bucket;
-  private Optional<String> _versionId = Optional.empty();
-  private Optional<Long> _size = Optional.empty();
-  private Optional<Date> _timestamp = Optional.empty();
+  private String _versionId;
+  private Long _size;
+  private Date _timestamp;
 
   /**
    * Create a new StoreFile with no properties set.
@@ -143,7 +143,7 @@ public class StoreFile
    */
   public Optional<String> getVersionId()
   {
-    return _versionId;
+    return Optional.ofNullable(_versionId);
   }
 
   /**
@@ -154,11 +154,7 @@ public class StoreFile
   public void setVersionId(String versionId)
     throws IllegalArgumentException
   {
-    if(versionId == null)
-    {
-      throw new IllegalArgumentException("Error : Version Id should not be set to Null");
-    }
-    _versionId = Optional.of(versionId);
+    _versionId = versionId;
   }
 
   /**
@@ -168,7 +164,7 @@ public class StoreFile
    */
   public Optional<Long> getSize()
   {
-    return _size;
+    return Optional.ofNullable(_size);
   }
 
   /**
@@ -179,12 +175,7 @@ public class StoreFile
   public void setSize(Long size)
     throws IllegalArgumentException
   {
-    if(size == null)
-    {
-      throw new IllegalArgumentException("Error : size should not be set to Null");
-    }
-    _size = Optional.of(size);
-
+    _size = size;
   }
 
   /**
@@ -194,7 +185,7 @@ public class StoreFile
    */
   public Optional<Date> getTimestamp()
   {
-    return _timestamp;
+    return Optional.ofNullable(_timestamp);
   }
 
   /**
@@ -205,11 +196,7 @@ public class StoreFile
   public void setTimestamp(Date timestamp)
     throws IllegalArgumentException
   {
-    if(timestamp == null)
-    {
-      throw new IllegalArgumentException("Error : timestamp should not be set to Null");
-    }
-    _timestamp = Optional.of(timestamp);
+    _timestamp = timestamp;
   }
 
 }

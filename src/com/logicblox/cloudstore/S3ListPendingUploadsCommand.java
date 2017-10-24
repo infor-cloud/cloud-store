@@ -97,9 +97,9 @@ class S3ListPendingUploadsCommand
 
   private Upload S3MultipartUploadToUpload(MultipartUpload multipartUpload, String bucket)
   {
-    Upload u = new S3MultipartUpload(getS3Client(), bucket, multipartUpload.getKey(),
-      multipartUpload.getUploadId(), multipartUpload.getInitiated(), _client.getApiExecutor(),
-      _client.getOptionsBuilderFactory().newUploadOptionsBuilder().createOptions());
+    Upload u = new S3MultipartUpload(
+      _client.getOptionsBuilderFactory().newUploadOptionsBuilder().createOptions(), getS3Client(),
+      _client.getApiExecutor(), multipartUpload.getUploadId(), multipartUpload.getInitiated());
 
     return u;
   }

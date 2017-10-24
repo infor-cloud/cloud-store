@@ -85,9 +85,9 @@ class S3AbortPendingUploadsCommand
     public ListenableFuture<Void> call()
       throws ExecutionException, InterruptedException
     {
-      Upload u = new S3MultipartUpload(getS3Client(), _options.getBucketName(),
-        _options.getObjectKey(), _uploadId, null, _client.getApiExecutor(),
-        _client.getOptionsBuilderFactory().newUploadOptionsBuilder().createOptions());
+      Upload u = new S3MultipartUpload(
+        _client.getOptionsBuilderFactory().newUploadOptionsBuilder().createOptions(), getS3Client(),
+        _client.getApiExecutor(), _uploadId, null);
 
       if(u.getInitiationDate().before(_date))
       {
@@ -116,9 +116,9 @@ class S3AbortPendingUploadsCommand
 
     public ListenableFuture<Void> call()
     {
-      Upload u = new S3MultipartUpload(getS3Client(), _options.getBucketName(),
-        _options.getObjectKey(), _uploadId, null, _client.getApiExecutor(),
-        _client.getOptionsBuilderFactory().newUploadOptionsBuilder().createOptions());
+      Upload u = new S3MultipartUpload(
+        _client.getOptionsBuilderFactory().newUploadOptionsBuilder().createOptions(), getS3Client(),
+        _client.getApiExecutor(), _uploadId, null);
 
       return u.abort();
     }

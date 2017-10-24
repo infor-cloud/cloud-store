@@ -221,8 +221,6 @@ class S3DownloadCommand
 
   private ListenableFuture<S3Download> startDownloadActual()
   {
-    S3DownloadFactory factory = new S3DownloadFactory(getS3Client(), _client.getApiExecutor());
-
     AsyncFunction<S3Download, S3Download> initDownload = new AsyncFunction<S3Download, S3Download>()
     {
       public ListenableFuture<S3Download> apply(S3Download download)
@@ -388,10 +386,9 @@ class S3DownloadCommand
         return Futures.immediateFuture(download);
       }
     };
-
-    return Futures.transform(
-      factory.startDownload(_options.getBucketName(), _options.getObjectKey(),
-        _options.getVersion().orElse(null)), initDownload);
+    S3DownloadFactory factory = new S3DownloadFactory(_options, getS3Client(),
+      _client.getApiExecutor());
+    return Futures.transform(factory.startDownload(), initDownload);
   }
 
   /**

@@ -181,8 +181,6 @@ class GCSUploadCommand
 
   private ListenableFuture<Upload> startUploadActual()
   {
-    GCSUploadFactory factory = new GCSUploadFactory(getGCSClient(), _client.getApiExecutor());
-
     Map<String, String> meta = new HashMap<String, String>();
     meta.put("s3tool-version", String.valueOf(Version.CURRENT));
     if(_encKeyName != null)
@@ -195,7 +193,9 @@ class GCSUploadCommand
     meta.put("s3tool-chunk-size", Long.toString(fileLength));
     meta.put("s3tool-file-length", Long.toString(fileLength));
 
-    return factory.startUpload(_bucketName, _objectKey, meta, _options);
+    GCSUploadFactory factory = new GCSUploadFactory(_options, getGCSClient(),
+      _client.getApiExecutor(), meta);
+    return factory.startUpload();
   }
 
   /**

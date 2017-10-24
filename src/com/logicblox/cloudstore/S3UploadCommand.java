@@ -199,9 +199,7 @@ class S3UploadCommand
 
   private ListenableFuture<Upload> startUploadActual()
   {
-    S3MultipartUploadFactory factory = new S3MultipartUploadFactory(getS3Client(), _client.getApiExecutor());
-
-    Map<String, String> meta = new HashMap<String, String>();
+    Map<String, String> meta = new HashMap<>();
     meta.put("s3tool-version", String.valueOf(Version.CURRENT));
     if(_encKeyName != null)
     {
@@ -212,7 +210,9 @@ class S3UploadCommand
     meta.put("s3tool-chunk-size", Long.toString(chunkSize));
     meta.put("s3tool-file-length", Long.toString(fileLength));
 
-    return factory.startUpload(_options.getBucketName(), _options.getObjectKey(), meta, _options);
+    S3MultipartUploadFactory factory = new S3MultipartUploadFactory(_options, getS3Client(),
+      _client.getApiExecutor(), meta);
+    return factory.startUpload();
   }
 
   /**

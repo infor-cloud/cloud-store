@@ -29,21 +29,17 @@ import java.util.concurrent.Callable;
 
 class S3Download
 {
+  private DownloadOptions _options;
   private AmazonS3 _client;
   private ListeningExecutorService _executor;
   private ObjectMetadata _meta;
-  private String _objectKey;
-  private String _bucketName;
-  private String _version;
 
   public S3Download(
-    AmazonS3 client, String objectKey, String bucketName, String version, ObjectMetadata meta,
-    ListeningExecutorService executor)
+    DownloadOptions options, AmazonS3 client, ListeningExecutorService executor,
+    ObjectMetadata meta)
   {
+    _options = options;
     _client = client;
-    _objectKey = objectKey;
-    _bucketName = bucketName;
-    _version = version;
     _executor = executor;
     _meta = meta;
   }
@@ -76,17 +72,17 @@ class S3Download
 
   public String getObjectKey()
   {
-    return _objectKey;
+    return _options.getObjectKey();
   }
 
   public String getVersion()
   {
-    return _version;
+    return _options.getVersion().orElse(null);
   }
 
   public String getBucketName()
   {
-    return _bucketName;
+    return _options.getBucketName();
   }
 
   private class DownloadCallable
@@ -107,13 +103,13 @@ class S3Download
       throws Exception
     {
       GetObjectRequest req = null;
-      if(_version == null)
+      if(getVersion() == null)
       {
-        req = new GetObjectRequest(_bucketName, _objectKey);
+        req = new GetObjectRequest(getBucketName(), getObjectKey());
       }
       else
       {
-        req = new GetObjectRequest(_bucketName, _objectKey, _version);
+        req = new GetObjectRequest(getBucketName(), getObjectKey(), getVersion());
       }
       req.setRange(_start, _end);
       if(_progressListener != null)

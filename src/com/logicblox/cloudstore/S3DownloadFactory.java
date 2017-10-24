@@ -26,40 +26,32 @@ import java.util.concurrent.Callable;
 
 class S3DownloadFactory
 {
-  private ListeningExecutorService _executor;
-  private AmazonS3 _client;
+  final private DownloadOptions _options;
+  final private ListeningExecutorService _executor;
+  final private AmazonS3 _client;
 
-  public S3DownloadFactory(AmazonS3 client, ListeningExecutorService executor)
+  public S3DownloadFactory(DownloadOptions options, AmazonS3 client, ListeningExecutorService
+    executor)
   {
+    _options = options;
     _client = client;
     _executor = executor;
   }
 
-  public ListenableFuture<S3Download> startDownload(String bucketName, String key, String version)
+  ListenableFuture<S3Download> startDownload()
   {
-    return _executor.submit(new StartCallable(bucketName, key, version));
+    return _executor.submit(new StartCallable());
   }
 
   private class StartCallable
     implements Callable<S3Download>
   {
-    private String _bucketName;
-    private String _objectKey;
-    private String _version;
-
-    public StartCallable(String bucketName, String objectKey, String version)
-    {
-      _bucketName = bucketName;
-      _objectKey = objectKey;
-      _version = version;
-    }
-
     public S3Download call()
     {
-      GetObjectMetadataRequest metareq = new GetObjectMetadataRequest(_bucketName, _objectKey,
-        _version);
-      ObjectMetadata data = _client.getObjectMetadata(metareq);
-      return new S3Download(_client, _objectKey, _bucketName, _version, data, _executor);
+      GetObjectMetadataRequest metareq = new GetObjectMetadataRequest(_options.getBucketName(),
+        _options.getObjectKey(), _options.getVersion().orElse(null));
+      ObjectMetadata metadata = _client.getObjectMetadata(metareq);
+      return new S3Download(_options, _client, _executor, metadata);
     }
   }
 }

@@ -42,27 +42,22 @@ import java.util.concurrent.ConcurrentSkipListMap;
 class S3MultipartUpload
   implements Upload
 {
-  private ConcurrentMap<Integer, PartETag> _etags = new ConcurrentSkipListMap<Integer, PartETag>();
+  private ConcurrentMap<Integer, PartETag> _etags = new ConcurrentSkipListMap<>();
   private AmazonS3 _client;
-  private String _bucketName;
-  private String _objectKey;
   private String _uploadId;
   private Date _initiated;
   private ListeningExecutorService _executor;
   private UploadOptions _options;
 
-
   public S3MultipartUpload(
-    AmazonS3 client, String bucketName, String objectKey, String uploadId, Date initiated,
-    ListeningExecutorService executor, UploadOptions options)
+    UploadOptions options, AmazonS3 client, ListeningExecutorService executor, String uploadId,
+    Date initiated)
   {
-    _bucketName = bucketName;
-    _objectKey = objectKey;
+    _options = options;
     _client = client;
     _uploadId = uploadId;
     _initiated = initiated;
     _executor = executor;
-    _options = options;
   }
 
   public ListenableFuture<Void> uploadPart(
@@ -84,12 +79,12 @@ class S3MultipartUpload
 
   public String getBucketName()
   {
-    return _bucketName;
+    return _options.getBucketName();
   }
 
   public String getObjectKey()
   {
-    return _objectKey;
+    return _options.getObjectKey();
   }
 
   public String getId()
@@ -108,8 +103,8 @@ class S3MultipartUpload
     public Void call()
       throws Exception
     {
-      AbortMultipartUploadRequest req = new AbortMultipartUploadRequest(_bucketName, _objectKey,
-        _uploadId);
+      AbortMultipartUploadRequest req = new AbortMultipartUploadRequest(getBucketName(),
+        getObjectKey(), _uploadId);
       _client.abortMultipartUpload(req);
       return null;
     }
@@ -124,8 +119,8 @@ class S3MultipartUpload
       String multipartDigest;
       CompleteMultipartUploadRequest req;
 
-      req = new CompleteMultipartUploadRequest(_bucketName, _objectKey, _uploadId,
-        new ArrayList<PartETag>(_etags.values()));
+      req = new CompleteMultipartUploadRequest(getBucketName(), getObjectKey(), _uploadId,
+        new ArrayList<>(_etags.values()));
       ByteArrayOutputStream os = new ByteArrayOutputStream();
       for(Integer pNum : _etags.keySet())
       {
@@ -143,8 +138,8 @@ class S3MultipartUpload
       else
       {
         throw new BadHashException(
-          "Failed checksum validation for " + _bucketName + "/" + _objectKey + ". " + "Calculated MD5: " +
-            multipartDigest + ", Expected MD5: " + res.getETag());
+          "Failed checksum validation for " + getBucketName() + "/" + getObjectKey() + ". " +
+            "Calculated " + "MD5: " + multipartDigest + ", Expected MD5: " + res.getETag());
       }
     }
   }
@@ -184,12 +179,12 @@ class S3MultipartUpload
       _options.injectAbort(_uploadId);
 
       UploadPartRequest req = new UploadPartRequest();
-      req.setBucketName(_bucketName);
+      req.setBucketName(getBucketName());
       req.setInputStream(stream);
       req.setPartNumber(_partNumber + 1);
       req.setPartSize(_partSize);
       req.setUploadId(_uploadId);
-      req.setKey(_objectKey);
+      req.setKey(getObjectKey());
 
       // LB-2298: According to
       // https://github.com/aws/aws-sdk-java/issues/427#issuecomment-100518891
@@ -223,8 +218,9 @@ class S3MultipartUpload
       {
         String calculatedMD5 = DatatypeConverter.printHexBinary(stream.getDigest()).toLowerCase();
         throw new BadHashException(
-          "Failed checksum validation for part " + (_partNumber + 1) + " of " + _bucketName + "/" +
-            _objectKey + ". " + "Calculated MD5: " + calculatedMD5 + ", Expected MD5: " + res.getETag());
+          "Failed checksum validation for part " + (_partNumber + 1) + " of " + getBucketName() +
+            "/" + getObjectKey() + ". " + "Calculated MD5: " + calculatedMD5 + ", Expected MD5: " +
+            res.getETag());
       }
     }
   }

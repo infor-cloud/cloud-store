@@ -36,8 +36,6 @@ class GCSUpload
 {
   private String _md5;
   private Storage _client;
-  private String _bucketName;
-  private String _objectKey;
   private Map<String, String> _meta;
   private Date _initiated;
   private ListeningExecutorService _executor;
@@ -47,17 +45,15 @@ class GCSUpload
   private String _uploadId;
 
   public GCSUpload(
-    Storage client, String bucketName, String objectKey, Map<String, String> meta, Date initiated,
-    ListeningExecutorService executor, UploadOptions options)
+    UploadOptions options, Storage client, ListeningExecutorService executor,
+    Map<String, String> meta, Date initiated)
   {
+    _options = options;
     _client = client;
-    _bucketName = bucketName;
-    _objectKey = objectKey;
     _meta = meta;
     _initiated = initiated;
     _executor = executor;
-    _uploadId = bucketName + "/" + objectKey;
-    _options = options;
+    _uploadId = _options.getBucketName() + "/" + _options.getObjectKey();
   }
 
   public ListenableFuture<Void> uploadPart(
@@ -82,12 +78,12 @@ class GCSUpload
 
   public String getBucketName()
   {
-    return _bucketName;
+    return _options.getBucketName();
   }
 
   public String getObjectKey()
   {
-    return _objectKey;
+    return _options.getObjectKey();
   }
 
   public String getId()
@@ -155,11 +151,11 @@ class GCSUpload
       // Not strictly necessary, but allows optimization in the cloud.
       mediaContent.setLength(_partSize);
 
-      StorageObject objectMetadata = new StorageObject().setName(_objectKey)
+      StorageObject objectMetadata = new StorageObject().setName(getObjectKey())
         .setMetadata(ImmutableMap.copyOf(_meta));
 
       Storage.Objects.Insert insertObject = _client.objects()
-        .insert(_bucketName, objectMetadata, mediaContent);
+        .insert(getBucketName(), objectMetadata, mediaContent);
 
       insertObject.setPredefinedAcl(_options.getCannedAcl());
       insertObject.getMediaHttpUploader().setDisableGZipContent(true);
@@ -186,8 +182,8 @@ class GCSUpload
       else
       {
         throw new BadHashException(
-          "Failed upload validation for " + "'gs://" + _bucketName + "/" + _objectKey + "'. " +
-            "Calculated MD5: " + clientMD5 + ", Expected MD5: " + serverMD5);
+          "Failed upload validation for " + "'gs://" + getBucketName() + "/" + getObjectKey() +
+            "'. " + "Calculated MD5: " + clientMD5 + ", Expected MD5: " + serverMD5);
       }
     }
   }

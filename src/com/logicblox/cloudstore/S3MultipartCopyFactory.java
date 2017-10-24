@@ -28,10 +28,12 @@ import java.util.concurrent.Callable;
 
 class S3MultipartCopyFactory
 {
-  private AmazonS3 _client;
-  private ListeningExecutorService _executor;
+  final private CopyOptions _options;
+  final private AmazonS3 _client;
+  final private ListeningExecutorService _executor;
 
-  public S3MultipartCopyFactory(AmazonS3 client, ListeningExecutorService executor)
+  public S3MultipartCopyFactory(CopyOptions options, AmazonS3 client, ListeningExecutorService
+    executor)
   {
     if(client == null)
     {
@@ -42,43 +44,24 @@ class S3MultipartCopyFactory
       throw new IllegalArgumentException("non-null executor is required");
     }
 
+    _options = options;
     _client = client;
     _executor = executor;
   }
 
-  public ListenableFuture<Copy> startCopy(
-    String sourceBucketName, String sourceObjectKey, String destinationBucketName,
-    String destinationObjectKey, CopyOptions options)
+  ListenableFuture<Copy> startCopy()
   {
-    return _executor.submit(
-      new StartCallable(sourceBucketName, sourceObjectKey, destinationBucketName,
-        destinationObjectKey, options));
+    return _executor.submit(new StartCallable());
   }
 
   private class StartCallable
     implements Callable<Copy>
   {
-    private String _sourceBucketName;
-    private String _sourceObjectKey;
-    private String _destinationBucketName;
-    private String _destinationObjectKey;
-    private CopyOptions _options;
-
-    public StartCallable(
-      String sourceBucketName, String sourceObjectKey, String destinationBucketName,
-      String destinationObjectKey, CopyOptions options)
-    {
-      _sourceBucketName = sourceBucketName;
-      _sourceObjectKey = sourceObjectKey;
-      _destinationBucketName = destinationBucketName;
-      _destinationObjectKey = destinationObjectKey;
-      _options = options;
-    }
-
     public Copy call()
       throws Exception
     {
-      ObjectMetadata metadata = _client.getObjectMetadata(_sourceBucketName, _sourceObjectKey);
+      ObjectMetadata metadata = _client.getObjectMetadata(_options.getSourceBucketName(),
+        _options.getSourceObjectKey());
 
       _options.getUserMetadata().ifPresent(metadata::setUserMetadata);
 
@@ -94,19 +77,19 @@ class S3MultipartCopyFactory
       _options.getStorageClass().ifPresent(sc -> metadata.setHeader(Headers.STORAGE_CLASS, sc));
 
       InitiateMultipartUploadRequest req = new InitiateMultipartUploadRequest(
-        _destinationBucketName, _destinationObjectKey, metadata);
+        _options.getDestinationBucketName(), _options.getDestinationObjectKey(), metadata);
       if(_options.getCannedAcl().isPresent())
       {
         req.setCannedACL(S3Client.getCannedAcl(_options.getCannedAcl().get()));
       }
       else
       {
-        req.setAccessControlList(S3Client.getObjectAcl(_client, _sourceBucketName, _sourceObjectKey));
+        req.setAccessControlList(S3Client.getObjectAcl(_client, _options.getSourceBucketName(),
+          _options.getSourceObjectKey()));
       }
       // req.setStorageClass(StorageClass.fromValue(storageClass));
       InitiateMultipartUploadResult res = _client.initiateMultipartUpload(req);
-      return new S3MultipartCopy(_client, _sourceBucketName, _sourceObjectKey,
-        _destinationBucketName, _destinationObjectKey, res.getUploadId(), metadata, _executor);
+      return new S3MultipartCopy(_options, _client, _executor, res.getUploadId(), metadata);
     }
   }
 }

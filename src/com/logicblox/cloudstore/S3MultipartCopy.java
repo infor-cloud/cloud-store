@@ -42,27 +42,20 @@ class S3MultipartCopy
 {
   private ConcurrentMap<Integer, PartETag> _etags = new ConcurrentSkipListMap<Integer, PartETag>();
   private AmazonS3 _client;
-  private String _sourceBucketName;
-  private String _sourceObjectKey;
-  private String _destinationBucketName;
-  private String _destinationObjectKey;
+  private CopyOptions _options;
   private String _uploadId;
   private ObjectMetadata _meta;
   private ListeningExecutorService _executor;
 
   public S3MultipartCopy(
-    AmazonS3 client, String sourceBucketName, String sourceObjectKey, String destinationBucketName,
-    String destinationObjectKey, String uploadId, ObjectMetadata meta,
-    ListeningExecutorService executor)
+    CopyOptions options, AmazonS3 client, ListeningExecutorService executor, String uploadId,
+    ObjectMetadata meta)
   {
-    _sourceBucketName = sourceBucketName;
-    _sourceObjectKey = sourceObjectKey;
-    _destinationBucketName = destinationBucketName;
-    _destinationObjectKey = destinationObjectKey;
     _client = client;
+    _executor = executor;
+    _options = options;
     _uploadId = uploadId;
     _meta = meta;
-    _executor = executor;
   }
 
   public ListenableFuture<Void> copyPart(
@@ -78,22 +71,22 @@ class S3MultipartCopy
 
   public String getSourceBucketName()
   {
-    return _sourceBucketName;
+    return _options.getSourceBucketName();
   }
 
   public String getSourceObjectKey()
   {
-    return _sourceObjectKey;
+    return _options.getSourceObjectKey();
   }
 
   public String getDestinationBucketName()
   {
-    return _destinationBucketName;
+    return _options.getDestinationBucketName();
   }
 
   public String getDestinationObjectKey()
   {
-    return _destinationObjectKey;
+    return _options.getDestinationObjectKey();
   }
 
   public Long getObjectSize()
@@ -115,8 +108,8 @@ class S3MultipartCopy
       String multipartDigest;
       CompleteMultipartUploadRequest req;
 
-      req = new CompleteMultipartUploadRequest(_destinationBucketName, _destinationObjectKey,
-        _uploadId, new ArrayList<PartETag>(_etags.values()));
+      req = new CompleteMultipartUploadRequest(getDestinationBucketName(),
+        getDestinationObjectKey(), _uploadId, new ArrayList<PartETag>(_etags.values()));
       ByteArrayOutputStream os = new ByteArrayOutputStream();
       for(Integer pNum : _etags.keySet())
       {
@@ -134,8 +127,9 @@ class S3MultipartCopy
       else
       {
         throw new BadHashException(
-          "Failed checksum validation for " + _destinationBucketName + "/" + _destinationObjectKey +
-            ". " + "Calculated MD5: " + multipartDigest + ", Expected MD5: " + res.getETag());
+          "Failed checksum validation for " + getDestinationBucketName() + "/" +
+            getDestinationObjectKey() + ". " + "Calculated MD5: " + multipartDigest + ", " +
+            "Expected MD5: " + res.getETag());
       }
     }
   }
@@ -160,10 +154,10 @@ class S3MultipartCopy
     public Void call()
       throws Exception
     {
-      CopyPartRequest req = new CopyPartRequest().withSourceBucketName(_sourceBucketName)
-        .withSourceKey(_sourceObjectKey)
-        .withDestinationBucketName(_destinationBucketName)
-        .withDestinationKey(_destinationObjectKey)
+      CopyPartRequest req = new CopyPartRequest().withSourceBucketName(getSourceBucketName())
+        .withSourceKey(getSourceObjectKey())
+        .withDestinationBucketName(getDestinationBucketName())
+        .withDestinationKey(getDestinationObjectKey())
         .withUploadId(_uploadId)
         .withFirstByte(_startByte)
         .withLastByte(_endByte)

@@ -97,11 +97,9 @@ class S3CopyCommand
 
   private ListenableFuture<Copy> startCopyActual()
   {
-    S3MultipartCopyFactory factory = new S3MultipartCopyFactory(getS3Client(),
+    S3MultipartCopyFactory factory = new S3MultipartCopyFactory(_options, getS3Client(),
       _client.getApiExecutor());
-
-    return factory.startCopy(_options.getSourceBucketName(), _options.getSourceObjectKey(),
-      _options.getDestinationBucketName(), _options.getDestinationObjectKey(), _options);
+    return factory.startCopy();
   }
 
   /**

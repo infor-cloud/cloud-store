@@ -199,7 +199,7 @@ class S3UploadCommand
 
   private ListenableFuture<Upload> startUploadActual()
   {
-    UploadFactory factory = new S3MultipartUploadFactory(getS3Client(), _client.getApiExecutor());
+    S3MultipartUploadFactory factory = new S3MultipartUploadFactory(getS3Client(), _client.getApiExecutor());
 
     Map<String, String> meta = new HashMap<String, String>();
     meta.put("s3tool-version", String.valueOf(Version.CURRENT));

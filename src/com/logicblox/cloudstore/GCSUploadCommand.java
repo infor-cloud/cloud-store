@@ -181,7 +181,7 @@ class GCSUploadCommand
 
   private ListenableFuture<Upload> startUploadActual()
   {
-    UploadFactory factory = new GCSUploadFactory(getGCSClient(), _client.getApiExecutor());
+    GCSUploadFactory factory = new GCSUploadFactory(getGCSClient(), _client.getApiExecutor());
 
     Map<String, String> meta = new HashMap<String, String>();
     meta.put("s3tool-version", String.valueOf(Version.CURRENT));

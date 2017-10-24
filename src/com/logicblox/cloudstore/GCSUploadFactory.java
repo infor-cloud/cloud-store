@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 class GCSUploadFactory
-  implements UploadFactory
 {
   private Storage _client;
   private ListeningExecutorService _executor;

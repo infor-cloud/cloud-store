@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 class S3MultipartUploadFactory
-  implements UploadFactory
 {
   private AmazonS3 _client;
   private ListeningExecutorService _executor;

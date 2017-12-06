@@ -53,15 +53,6 @@ public class MultiKeyTests
   }
 
 
-  private void createKey(String keyName, File keyDir)
-    throws Throwable
-  {
-    KeyGenCommand kgc = new KeyGenCommand("RSA", 2048);
-    File kf = new File(keyDir, keyName + ".pem");
-    kgc.savePemKeypair(kf);
-  }
-
-
   @Test
   public void testBasicOperation()
     throws Throwable
@@ -74,7 +65,7 @@ public class MultiKeyTests
                      "cloud-store-ut-4"};
 
     for(String key : keys)
-      createKey(key, keydir);
+      TestUtils.createEncryptionKey(keydir, key);
     TestUtils.setKeyProvider(keydir);
 
     // capture files currently in test bucket
@@ -241,7 +232,7 @@ public class MultiKeyTests
     // generate public/private key
     File keydir = TestUtils.createTmpDir(true);
     String key1 = "cloud-store-ut-1";
-    createKey(key1, keydir);
+    TestUtils.createEncryptionKey(keydir, key1);
     TestUtils.setKeyProvider(keydir);
 
     // create a small file and upload
@@ -277,7 +268,7 @@ public class MultiKeyTests
     File keydir = TestUtils.createTmpDir(true);
     String key1 = "cloud-store-ut-1";
     String key2 = "cloud-store-ut-2";
-    createKey(key1, keydir);
+    TestUtils.createEncryptionKey(keydir, key1);
     TestUtils.setKeyProvider(keydir);
 
     // create a small file and upload
@@ -313,8 +304,8 @@ public class MultiKeyTests
     File keydir = TestUtils.createTmpDir(true);
     String key1 = "cloud-store-ut-1";
     String key2 = "cloud-store-ut-2";
-    createKey(key1, keydir);
-    createKey(key2, keydir);
+    TestUtils.createEncryptionKey(keydir, key1);
+    TestUtils.createEncryptionKey(keydir, key2);
     TestUtils.setKeyProvider(keydir);
 
     // create a small file and upload
@@ -349,7 +340,7 @@ public class MultiKeyTests
     // generate public/private key
     File keydir = TestUtils.createTmpDir(true);
     String key1 = "cloud-store-ut-1";
-    createKey(key1, keydir);
+    TestUtils.createEncryptionKey(keydir, key1);
     TestUtils.setKeyProvider(keydir);
 
     // create a small file and upload
@@ -384,7 +375,7 @@ public class MultiKeyTests
     // generate public/private key
     File keydir = TestUtils.createTmpDir(true);
     String key1 = "cloud-store-ut-1";
-    createKey(key1, keydir);
+    TestUtils.createEncryptionKey(keydir, key1);
     TestUtils.setKeyProvider(keydir);
 
     // create a small file and upload
@@ -420,8 +411,8 @@ public class MultiKeyTests
     File keydir = TestUtils.createTmpDir(true);
     String key1 = "cloud-store-ut-1";
     String key2 = "cloud-store-ut-2";
-    createKey(key1, keydir);
-    createKey(key2, keydir);
+    TestUtils.createEncryptionKey(keydir, key1);
+    TestUtils.createEncryptionKey(keydir, key2);
     TestUtils.setKeyProvider(keydir);
 
     // create a small file and upload
@@ -471,7 +462,7 @@ public class MultiKeyTests
     for(int i = 0; i < keyCount; ++i)
     {
       keys[i] = "cloud-store-ut-" + i;
-      createKey(keys[i], keydir);
+      TestUtils.createEncryptionKey(keydir, keys[i]);
     }
     TestUtils.setKeyProvider(keydir);
 
@@ -503,51 +494,5 @@ public class MultiKeyTests
     }
     Assert.assertNull(msg);
   }
-
-
-  @Test
-  public void testDownloadNoPubkeyHash()
-    throws Throwable
-  {
-    // generate 2 new public/private key pairs
-    File keydir = TestUtils.createTmpDir(true);
-    String key1 = "cloud-store-ut-1";
-    createKey(key1, keydir);
-    TestUtils.setKeyProvider(keydir);
-    String rootPrefix = TestUtils.addPrefix("");
-
-    // create a small file and upload
-    File toUpload = TestUtils.createTextFile(100);
-    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
-    StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, key1);
-    Assert.assertNotNull(f);
-
-    // remove "s3tool-pubkey-hash" from metadata to simulate files
-    // uploaded by older cloud-store versions
-    String objKey = rootPrefix + toUpload.getName();
-    Metadata destMeta = TestUtils.objectExists(Utils.getBucketName(dest), Utils.getObjectKey(dest));
-    Assert.assertNotNull(destMeta);
-    Map<String, String> destUserMeta = destMeta.getUserMetadata();
-    Assert.assertNotNull(destUserMeta);
-    Assert.assertTrue(destUserMeta.containsKey("s3tool-pubkey-hash"));
-    destUserMeta.remove("s3tool-pubkey-hash");
-    TestUtils.updateObjectUserMetadata(_testBucket, objKey, destUserMeta);
-
-    // make sure "s3tool-pubkey-hash" has been removed
-    destMeta = TestUtils.objectExists(Utils.getBucketName(dest), Utils.getObjectKey(dest));
-    Assert.assertNotNull(destMeta);
-    destUserMeta = destMeta.getUserMetadata();
-    Assert.assertNotNull(destUserMeta);
-    Assert.assertFalse(destUserMeta.containsKey("s3tool-pubkey-hash"));
-
-    // download the file and compare it with the original
-    File dlTemp = TestUtils.createTmpFile();
-    f = TestUtils.downloadFile(dest, dlTemp);
-    Assert.assertNotNull(f.getLocalFile());
-    Assert.assertTrue(dlTemp.exists());
-    Assert.assertTrue(TestUtils.compareFiles(toUpload, f.getLocalFile()));
-    dlTemp.delete();
-  }
-
 
 }

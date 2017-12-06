@@ -18,6 +18,7 @@ package com.logicblox.cloudstore;
 
 import junit.framework.Assert;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -321,7 +322,6 @@ public class CopyTests
     Assert.assertTrue(TestUtils.findObject(objs, Utils.getObjectKey(dest)));
 
     // copy file
-    URI src = dest;
     CopyOptions copyOpts = _client.getOptionsBuilderFactory()
       .newCopyOptionsBuilder()
       .setSourceBucketName(_testBucket)
@@ -345,27 +345,6 @@ public class CopyTests
     f = TestUtils.downloadFile(dest, dlTemp);
     Assert.assertNotNull(f.getLocalFile());
     Assert.assertTrue(TestUtils.compareFiles(toUpload, f.getLocalFile()));
-
-    // compare metadata
-    Metadata srcMeta = TestUtils.objectExists(Utils.getBucketName(src), Utils.getObjectKey(src));
-    Assert.assertNotNull(srcMeta);
-    Metadata destMeta = TestUtils.objectExists(Utils.getBucketName(dest), Utils.getObjectKey(dest));
-    Assert.assertNotNull(destMeta);
-
-    Assert.assertEquals(srcMeta.getContentLength(), destMeta.getContentLength());
-    Assert.assertEquals(srcMeta.getInstanceLength(), destMeta.getInstanceLength());
-    Assert.assertEquals(srcMeta.getETag(), destMeta.getETag());
-
-    Map<String, String> srcUserMeta = srcMeta.getUserMetadata();
-    Assert.assertNotNull(srcUserMeta);
-    Map<String, String> destUserMeta = destMeta.getUserMetadata();
-    Assert.assertNotNull(destUserMeta);
-    Assert.assertEquals(srcUserMeta.size(), destUserMeta.size());
-    for(Map.Entry<String, String> e : srcUserMeta.entrySet())
-    {
-      Assert.assertTrue(destUserMeta.containsKey(e.getKey()));
-      Assert.assertEquals(e.getValue(), destUserMeta.get(e.getKey()));
-    }
   }
 
 
@@ -910,6 +889,357 @@ public class CopyTests
           throw t;
         }
       }
+    }
+  }
+
+
+  @Test
+  public void testDefaultS3Acl()
+    throws Throwable
+  {
+    // this test makes sense only for AWS S3. Minio doesn't support ACLs and current ACL
+    // support on GCS is limited
+    Assume.assumeTrue(TestUtils.getService().equalsIgnoreCase("s3") &&
+      TestUtils.supportsAcl());
+
+    // create test file and upload it
+    int fileSize = 100;
+    File toUpload = TestUtils.createTextFile(fileSize);
+    String rootPrefix = TestUtils.addPrefix("test-copy-acl");
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
+    Assert.assertNotNull(f);
+
+    // copy file
+    URI src = dest;
+    CopyOptions copyOpts = _client.getOptionsBuilderFactory()
+      .newCopyOptionsBuilder()
+      .setSourceBucketName(_testBucket)
+      .setSourceObjectKey(f.getObjectKey())
+      .setDestinationBucketName(_testBucket)
+      .setDestinationObjectKey(f.getObjectKey() + "-COPY")
+      .createOptions();
+    StoreFile copy = _client.copy(copyOpts).get();
+    String expectedKey = TestUtils.addPrefix("test-copy-acl/" + toUpload.getName() + "-COPY");
+    Assert.assertEquals(expectedKey, copy.getObjectKey());
+    dest = TestUtils.getUri(_testBucket, copy.getObjectKey(), "");
+    AclHandler aclHandler = _client.getAclHandler();
+
+    // validate source ACL
+    Acl srcObjectAcl = aclHandler.getObjectAcl(Utils.getBucketName(src), Utils.getObjectKey(src))
+      .get();
+    Owner srcBucketOwner = _client.getBucket(Utils.getBucketName((src))).get().getOwner();
+
+    Assert.assertEquals(srcObjectAcl.getGrants().size(), 1);
+    AclPermission srcPerm = srcObjectAcl.getGrants().get(0).getPermission();
+    Assert.assertEquals(srcPerm.toString(), "FULL_CONTROL");
+
+    AclGrantee srcGrantee = srcObjectAcl.getGrants().get(0).getGrantee();
+    Assert.assertEquals(srcGrantee.getId(), srcBucketOwner.getId());
+
+    // validate destination ACL
+    Acl destObjectAcl = aclHandler.getObjectAcl(Utils.getBucketName(dest), Utils.getObjectKey(dest))
+      .get();
+    Owner destBucketOwner = _client.getBucket(Utils.getBucketName((dest))).get().getOwner();
+
+    Assert.assertEquals(destObjectAcl.getGrants().size(), 1);
+    AclPermission destPerm = destObjectAcl.getGrants().get(0).getPermission();
+    Assert.assertEquals(destPerm.toString(), srcPerm.toString());
+
+    AclGrantee destGrantee = destObjectAcl.getGrants().get(0).getGrantee();
+    Assert.assertEquals(destGrantee.getId(), destBucketOwner.getId());
+  }
+
+
+
+  @Test
+  public void testNonDefaultS3Acl()
+    throws Throwable
+  {
+    // this test makes sense only for AWS S3. Minio doesn't support ACLs and current ACL
+    // support on GCS is limited
+    Assume.assumeTrue(TestUtils.getService().equalsIgnoreCase("s3") &&
+      TestUtils.supportsAcl());
+
+    // create test file and upload it
+    int fileSize = 100;
+    File toUpload = TestUtils.createTextFile(fileSize);
+    String rootPrefix = TestUtils.addPrefix("test-copy-acl");
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    UploadOptions upOpts = _client.getOptionsBuilderFactory()
+      .newUploadOptionsBuilder()
+      .setFile(toUpload)
+      .setBucketName(Utils.getBucketName(dest))
+      .setObjectKey(Utils.getObjectKey(dest))
+      .setCannedAcl("authenticated-read")
+      .createOptions();
+    StoreFile f = _client.upload(upOpts).get();
+    Assert.assertNotNull(f);
+
+    // copy file
+    URI src = dest;
+    CopyOptions copyOpts = _client.getOptionsBuilderFactory()
+      .newCopyOptionsBuilder()
+      .setSourceBucketName(_testBucket)
+      .setSourceObjectKey(f.getObjectKey())
+      .setDestinationBucketName(_testBucket)
+      .setDestinationObjectKey(f.getObjectKey() + "-COPY")
+      .createOptions();
+    StoreFile copy = _client.copy(copyOpts).get();
+    String expectedKey = TestUtils.addPrefix("test-copy-acl/" + toUpload.getName() + "-COPY");
+    Assert.assertEquals(expectedKey, copy.getObjectKey());
+    dest = TestUtils.getUri(_testBucket, copy.getObjectKey(), "");
+    AclHandler aclHandler = _client.getAclHandler();
+
+    // validate source ACL - authenticated-read
+    Acl srcObjectAcl = aclHandler.getObjectAcl(Utils.getBucketName(src), Utils.getObjectKey(src))
+      .get();
+    Owner srcBucketOwner = _client.getBucket(Utils.getBucketName((src))).get().getOwner();
+
+    Assert.assertEquals(srcObjectAcl.getGrants().size(), 2);
+
+    AclGrant srcFcAclGrant;
+    AclGrant srcReadAclGrant;
+    if(srcObjectAcl.getGrants().get(0).getPermission().toString().equals("FULL_CONTROL"))
+    {
+      srcFcAclGrant = srcObjectAcl.getGrants().get(0);
+      srcReadAclGrant = srcObjectAcl.getGrants().get(1);
+    }
+    else
+    {
+      srcFcAclGrant = srcObjectAcl.getGrants().get(1);
+      srcReadAclGrant = srcObjectAcl.getGrants().get(0);
+    }
+
+    AclPermission srcPerm = srcFcAclGrant.getPermission();
+    Assert.assertEquals(srcPerm.toString(), "FULL_CONTROL");
+    AclGrantee srcGrantee = srcFcAclGrant.getGrantee();
+    Assert.assertEquals(srcGrantee.getId(), srcBucketOwner.getId());
+
+    srcPerm = srcReadAclGrant.getPermission();
+    Assert.assertEquals(srcPerm.toString(), "READ");
+    srcGrantee = srcReadAclGrant.getGrantee();
+    Assert.assertEquals(srcGrantee.getId(),
+      "http://acs.amazonaws.com/groups/global/AuthenticatedUsers");
+
+    // validate destination ACL - authenticated-read (copied)
+    Acl destObjectAcl = aclHandler.getObjectAcl(Utils.getBucketName(dest), Utils.getObjectKey(dest))
+      .get();
+    Owner destBucketOwner = _client.getBucket(Utils.getBucketName((dest))).get().getOwner();
+
+    Assert.assertEquals(destObjectAcl.getGrants().size(), 2);
+
+    AclGrant destFcAclGrant;
+    AclGrant destReadAclGrant;
+    if(destObjectAcl.getGrants().get(0).getPermission().toString().equals("FULL_CONTROL"))
+    {
+      destFcAclGrant = destObjectAcl.getGrants().get(0);
+      destReadAclGrant = destObjectAcl.getGrants().get(1);
+    }
+    else
+    {
+      destFcAclGrant = destObjectAcl.getGrants().get(1);
+      destReadAclGrant = destObjectAcl.getGrants().get(0);
+    }
+
+    AclPermission destPerm = destFcAclGrant.getPermission();
+    Assert.assertEquals(destPerm.toString(), "FULL_CONTROL");
+    AclGrantee destGrantee = destFcAclGrant.getGrantee();
+    Assert.assertEquals(destGrantee.getId(), destBucketOwner.getId());
+
+    destPerm = destReadAclGrant.getPermission();
+    Assert.assertEquals(destPerm.toString(), "READ");
+    destGrantee = destReadAclGrant.getGrantee();
+    Assert.assertEquals(destGrantee.getId(),
+      "http://acs.amazonaws.com/groups/global/AuthenticatedUsers");
+  }
+
+
+  @Test
+  public void testNewS3Acl()
+    throws Throwable
+  {
+    // this test makes sense only for AWS S3. Minio doesn't support ACLs and current ACL
+    // support on GCS is limited
+    Assume.assumeTrue(TestUtils.getService().equalsIgnoreCase("s3") &&
+      TestUtils.supportsAcl());
+
+    // create test file and upload it
+    int fileSize = 100;
+    File toUpload = TestUtils.createTextFile(fileSize);
+    String rootPrefix = TestUtils.addPrefix("test-copy-acl");
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
+    Assert.assertNotNull(f);
+
+    // copy file
+    URI src = dest;
+    CopyOptions copyOpts = _client.getOptionsBuilderFactory()
+      .newCopyOptionsBuilder()
+      .setSourceBucketName(_testBucket)
+      .setSourceObjectKey(f.getObjectKey())
+      .setDestinationBucketName(_testBucket)
+      .setDestinationObjectKey(f.getObjectKey() + "-COPY")
+      .setCannedAcl("authenticated-read")
+      .createOptions();
+    StoreFile copy = _client.copy(copyOpts).get();
+    String expectedKey = TestUtils.addPrefix("test-copy-acl/" + toUpload.getName() + "-COPY");
+    Assert.assertEquals(expectedKey, copy.getObjectKey());
+    dest = TestUtils.getUri(_testBucket, copy.getObjectKey(), "");
+    AclHandler aclHandler = _client.getAclHandler();
+
+    // validate source ACL - bucket-owner-full-control (default)
+    Acl srcObjectAcl = aclHandler.getObjectAcl(Utils.getBucketName(src), Utils.getObjectKey(src))
+      .get();
+    Owner srcBucketOwner = _client.getBucket(Utils.getBucketName((src))).get().getOwner();
+
+    Assert.assertEquals(srcObjectAcl.getGrants().size(), 1);
+    AclPermission srcPerm = srcObjectAcl.getGrants().get(0).getPermission();
+    Assert.assertEquals(srcPerm.toString(), "FULL_CONTROL");
+
+    AclGrantee srcGrantee = srcObjectAcl.getGrants().get(0).getGrantee();
+    Assert.assertEquals(srcGrantee.getId(), srcBucketOwner.getId());
+
+    // validate destination ACL - authenticated-read (specified in copy op)
+    Acl destObjectAcl = aclHandler.getObjectAcl(Utils.getBucketName(dest), Utils.getObjectKey(dest))
+      .get();
+    Owner destBucketOwner = _client.getBucket(Utils.getBucketName((dest))).get().getOwner();
+
+    Assert.assertEquals(destObjectAcl.getGrants().size(), 2);
+
+    AclGrant fcAclGrant;
+    AclGrant readAclGrant;
+    if(destObjectAcl.getGrants().get(0).getPermission().toString().equals("FULL_CONTROL"))
+    {
+      fcAclGrant = destObjectAcl.getGrants().get(0);
+      readAclGrant = destObjectAcl.getGrants().get(1);
+    }
+    else
+    {
+      fcAclGrant = destObjectAcl.getGrants().get(1);
+      readAclGrant = destObjectAcl.getGrants().get(0);
+    }
+
+    AclPermission destPerm = fcAclGrant.getPermission();
+    Assert.assertEquals(destPerm.toString(), "FULL_CONTROL");
+    AclGrantee destGrantee = fcAclGrant.getGrantee();
+    Assert.assertEquals(destGrantee.getId(), destBucketOwner.getId());
+
+    destPerm = readAclGrant.getPermission();
+    Assert.assertEquals(destPerm.toString(), "READ");
+    destGrantee = readAclGrant.getGrantee();
+    Assert.assertEquals(destGrantee.getId(),
+      "http://acs.amazonaws.com/groups/global/AuthenticatedUsers");
+  }
+
+
+  @Test
+  public void testUserMetadata()
+    throws Throwable
+  {
+    // support for metadata manipulation on GCS is limited
+    Assume.assumeTrue(!TestUtils.getService().equalsIgnoreCase("gs"));
+
+    // create test file and upload it
+    int fileSize = 100;
+    File toUpload = TestUtils.createTextFile(fileSize);
+    String rootPrefix = TestUtils.addPrefix("test-copy-metadata");
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
+    Assert.assertNotNull(f);
+
+    // copy file
+    URI src = dest;
+    CopyOptions copyOpts = _client.getOptionsBuilderFactory()
+      .newCopyOptionsBuilder()
+      .setSourceBucketName(_testBucket)
+      .setSourceObjectKey(f.getObjectKey())
+      .setDestinationBucketName(_testBucket)
+      .setDestinationObjectKey(f.getObjectKey() + "-COPY")
+      .createOptions();
+    StoreFile copy = _client.copy(copyOpts).get();
+    String expectedKey = TestUtils.addPrefix("test-copy-metadata/" + toUpload.getName() + "-COPY");
+    Assert.assertEquals(expectedKey, copy.getObjectKey());
+    dest = TestUtils.getUri(_testBucket, copy.getObjectKey(), "");
+
+    // compare metadata
+    Metadata srcMeta = TestUtils.objectExists(Utils.getBucketName(src), Utils.getObjectKey(src));
+    Assert.assertNotNull(srcMeta);
+    Metadata destMeta = TestUtils.objectExists(Utils.getBucketName(dest), Utils.getObjectKey(dest));
+    Assert.assertNotNull(destMeta);
+
+    Assert.assertEquals(srcMeta.getContentLength(), destMeta.getContentLength());
+    Assert.assertEquals(srcMeta.getInstanceLength(), destMeta.getInstanceLength());
+    Assert.assertEquals(srcMeta.getETag(), destMeta.getETag());
+
+    Map<String, String> srcUserMeta = srcMeta.getUserMetadata();
+    Assert.assertNotNull(srcUserMeta);
+    Map<String, String> destUserMeta = destMeta.getUserMetadata();
+    Assert.assertNotNull(destUserMeta);
+    Assert.assertEquals(srcUserMeta.size(), destUserMeta.size());
+    for(Map.Entry<String, String> e : srcUserMeta.entrySet())
+    {
+      Assert.assertTrue(destUserMeta.containsKey(e.getKey()));
+      Assert.assertEquals(e.getValue(), destUserMeta.get(e.getKey()));
+    }
+  }
+
+
+  @Test
+  public void testUserMetadataEncrypted()
+    throws Throwable
+  {
+    // support for metadata manipulation on GCS is limited
+    Assume.assumeTrue(!TestUtils.getService().equalsIgnoreCase("gs"));
+
+    // generate new public/private key pair
+    File keyDir = TestUtils.createTmpDir(true);
+    TestUtils.setKeyProvider(keyDir);
+    String keyName = "cloud-store-ut-1";
+    TestUtils.createEncryptionKey(keyDir, keyName);
+
+    // create test file and upload it
+    int fileSize = 100;
+    File toUpload = TestUtils.createTextFile(fileSize);
+    String rootPrefix = TestUtils.addPrefix("test-copy-metadata-encr");
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, keyName);
+    Assert.assertNotNull(f);
+
+    // copy file
+    URI src = dest;
+    CopyOptions copyOpts = _client.getOptionsBuilderFactory()
+      .newCopyOptionsBuilder()
+      .setSourceBucketName(_testBucket)
+      .setSourceObjectKey(f.getObjectKey())
+      .setDestinationBucketName(_testBucket)
+      .setDestinationObjectKey(f.getObjectKey() + "-COPY")
+      .createOptions();
+    StoreFile copy = _client.copy(copyOpts).get();
+    String expectedKey = TestUtils.addPrefix("test-copy-metadata-encr/" + toUpload.getName() +
+      "-COPY");
+    Assert.assertEquals(expectedKey, copy.getObjectKey());
+    dest = TestUtils.getUri(_testBucket, copy.getObjectKey(), "");
+
+    // compare metadata
+    Metadata srcMeta = TestUtils.objectExists(Utils.getBucketName(src), Utils.getObjectKey(src));
+    Assert.assertNotNull(srcMeta);
+    Metadata destMeta = TestUtils.objectExists(Utils.getBucketName(dest), Utils.getObjectKey(dest));
+    Assert.assertNotNull(destMeta);
+
+    Assert.assertEquals(srcMeta.getContentLength(), destMeta.getContentLength());
+    Assert.assertEquals(srcMeta.getInstanceLength(), destMeta.getInstanceLength());
+    Assert.assertEquals(srcMeta.getETag(), destMeta.getETag());
+
+    Map<String, String> srcUserMeta = srcMeta.getUserMetadata();
+    Assert.assertNotNull(srcUserMeta);
+    Map<String, String> destUserMeta = destMeta.getUserMetadata();
+    Assert.assertNotNull(destUserMeta);
+    Assert.assertEquals(srcUserMeta.size(), destUserMeta.size());
+    for(Map.Entry<String, String> e : srcUserMeta.entrySet())
+    {
+      Assert.assertTrue(destUserMeta.containsKey(e.getKey()));
+      Assert.assertEquals(e.getValue(), destUserMeta.get(e.getKey()));
     }
   }
 

@@ -189,7 +189,7 @@ public class UploadOptionsBuilder
     }
     else
     {
-      _cannedAcl = _cloudStoreClient.getAclHandler().getDefaultAcl();
+      _cannedAcl = _cloudStoreClient.getAclHandler().getDefaultCannedAcl();
     }
   }
 

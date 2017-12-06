@@ -198,6 +198,8 @@ public interface CloudStoreClient
    */
   ListenableFuture<List<Bucket>> listBuckets();
 
+  ListenableFuture<Bucket> getBucket(String bucketName)
+    throws ExecutionException, InterruptedException, IOException;
   /**
    * Check existence of a specific file in a cloud store service.
    * <p>

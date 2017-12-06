@@ -35,6 +35,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.GeneralSecurityException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -596,6 +597,20 @@ public class TestUtils
   public static boolean supportsMultiPart()
   {
     return !getService().equalsIgnoreCase("gs");
+  }
+
+  public static boolean supportsAcl()
+    throws MalformedURLException
+  {
+    if(getEndpoint() == null)
+      return true;
+
+    // Minio doesn't support ACLs
+    String[] localhost = { "localhost", "127.0.0.1" };
+    // we assume Minio tests run only on localhost
+    boolean isMinio = Arrays.asList(localhost).contains(getEndpoint().getHost());
+
+    return !isMinio;
   }
 
 

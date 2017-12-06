@@ -16,9 +16,22 @@
 
 package com.logicblox.cloudstore;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.google.api.services.storage.Storage;
+import com.google.common.util.concurrent.ListenableFuture;
+
 public class GCSAclHandler
   implements AclHandler
 {
+  private final Storage _gcsClient;
+  private final AmazonS3 _s3Client;
+
+  GCSAclHandler(Storage gcsClient, AmazonS3 s3Client)
+  {
+    _gcsClient = gcsClient;
+    _s3Client = s3Client;
+  }
+
   @Override
   public boolean isCannedAclValid(String cannedAcl)
   {
@@ -26,8 +39,14 @@ public class GCSAclHandler
   }
 
   @Override
-  public String getDefaultAcl()
+  public String getDefaultCannedAcl()
   {
     return "bucketOwnerFullControl";
+  }
+
+  @Override
+  public ListenableFuture<Acl> getObjectAcl(String bucketName, String objectKey)
+  {
+    throw new UnsupportedOperationException("getObjectAcl is not supported.");
   }
 }

@@ -31,6 +31,7 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 
@@ -70,7 +71,7 @@ public class S3Client
    */
   KeyProvider _keyProvider;
 
-  private S3AclHandler _aclHandler;
+  S3AclHandler _aclHandler;
   private S3StorageClassHandler _storageClassHandler;
 
   /** Whether or not to retry client side exception unconditionally. */
@@ -171,7 +172,7 @@ public class S3Client
     _s3Executor = s3Executor;
     _keyProvider = keyProvider;
     _client = s3Client;
-    _aclHandler = new S3AclHandler();
+    _aclHandler = new S3AclHandler(_client);
     _storageClassHandler = new S3StorageClassHandler();
   }
 
@@ -263,23 +264,10 @@ public class S3Client
     return _storageClassHandler;
   }
 
-  // returns null if the store does not support acl (like minio)
   static AccessControlList getObjectAcl(AmazonS3 client, String bucket, String key)
     throws AmazonS3Exception
   {
-    AccessControlList acl = null;
-    try
-    {
-      acl = client.getObjectAcl(bucket, key);
-    }
-    catch(AmazonS3Exception ex)
-    {
-      if(!ex.getErrorCode().equalsIgnoreCase("NotImplemented"))
-      {
-        throw ex;
-      }
-    }
-    return acl;
+    return client.getObjectAcl(bucket, key);
   }
 
   static CannedAccessControlList getCannedAcl(String value)
@@ -348,6 +336,20 @@ public class S3Client
         new Owner(b.getOwner().getId(), b.getOwner().getDisplayName())));
     }
     return Futures.immediateFuture(buckets);
+  }
+
+  @Override
+  public ListenableFuture<Bucket> getBucket(String bucketName)
+    throws ExecutionException, InterruptedException
+  {
+    Optional<Bucket> bucket = listBuckets().get()
+      .stream()
+      .filter(p -> p.getName().equals(bucketName))
+      .findFirst();
+
+    Bucket b = bucket.orElseThrow(
+      () -> new UsageException("Bucket \"" + bucketName + "\" not found"));
+    return Futures.immediateFuture(b);
   }
 
   @Override

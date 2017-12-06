@@ -17,13 +17,20 @@
 package com.logicblox.cloudstore;
 
 import junit.framework.Assert;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import javax.crypto.Cipher;
+import javax.xml.bind.DatatypeConverter;
 import java.io.File;
 import java.net.URI;
+import java.security.Key;
+import java.security.PrivateKey;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 public class RenameTests
@@ -1460,6 +1467,297 @@ public class RenameTests
         }
       }
     }
+  }
+
+
+  @Test
+  public void testDefaultS3Acl()
+    throws Throwable
+  {
+    // this test makes sense only for AWS S3. Minio doesn't support ACLs and current ACL
+    // support on GCS is limited
+    Assume.assumeTrue(TestUtils.getService().equalsIgnoreCase("s3") &&
+      TestUtils.supportsAcl());
+
+    // create test file and upload it
+    int fileSize = 100;
+    File toUpload = TestUtils.createTextFile(fileSize);
+    String rootPrefix = TestUtils.addPrefix("test-rename-acl");
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
+    Assert.assertNotNull(f);
+
+    // rename file
+    RenameOptions renameOptions = _client.getOptionsBuilderFactory()
+      .newRenameOptionsBuilder()
+      .setSourceBucketName(_testBucket)
+      .setSourceObjectKey(f.getObjectKey())
+      .setDestinationBucketName(_testBucket)
+      .setDestinationObjectKey(f.getObjectKey() + "-RENAME")
+      .createOptions();
+    StoreFile rename = _client.rename(renameOptions).get();
+    String expectedKey = TestUtils.addPrefix("test-rename-acl/" + toUpload.getName() + "-RENAME");
+    Assert.assertEquals(expectedKey, rename.getObjectKey());
+    dest = TestUtils.getUri(_testBucket, rename.getObjectKey(), "");
+    AclHandler aclHandler = _client.getAclHandler();
+
+    // validate ACL - default
+    Acl destObjectAcl = aclHandler.getObjectAcl(Utils.getBucketName(dest),
+      Utils.getObjectKey(dest)).get();
+    Owner destBucketOwner = _client.getBucket(Utils.getBucketName((dest))).get().getOwner();
+
+    Assert.assertEquals(destObjectAcl.getGrants().size(), 1);
+    AclPermission destPerm = destObjectAcl.getGrants().get(0).getPermission();
+    Assert.assertEquals(destPerm.toString(), "FULL_CONTROL");
+
+    AclGrantee destGrantee = destObjectAcl.getGrants().get(0).getGrantee();
+    Assert.assertEquals(destGrantee.getId(), destBucketOwner.getId());
+  }
+
+
+  @Test
+  public void testNonDefaultS3Acl()
+    throws Throwable
+  {
+    // this test makes sense only for AWS S3. Minio doesn't support ACLs and current ACL
+    // support on GCS is limited
+    Assume.assumeTrue(TestUtils.getService().equalsIgnoreCase("s3") &&
+      TestUtils.supportsAcl());
+
+    // create test file and upload it
+    int fileSize = 100;
+    File toUpload = TestUtils.createTextFile(fileSize);
+    String rootPrefix = TestUtils.addPrefix("test-rename-acl");
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    UploadOptions upOpts = _client.getOptionsBuilderFactory()
+      .newUploadOptionsBuilder()
+      .setFile(toUpload)
+      .setBucketName(Utils.getBucketName(dest))
+      .setObjectKey(Utils.getObjectKey(dest))
+      .setCannedAcl("authenticated-read")
+      .createOptions();
+    StoreFile f = _client.upload(upOpts).get();
+    Assert.assertNotNull(f);
+
+    // rename file
+    RenameOptions renameOptions = _client.getOptionsBuilderFactory()
+      .newRenameOptionsBuilder()
+      .setSourceBucketName(_testBucket)
+      .setSourceObjectKey(f.getObjectKey())
+      .setDestinationBucketName(_testBucket)
+      .setDestinationObjectKey(f.getObjectKey() + "-RENAME")
+      .createOptions();
+    StoreFile rename = _client.rename(renameOptions).get();
+    String expectedKey = TestUtils.addPrefix("test-rename-acl/" + toUpload.getName() + "-RENAME");
+    Assert.assertEquals(expectedKey, rename.getObjectKey());
+    dest = TestUtils.getUri(_testBucket, rename.getObjectKey(), "");
+    AclHandler aclHandler = _client.getAclHandler();
+
+    // validate ACL - authenticated-read
+    Acl destObjectAcl = aclHandler.getObjectAcl(Utils.getBucketName(dest), Utils.getObjectKey(dest))
+      .get();
+    Owner destBucketOwner = _client.getBucket(Utils.getBucketName((dest))).get().getOwner();
+
+    Assert.assertEquals(destObjectAcl.getGrants().size(), 2);
+
+    AclGrant destFcAclGrant;
+    AclGrant destReadAclGrant;
+    if(destObjectAcl.getGrants().get(0).getPermission().toString().equals("FULL_CONTROL"))
+    {
+      destFcAclGrant = destObjectAcl.getGrants().get(0);
+      destReadAclGrant = destObjectAcl.getGrants().get(1);
+    }
+    else
+    {
+      destFcAclGrant = destObjectAcl.getGrants().get(1);
+      destReadAclGrant = destObjectAcl.getGrants().get(0);
+    }
+
+    AclPermission destPerm = destFcAclGrant.getPermission();
+    Assert.assertEquals(destPerm.toString(), "FULL_CONTROL");
+    AclGrantee destGrantee = destFcAclGrant.getGrantee();
+    Assert.assertEquals(destGrantee.getId(), destBucketOwner.getId());
+
+    destPerm = destReadAclGrant.getPermission();
+    Assert.assertEquals(destPerm.toString(), "READ");
+    destGrantee = destReadAclGrant.getGrantee();
+    Assert.assertEquals(destGrantee.getId(),
+      "http://acs.amazonaws.com/groups/global/AuthenticatedUsers");
+  }
+
+
+  @Test
+  public void testNewS3Acl()
+    throws Throwable
+  {
+    // this test makes sense only for AWS S3. Minio doesn't support ACLs and current ACL
+    // support on GCS is limited
+    Assume.assumeTrue(TestUtils.getService().equalsIgnoreCase("s3") &&
+      TestUtils.supportsAcl());
+
+    // create test file and upload it
+    int fileSize = 100;
+    File toUpload = TestUtils.createTextFile(fileSize);
+    String rootPrefix = TestUtils.addPrefix("test-rename-acl");
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
+    Assert.assertNotNull(f);
+
+    // rename file
+    RenameOptions renameOptions = _client.getOptionsBuilderFactory()
+      .newRenameOptionsBuilder()
+      .setSourceBucketName(_testBucket)
+      .setSourceObjectKey(f.getObjectKey())
+      .setDestinationBucketName(_testBucket)
+      .setDestinationObjectKey(f.getObjectKey() + "-RENAME")
+      .setCannedAcl("authenticated-read")
+      .createOptions();
+    StoreFile rename = _client.rename(renameOptions).get();
+    String expectedKey = TestUtils.addPrefix("test-rename-acl/" + toUpload.getName() + "-RENAME");
+    Assert.assertEquals(expectedKey, rename.getObjectKey());
+    dest = TestUtils.getUri(_testBucket, rename.getObjectKey(), "");
+    AclHandler aclHandler = _client.getAclHandler();
+
+    // validate ACL - authenticated-read (specified in rename op)
+    Acl destObjectAcl = aclHandler.getObjectAcl(Utils.getBucketName(dest), Utils.getObjectKey(dest))
+      .get();
+    Owner destBucketOwner = _client.getBucket(Utils.getBucketName((dest))).get().getOwner();
+
+    Assert.assertEquals(destObjectAcl.getGrants().size(), 2);
+
+    AclGrant fcAclGrant;
+    AclGrant readAclGrant;
+    if(destObjectAcl.getGrants().get(0).getPermission().toString().equals("FULL_CONTROL"))
+    {
+      fcAclGrant = destObjectAcl.getGrants().get(0);
+      readAclGrant = destObjectAcl.getGrants().get(1);
+    }
+    else
+    {
+      fcAclGrant = destObjectAcl.getGrants().get(1);
+      readAclGrant = destObjectAcl.getGrants().get(0);
+    }
+
+    AclPermission destPerm = fcAclGrant.getPermission();
+    Assert.assertEquals(destPerm.toString(), "FULL_CONTROL");
+    AclGrantee destGrantee = fcAclGrant.getGrantee();
+    Assert.assertEquals(destGrantee.getId(), destBucketOwner.getId());
+
+    destPerm = readAclGrant.getPermission();
+    Assert.assertEquals(destPerm.toString(), "READ");
+    destGrantee = readAclGrant.getGrantee();
+    Assert.assertEquals(destGrantee.getId(),
+      "http://acs.amazonaws.com/groups/global/AuthenticatedUsers");
+  }
+
+
+  @Test
+  public void testUserMetadata()
+    throws Throwable
+  {
+    // support for metadata manipulation on GCS is limited
+    Assume.assumeTrue(!TestUtils.getService().equalsIgnoreCase("gs"));
+
+    // create a small file and upload it
+    int fileSize = 100;
+    String rootPrefix = TestUtils.addPrefix("test-rename-metadata");
+    File toUpload = TestUtils.createTextFile(fileSize);
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
+    Assert.assertNotNull(f);
+
+    // rename file
+    RenameOptions renameOptions = _client.getOptionsBuilderFactory()
+      .newRenameOptionsBuilder()
+      .setSourceBucketName(_testBucket)
+      .setSourceObjectKey(f.getObjectKey())
+      .setDestinationBucketName(_testBucket)
+      .setDestinationObjectKey(f.getObjectKey() + "-RENAME")
+      .setCannedAcl("authenticated-read")
+      .createOptions();
+    StoreFile rename = _client.rename(renameOptions).get();
+    String expectedKey = TestUtils.addPrefix("test-rename-metadata/" + toUpload.getName() +
+      "-RENAME");
+    Assert.assertEquals(expectedKey, rename.getObjectKey());
+    dest = TestUtils.getUri(_testBucket, rename.getObjectKey(), "");
+
+    // verify metadata
+    Metadata destMeta = TestUtils.objectExists(Utils.getBucketName(dest), Utils.getObjectKey(dest));
+    Assert.assertNotNull(destMeta);
+    Map<String, String> destUserMeta = destMeta.getUserMetadata();
+    Assert.assertNotNull(destUserMeta);
+    Assert.assertEquals(destUserMeta.size(), 3);
+    Assert.assertEquals(Long.parseLong(destUserMeta.get("s3tool-chunk-size")),
+      Utils.getDefaultChunkSize(fileSize));
+    Assert.assertEquals(Integer.parseInt(destUserMeta.get("s3tool-file-length")), fileSize);
+    Assert.assertEquals(Integer.parseInt(destUserMeta.get("s3tool-version")), Version.CURRENT);
+  }
+
+
+  @Test
+  public void testUserMetadataEncrypted()
+    throws Throwable
+  {
+    // support for metadata manipulation on GCS is limited
+    Assume.assumeTrue(!TestUtils.getService().equalsIgnoreCase("gs"));
+
+    // generate new public/private key pair
+    File keyDir = TestUtils.createTmpDir(true);
+    TestUtils.setKeyProvider(keyDir);
+    String keyName = "cloud-store-ut-1";
+    TestUtils.createEncryptionKey(keyDir, keyName);
+    String rootPrefix = TestUtils.addPrefix("test-rename-metadata");
+
+    // create a small file and upload
+    int fileSize = 100;
+    File toUpload = TestUtils.createTextFile(fileSize);
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, keyName);
+    Assert.assertNotNull(f);
+    long chunkSize = Utils.getDefaultChunkSize(fileSize);
+
+    // rename file
+    RenameOptions renameOptions = _client.getOptionsBuilderFactory()
+      .newRenameOptionsBuilder()
+      .setSourceBucketName(_testBucket)
+      .setSourceObjectKey(f.getObjectKey())
+      .setDestinationBucketName(_testBucket)
+      .setDestinationObjectKey(f.getObjectKey() + "-RENAME")
+      .setCannedAcl("authenticated-read")
+      .createOptions();
+    StoreFile rename = _client.rename(renameOptions).get();
+    String expectedKey = TestUtils.addPrefix("test-rename-metadata/" + toUpload.getName() +
+      "-RENAME");
+    Assert.assertEquals(expectedKey, rename.getObjectKey());
+    dest = TestUtils.getUri(_testBucket, rename.getObjectKey(), "");
+
+    // verify metadata
+    Metadata destMeta = TestUtils.objectExists(Utils.getBucketName(dest), Utils.getObjectKey(dest));
+    Assert.assertNotNull(destMeta);
+    Cipher cipherAES = Cipher.getInstance("AES/CBC/PKCS5Padding");
+    long blockSize = cipherAES.getBlockSize();
+    long partSize = blockSize * (fileSize / blockSize + 2);
+    Assert.assertEquals(destMeta.getContentLength(), partSize);
+
+    // verify user metadata
+    Map<String, String> destUserMeta = destMeta.getUserMetadata();
+    Assert.assertNotNull(destUserMeta);
+    Assert.assertEquals(destUserMeta.size(), 6);
+    Assert.assertEquals(Long.parseLong(destUserMeta.get("s3tool-chunk-size")), chunkSize);
+    Assert.assertEquals(Integer.parseInt(destUserMeta.get("s3tool-file-length")), fileSize);
+    Assert.assertEquals(Integer.parseInt(destUserMeta.get("s3tool-version")), Version.CURRENT);
+    Assert.assertEquals(destUserMeta.get("s3tool-key-name"), keyName);
+
+    PrivateKey privKey = _client.getKeyProvider().getPrivateKey(keyName);
+    Cipher cipherRSA = Cipher.getInstance("RSA");
+    cipherRSA.init(Cipher.DECRYPT_MODE, privKey);
+    String symKeyStr = destUserMeta.get("s3tool-symmetric-key");
+    // Make sure we can decrypt symmetric key
+    cipherRSA.doFinal(DatatypeConverter.parseBase64Binary(symKeyStr));
+
+    Key pubKey = _client.getKeyProvider().getPublicKey(keyName);
+    String pubKeyHash = DatatypeConverter.printBase64Binary(DigestUtils.sha256(pubKey.getEncoded()));
+    Assert.assertEquals(destUserMeta.get("s3tool-pubkey-hash"), pubKeyHash.substring(0, 8));
   }
 
 

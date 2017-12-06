@@ -17,14 +17,21 @@
 package com.logicblox.cloudstore;
 
 import junit.framework.Assert;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import javax.crypto.Cipher;
+import javax.xml.bind.DatatypeConverter;
 import java.io.File;
 import java.net.URI;
+import java.security.Key;
+import java.security.PrivateKey;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -487,6 +494,94 @@ public class UploadDownloadTests
     // FIXME - this info is not being populated right now
   }
 
+
+  @Test
+  public void testDefaultS3Acl()
+    throws Throwable
+  {
+    // this test makes sense only for AWS S3. Minio doesn't support ACLs and current ACL
+    // support on GCS is limited
+    Assume.assumeTrue(TestUtils.getService().equalsIgnoreCase("s3") &&
+      TestUtils.supportsAcl());
+
+    // Create a small file and upload it
+    long fileSize = 100;
+    File toUpload = TestUtils.createTextFile(fileSize);
+    String rootPrefix = TestUtils.addPrefix("");
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    TestUtils.uploadFile(toUpload, dest);
+
+    AclHandler aclHandler = _client.getAclHandler();
+    Acl objectAcl = aclHandler.getObjectAcl(Utils.getBucketName(dest), Utils.getObjectKey(dest))
+      .get();
+    Owner bucketOwner = _client.getBucket(Utils.getBucketName((dest))).get().getOwner();
+
+    // Test default ACL - bucket-owner-full-control
+    Assert.assertEquals(objectAcl.getGrants().size(), 1);
+    AclPermission perm = objectAcl.getGrants().get(0).getPermission();
+    Assert.assertEquals(perm.toString(), "FULL_CONTROL");
+
+    AclGrantee grantee = objectAcl.getGrants().get(0).getGrantee();
+    Assert.assertEquals(grantee.getId(), bucketOwner.getId());
+  }
+
+  @Test
+  public void testNonDefaultS3Acl()
+    throws Throwable
+  {
+    // this test makes sense only for AWS S3. Minio doesn't support ACLs and current ACL
+    // support on GCS is limited
+    Assume.assumeTrue(TestUtils.getService().equalsIgnoreCase("s3") &&
+      TestUtils.supportsAcl());
+
+    // Create a small file and upload it
+    long fileSize = 100;
+    File toUpload = TestUtils.createTextFile(fileSize);
+    String rootPrefix = TestUtils.addPrefix("");
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+
+    UploadOptions upOpts = _client.getOptionsBuilderFactory()
+      .newUploadOptionsBuilder()
+      .setFile(toUpload)
+      .setBucketName(Utils.getBucketName(dest))
+      .setObjectKey(Utils.getObjectKey(dest))
+      .setCannedAcl("authenticated-read")
+      .createOptions();
+    StoreFile f = _client.upload(upOpts).get();
+
+    AclHandler aclHandler = _client.getAclHandler();
+    Acl objectAcl = aclHandler.getObjectAcl(Utils.getBucketName(dest), Utils.getObjectKey(dest))
+      .get();
+    Owner bucketOwner = _client.getBucket(Utils.getBucketName((dest))).get().getOwner();
+
+    // authenticated-read ACL: Owner gets FULL_CONTROL. The AuthenticatedUsers group gets READ
+    // access.
+    Assert.assertEquals(objectAcl.getGrants().size(), 2);
+
+    AclGrant fcAclGrant;
+    AclGrant readAclGrant;
+    if(objectAcl.getGrants().get(0).getPermission().toString().equals("FULL_CONTROL"))
+    {
+      fcAclGrant = objectAcl.getGrants().get(0);
+      readAclGrant = objectAcl.getGrants().get(1);
+    }
+    else
+    {
+      fcAclGrant = objectAcl.getGrants().get(1);
+      readAclGrant = objectAcl.getGrants().get(0);
+    }
+
+    AclPermission perm = fcAclGrant.getPermission();
+    Assert.assertEquals(perm.toString(), "FULL_CONTROL");
+    AclGrantee grantee = fcAclGrant.getGrantee();
+    Assert.assertEquals(grantee.getId(), bucketOwner.getId());
+
+    perm = readAclGrant.getPermission();
+    Assert.assertEquals(perm.toString(), "READ");
+    grantee = readAclGrant.getGrantee();
+    Assert.assertEquals(grantee.getId(),
+      "http://acs.amazonaws.com/groups/global/AuthenticatedUsers");
+  }
 
   @Test
   public void testEmptyFile()
@@ -1031,6 +1126,153 @@ public class UploadDownloadTests
     Assert.assertNotNull(f);
   }
 
+  @Test
+  public void testMissingPubkeyHash()
+    throws Throwable
+  {
+    // generate new public/private key pair
+    File keydir = TestUtils.createTmpDir(true);
+    String key1 = "cloud-store-ut-1";
+    TestUtils.createEncryptionKey(keydir, key1);
+    TestUtils.setKeyProvider(keydir);
+    String rootPrefix = TestUtils.addPrefix("");
+
+    // create a small file and upload
+    File toUpload = TestUtils.createTextFile(100);
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, key1);
+    Assert.assertNotNull(f);
+
+    // remove "s3tool-pubkey-hash" from metadata to simulate files
+    // uploaded by older cloud-store versions
+    String objKey = rootPrefix + toUpload.getName();
+    Metadata destMeta = TestUtils.objectExists(Utils.getBucketName(dest), Utils.getObjectKey(dest));
+    Assert.assertNotNull(destMeta);
+    Map<String, String> destUserMeta = destMeta.getUserMetadata();
+    Assert.assertNotNull(destUserMeta);
+    Assert.assertTrue(destUserMeta.containsKey("s3tool-pubkey-hash"));
+    destUserMeta.remove("s3tool-pubkey-hash");
+    TestUtils.updateObjectUserMetadata(_testBucket, objKey, destUserMeta);
+
+    // make sure "s3tool-pubkey-hash" has been removed
+    destMeta = TestUtils.objectExists(Utils.getBucketName(dest), Utils.getObjectKey(dest));
+    Assert.assertNotNull(destMeta);
+    destUserMeta = destMeta.getUserMetadata();
+    Assert.assertNotNull(destUserMeta);
+    Assert.assertFalse(destUserMeta.containsKey("s3tool-pubkey-hash"));
+
+    // download the file and compare it with the original
+    File dlTemp = TestUtils.createTmpFile();
+    f = TestUtils.downloadFile(dest, dlTemp);
+    Assert.assertNotNull(f.getLocalFile());
+    Assert.assertTrue(dlTemp.exists());
+    Assert.assertTrue(TestUtils.compareFiles(toUpload, f.getLocalFile()));
+    dlTemp.delete();
+  }
+
+  @Test
+  public void testUserMetadata()
+    throws Throwable
+  {
+    // create a small file and upload it
+    int fileSize = 100;
+    String rootPrefix = TestUtils.addPrefix("");
+    File toUpload = TestUtils.createTextFile(fileSize);
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    StoreFile f = TestUtils.uploadFile(toUpload, dest);
+    Assert.assertNotNull(f);
+
+    // verify metadata
+    Metadata destMeta = TestUtils.objectExists(Utils.getBucketName(dest), Utils.getObjectKey(dest));
+    Assert.assertNotNull(destMeta);
+    Map<String, String> destUserMeta = destMeta.getUserMetadata();
+    Assert.assertNotNull(destUserMeta);
+    Assert.assertEquals(destUserMeta.size(), 3);
+    Assert.assertEquals(Long.parseLong(destUserMeta.get("s3tool-chunk-size")),
+      Utils.getDefaultChunkSize(fileSize));
+    Assert.assertEquals(Integer.parseInt(destUserMeta.get("s3tool-file-length")), fileSize);
+    Assert.assertEquals(Integer.parseInt(destUserMeta.get("s3tool-version")), Version.CURRENT);
+  }
+
+  @Test
+  public void testCustomChunkSize()
+    throws Throwable
+  {
+    // Create a small file and upload it w/ default ACL
+    long fileSize = 100;
+    File toUpload = TestUtils.createTextFile(fileSize);
+    String rootPrefix = TestUtils.addPrefix("");
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+
+    long chunkSize = 1024 * 1024;
+    UploadOptions upOpts = _client.getOptionsBuilderFactory()
+      .newUploadOptionsBuilder()
+      .setFile(toUpload)
+      .setBucketName(Utils.getBucketName(dest))
+      .setObjectKey(Utils.getObjectKey(dest))
+      .setChunkSize(chunkSize)
+      .createOptions();
+    StoreFile f = _client.upload(upOpts).get();
+    Assert.assertNotNull(f);
+
+    // verify metadata
+    Metadata destMeta = TestUtils.objectExists(Utils.getBucketName(dest), Utils.getObjectKey(dest));
+    Assert.assertNotNull(destMeta);
+    Map<String, String> destUserMeta = destMeta.getUserMetadata();
+    Assert.assertNotNull(destUserMeta);
+    Assert.assertEquals(destUserMeta.size(), 3);
+    Assert.assertEquals(Long.parseLong(destUserMeta.get("s3tool-chunk-size")), chunkSize);
+    Assert.assertEquals(Integer.parseInt(destUserMeta.get("s3tool-file-length")), fileSize);
+    Assert.assertEquals(Integer.parseInt(destUserMeta.get("s3tool-version")), Version.CURRENT);
+  }
+
+  @Test
+  public void testUserMetadataEncrypted()
+    throws Throwable
+  {
+    // generate new public/private key pair
+    File keyDir = TestUtils.createTmpDir(true);
+    TestUtils.setKeyProvider(keyDir);
+    String keyName = "cloud-store-ut-1";
+    TestUtils.createEncryptionKey(keyDir, keyName);
+    String rootPrefix = TestUtils.addPrefix("");
+
+    // create a small file and upload
+    int fileSize = 100;
+    File toUpload = TestUtils.createTextFile(fileSize);
+    URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
+    StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, keyName);
+    Assert.assertNotNull(f);
+    long chunkSize = Utils.getDefaultChunkSize(fileSize);
+
+    // verify metadata
+    Metadata destMeta = TestUtils.objectExists(Utils.getBucketName(dest), Utils.getObjectKey(dest));
+    Assert.assertNotNull(destMeta);
+    Cipher cipherAES = Cipher.getInstance("AES/CBC/PKCS5Padding");
+    long blockSize = cipherAES.getBlockSize();
+    long partSize = blockSize * (fileSize / blockSize + 2);
+    Assert.assertEquals(destMeta.getContentLength(), partSize);
+
+    // verify user metadata
+    Map<String, String> destUserMeta = destMeta.getUserMetadata();
+    Assert.assertNotNull(destUserMeta);
+    Assert.assertEquals(destUserMeta.size(), 6);
+    Assert.assertEquals(Long.parseLong(destUserMeta.get("s3tool-chunk-size")), chunkSize);
+    Assert.assertEquals(Integer.parseInt(destUserMeta.get("s3tool-file-length")), fileSize);
+    Assert.assertEquals(Integer.parseInt(destUserMeta.get("s3tool-version")), Version.CURRENT);
+    Assert.assertEquals(destUserMeta.get("s3tool-key-name"), keyName);
+
+    PrivateKey privKey = _client.getKeyProvider().getPrivateKey(keyName);
+    Cipher cipherRSA = Cipher.getInstance("RSA");
+    cipherRSA.init(Cipher.DECRYPT_MODE, privKey);
+    String symKeyStr = destUserMeta.get("s3tool-symmetric-key");
+    // Make sure we can decrypt symmetric key
+    cipherRSA.doFinal(DatatypeConverter.parseBase64Binary(symKeyStr));
+
+    Key pubKey = _client.getKeyProvider().getPublicKey(keyName);
+    String pubKeyHash = DatatypeConverter.printBase64Binary(DigestUtils.sha256(pubKey.getEncoded()));
+    Assert.assertEquals(destUserMeta.get("s3tool-pubkey-hash"), pubKeyHash.substring(0, 8));
+  }
 
   private synchronized int getPartCount()
   {

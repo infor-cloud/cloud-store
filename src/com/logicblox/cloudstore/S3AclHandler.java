@@ -16,9 +16,26 @@
 
 package com.logicblox.cloudstore;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.AccessControlList;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.model.Grant;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+
+import java.util.ArrayList;
+import java.util.List;
+
 public class S3AclHandler
   implements AclHandler
 {
+  private final AmazonS3 _s3Client;
+
+  S3AclHandler(AmazonS3 client)
+  {
+    _s3Client = client;
+  }
+
   @Override
   public boolean isCannedAclValid(String cannedAcl)
   {
@@ -26,8 +43,30 @@ public class S3AclHandler
   }
 
   @Override
-  public String getDefaultAcl()
+  public String getDefaultCannedAcl()
   {
     return "bucket-owner-full-control";
+  }
+
+  @Override
+  public ListenableFuture<Acl> getObjectAcl(String bucketName, String objectKey)
+    throws AmazonS3Exception
+  {
+    AccessControlList s3Acl;
+    s3Acl = _s3Client.getObjectAcl(bucketName, objectKey);
+
+    Owner owner = new Owner(s3Acl.getOwner().getId(), s3Acl.getOwner().getDisplayName());
+
+    List<AclGrant> grants = new ArrayList<>();
+    for (Grant grant : s3Acl.getGrantsAsList())
+    {
+      AclGrantee grantee = new AclGrantee(grant.getGrantee().getIdentifier());
+      AclPermission permission = new AclPermission(grant.getPermission().toString());
+
+      grants.add(new AclGrant(grantee, permission));
+    }
+
+    return Futures.immediateFuture(new Acl(owner, grants));
+
   }
 }

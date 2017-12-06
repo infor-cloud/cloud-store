@@ -17,14 +17,17 @@
 package com.logicblox.cloudstore;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.model.StorageObject;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -66,7 +69,7 @@ public class GCSClient
     _s3Client = new S3ClientDelegatee(internalS3Client, apiExecutor, internalExecutor, keyProvider);
     _gcsClient = internalGCSClient;
     setEndpoint(_GCS_XML_API_ENDPOINT);
-    _aclHandler = new GCSAclHandler();
+    _aclHandler = new GCSAclHandler(_gcsClient, internalS3Client);
     _storageClassHandler = new GCSStorageClassHandler();
   }
 
@@ -185,6 +188,33 @@ public class GCSClient
   public ListenableFuture<List<Bucket>> listBuckets()
   {
     return _s3Client.listBuckets();
+  }
+
+  @Override
+  public ListenableFuture<Bucket> getBucket(String bucketName)
+    throws IOException
+  {
+    Storage.Buckets.Get getBucket = _gcsClient.buckets().get(bucketName);
+    getBucket.setProjection("full");  // if we are interested in acls.
+    try
+    {
+      com.google.api.services.storage.model.Bucket b = getBucket.execute();
+      com.google.api.services.storage.model.Bucket.Owner o = b.getOwner();
+      Owner owner;
+      if(o.getEntityId() == null)
+        owner = new Owner(o.getEntity(), o.getEntity());
+      else
+        owner = new Owner(o.getEntityId(), o.getEntity());
+      Date creationDate = new Date(b.getTimeCreated().getValue());
+      Bucket bucket = new Bucket(b.getName(), creationDate, owner);
+      return Futures.immediateFuture(bucket);
+    }
+    catch(GoogleJsonResponseException exc)
+    {
+      if(exc.getStatusCode() == 404)
+        throw new UsageException("Bucket \"" + bucketName + "\" not found");
+      throw exc;
+    }
   }
 
   @Override

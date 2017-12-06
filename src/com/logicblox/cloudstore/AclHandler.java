@@ -16,6 +16,8 @@
 
 package com.logicblox.cloudstore;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 /**
  * AclHandler is an interface that abstracts over the access control functionality
  * provided by different cloud store services.  
@@ -38,5 +40,12 @@ public interface AclHandler
    *
    * @return Returns default access control list name.
    */
-  String getDefaultAcl();
+  String getDefaultCannedAcl();
+
+  /**
+   * Get the ACL of the given object.
+   *
+   * @return Returns object's ACL or null if the store does not support ACLs (like minio)
+   */
+  ListenableFuture<Acl> getObjectAcl(String bucketName, String objectKey);
 }

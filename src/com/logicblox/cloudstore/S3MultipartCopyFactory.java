@@ -18,6 +18,8 @@ package com.logicblox.cloudstore;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.Headers;
+import com.amazonaws.services.s3.model.AccessControlList;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -84,8 +86,19 @@ class S3MultipartCopyFactory
       }
       else
       {
-        req.setAccessControlList(S3Client.getObjectAcl(_client, _options.getSourceBucketName(),
-          _options.getSourceObjectKey()));
+        try
+        {
+          final AccessControlList objectAcl = S3Client.getObjectAcl(_client,
+            _options.getSourceBucketName(), _options.getSourceObjectKey());
+          req.setAccessControlList(objectAcl);
+        }
+        catch(AmazonS3Exception ex)
+        {
+          if(!ex.getErrorCode().equalsIgnoreCase("NotImplemented"))
+          {
+            throw ex;
+          }
+        }
       }
       // req.setStorageClass(StorageClass.fromValue(storageClass));
       InitiateMultipartUploadResult res = _client.initiateMultipartUpload(req);

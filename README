@@ -16,8 +16,8 @@ To build and install:
     $ ./configure
     $ make install
 
-The default installation prefix is `/opt/logicblox/s3lib`. To
-configure this, use the `--prefix` option. For example:
+The default installation prefix is `/opt/logicblox/cloudstore`, unless `CLOUDSTORE_HOME`
+is set. To configure this, use the `--prefix` option. For example:
 
     $ ./configure --prefix=$HOME/cloudstore
 

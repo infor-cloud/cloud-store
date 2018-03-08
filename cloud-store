@@ -25,6 +25,7 @@ prefix = os.path.dirname(bindir)
 def run(args):
     subenv = os.environ.copy()
     subenv['S3LIB_HOME'] = prefix
+    subenv['CLOUDSTORE_HOME'] = prefix
 
     java_args = ['java', '-jar', prefix + '/lib/java/cloudstore-0.2.jar']
     java_args.extend(args)

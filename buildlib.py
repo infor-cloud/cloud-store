@@ -41,16 +41,6 @@ def parse_arguments(prefix, deps = {}):
                           metavar='DIR',
                           default=default_path)
     g_args = parser.parse_args()
-    write_env()
-
-def write_env():
-    envsh = open('config-env.sh', 'w')
-    for k ,v in g_args.__dict__.iteritems():
-        if k.startswith('with_'):
-            dep = k[len('with_'):]
-            vsh = v.replace('(','').replace(')','')
-            envsh.write('export ' + dep.upper() +  '=' + vsh + '\n')
-    envsh.close()
 
 def open_makefile():
     global g_makefile

@@ -244,7 +244,7 @@ class S3DownloadCommand
           {
             if(_encKeyProvider == null)
             {
-              throw new UsageException(errPrefix + "No encryption key " + "provider is specified");
+              throw new UsageException(errPrefix + "No encryption key provider is specified");
             }
             String keyName = meta.get("s3tool-key-name");
             String keyNamesStr = meta.get("s3tool-key-name");

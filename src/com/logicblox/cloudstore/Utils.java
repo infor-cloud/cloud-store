@@ -92,7 +92,7 @@ public class Utils
   {
     if(null == _defaultKeyDir)
     {
-      _defaultKeyDir = System.getProperty("user.home") + File.separator + ".s3lib-keys";
+      _defaultKeyDir = System.getProperty("user.home") + File.separator + ".cloudstore-keys";
     }
     return _defaultKeyDir;
   }
@@ -405,19 +405,11 @@ public class Utils
 
   public static KeyProvider createKeyProvider(String encKeyDirectory)
   {
-    File dir = new File(encKeyDirectory);
-    if(!dir.exists() && !dir.mkdirs())
-    {
-      throw new UsageException("specified key directory '" + encKeyDirectory + "' does not exist");
-    }
-
-    if(!dir.isDirectory())
-    {
-      throw new UsageException(
-        "specified key directory '" + encKeyDirectory + "' is not a directory");
-    }
-
-    return new DirectoryKeyProvider(dir);
+    // Check old default key directory (~/.s3lib-keys) as well, for backwards compatibility
+    List<File> dirs = Arrays.asList(
+      new File(encKeyDirectory),
+      new File(System.getProperty("user.home") + File.separator + ".s3lib-keys"));
+    return new DirectoryKeyProvider(dirs);
   }
 
   public static boolean viaProxy()

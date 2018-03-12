@@ -36,6 +36,9 @@ import java.security.cert.CertificateFactory;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 public class DirectoryKeyProvider
@@ -54,11 +57,16 @@ public class DirectoryKeyProvider
   private static final Pattern _END_CERTIFICATE = Pattern.compile(
     "^----[\\-\\ ]END CERTIFICATE---[-]+$");
 
-  private File _directory;
+  private Set<File> _directories = new HashSet<>();
 
   public DirectoryKeyProvider(File directory)
   {
-    _directory = directory;
+    _directories.add(directory);
+  }
+
+  public DirectoryKeyProvider(List<File> directories)
+  {
+    _directories.addAll(directories);
   }
 
   public PrivateKey getPrivateKey(String alias)
@@ -137,18 +145,20 @@ public class DirectoryKeyProvider
   {
     File result = null;
 
-    if(!_directory.exists() || !_directory.isDirectory())
+    for(File dir : _directories)
     {
-      throw new NoSuchKeyException("Invalid key directory: " + _directory.getPath());
-    }
+      if(!dir.exists() || !dir.isDirectory())
+        continue;
 
-    // iterate of the actual files to avoid security issues with alias
-    // that are not simple file names.
-    for(File file : _directory.listFiles())
-    {
-      if(file.getName().equals(alias + "." + extension))
+      // iterate of the actual files to avoid security issues with alias
+      // that are not simple file names.
+      for(File file : dir.listFiles())
       {
-        result = file;
+        if(file.getName().equals(alias + "." + extension))
+        {
+          result = file;
+          break;
+        }
       }
     }
 

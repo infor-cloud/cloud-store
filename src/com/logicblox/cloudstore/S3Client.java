@@ -95,7 +95,7 @@ public class S3Client
    * @see S3Client#S3Client(AmazonS3, ListeningExecutorService,
    * ListeningScheduledExecutorService, KeyProvider)
    */
-  public S3Client(AmazonS3 s3Client)
+  S3Client(AmazonS3 s3Client)
   {
     this(s3Client, Utils.createApiExecutor(10), Utils.createInternalExecutor(50),
       Utils.createKeyProvider(Utils.getDefaultKeyDirectory()));
@@ -112,7 +112,7 @@ public class S3Client
    * @see S3Client#S3Client(AmazonS3)
    * @see S3Client#S3Client(AmazonS3, ListeningExecutorService, ListeningScheduledExecutorService, KeyProvider)
    */
-  public S3Client(AmazonS3 s3Client, KeyProvider keyProvider)
+  S3Client(AmazonS3 s3Client, KeyProvider keyProvider)
   {
     this(s3Client, Utils.createApiExecutor(10), Utils.createInternalExecutor(50), keyProvider);
     this.setRetryCount(10);
@@ -132,7 +132,7 @@ public class S3Client
    * @see S3Client#S3Client(AmazonS3)
    * @see S3Client#S3Client(AmazonS3, ListeningExecutorService, ListeningScheduledExecutorService, KeyProvider)
    */
-  public S3Client(
+  S3Client(
     AWSCredentialsProvider credentials, ListeningExecutorService s3Executor,
     ListeningScheduledExecutorService executor, KeyProvider keyProvider)
   {
@@ -164,7 +164,7 @@ public class S3Client
    *                    upload/download.
    * @see S3Client#S3Client(AmazonS3)
    */
-  public S3Client(
+  S3Client(
     AmazonS3 s3Client, ListeningExecutorService s3Executor,
     ListeningScheduledExecutorService executor, KeyProvider keyProvider)
   {

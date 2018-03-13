@@ -413,7 +413,12 @@ public class Utils
     // as well for backwards compatibility
     final File defKeyDir = new File(getDefaultKeyDirectory());
     if(keyDir.toPath().equals(defKeyDir.toPath()))
-      keyDirs.add(new File(System.getProperty("user.home") + File.separator + ".s3lib-keys"));
+    {
+      String prevDefKeyDirPath = System.getProperty("user.home") + File.separator + ".s3lib-keys";
+      File prevDefKeyDir = new File(prevDefKeyDirPath);
+      if(prevDefKeyDir.exists() && prevDefKeyDir.isDirectory())
+        keyDirs.add(prevDefKeyDir);
+    }
 
     return new DirectoryKeyProvider(keyDirs);
   }

@@ -405,11 +405,17 @@ public class Utils
 
   public static KeyProvider createKeyProvider(String encKeyDirectory)
   {
-    // Check old default key directory (~/.s3lib-keys) as well, for backwards compatibility
-    List<File> dirs = Arrays.asList(
-      new File(encKeyDirectory),
-      new File(System.getProperty("user.home") + File.separator + ".s3lib-keys"));
-    return new DirectoryKeyProvider(dirs);
+    File keyDir = new File(encKeyDirectory);
+    List<File> keyDirs = new ArrayList<>();
+    keyDirs.add(keyDir);
+
+    // If the default key directory is used, check the previous default directory (~/.s3lib-keys)
+    // as well for backwards compatibility
+    final File defKeyDir = new File(getDefaultKeyDirectory());
+    if(keyDir.toPath().equals(defKeyDir.toPath()))
+      keyDirs.add(new File(System.getProperty("user.home") + File.separator + ".s3lib-keys"));
+
+    return new DirectoryKeyProvider(keyDirs);
   }
 
   public static boolean viaProxy()

@@ -23,10 +23,11 @@ from os.path import abspath, dirname, join
 
 moduledir = dirname(abspath(__file__))
 
+prefix = os.getenv('CLOUDSTORE_HOME', '/opt/logicblox/cloudstore')
 depdir = os.getenv('LB_UNIVERSE_DEPS', '/opt/logicblox/lb-universe-deps')
 
 parse_arguments(
-  prefix='/opt/logicblox/s3lib',
+  prefix = prefix,
   deps = { 
            'guava' : depdir,
            'jcommander' : depdir,

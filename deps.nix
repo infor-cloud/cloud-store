@@ -54,7 +54,7 @@ in {
       sha256 = "1l8v7bykvaqrswbg4jlwwb96v308020q2wiaq8w7lv1q748k7vdh";
     };
 
-log4j =
+  log4j =
     buildjar {
       name = "log4j-1.2.13";
       url = http://repo1.maven.org/maven2/log4j/log4j/1.2.13/log4j-1.2.13.jar;

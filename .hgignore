@@ -5,6 +5,3 @@ buildlib.pyc
 ^build/
 ^dist/
 ^result/
-s3lib-example/.classpath
-s3lib-example/.project
-s3lib-example/target

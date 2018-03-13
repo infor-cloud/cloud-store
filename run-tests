@@ -20,12 +20,12 @@ set -e
 
 iterations=1
 
-cloudstore_jars=$LB_INSTALL_PREFIX/s3lib/lib/java
+cloudstore_jars=$CLOUDSTORE_HOME/lib/java
 
 test_jars=$PWD/build/jars
    # for local testing
 
-cp="$LOGICBLOX_HOME/share/java/junit-4.8.2.jar:$test_jars/cloudstore-test.jar:$cloudstore_jars/cloudstore-test.jar"
+cp="$cloudstore_jars/junit-4.8.2.jar:$test_jars/cloudstore-test.jar:$cloudstore_jars/cloudstore-test.jar"
 
 for i in $(seq 1 $iterations);
 do

@@ -47,7 +47,7 @@ let
         set -e
         minio_pid=""
 
-       cleanup_minio()
+        cleanup_minio()
         {
           if [[ -n "$minio_pid" ]];
           then
@@ -79,6 +79,7 @@ let
         sleep 5
 
         $jre/bin/java -cp ./lib/java/s3lib-test.jar com.logicblox.s3lib.TestRunner --keydir $keydir --endpoint $s3_endpoint
+        echo "End of unit tests"
       '';
 
       installPhase = ''

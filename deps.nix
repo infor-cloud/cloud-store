@@ -38,7 +38,7 @@ in {
       sha256 = "1l8v7bykvaqrswbg4jlwwb96v308020q2wiaq8w7lv1q748k7vdh";
     };
 
-log4j =
+  log4j =
     buildjar {
       name = "log4j-1.2.13";
       url = http://repo1.maven.org/maven2/log4j/log4j/1.2.13/log4j-1.2.13.jar;
@@ -54,9 +54,9 @@ log4j =
 
   commonscodec =
     buildjar {
-      name = "commons-codec-1.9";
-      url = http://repo1.maven.org/maven2/commons-codec/commons-codec/1.9/commons-codec-1.9.jar;
-      sha256 = "ad19d2601c3abf0b946b5c3a4113e226a8c1e3305e395b90013b78dd94a723ce";
+      name = "commons-codec-1.10";
+      url = http://repo1.maven.org/maven2/commons-codec/commons-codec/1.10/commons-codec-1.10.jar;
+      sha256 = "4241dfa94e711d435f29a4604a3e2de5c4aa3c165e23bd066be6fc1fc4309569";
     };
 
   aws_java_sdk =
@@ -120,9 +120,9 @@ log4j =
 
       jsr305 =
         buildjar {
-          name = "jsr305-1.3.9";
-          url = http://search.maven.org/remotecontent?filepath=com/google/code/findbugs/jsr305/1.3.9/jsr305-1.3.9.jar;
-          sha256 = "905721a0eea90a81534abb7ee6ef4ea2e5e645fa1def0a5cd88402df1b46c9ed";
+          name = "jsr305-3.0.1";
+          url = http://search.maven.org/remotecontent?filepath=com/google/code/findbugs/jsr305/3.0.1/jsr305-3.0.1.jar;
+          sha256 = "c885ce34249682bc0236b4a7d56efcc12048e6135a5baf7a9cde8ad8cda13fcd";
       };
     in
     pkgs.stdenv.mkDerivation rec {

@@ -104,6 +104,6 @@ bin_program('cloud-store')
 
 install_files(deps + test_deps, '$(prefix)/lib/java')
 
-dist_files(['README'])
+dist_files(['README.md'])
 
 close_makefile()

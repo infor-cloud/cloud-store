@@ -248,14 +248,6 @@ def jar(name,
         if install:
             install_dir(javadoc_dir, '$(prefix)/docs/api/' + name)
 
-    emit('findbugs.html : ' + jar_file)
-    emit('\tfb analyze ' +
-         ' -sourcepath ' + ':'.join(srcdirs) +
-         ' -auxclasspath ' + ':'.join(classpath) +
-         ' -effort:max' + 
-         ' -exclude findbugs-exclude-filter.xml' + 
-         ' -html -output findbugs.html ' + jar_file)
-
 def bin_program(name):
     install_file(name, '$(prefix)/bin')
     dist_files([name])

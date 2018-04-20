@@ -53,4 +53,5 @@ Authors
   * Thiago T. Bartolomei
   * Rob Vermaas
   * George Kollias
+  * Wes Hunter
 

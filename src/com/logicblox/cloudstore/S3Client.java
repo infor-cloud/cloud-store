@@ -83,12 +83,15 @@ public class S3Client
   /**
    * Constructs a new high-level S3 client to invoke operations on S3 or compatible service.
    * <p>
-   * Objects created by this constructor will: <ul> <li>use a thread pool of 10 threads to execute
-   * S3 HTTP API calls asynchronously</li> <li>use a thread pool of 50 threads to execute internal
-   * tasks asynchronously</li> <li>use a 5MB chunk-size for multi-part upload/download
-   * operations</li> <li>search {@code ~/.s3lib-keys} for specified cryptographic key-pair used to
-   * encrypt/decrypt files during upload/download</li> <li>retry a task 10 times in case of an
-   * error</li> </ul>
+   * Objects created by this constructor will:
+   * <ul>
+   *   <li>use a thread pool of 10 threads to execute S3 HTTP API calls asynchronously</li>
+   *   <li>use a thread pool of 50 threads to execute internal tasks asynchronously</li>
+   *   <li>use a 5MB chunk-size for multi-part upload/download operations</li>
+   *   <li>search {@code ~/.cloudstore-keys} for specified cryptographic key-pair used to
+   *   encrypt/decrypt files during upload/download</li>
+   *   <li>retry a task 10 times in case of an error</li>
+   * </ul>
    *
    * @param s3Client Low-level AWS S3 client responsible for authentication, proxying and HTTP
    *                 requests

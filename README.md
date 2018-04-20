@@ -31,7 +31,7 @@ Generate a key pair:
 
     $ cloud-store keygen -n testkeypair
 
-By default, the key pair is installed under `~/.s3lib-keys`.
+By default, the key pair is installed under `~/.cloudstore-keys`.
 
 Upload:
 

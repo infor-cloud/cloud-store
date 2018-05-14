@@ -186,7 +186,7 @@ class S3MultipartUpload
       req.setUploadId(_uploadId);
       req.setKey(getObjectKey());
 
-      // LB-2298: According to
+      // According to
       // https://github.com/aws/aws-sdk-java/issues/427#issuecomment-100518891
       // and
       // https://github.com/aws/aws-sdk-java/issues/427#issuecomment-100583279,
@@ -194,7 +194,7 @@ class S3MultipartUpload
       // either CipherWithInlineIVInputStream -if we encrypt- or
       // BufferedInputStream) we should set the "read limit" (which is the
       // maximum buffer size that could be consumed) as suggested in the
-      // error message mentioned in LB-2298. That limit should be the
+      // relevant error message. That limit should be the
       // expected max size of our input stream in bytes, plus 1, hence
       // _partSize+1.
       req.getRequestClientOptions().setReadLimit(Ints.checkedCast(_partSize + 1));

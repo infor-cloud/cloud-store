@@ -1136,7 +1136,7 @@ class Main
   class DownloadCommandOptions
     extends S3ObjectCommandOptions
   {
-    @Parameter(names = "-o", description = "Write output to file, or directory")
+    @Parameter(names = "-o", description = "Write output to file, or directory", required = true)
     String file = System.getProperty("user.dir");
 
     @Parameter(names = "--overwrite", description = "Overwrite existing file(s) if existing")

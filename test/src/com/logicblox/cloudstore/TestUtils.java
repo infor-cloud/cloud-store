@@ -466,14 +466,13 @@ public class TestUtils
       .setFile(dest)
       .setBucketName(Utils.getBucketName(src))
       .setObjectKey(Utils.getObjectKey(src))
-      .setRecursive(false)
       .setOverwrite(overwrite)
       .createOptions();
     return _client.download(dlOpts).get();
   }
 
 
-  public static List<StoreFile> downloadDir(URI src, File dest, boolean recursive)
+  public static List<StoreFile> downloadDir(URI src, File dest)
     throws Throwable
   {
     DownloadOptions dlOpts = _client.getOptionsBuilderFactory()
@@ -481,15 +480,13 @@ public class TestUtils
       .setFile(dest)
       .setBucketName(Utils.getBucketName(src))
       .setObjectKey(Utils.getObjectKey(src))
-      .setRecursive(recursive)
       .setOverwrite(true)
       .createOptions();
-    return _client.downloadDirectory(dlOpts).get();
+    return _client.downloadRecursively(dlOpts).get();
   }
 
 
-  public static List<StoreFile> downloadDir(
-    URI src, File dest, boolean recursive, boolean overwrite)
+  public static List<StoreFile> downloadDir(URI src, File dest, boolean overwrite)
     throws Throwable
   {
     DownloadOptions dlOpts = _client.getOptionsBuilderFactory()
@@ -497,10 +494,9 @@ public class TestUtils
       .setFile(dest)
       .setBucketName(Utils.getBucketName(src))
       .setObjectKey(Utils.getObjectKey(src))
-      .setRecursive(recursive)
       .setOverwrite(overwrite)
       .createOptions();
-    return _client.downloadDirectory(dlOpts).get();
+    return _client.downloadRecursively(dlOpts).get();
   }
 
 

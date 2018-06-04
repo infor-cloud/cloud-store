@@ -1168,7 +1168,6 @@ class Main
         .setFile(output)
         .setBucketName(getBucketName())
         .setObjectKey(getObjectKey())
-        .setRecursive(recursive)
         .setVersion(version)
         .setOverwrite(overwrite)
         .setDryRun(dryRun);
@@ -1179,16 +1178,18 @@ class Main
         dob.setOverallProgressListenerFactory(cplf);
       }
 
-      if(getObjectKey().endsWith("/") || getObjectKey().equals(""))
+      if(getObjectKey().endsWith("/") || getObjectKey().equals("") || recursive)
       {
-        result = client.downloadDirectory(dob.createOptions());
+        if (!recursive)
+          throw new UsageException("Expecting either a fully qualified file URI or a prefix URI +" +
+            " --recursive: " +
+            getURI());
+        result = client.downloadRecursively(dob.createOptions());
       }
       else
       {
         if(output.isDirectory())
-        {
           output = new File(output, getObjectKey().substring(getObjectKey().lastIndexOf("/") + 1));
-        }
         dob.setFile(output);
         result = client.download(dob.createOptions());
       }

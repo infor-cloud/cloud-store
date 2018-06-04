@@ -231,10 +231,10 @@ public class GCSClient
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> downloadDirectory(DownloadOptions options)
+  public ListenableFuture<List<StoreFile>> downloadRecursively(DownloadOptions options)
     throws IOException, ExecutionException, InterruptedException
   {
-    return _s3Client.downloadDirectory(options);
+    return _s3Client.downloadRecursively(options);
   }
 
   @Override

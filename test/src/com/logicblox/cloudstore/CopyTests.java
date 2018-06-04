@@ -612,7 +612,6 @@ public class CopyTests
       .setFile(dlTemp)
       .setBucketName(Utils.getBucketName(src))
       .setObjectKey(Utils.getObjectKey(src))
-      .setRecursive(false)
       .setOverwrite(true)
       .createOptions();
     f = _client.download(dlOpts).get();

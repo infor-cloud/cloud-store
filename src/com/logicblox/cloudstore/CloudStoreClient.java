@@ -248,10 +248,8 @@ public interface CloudStoreClient
   /**
    * Download a set of files from a cloud store service to the local file system.  The
    * {@code objectKey} in the {@link DownloadOptions} will be used as a prefix to find
-   * a set of files in a simulated directory in the code store service.  If the
-   * {@code recursive} flag is set, then all files matching the prefix will be downloaded.
-   * If {@code recursive} is false, then only "top-level" files will be downloaded, not
-   * those that appear to be in simulated sub-directories.
+   * a set of files in a simulated directory in the cloud store service. All files matching the
+   * prefix will be downloaded.
    * <p>
    * If any file to be downloaded was encrypted when uploaded, one of the private keys 
    * corresponding with the public keys associated with the file must be found in the local 
@@ -284,7 +282,7 @@ public interface CloudStoreClient
    * @throws ExecutionException -
    * @throws InterruptedException -
    */
-  ListenableFuture<List<StoreFile>> downloadDirectory(DownloadOptions options)
+  ListenableFuture<List<StoreFile>> downloadRecursively(DownloadOptions options)
     throws IOException, ExecutionException, InterruptedException;
 
   /**

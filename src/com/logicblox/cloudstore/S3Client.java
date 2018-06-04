@@ -373,10 +373,10 @@ public class S3Client
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> downloadDirectory(DownloadOptions options)
+  public ListenableFuture<List<StoreFile>> downloadRecursively(DownloadOptions options)
     throws IOException, ExecutionException, InterruptedException
   {
-    DownloadDirectoryCommand cmd = new DownloadDirectoryCommand(options);
+    DownloadRecursivelyCommand cmd = new DownloadRecursivelyCommand(options);
     configure(cmd);
     return cmd.run();
   }

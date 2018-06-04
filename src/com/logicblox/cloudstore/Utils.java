@@ -231,6 +231,18 @@ public class Utils
     return Pattern.compile(pattern).matcher(uri);
   }
 
+  public static String getBaseDirURI(String s)
+  {
+    String baseDirPath = "";
+    if (s.length() > 0)
+    {
+      int endIndex = s.lastIndexOf("/");
+      if (endIndex != -1)
+        baseDirPath = s.substring(0, endIndex + 1);
+    }
+
+    return baseDirPath;
+  }
 
   /**
    * Enum values for backend storage service.

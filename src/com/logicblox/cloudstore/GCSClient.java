@@ -244,10 +244,10 @@ public class GCSClient
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> copyDirectory(CopyOptions options)
+  public ListenableFuture<List<StoreFile>> copyRecursively(CopyOptions options)
     throws InterruptedException, ExecutionException, IOException
   {
-    return _s3Client.copyDirectory(options);
+    return _s3Client.copyRecursively(options);
   }
 
   @Override
@@ -365,10 +365,10 @@ public class GCSClient
     }
 
     @Override
-    public ListenableFuture<List<StoreFile>> copyDirectory(CopyOptions options)
+    public ListenableFuture<List<StoreFile>> copyRecursively(CopyOptions options)
       throws IOException
     {
-      GCSCopyDirCommand cmd = new GCSCopyDirCommand(options);
+      GCSCopyRecursivelyCommand cmd = new GCSCopyRecursivelyCommand(options);
       configure(cmd);
       return cmd.run();
     }

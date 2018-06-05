@@ -95,15 +95,14 @@ class RenameDirectoryCommand
       .setSourceObjectKey(_options.getSourceObjectKey())
       .setDestinationBucketName(_options.getDestinationBucketName())
       .setDestinationObjectKey(_options.getDestinationObjectKey())
-      .setRecursive(_options.isRecursive())
       .setDryRun(_options.isDryRun())
       .setCannedAcl(_options.getCannedAcl().orElse(null))
       .createOptions();
 
-    // hack -- exceptions are a bit of a mess.  copyDirectory throws all sorts of stuff that
+    // hack -- exceptions are a bit of a mess.  copyRecursively throws all sorts of stuff that
     //         should be collected into an ExecutionException?
     ListenableFuture<List<StoreFile>> copyFuture = null;
-    copyFuture = _client.copyDirectory(copyOpts);
+    copyFuture = _client.copyRecursively(copyOpts);
 
     return Futures.transform(copyFuture, new AsyncFunction<List<StoreFile>, List<StoreFile>>()
     {

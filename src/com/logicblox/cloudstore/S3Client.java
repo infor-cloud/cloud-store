@@ -390,10 +390,10 @@ public class S3Client
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> copyDirectory(CopyOptions options)
+  public ListenableFuture<List<StoreFile>> copyRecursively(CopyOptions options)
     throws InterruptedException, ExecutionException, IOException
   {
-    S3CopyDirCommand cmd = new S3CopyDirCommand(options);
+    S3CopyRecursivelyCommand cmd = new S3CopyRecursivelyCommand(options);
     configure(cmd);
     return cmd.run();
   }

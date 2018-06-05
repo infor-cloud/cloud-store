@@ -320,7 +320,7 @@ public interface CloudStoreClient
    * @throws ExecutionException -
    * @throws InterruptedException -
    */
-  ListenableFuture<List<StoreFile>> copyDirectory(CopyOptions options)
+  ListenableFuture<List<StoreFile>> copyRecursively(CopyOptions options)
     throws InterruptedException, ExecutionException, IOException;
 
   /**

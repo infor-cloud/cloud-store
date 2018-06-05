@@ -109,7 +109,6 @@ public class CopyTests
           .setSourceObjectKey(topN)
           .setDestinationBucketName(_testBucket)
           .setDestinationObjectKey(copyTopN)
-          .setRecursive(true)
           .createOptions();
         boolean oldGlobalFlag = false;
         try
@@ -123,7 +122,7 @@ public class CopyTests
           _client.setRetryCount(retryCount);
           CopyOptions.getAbortCounters().setInjectionCounter(abortCount);
 
-          List<StoreFile> copy = _client.copyDirectory(copyOpts).get();
+          List<StoreFile> copy = _client.copyRecursively(copyOpts).get();
           Assert.assertEquals(5, copy.size());
           Assert.assertEquals(abortCount, getRetryCount());
         }
@@ -280,10 +279,9 @@ public class CopyTests
           .setSourceObjectKey(topN)
           .setDestinationBucketName(_testBucket)
           .setDestinationObjectKey(copyTopN)
-          .setRecursive(false)
           .setDryRun(true)
           .createOptions();
-        List<StoreFile> copy = _client.copyDirectory(copyOpts).get();
+        List<StoreFile> copy = _client.copyRecursively(copyOpts).get();
         Assert.assertNull(copy);
         Assert.assertEquals(originalCount + 2,
           TestUtils.listObjects(_testBucket, rootPrefix).size());
@@ -533,7 +531,7 @@ public class CopyTests
           .setDestinationBucketName(_testBucket)
           .setDestinationObjectKey(expectedKey)
           .createOptions();
-        List<StoreFile> copy = _client.copyDirectory(copyOpts).get();
+        List<StoreFile> copy = _client.copyRecursively(copyOpts).get();
         Assert.assertEquals(1, copy.size());
 
         // validate results, original dir have one more file in it
@@ -662,9 +660,8 @@ public class CopyTests
           .setSourceObjectKey(topN)
           .setDestinationBucketName(_testBucket)
           .setDestinationObjectKey(copyTopN)
-          .setRecursive(false)
           .createOptions();
-        List<StoreFile> copy = _client.copyDirectory(copyOpts).get();
+        List<StoreFile> copy = _client.copyRecursively(copyOpts).get();
         Assert.assertEquals(2, copy.size());
 
         // verify the non-recursive copy
@@ -683,9 +680,8 @@ public class CopyTests
           .setSourceObjectKey(topN)
           .setDestinationBucketName(_testBucket)
           .setDestinationObjectKey(copyTopN2)
-          .setRecursive(true)
           .createOptions();
-        copy = _client.copyDirectory(copyOpts).get();
+        copy = _client.copyRecursively(copyOpts).get();
         Assert.assertEquals(5, copy.size());
 
         // verify the recursive copy
@@ -756,12 +752,11 @@ public class CopyTests
           .setSourceObjectKey(topN)
           .setDestinationBucketName(missingBucketName)
           .setDestinationObjectKey(topN)
-          .setRecursive(true)
           .createOptions();
         String msg = null;
         try
         {
-          _client.copyDirectory(copyOpts).get();
+          _client.copyRecursively(copyOpts).get();
           msg = "Exception expected";
         }
         catch(ExecutionException ex)
@@ -834,9 +829,8 @@ public class CopyTests
           .setSourceObjectKey(topN)
           .setDestinationBucketName(bucket2)
           .setDestinationObjectKey(topN)
-          .setRecursive(false)
           .createOptions();
-        List<StoreFile> copy = _client.copyDirectory(copyOpts).get();
+        List<StoreFile> copy = _client.copyRecursively(copyOpts).get();
         Assert.assertEquals(2, copy.size());
 
         // verify the non-recursive copy
@@ -858,9 +852,8 @@ public class CopyTests
           .setSourceObjectKey(topN)
           .setDestinationBucketName(bucket2)
           .setDestinationObjectKey(copyTopN)
-          .setRecursive(true)
           .createOptions();
-        copy = _client.copyDirectory(copyOpts).get();
+        copy = _client.copyRecursively(copyOpts).get();
         Assert.assertEquals(5, copy.size());
 
         // verify the recursive copy

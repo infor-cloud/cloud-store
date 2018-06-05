@@ -437,7 +437,6 @@ class Main
         .setDestinationObjectKey(getDestinationObjectKey())
         .setCannedAcl(cannedAcl)
         .setStorageClass(storageClass)
-        .setRecursive(recursive)
         .setDryRun(dryRun)
         .createOptions();
 
@@ -456,24 +455,26 @@ class Main
             "Bucket not found at " + Utils.getURI(client.getScheme(), getDestinationBucket(), ""));
         }
 
-        if(getDestinationObjectKey().endsWith("/") || getDestinationObjectKey().equals(""))
+        if(recursive)
         {
-          // If destination URI is a directory (ends with "/") or a bucket
-          // (object URI is empty), then source URI acts as a prefix and this
-          // operation will copy all keys that would be returned by the list
-          // operation on the same prefix.
-          client.copyDirectory(options).get();
+          if(!getDestinationObjectKey().endsWith("/") && !getDestinationObjectKey().equals(""))
+            throw new UsageException("Expecting a directory-like destination URI (ended with a " +
+              "'/'): " + getDestinationURI());
+          client.copyRecursively(options).get();
         }
         else
         {
+          if(getSourceObjectKey().endsWith("/") || getSourceObjectKey().equals(""))
+            throw new UsageException("Expecting either a fully qualified source URI or a prefix " +
+              "source URI + --recursive: " + getSourceURI());
+
           opts = client.getOptionsBuilderFactory()
             .newExistsOptionsBuilder()
             .setBucketName(getSourceBucket())
             .setObjectKey(getSourceObjectKey())
             .createOptions();
 
-          // We go for a direct key-to-key copy, so source object has
-          // to be there.
+          // We go for a direct key-to-key copy, so source object has to be there.
           if(client.exists(opts).get() == null)
           {
             throw new UsageException("Object not found at " + getSourceURI());

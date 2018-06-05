@@ -29,7 +29,7 @@ import java.io.File;
  * @see UploadOptions
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#upload(UploadOptions)
- * @see CloudStoreClient#uploadDirectory(UploadOptions)
+ * @see CloudStoreClient#uploadRecursively(UploadOptions)
  * @see OptionsBuilderFactory#newUploadOptionsBuilder()
  */
 public class UploadOptionsBuilder

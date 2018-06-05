@@ -557,6 +557,9 @@ class Main
     @Parameter(names = "-i", description = "File or directory to upload", required = true)
     String file;
 
+    @Parameter(names = {"-r", "--recursive"}, description = "Upload a directory recursively")
+    boolean recursive = false;
+
     @Parameter(names = "--key", description = "The name of the encryption key to use")
     String encKeyName = null;
 
@@ -580,13 +583,6 @@ class Main
       CloudStoreClient client = createCloudStoreClient();
       File f = new File(file);
 
-      if(f.isDirectory() && !getObjectKey().endsWith("/"))
-      {
-        throw new UsageException(
-          "Destination key " + Utils.getURI(client.getScheme(), getBucketName(), getObjectKey()) +
-            " should end with '/', since a directory is uploaded.");
-      }
-
       UploadOptionsBuilder uob = client.getOptionsBuilderFactory()
         .newUploadOptionsBuilder()
         .setFile(f)
@@ -603,21 +599,27 @@ class Main
         uob.setOverallProgressListenerFactory(cplf);
       }
 
-      if(f.isFile())
+      if(!f.isFile() && !f.isDirectory())
+        throw new UsageException("'" + file + "' is not a file or a directory");
+
+      if(recursive)
       {
-        if(getObjectKey().endsWith("/"))
-        {
-          uob.setObjectKey(getObjectKey() + f.getName());
-        }
-        client.upload(uob.createOptions()).get();
-      }
-      else if(f.isDirectory())
-      {
-        client.uploadDirectory(uob.createOptions()).get();
+        if(!f.isDirectory())
+          throw new UsageException("Single file input cannot be combined with --recursive: " +
+            file);
+        if(!getObjectKey().endsWith("/"))
+          throw new UsageException("Expecting a directory-like destination URI (ended with a " +
+            "'/'): " + getURI());
+
+        client.uploadRecursively(uob.createOptions()).get();
       }
       else
       {
-        throw new UsageException("File '" + file + "' is not a file or a " + "directory.");
+        if(f.isDirectory())
+          throw new UsageException("Directory uploads require --recursive: " + file);
+        if(getObjectKey().endsWith("/"))
+          uob.setObjectKey(getObjectKey() + f.getName());
+        client.upload(uob.createOptions()).get();
       }
       client.shutdown();
     }

@@ -142,7 +142,7 @@ public class UploadDownloadTests
           .setObjectKey(Utils.getObjectKey(dest))
           .setDryRun(true)
           .createOptions();
-        List<StoreFile> files = _client.uploadDirectory(opts).get();
+        List<StoreFile> files = _client.uploadRecursively(opts).get();
         Assert.assertNull(files);
         Assert.assertEquals(originalCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
         return;

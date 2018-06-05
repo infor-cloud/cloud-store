@@ -446,7 +446,7 @@ public class TestUtils
       .setBucketName(Utils.getBucketName(dest))
       .setObjectKey(Utils.getObjectKey(dest))
       .createOptions();
-    return _client.uploadDirectory(upOpts).get();
+    return _client.uploadRecursively(upOpts).get();
   }
 
 

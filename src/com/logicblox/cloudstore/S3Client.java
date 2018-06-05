@@ -303,10 +303,10 @@ public class S3Client
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> uploadDirectory(UploadOptions options)
+  public ListenableFuture<List<StoreFile>> uploadRecursively(UploadOptions options)
     throws IOException, ExecutionException, InterruptedException
   {
-    UploadDirectoryCommand cmd = new UploadDirectoryCommand(options);
+    UploadRecursivelyCommand cmd = new UploadRecursivelyCommand(options);
     configure(cmd);
     return cmd.run();
   }

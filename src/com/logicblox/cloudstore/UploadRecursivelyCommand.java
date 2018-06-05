@@ -30,12 +30,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-class UploadDirectoryCommand
+class UploadRecursivelyCommand
   extends Command
 {
   private UploadOptions _options;
 
-  public UploadDirectoryCommand(UploadOptions options)
+  public UploadRecursivelyCommand(UploadOptions options)
   {
     super(options);
     _options = options;

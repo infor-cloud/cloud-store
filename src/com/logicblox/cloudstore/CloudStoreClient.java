@@ -139,7 +139,8 @@ public interface CloudStoreClient
     throws IOException;
 
   /**
-   * Upload a set of files from a directory in the local file system to a cloud store service.
+   * Upload a set of files from a directory in the local file system to a cloud store service
+   * recursively.
    * <p>
    * The destination bucket must already exist and the caller must have write permission
    * to the bucket to upload a file.  Checksum validation is done after the transfer of each
@@ -163,7 +164,7 @@ public interface CloudStoreClient
    * @throws ExecutionException -
    * @throws InterruptedException -
    */
-  ListenableFuture<List<StoreFile>> uploadDirectory(UploadOptions options)
+  ListenableFuture<List<StoreFile>> uploadRecursively(UploadOptions options)
     throws IOException, ExecutionException, InterruptedException;
 
   /**

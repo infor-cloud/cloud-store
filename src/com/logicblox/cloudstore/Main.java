@@ -604,7 +604,7 @@ class Main
 
       if(recursive)
       {
-        if(f.isDirectory() && !getObjectKey().endsWith("/"))
+        if(!getObjectKey().endsWith("/") && !getObjectKey().equals(""))
           throw new UsageException("Expecting a directory-like destination URI (ended with a " +
             "'/'): " + getURI());
 

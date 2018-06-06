@@ -604,10 +604,7 @@ class Main
 
       if(recursive)
       {
-        if(!f.isDirectory())
-          throw new UsageException("Single file input cannot be combined with --recursive: " +
-            file);
-        if(!getObjectKey().endsWith("/"))
+        if(f.isDirectory() && !getObjectKey().endsWith("/"))
           throw new UsageException("Expecting a directory-like destination URI (ended with a " +
             "'/'): " + getURI());
 

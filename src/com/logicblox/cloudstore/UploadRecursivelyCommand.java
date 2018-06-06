@@ -22,7 +22,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -59,10 +58,6 @@ class UploadRecursivelyCommand
           boolean res = !FileUtils.isSymlink(file);
           return res;
         }
-        catch(FileNotFoundException e)
-        {
-          return false;
-        }
         catch(IOException e)
         {
           return false;
@@ -76,35 +71,32 @@ class UploadRecursivelyCommand
       }
     };
 
-    Collection<File> found = FileUtils.listFiles(_options.getFile(), noSymlinks, noSymlinks);
-
     List<ListenableFuture<StoreFile>> files = new ArrayList<ListenableFuture<StoreFile>>();
-    for(File file : found)
+    if(_options.getFile().isDirectory())
     {
-      String relPath = file.getPath().substring(_options.getFile().getPath().length() + 1);
-      String key = Paths.get(_options.getObjectKey(), relPath).toString();
+      Collection<File> found = FileUtils.listFiles(_options.getFile(), noSymlinks, noSymlinks);
 
-      UploadOptions options = _client.getOptionsBuilderFactory()
-        .newUploadOptionsBuilder()
-        .setFile(file)
-        .setBucketName(_options.getBucketName())
-        .setObjectKey(key)
-        .setChunkSize(_options.getChunkSize())
-        .setEncKey(_options.getEncKey().orElse(null))
-        .setCannedAcl(_options.getCannedAcl())
-        .setOverallProgressListenerFactory(
-          _options.getOverallProgressListenerFactory().orElse(null))
-        .createOptions();
-
-      if(_options.isDryRun())
+      for(File file : found)
       {
-        System.out.println("<DRYRUN> uploading '" + file.getAbsolutePath() + "' to '" +
-          getUri(_options.getBucketName(), key) + "'");
+        String relPath = file.getPath().substring(_options.getFile().getPath().length() + 1);
+        String key = Paths.get(_options.getObjectKey(), relPath).toString();
+        uploadFile(files, file, key);
+      }
+    }
+    else
+    {
+      String key;
+      if(_options.getObjectKey().endsWith("/"))
+      {
+        // Single input file with directory-like destination URI
+        key = Paths.get(_options.getObjectKey(), _options.getFile().getName()).toString();
       }
       else
       {
-        files.add(_client.upload(options));
+        // Single input file with fully qualified destination URI
+        key = _options.getObjectKey();
       }
+      uploadFile(files, _options.getFile(), key);
     }
 
     if(_options.isDryRun())
@@ -114,6 +106,31 @@ class UploadRecursivelyCommand
     else
     {
       return Futures.allAsList(files);
+    }
+  }
+
+  private void uploadFile(List<ListenableFuture<StoreFile>> files, File file, String key)
+    throws IOException
+  {
+    UploadOptions options = _client.getOptionsBuilderFactory()
+      .newUploadOptionsBuilder()
+      .setFile(file)
+      .setBucketName(_options.getBucketName())
+      .setObjectKey(key)
+      .setChunkSize(_options.getChunkSize())
+      .setEncKey(_options.getEncKey().orElse(null))
+      .setCannedAcl(_options.getCannedAcl())
+      .setOverallProgressListenerFactory(_options.getOverallProgressListenerFactory().orElse(null))
+      .createOptions();
+
+    if(_options.isDryRun())
+    {
+      System.out.println("<DRYRUN> uploading '" + file.getAbsolutePath() + "' to '" +
+        getUri(_options.getBucketName(), key) + "'");
+    }
+    else
+    {
+      files.add(_client.upload(options));
     }
   }
 

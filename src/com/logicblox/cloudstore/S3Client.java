@@ -312,10 +312,10 @@ public class S3Client
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> deleteDirectory(DeleteOptions options)
+  public ListenableFuture<List<StoreFile>> deleteRecursively(DeleteOptions options)
     throws InterruptedException, ExecutionException
   {
-    DeleteDirCommand cmd = new DeleteDirCommand(options);
+    DeleteRecursivelyCommand cmd = new DeleteRecursivelyCommand(options);
     configure(cmd);
     return cmd.run();
   }

@@ -146,7 +146,6 @@ public class DeleteTests
           .newDeleteOptionsBuilder()
           .setBucketName(Utils.getBucketName(dest))
           .setObjectKey(Utils.getObjectKey(dest))
-          .setRecursive(true)
           .createOptions();
         boolean oldGlobalFlag = false;
         try
@@ -160,7 +159,7 @@ public class DeleteTests
           _client.setRetryCount(retryCount);
           DeleteOptions.getAbortCounters().setInjectionCounter(abortCount);
 
-          List<StoreFile> files = _client.deleteDirectory(opts).get();
+          List<StoreFile> files = _client.deleteRecursively(opts).get();
           Assert.assertEquals(5, files.size());
           Assert.assertEquals(abortCount, getRetryCount());
         }
@@ -247,10 +246,9 @@ public class DeleteTests
           .newDeleteOptionsBuilder()
           .setBucketName(Utils.getBucketName(dest))
           .setObjectKey(Utils.getObjectKey(dest))
-          .setRecursive(true)
           .setDryRun(true)
           .createOptions();
-        List<StoreFile> files = _client.deleteDirectory(opts).get();
+        List<StoreFile> files = _client.deleteRecursively(opts).get();
         Assert.assertNull(files);
         List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
         Assert.assertEquals(originalCount + 2, objs.size());
@@ -348,11 +346,10 @@ public class DeleteTests
           .newDeleteOptionsBuilder()
           .setBucketName(Utils.getBucketName(uri))
           .setObjectKey(Utils.getObjectKey(uri))
-          .setRecursive(true)
           .createOptions();
         try
         {
-          _client.deleteDirectory(opts).get();
+          _client.deleteRecursively(opts).get();
           msg = "expected exception (object not found)";
         }
         catch(Exception ex)
@@ -368,10 +365,9 @@ public class DeleteTests
           .newDeleteOptionsBuilder()
           .setBucketName(Utils.getBucketName(uri))
           .setObjectKey(Utils.getObjectKey(uri))
-          .setRecursive(true)
           .setForceDelete(true)
           .createOptions();
-        List<StoreFile> files = _client.deleteDirectory(opts).get();
+        List<StoreFile> files = _client.deleteRecursively(opts).get();
         Assert.assertTrue(files.isEmpty());
         Assert.assertEquals(uploadCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
 
@@ -381,9 +377,8 @@ public class DeleteTests
           .newDeleteOptionsBuilder()
           .setBucketName(Utils.getBucketName(uri))
           .setObjectKey(Utils.getObjectKey(uri))
-          .setRecursive(false)
           .createOptions();
-        files = _client.deleteDirectory(opts).get();
+        files = _client.deleteRecursively(opts).get();
         Assert.assertEquals(2, files.size());
         Assert.assertEquals(uploadCount - 2, TestUtils.listObjects(_testBucket, rootPrefix).size());
 
@@ -406,9 +401,8 @@ public class DeleteTests
           .newDeleteOptionsBuilder()
           .setBucketName(Utils.getBucketName(uri))
           .setObjectKey(Utils.getObjectKey(uri))
-          .setRecursive(true)
           .createOptions();
-        files = _client.deleteDirectory(opts).get();
+        files = _client.deleteRecursively(opts).get();
         Assert.assertEquals(2, files.size());
         Assert.assertEquals(0, TestUtils.listObjects(_testBucket, rootPrefix).size());
 

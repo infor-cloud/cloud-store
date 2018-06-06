@@ -21,8 +21,7 @@ package com.logicblox.cloudstore;
  * {@code DeleteOptions} contains all the details needed by the cloud-store delete
  * command. The specified {@code objectKey}, under {@code bucketName} bucket, is deleted
  * from the store.  If the key looks like a directory (ends in a '/'), all "top-level"
- * files in the directory will be deleted.  If the {@code recursive} property is set to
- * true, all matching sub-directory files will also be deleted.
+ * files in the directory will be deleted.
  * <p>
  * {@code DeleteOptions} objects are meant to be built by {@code DeleteOptionsBuilder}. This class
  * provides only public accessor methods.
@@ -30,7 +29,7 @@ package com.logicblox.cloudstore;
  * @see DeleteOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#delete(DeleteOptions)
- * @see CloudStoreClient#deleteDirectory(DeleteOptions)
+ * @see CloudStoreClient#deleteRecursively(DeleteOptions)
  * @see OptionsBuilderFactory#newDeleteOptionsBuilder()
  */
 public class DeleteOptions
@@ -38,7 +37,6 @@ public class DeleteOptions
 {
   private String _bucket;
   private String _objectKey;
-  private boolean _recursive;
   private boolean _dryRun;
   private boolean _forceDelete;
   private boolean _ignoreAbortInjection;
@@ -48,13 +46,12 @@ public class DeleteOptions
 
 
   DeleteOptions(
-    CloudStoreClient cloudStoreClient, String bucket, String objectKey, boolean recursive,
-    boolean dryRun, boolean forceDelete, boolean ignoreAbortInjection)
+    CloudStoreClient cloudStoreClient, String bucket, String objectKey, boolean dryRun,
+    boolean forceDelete, boolean ignoreAbortInjection)
   {
     super(cloudStoreClient);
     _bucket = bucket;
     _objectKey = objectKey;
-    _recursive = recursive;
     _dryRun = dryRun;
     _forceDelete = forceDelete;
     _ignoreAbortInjection = ignoreAbortInjection;
@@ -92,18 +89,6 @@ public class DeleteOptions
   public String getObjectKey()
   {
     return _objectKey;
-  }
-
-  /**
-   * Return the recursive property of the command.  If true and if the object key
-   * looks like a directory name (ends in '/'), all files that recursively
-   * have the key as their prefix will be deleted.
-   *
-   * @return recursive flag
-   */
-  public boolean isRecursive()
-  {
-    return _recursive;
   }
 
   /**

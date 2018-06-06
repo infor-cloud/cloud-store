@@ -86,16 +86,15 @@ class UploadRecursivelyCommand
     else
     {
       String key;
-      if(_options.getObjectKey().endsWith("/"))
+
+      if(!_options.getObjectKey().endsWith("/"))
       {
-        // Single input file with directory-like destination URI
-        key = Paths.get(_options.getObjectKey(), _options.getFile().getName()).toString();
+        throw new UsageException("A directory-like destination URI is expected: '" +
+          getUri(_options.getBucketName(), _options.getObjectKey()));
       }
-      else
-      {
-        // Single input file with fully qualified destination URI
-        key = _options.getObjectKey();
-      }
+
+      key = Paths.get(_options.getObjectKey(), _options.getFile().getName()).toString();
+
       uploadFile(files, _options.getFile(), key);
     }
 

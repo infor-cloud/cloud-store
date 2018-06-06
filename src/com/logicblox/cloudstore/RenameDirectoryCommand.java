@@ -113,12 +113,11 @@ class RenameDirectoryCommand
           .newDeleteOptionsBuilder()
           .setBucketName(_options.getSourceBucketName())
           .setObjectKey(_options.getSourceObjectKey())
-          .setRecursive(_options.isRecursive())
           .setDryRun(_options.isDryRun())
           .createOptions();
 
         // need to return list of dest files
-        return Futures.transform(_client.deleteDirectory(delOpts),
+        return Futures.transform(_client.deleteRecursively(delOpts),
           new Function<List<StoreFile>, List<StoreFile>>()
           {
             public List<StoreFile> apply(List<StoreFile> deletedFiles)

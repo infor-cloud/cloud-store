@@ -25,12 +25,12 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 
-class DeleteDirCommand
+class DeleteRecursivelyCommand
   extends Command
 {
   private DeleteOptions _options;
 
-  public DeleteDirCommand(DeleteOptions options)
+  public DeleteRecursivelyCommand(DeleteOptions options)
   {
     super(options);
     _options = options;
@@ -105,7 +105,7 @@ class DeleteDirCommand
       .newListOptionsBuilder()
       .setBucketName(_options.getBucketName())
       .setObjectKey(_options.getObjectKey())
-      .setRecursive(_options.isRecursive())
+      .setRecursive(true)
       .createOptions();
     return _client.listObjects(opts);
   }

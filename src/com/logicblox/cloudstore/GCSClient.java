@@ -172,10 +172,10 @@ public class GCSClient
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> deleteDirectory(DeleteOptions opts)
+  public ListenableFuture<List<StoreFile>> deleteRecursively(DeleteOptions opts)
     throws InterruptedException, ExecutionException
   {
-    return _s3Client.deleteDirectory(opts);
+    return _s3Client.deleteRecursively(opts);
   }
 
   @Override

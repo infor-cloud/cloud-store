@@ -25,7 +25,7 @@ package com.logicblox.cloudstore;
  * @see DeleteOptions
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#delete(DeleteOptions)
- * @see CloudStoreClient#deleteDirectory(DeleteOptions)
+ * @see CloudStoreClient#deleteRecursively(DeleteOptions)
  * @see OptionsBuilderFactory#newDeleteOptionsBuilder()
  */
 public class DeleteOptionsBuilder
@@ -33,7 +33,6 @@ public class DeleteOptionsBuilder
 {
   private String _bucket = null;
   private String _objectKey = null;
-  private boolean _recursive = false;
   private boolean _dryRun = false;
   private boolean _forceDelete = false;
   private boolean _ignoreAbortInjection = false;
@@ -64,20 +63,6 @@ public class DeleteOptionsBuilder
   public DeleteOptionsBuilder setObjectKey(String objectKey)
   {
     _objectKey = objectKey;
-    return this;
-  }
-
-  /**
-   * Set the recursive property of the command.  If true and if the object key
-   * looks like a directory name (ends in '/'), all files that recursively
-   * have the key as their prefix will be deleted.
-   *
-   * @param recursive true to recursively delete files
-   * @return this builder
-   */
-  public DeleteOptionsBuilder setRecursive(boolean recursive)
-  {
-    _recursive = recursive;
     return this;
   }
 
@@ -146,7 +131,7 @@ public class DeleteOptionsBuilder
   {
     validateOptions();
 
-    return new DeleteOptions(_cloudStoreClient, _bucket, _objectKey, _recursive, _dryRun,
-      _forceDelete, _ignoreAbortInjection);
+    return new DeleteOptions(_cloudStoreClient, _bucket, _objectKey, _dryRun, _forceDelete,
+      _ignoreAbortInjection);
   }
 }

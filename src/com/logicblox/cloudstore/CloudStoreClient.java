@@ -188,7 +188,7 @@ public interface CloudStoreClient
    * @throws ExecutionException -
    * @throws InterruptedException -
    */
-  ListenableFuture<List<StoreFile>> deleteDirectory(DeleteOptions options)
+  ListenableFuture<List<StoreFile>> deleteRecursively(DeleteOptions options)
     throws InterruptedException, ExecutionException;
 
   /** 

@@ -139,7 +139,7 @@ public interface CloudStoreClient
     throws IOException;
 
   /**
-   * Upload a set of files from a directory in the local file system to a cloud store service
+   * Upload a file or a directory of files in the local file system to a cloud store service
    * recursively.
    * <p>
    * The destination bucket must already exist and the caller must have write permission

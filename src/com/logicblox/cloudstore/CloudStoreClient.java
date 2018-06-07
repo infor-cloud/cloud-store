@@ -345,12 +345,12 @@ public interface CloudStoreClient
    * Rename all files in a cloud store service whose keys share a prefix to have another prefix,
    * behaving like a local directory rename.
    * <p>
+   * The source key can be a prefix (including directory-like keys ending with '/'), while the
+   * destination key has to be directory-like (ended with '/').
+   * <p>
    * The source bucket must already exist and the user must have read permission to it.
    * Likewise, the destination bucket must already exist and the user must have write
    * permission to it.
-   * <p>
-   * Both the source and destination keys should be folders (ending with '/').  There must be 
-   * some keys that match the source folder prefix, but the destination folder does not need to exist.
    * <p>
    * Return a future that when complete will contain a list of @{link StoreFile} objects with
    * information about the new renamed files.
@@ -361,7 +361,7 @@ public interface CloudStoreClient
    * @throws ExecutionException -
    * @throws InterruptedException -
    */
-  ListenableFuture<List<StoreFile>> renameDirectory(RenameOptions options)
+  ListenableFuture<List<StoreFile>> renameRecursively(RenameOptions options)
     throws InterruptedException, ExecutionException, IOException;
 
   /**

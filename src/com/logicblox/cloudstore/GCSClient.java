@@ -257,10 +257,10 @@ public class GCSClient
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> renameDirectory(RenameOptions options)
+  public ListenableFuture<List<StoreFile>> renameRecursively(RenameOptions options)
     throws InterruptedException, ExecutionException, IOException
   {
-    return _s3Client.renameDirectory(options);
+    return _s3Client.renameRecursively(options);
   }
 
   @Override

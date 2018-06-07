@@ -26,7 +26,7 @@ package com.logicblox.cloudstore;
  * @see RenameOptions
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#rename(RenameOptions)
- * @see CloudStoreClient#renameDirectory(RenameOptions)
+ * @see CloudStoreClient#renameRecursively(RenameOptions)
  * @see OptionsBuilderFactory#newRenameOptionsBuilder()
  */
 public class RenameOptionsBuilder
@@ -37,7 +37,6 @@ public class RenameOptionsBuilder
   private String _destinationBucketName;
   private String _destinationObjectKey;
   private String _cannedAcl;
-  private boolean _recursive = false;
   private boolean _dryRun = false;
 
   RenameOptionsBuilder(CloudStoreClient client)
@@ -107,22 +106,6 @@ public class RenameOptionsBuilder
   }
 
   /**
-   * Set the recursive property for the rename operation.  If not set, a single file
-   * whose key matches the specified key will be renamed if the key does not look like
-   * a directory (ends with a '/').  If not set and the key ends in a '/', then all
-   * "top-level" files matching the key will be renamed.  If recursive is set and the
-   * key ends in '/', all "top-level" and all matching "sub-directory" files will be renamed.
-   *
-   * @param recursive true if rename operation should be recursive
-   * @return this builder
-   */
-  public RenameOptionsBuilder setRecursive(boolean recursive)
-  {
-    _recursive = recursive;
-    return this;
-  }
-
-  /**
    * If set to true, print operations that would be executed, but do not perform them.
    *
    * @param dryRun true if operations should be printed but not executed
@@ -178,6 +161,6 @@ public class RenameOptionsBuilder
     validateOptions();
 
     return new RenameOptions(_cloudStoreClient, _sourceBucketName, _sourceObjectKey,
-      _destinationBucketName, _destinationObjectKey, _cannedAcl, _recursive, _dryRun);
+      _destinationBucketName, _destinationObjectKey, _cannedAcl, _dryRun);
   }
 }

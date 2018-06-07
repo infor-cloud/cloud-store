@@ -407,10 +407,10 @@ public class S3Client
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> renameDirectory(RenameOptions options)
+  public ListenableFuture<List<StoreFile>> renameRecursively(RenameOptions options)
     throws InterruptedException, ExecutionException, IOException
   {
-    RenameDirectoryCommand cmd = new RenameDirectoryCommand(options);
+    RenameRecursivelyCommand cmd = new RenameRecursivelyCommand(options);
     configure(cmd);
     return cmd.run();
   }

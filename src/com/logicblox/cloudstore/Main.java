@@ -523,18 +523,23 @@ class Main
         .setDestinationBucketName(getDestinationBucket())
         .setDestinationObjectKey(getDestinationObjectKey())
         .setCannedAcl(cannedAcl)
-        .setRecursive(recursive)
         .setDryRun(dryRun)
         .createOptions();
 
       try
       {
-        if(getSourceObjectKey().endsWith("/"))
+        if(recursive)
         {
-          client.renameDirectory(options).get();
+          if(!getDestinationObjectKey().endsWith("/") && !getDestinationObjectKey().equals(""))
+            throw new UsageException("Expecting a directory-like destination URI (ended with a " +
+              "'/'): " + getDestinationURI());
+          client.renameRecursively(options).get();
         }
         else
         {
+          if(getSourceObjectKey().endsWith("/") || getSourceObjectKey().equals(""))
+            throw new UsageException("Expecting either a fully qualified source URI or a prefix " +
+              "source URI + --recursive: " + getSourceURI());
           client.rename(options).get();
         }
       }

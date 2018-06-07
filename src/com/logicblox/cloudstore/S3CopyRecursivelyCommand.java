@@ -31,13 +31,11 @@ class S3CopyRecursivelyCommand
   extends Command
 {
   private CopyOptions _options;
-  private boolean _dryRun;
 
   public S3CopyRecursivelyCommand(CopyOptions options)
   {
     super(options);
     _options = options;
-    _dryRun = _options.isDryRun();
   }
 
   public ListenableFuture<List<StoreFile>> run()
@@ -66,7 +64,7 @@ class S3CopyRecursivelyCommand
     }
     files.addAll(copyBatch(current.getObjectSummaries(), baseDirURI));
 
-    if(_dryRun)
+    if(_options.isDryRun())
     {
       return Futures.immediateFuture(null);
     }
@@ -97,7 +95,7 @@ class S3CopyRecursivelyCommand
           .setStorageClass(_options.getStorageClass().orElse(null))
           .createOptions();
 
-        if(_dryRun)
+        if(_options.isDryRun())
         {
           System.out.println(
             "<DRYRUN> copying '" + getUri(_options.getSourceBucketName(), obj.getKey()) + "' to '" +

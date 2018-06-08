@@ -19,6 +19,7 @@ package com.logicblox.cloudstore;
 import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.model.StorageObject;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -40,6 +41,13 @@ class GCSCopyCommand
 
   public ListenableFuture<StoreFile> run()
   {
+    if(_options.getSourceObjectKey().endsWith("/") || _options.getSourceObjectKey().equals(""))
+    {
+      String uri = getUri(_options.getSourceBucketName(), _options.getSourceObjectKey());
+      throw new UsageException("Source key should be a fully qualified URI: " + uri + ". Source " +
+        "prefix URIs are supported only by the recursive variant.");
+    }
+
     if(_options.isDryRun())
     {
       System.out.println("<DRYRUN> copying '" +
@@ -49,26 +57,52 @@ class GCSCopyCommand
     }
     else
     {
-      ListenableFuture<StoreFile> future = executeWithRetry(_client.getInternalExecutor(),
-        new Callable<ListenableFuture<StoreFile>>()
-        {
-          public ListenableFuture<StoreFile> call()
-          {
-            return runActual();
-          }
-
-          public String toString()
-          {
-            return "copying object from " +
-              getUri(_options.getSourceBucketName(), _options.getSourceObjectKey()) + " to " +
-              getUri(_options.getDestinationBucketName(), _options.getDestinationObjectKey());
-          }
-        });
+      ExistsOptions opts = _client.getOptionsBuilderFactory()
+        .newExistsOptionsBuilder()
+        .setBucketName(_options.getSourceBucketName())
+        .setObjectKey(_options.getSourceObjectKey())
+        .createOptions();
+      ListenableFuture<Metadata> sourceExists = _client.exists(opts);
+      ListenableFuture<StoreFile> future = Futures.transform(sourceExists, startCopyAsyncFunction());
 
       return future;
     }
   }
 
+  private AsyncFunction<Metadata, StoreFile> startCopyAsyncFunction()
+  {
+    return new AsyncFunction<Metadata, StoreFile>()
+    {
+      public ListenableFuture<StoreFile> apply(Metadata mdata)
+      {
+        if(mdata == null)
+        {
+          throw new UsageException("Source object not found at " + getUri(
+            _options.getSourceBucketName(), _options.getSourceObjectKey()));
+        }
+        return startCopy();
+      }
+    };
+  }
+
+  private ListenableFuture<StoreFile> startCopy()
+  {
+    return executeWithRetry(_client.getInternalExecutor(),
+      new Callable<ListenableFuture<StoreFile>>()
+      {
+        public ListenableFuture<StoreFile> call()
+        {
+          return runActual();
+        }
+
+        public String toString()
+        {
+          return "starting copy of " +
+            getUri(_options.getSourceBucketName(), _options.getSourceObjectKey()) + " to " +
+            getUri(_options.getDestinationBucketName(), _options.getDestinationObjectKey());
+        }
+      });
+  }
 
   private ListenableFuture<StoreFile> runActual()
   {

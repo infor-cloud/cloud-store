@@ -457,17 +457,10 @@ class Main
 
         if(recursive)
         {
-          if(!getDestinationObjectKey().endsWith("/") && !getDestinationObjectKey().equals(""))
-            throw new UsageException("Expecting a directory-like destination URI (ended with a " +
-              "'/'): " + getDestinationURI());
           client.copyRecursively(options).get();
         }
         else
         {
-          if(getSourceObjectKey().endsWith("/") || getSourceObjectKey().equals(""))
-            throw new UsageException("Expecting either a fully qualified source URI or a prefix " +
-              "source URI + --recursive: " + getSourceURI());
-
           opts = client.getOptionsBuilderFactory()
             .newExistsOptionsBuilder()
             .setBucketName(getSourceBucket())
@@ -475,10 +468,6 @@ class Main
             .createOptions();
 
           // We go for a direct key-to-key copy, so source object has to be there.
-          if(client.exists(opts).get() == null)
-          {
-            throw new UsageException("Object not found at " + getSourceURI());
-          }
           client.copy(options).get();
         }
       }

@@ -45,7 +45,8 @@ class GCSCopyRecursivelyCommand
     if(!_options.getDestinationObjectKey().endsWith("/") &&
       !_options.getDestinationObjectKey().equals(""))
     {
-      throw new UsageException("Destination directory key should end with a '/'");
+      throw new UsageException("Destination key should end with a '/': " +
+        getUri(_options.getDestinationBucketName(), _options.getDestinationObjectKey()));
     }
 
     String baseDirPath = "";

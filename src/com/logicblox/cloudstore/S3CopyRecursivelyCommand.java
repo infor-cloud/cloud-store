@@ -44,7 +44,8 @@ class S3CopyRecursivelyCommand
     if(!_options.getDestinationObjectKey().endsWith("/") &&
       !_options.getDestinationObjectKey().equals(""))
     {
-      throw new UsageException("Destination directory key should end with a '/'");
+      throw new UsageException("Destination key should end with a '/': " +
+        getUri(_options.getDestinationBucketName(), _options.getDestinationObjectKey()));
     }
 
     String baseDirURI = Utils.getBaseDirURI(_options.getSourceObjectKey());

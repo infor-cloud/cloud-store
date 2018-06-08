@@ -519,16 +519,10 @@ class Main
       {
         if(recursive)
         {
-          if(!getDestinationObjectKey().endsWith("/") && !getDestinationObjectKey().equals(""))
-            throw new UsageException("Expecting a directory-like destination URI (ended with a " +
-              "'/'): " + getDestinationURI());
           client.renameRecursively(options).get();
         }
         else
         {
-          if(getSourceObjectKey().endsWith("/") || getSourceObjectKey().equals(""))
-            throw new UsageException("Expecting either a fully qualified source URI or a prefix " +
-              "source URI + --recursive: " + getSourceURI());
           client.rename(options).get();
         }
       }

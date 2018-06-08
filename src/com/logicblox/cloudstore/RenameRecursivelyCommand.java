@@ -43,6 +43,12 @@ class RenameRecursivelyCommand
   public ListenableFuture<List<StoreFile>> run()
     throws InterruptedException, ExecutionException, IOException
   {
+    if(!_options.getDestinationObjectKey().endsWith("/") &&
+      !_options.getDestinationObjectKey().equals(""))
+    {
+      throw new UsageException("Destination key should end with a '/': " +
+        getUri(_options.getDestinationBucketName(), _options.getDestinationObjectKey()));
+    }
     return startCopyThenDelete();
   }
 

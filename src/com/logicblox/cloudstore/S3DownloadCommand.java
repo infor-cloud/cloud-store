@@ -120,6 +120,13 @@ class S3DownloadCommand
 
   public ListenableFuture<StoreFile> run()
   {
+    if(_options.getObjectKey().endsWith("/") || _options.getObjectKey().equals(""))
+    {
+      String uri = getUri(_options.getBucketName(), _options.getObjectKey());
+      throw new UsageException("Source key should be a fully qualified URI: " + uri + ". Prefix " +
+        "source URIs are supported only by the recursive variant.");
+    }
+
     if(_dryRun)
     {
       System.out.println(
@@ -141,7 +148,7 @@ class S3DownloadCommand
         public ListenableFuture<StoreFile> apply(Metadata mdata)
           throws UsageException
         {
-          if(null == mdata)
+          if(mdata == null)
           {
             throw new UsageException(
               "Object not found at " + getUri(_options.getBucketName(), _options.getObjectKey()));

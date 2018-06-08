@@ -38,6 +38,13 @@ class S3DeleteCommand
 
   public ListenableFuture<StoreFile> run()
   {
+    if(_options.getObjectKey().endsWith("/") || _options.getObjectKey().equals(""))
+    {
+      String uri = getUri(_options.getBucketName(), _options.getObjectKey());
+      throw new UsageException("Key should be a fully qualified URI: " + uri + ". Prefix URIs are" +
+        " supported only by the recursive variant.");
+    }
+
     final String bucket = _options.getBucketName();
     final String key = _options.getObjectKey();
     final boolean forceDelete = _options.forceDelete();

@@ -724,10 +724,6 @@ class Main
         }
         else
         {
-          if(getObjectKey().endsWith("/") || getObjectKey().equals(""))
-            throw new UsageException(
-              "Expecting either a fully qualified file URI or a prefix URI + --recursive: " +
-                getURI());
           client.delete(opts).get();
         }
       }

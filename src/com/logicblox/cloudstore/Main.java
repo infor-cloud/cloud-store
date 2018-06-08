@@ -592,16 +592,10 @@ class Main
 
       if(recursive)
       {
-        if(!getObjectKey().endsWith("/") && !getObjectKey().equals(""))
-          throw new UsageException("Expecting a directory-like destination URI (ended with a " +
-            "'/'): " + getURI());
-
         client.uploadRecursively(uob.createOptions()).get();
       }
       else
       {
-        if(f.isDirectory())
-          throw new UsageException("Directory uploads require --recursive: " + file);
         if(getObjectKey().endsWith("/"))
           uob.setObjectKey(getObjectKey() + f.getName());
         client.upload(uob.createOptions()).get();

@@ -22,6 +22,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -43,6 +44,17 @@ class UploadRecursivelyCommand
   public ListenableFuture<List<StoreFile>> run()
     throws ExecutionException, InterruptedException, IOException
   {
+    if(!_options.getObjectKey().endsWith("/") && !_options.getObjectKey().equals(""))
+    {
+      throw new UsageException("Destination key should end with a '/': " +
+        getUri(_options.getBucketName(), _options.getObjectKey()));
+    }
+
+    if(!_options.getFile().exists())
+    {
+      throw new FileNotFoundException(_options.getFile().getPath());
+    }
+
     final IOFileFilter noSymlinks = new IOFileFilter()
     {
       @Override

@@ -49,6 +49,8 @@ class RenameRecursivelyCommand
       throw new UsageException("Destination key should end with a '/': " +
         getUri(_options.getDestinationBucketName(), _options.getDestinationObjectKey()));
     }
+
+
     return startCopyThenDelete();
   }
 
@@ -71,7 +73,7 @@ class RenameRecursivelyCommand
       public ListenableFuture<List<StoreFile>> apply(Metadata mdata)
         throws Exception
       {
-        if(null != mdata)
+        if(mdata != null)
         {
           throw new UsageException(
             "Cannot overwrite existing destination object '" + getUri(bucket, key));
@@ -119,22 +121,36 @@ class RenameRecursivelyCommand
 
           ListenableFuture<List<StoreFile>> copyFuture = _client.copyRecursively(copyOpts);
 
-          return Futures.transform(copyFuture, new AsyncFunction<List<StoreFile>, List<StoreFile>>()
+          String srcBaseDirURI = Utils.getBaseDirURI(getUri(_options.getSourceBucketName(),
+            _options.getSourceObjectKey()));
+          String destDirURI = getUri(_options.getDestinationBucketName(),
+            _options.getDestinationObjectKey());
+          if(srcBaseDirURI.equals(destDirURI))
           {
-            public ListenableFuture<List<StoreFile>> apply(final List<StoreFile> destFiles)
-              throws InterruptedException, ExecutionException
-            {
-              // need to return list of dest files
-              return Futures.transform(deleteFiles(toDelete, destFiles),
-                new Function<List<StoreFile>, List<StoreFile>>()
+            // Protect against the case we move objects to themselves. We don't want to
+            // delete them.
+            return copyFuture;
+          }
+          else
+          {
+            return Futures.transform(copyFuture,
+              new AsyncFunction<List<StoreFile>, List<StoreFile>>()
+              {
+                public ListenableFuture<List<StoreFile>> apply(final List<StoreFile> copied)
+                  throws InterruptedException, ExecutionException
                 {
-                  public List<StoreFile> apply(List<StoreFile> deletedFiles)
-                  {
-                    return destFiles;
-                  }
-                });
-            }
-          });
+                  // need to return list of dest files
+                  return Futures.transform(deleteFiles(toDelete),
+                    new Function<List<StoreFile>, List<StoreFile>>()
+                    {
+                      public List<StoreFile> apply(List<StoreFile> deletedFiles)
+                      {
+                        return copied;
+                      }
+                    });
+                }
+              });
+          }
         }
       });
     return result;
@@ -152,21 +168,12 @@ class RenameRecursivelyCommand
     return _client.listObjects(opts);
   }
 
-  private ListenableFuture<List<StoreFile>> deleteFiles(List<StoreFile> toDelete, List<StoreFile>
-    copiedFiles)
+  private ListenableFuture<List<StoreFile>> deleteFiles(List<StoreFile> toDelete)
   {
     List<StoreFile> matches = new ArrayList<StoreFile>();
-
-    Supplier<Stream<StoreFile>> streamSupplier = copiedFiles != null ?
-      () -> copiedFiles.stream() : () -> Stream.empty();
     for(StoreFile f : toDelete)
     {
-      final String uri = getUri(f.getBucketName(), f.getObjectKey());
-
-      // Protect against the case we move a prefix/directory to itself
-      boolean isCopied = streamSupplier.get().anyMatch(p ->
-        (getUri(p.getBucketName(), p.getObjectKey())).equals(uri));
-      if(!f.getObjectKey().endsWith("/") && !isCopied)
+      if(!f.getObjectKey().endsWith("/"))
         matches.add(f);
     }
 

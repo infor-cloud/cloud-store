@@ -693,10 +693,6 @@ class Main
       " that match the provided storage service URL prefix.")
     boolean recursive = false;
 
-    @Parameter(names = {"-f", "--force"}, description =
-      "Do not report an error if the object does not " + "exist")
-    boolean forceDelete = false;
-
     @Parameter(names = "--dry-run", description = "Display operations but do not execute them")
     boolean dryRun = false;
 
@@ -710,7 +706,6 @@ class Main
         .setBucketName(getBucketName())
         .setObjectKey(getObjectKey())
         .setDryRun(dryRun)
-        .setForceDelete(forceDelete)
         .createOptions();
 
       try

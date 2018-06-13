@@ -38,7 +38,6 @@ public class DeleteOptions
   private String _bucket;
   private String _objectKey;
   private boolean _dryRun;
-  private boolean _forceDelete;
   private boolean _ignoreAbortInjection;
 
   // for testing injecion of aborts during a delete
@@ -46,14 +45,12 @@ public class DeleteOptions
 
 
   DeleteOptions(
-    CloudStoreClient cloudStoreClient, String bucket, String objectKey, boolean dryRun,
-    boolean forceDelete, boolean ignoreAbortInjection)
+    CloudStoreClient cloudStoreClient, String bucket, String objectKey, boolean dryRun, boolean ignoreAbortInjection)
   {
     super(cloudStoreClient);
     _bucket = bucket;
     _objectKey = objectKey;
     _dryRun = dryRun;
-    _forceDelete = forceDelete;
     _ignoreAbortInjection = ignoreAbortInjection;
   }
 
@@ -99,17 +96,5 @@ public class DeleteOptions
   public boolean isDryRun()
   {
     return _dryRun;
-  }
-
-  /**
-   * If forceDelete is set to true, then delete command will complete successfully
-   * even if the specified file does not exist.  Otherwise, the delete command
-   * will fail when trying to delete a file that does not exist.
-   *
-   * @return force delete flag
-   */
-  public boolean forceDelete()
-  {
-    return _forceDelete;
   }
 }

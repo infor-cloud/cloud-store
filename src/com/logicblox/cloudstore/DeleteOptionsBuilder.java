@@ -34,7 +34,6 @@ public class DeleteOptionsBuilder
   private String _bucket = null;
   private String _objectKey = null;
   private boolean _dryRun = false;
-  private boolean _forceDelete = false;
   private boolean _ignoreAbortInjection = false;
 
   DeleteOptionsBuilder(CloudStoreClient client)
@@ -79,20 +78,6 @@ public class DeleteOptionsBuilder
   }
 
   /**
-   * If forceDelete is set to true, then delete command will complete successfully
-   * even if the specified file does not exist.  Otherwise, the delete command
-   * will fail when trying to delete a file that does not exist.
-   *
-   * @param force true of delete should succeed if file does not exist
-   * @return this builder
-   */
-  public DeleteOptionsBuilder setForceDelete(boolean force)
-  {
-    _forceDelete = force;
-    return this;
-  }
-
-  /**
    * Used by test framework to control abort injection testing.
    *
    * @param ignore true if abort injection checks should be skipped
@@ -131,7 +116,6 @@ public class DeleteOptionsBuilder
   {
     validateOptions();
 
-    return new DeleteOptions(_cloudStoreClient, _bucket, _objectKey, _dryRun, _forceDelete,
-      _ignoreAbortInjection);
+    return new DeleteOptions(_cloudStoreClient, _bucket, _objectKey, _dryRun, _ignoreAbortInjection);
   }
 }

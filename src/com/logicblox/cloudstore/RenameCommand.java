@@ -67,13 +67,12 @@ class RenameCommand
           .newDeleteOptionsBuilder()
           .setBucketName(_options.getDestinationBucketName())
           .setObjectKey(_options.getDestinationObjectKey())
-          .setForceDelete(true)
           .setIgnoreAbortInjection(true)
           .createOptions();
-        ListenableFuture<StoreFile> deleteFuture = _client.delete(deleteOpts);
+        ListenableFuture<StoreFile> deleteFuture = Futures.withFallback(_client.delete(deleteOpts),
+          ignoreMissingDestinationFile());
 
         return Futures.transform(deleteFuture,
-
           new AsyncFunction<StoreFile, StoreFile>()
           {
             public ListenableFuture<StoreFile> apply(StoreFile f)
@@ -85,6 +84,19 @@ class RenameCommand
     };
   }
 
+  private FutureFallback<StoreFile> ignoreMissingDestinationFile()
+  {
+    return new FutureFallback<StoreFile>()
+    {
+      public ListenableFuture<StoreFile> create(Throwable t)
+      {
+        // It's ok if destintation is not there. Copy might have failed.
+        if(t instanceof UsageException && t.getMessage().contains("Object not found"))
+          return Futures.immediateFuture(null);
+        return Futures.immediateFailedFuture(t);
+      }
+    };
+  }
 
   // start by checking that source exists, then follow with dest check
   private ListenableFuture<StoreFile> buildFutureChain()

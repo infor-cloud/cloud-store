@@ -47,7 +47,6 @@ class S3DeleteCommand
 
     final String bucket = _options.getBucketName();
     final String key = _options.getObjectKey();
-    final boolean forceDelete = _options.forceDelete();
 
     ExistsOptions opts = _client.getOptionsBuilderFactory()
       .newExistsOptionsBuilder()
@@ -63,16 +62,9 @@ class S3DeleteCommand
         public ListenableFuture<StoreFile> apply(Metadata mdata)
           throws UsageException
         {
-          if(null == mdata)
+          if(mdata == null)
           {
-            if(forceDelete)
-            {
-              return Futures.immediateFuture(new StoreFile());
-            }
-            else
-            {
-              throw new UsageException("Object not found at " + getUri(bucket, key));
-            }
+            throw new UsageException("Object not found at " + getUri(bucket, key));
           }
           return getDeleteFuture();
         }

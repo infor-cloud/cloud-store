@@ -32,7 +32,7 @@ The minio S3 server can be used to run all the tests locally without AWS or GCS 
     ./mc cat local:/test
 
     # test minio s3 interface
-    #    NOTE:  this requies AWS keys with MINIO_ACCESS_KEY=$AWS_ACCESS_KEY_ID 
+    #    NOTE:  this requires AWS keys with MINIO_ACCESS_KEY=$AWS_ACCESS_KEY_ID 
     #           and MINIO_SECRET_KEY=$AWS_SECRET_ACCESS_KEY
     aws --endpoint-url http://localhost:9000/ s3 mb s3://minio-test-bucket
     echo "s3 hello" > s3_test
@@ -40,18 +40,18 @@ The minio S3 server can be used to run all the tests locally without AWS or GCS 
     aws --endpoint-url http://localhost:9000/ s3 ls s3://minio-test-bucket
 
     # testing cloud-store with minio
-    #    NOTE:  this requies AWS keys with MINIO_ACCESS_KEY=$AWS_ACCESS_KEY_ID 
+    #    NOTE:  this requires AWS keys with MINIO_ACCESS_KEY=$AWS_ACCESS_KEY_ID 
     #           and MINIO_SECRET_KEY=$AWS_SECRET_ACCESS_KEY
     cloud-store ls s3://minio-test-bucket/ --endpoint http://127.0.0.1:9000/
     mkdir zzz
     cd zzz
     cloud-store download s3://minio-test-bucket/s3_test --endpoint http://127.0.0.1:9000/ -o s3_test_dl
-    cat s3_test
+    cat s3_test_dl
 
 
 ## Building and Running Tests
 
-Cloud-store relies on a few third party jars.  We currently don't have separate package for these jars so you need to download an lb-universe-deps package and add all the jars in the lib/java/ directory to your CLASSPATH environemtn variable.  The easiest way to set up these dependencies right now is to install a full LB release package and source the env.sh script that comes with LB.  There is also a run-tests bash script in the cloud-store repository that can help as an example of how to set up and invoke the test suite.
+Cloud-store relies on a few third party jars.  We currently don't have separate package for these jars so you need to download an lb-universe-deps package and add all the jars in the lib/java/ directory to your CLASSPATH environemtn variable.  The easiest way to set up these dependencies right now is to install a full LB release package and source the env.sh script that comes with LB.  There is also a run-tests.sh bash script in the cloud-store repository that can help as an example of how to set up and invoke the test suite.
 
 To build the cloud-store test suite, download all the source files from the cloud-store repository and run
 
@@ -63,15 +63,15 @@ To run the full test suite using the minio server, start the server as outlined 
     # AWS_ACCESS_KEY_ID & AWS_SECRET_ACCESS_KEY should be set, e.g.:
     #   export AWS_ACCESS_KEY_ID=$MINIO_ACCESS_KEY 
     #   export AWS_SECRET_ACCESS_KEY=$MINIO_SECRET_KEY
-    ./run-tests --endpoint http://127.0.0.1:9000/
+    ./run-tests.sh --endpoint http://127.0.0.1:9000/
 
-Pass a -h or --help option to run-tests to set the options supported by the test script.  By default, the test framework will try to create a new unique bucket in which to work while executing tests.  This really only works with the minio server (may work with AWS if you have the right credentials, but unlikely).  To run the tests using a GCS or AWS server, it is recommended that you specify a existing bucket and folder using the --dest-prefix option as in the following examples:
+Pass a -h or --help option to run-tests.sh to set the options supported by the test script.  By default, the test framework will try to create a new unique bucket in which to work while executing tests.  This really only works with the minio server (may work with AWS if you have the right credentials, but unlikely).  To run the tests using a GCS or AWS server, it is recommended that you specify a existing bucket and folder using the --dest-prefix option as in the following examples:
 
     # run test in an existing GCS bucket, creating the UT_ZZZ "folder" if necessary
-    ./run-tests --dest-prefix gs://lb-cloud-store-testing/UT_ZZZ
+    ./run-tests.sh --dest-prefix gs://lb-cloud-store-testing/UT_ZZZ
 
     # run test in an existing AWS bucket, creating the UT_ZZZ "folder" if necessary
-    ./run-tests --dest-prefix s3://cloud-store-test/UT_ZZZ
+    ./run-tests.sh --dest-prefix s3://cloud-store-test/UT_ZZZ
 
 
 ## Running Tests Within Nix

@@ -472,7 +472,7 @@ public class TestUtils
   }
 
 
-  public static List<StoreFile> downloadDir(URI src, File dest)
+  public static List<StoreFile> downloadRecursively(URI src, File dest)
     throws Throwable
   {
     DownloadOptions dlOpts = _client.getOptionsBuilderFactory()
@@ -486,7 +486,7 @@ public class TestUtils
   }
 
 
-  public static List<StoreFile> downloadDir(URI src, File dest, boolean overwrite)
+  public static List<StoreFile> downloadRecursively(URI src, File dest, boolean overwrite)
     throws Throwable
   {
     DownloadOptions dlOpts = _client.getOptionsBuilderFactory()

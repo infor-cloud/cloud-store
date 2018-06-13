@@ -651,37 +651,19 @@ public class CopyTests
         List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
         Assert.assertEquals(5, uploaded.size());
 
-        // non-recursive copy
+        // recursive copy
         String topN = rootPrefix + top.getName() + "/";
-        String copyTopN = rootPrefix + top.getName() + "-COPY/";
-        CopyOptions copyOpts = _client.getOptionsBuilderFactory()
-          .newCopyOptionsBuilder()
-          .setSourceBucketName(_testBucket)
-          .setSourceObjectKey(topN)
-          .setDestinationBucketName(_testBucket)
-          .setDestinationObjectKey(copyTopN)
-          .createOptions();
-        List<StoreFile> copy = _client.copyRecursively(copyOpts).get();
-        Assert.assertEquals(2, copy.size());
-
-        // verify the non-recursive copy
         List<StoreFile> copyObjs = TestUtils.listObjects(_testBucket, rootPrefix);
         int currentSize = copyObjs.size();
-        Assert.assertEquals(originalCount + 5 + 2, currentSize);
-        // original files plus 5 uploaded plus 2 copied
-        Assert.assertTrue(TestUtils.findObject(copyObjs, copyTopN + a.getName()));
-        Assert.assertTrue(TestUtils.findObject(copyObjs, copyTopN + b.getName()));
-
-        // recursive copy
         String copyTopN2 = topN + "COPY2/";
-        copyOpts = _client.getOptionsBuilderFactory()
+        CopyOptions copyOpts = _client.getOptionsBuilderFactory()
           .newCopyOptionsBuilder()
           .setSourceBucketName(_testBucket)
           .setSourceObjectKey(topN)
           .setDestinationBucketName(_testBucket)
           .setDestinationObjectKey(copyTopN2)
           .createOptions();
-        copy = _client.copyRecursively(copyOpts).get();
+        List<StoreFile> copy = _client.copyRecursively(copyOpts).get();
         Assert.assertEquals(5, copy.size());
 
         // verify the recursive copy
@@ -761,7 +743,7 @@ public class CopyTests
         }
         catch(ExecutionException ex)
         {
-          Assert.assertTrue(ex.getMessage().contains("specified bucket is not valid"));
+          Assert.assertTrue(ex.getMessage().contains("Error Code: NoSuchBucket"));
         }
         Assert.assertNull(msg);
         return;
@@ -818,42 +800,19 @@ public class CopyTests
         List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
         Assert.assertEquals(5, uploaded.size());
 
-        // non-recursive copy
-        String bucket2 = TestUtils.createTestBucket();
-        List<StoreFile> objs2 = TestUtils.listObjects(bucket2, rootPrefix);
-        int originalCount2 = objs2.size();
-        String topN = rootPrefix + top.getName() + "/";
-        CopyOptions copyOpts = _client.getOptionsBuilderFactory()
-          .newCopyOptionsBuilder()
-          .setSourceBucketName(_testBucket)
-          .setSourceObjectKey(topN)
-          .setDestinationBucketName(bucket2)
-          .setDestinationObjectKey(topN)
-          .createOptions();
-        List<StoreFile> copy = _client.copyRecursively(copyOpts).get();
-        Assert.assertEquals(2, copy.size());
-
-        // verify the non-recursive copy
-        objs = TestUtils.listObjects(_testBucket, rootPrefix);
-        Assert.assertEquals(originalCount + 5, objs.size());
-        // original files plus 5 uploaded
-
-        List<StoreFile> copyObjs = TestUtils.listObjects(bucket2, rootPrefix);
-        Assert.assertEquals(originalCount2 + 2, copyObjs.size());
-        // original files plus 2 copied
-        Assert.assertTrue(TestUtils.findObject(copyObjs, topN + a.getName()));
-        Assert.assertTrue(TestUtils.findObject(copyObjs, topN + b.getName()));
-
         // recursive copy
+        String bucket2 = TestUtils.createTestBucket();
+        String topN = rootPrefix + top.getName() + "/";
+        List<StoreFile> copyObjs = TestUtils.listObjects(bucket2, rootPrefix);
         String copyTopN = rootPrefix + top.getName() + "-COPY/";
-        copyOpts = _client.getOptionsBuilderFactory()
+        CopyOptions copyOpts = _client.getOptionsBuilderFactory()
           .newCopyOptionsBuilder()
           .setSourceBucketName(_testBucket)
           .setSourceObjectKey(topN)
           .setDestinationBucketName(bucket2)
           .setDestinationObjectKey(copyTopN)
           .createOptions();
-        copy = _client.copyRecursively(copyOpts).get();
+        List<StoreFile> copy = _client.copyRecursively(copyOpts).get();
         Assert.assertEquals(5, copy.size());
 
         // verify the recursive copy

@@ -457,17 +457,12 @@ class Main
 
         if(recursive)
         {
-          client.copyRecursively(options).get();
+          List<StoreFile> storeFiles = client.copyRecursively(options).get();
+          if(storeFiles.isEmpty())
+            System.err.println("warning: No objects found for " + getURI());
         }
         else
         {
-          opts = client.getOptionsBuilderFactory()
-            .newExistsOptionsBuilder()
-            .setBucketName(getSourceBucket())
-            .setObjectKey(getSourceObjectKey())
-            .createOptions();
-
-          // We go for a direct key-to-key copy, so source object has to be there.
           client.copy(options).get();
         }
       }
@@ -519,7 +514,9 @@ class Main
       {
         if(recursive)
         {
-          client.renameRecursively(options).get();
+          List<StoreFile> storeFiles = client.renameRecursively(options).get();
+          if(storeFiles.isEmpty())
+            System.err.println("warning: No objects found for " + getURI());
         }
         else
         {
@@ -720,7 +717,9 @@ class Main
       {
         if(recursive)
         {
-          client.deleteRecursively(opts).get();
+          List<StoreFile> storeFiles = client.deleteRecursively(opts).get();
+          if(storeFiles.isEmpty())
+            System.err.println("warning: No objects found for " + getURI());
         }
         else
         {
@@ -1136,7 +1135,6 @@ class Main
       CloudStoreClient client = createCloudStoreClient();
 
       File output = new File(file);
-      ListenableFuture<?> result;
 
       DownloadOptionsBuilder dob = client.getOptionsBuilderFactory()
         .newDownloadOptionsBuilder()
@@ -1153,19 +1151,21 @@ class Main
         dob.setOverallProgressListenerFactory(cplf);
       }
 
-      if(recursive)
-        result = client.downloadRecursively(dob.createOptions());
-      else
-      {
-        if(output.isDirectory())
-          output = new File(output, getObjectKey().substring(getObjectKey().lastIndexOf("/") + 1));
-        dob.setFile(output);
-        result = client.download(dob.createOptions());
-      }
-
       try
       {
-        result.get();
+        if(recursive)
+        {
+          List<StoreFile> storeFiles = client.downloadRecursively(dob.createOptions()).get();
+          if(storeFiles.isEmpty())
+            System.err.println("warning: No objects found for " + getURI());
+        }
+        else
+        {
+          if(output.isDirectory())
+            output = new File(output, getObjectKey().substring(getObjectKey().lastIndexOf("/") + 1));
+          dob.setFile(output);
+          client.download(dob.createOptions()).get();
+        }
       }
       catch(ExecutionException exc)
       {

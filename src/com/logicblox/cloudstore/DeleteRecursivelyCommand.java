@@ -53,12 +53,6 @@ class DeleteRecursivelyCommand
               matches.add(f);
             }
           }
-          if(!_options.forceDelete() && matches.isEmpty())
-          {
-            throw new UsageException("No objects found that match '" +
-              getUri(_options.getBucketName(), _options.getObjectKey()) + "'");
-          }
-
           List<ListenableFuture<StoreFile>> futures = prepareFutures(matches);
 
           if(_options.isDryRun())

@@ -76,13 +76,6 @@ class DownloadRecursivelyCommand
           throws IOException
         {
           prepareFutures(srcFiles);
-          if(srcFiles.isEmpty())
-          {
-            throw new UsageException(
-              "No objects found for '" + getUri(_options.getBucketName(), _options.getObjectKey()) +
-                "'");
-          }
-
           if(_options.isDryRun())
           {
             return Futures.immediateFuture(null);

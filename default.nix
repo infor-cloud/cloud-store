@@ -79,12 +79,12 @@ let
   build_minio = pkgs.buildGoPackage rec {
     name = "minio";
     goPackagePath = "github.com/minio/minio";
-    rev = "e2aba9196f849c458303aff42d2d6ea3e3ea8904";
+    rev = "371349787f0e324f072b03ed5a7842229d6b3174";
 
     src = pkgs.fetchgit {
       inherit rev;
       url = "https://github.com/minio/minio.git";
-      sha256 = "1iixpxcyhfa1lln3qd4xpnmjpbkf0zicj1irk21wqjqkac3rar0s";
+      sha256 = "1igmb04raz5q4wwrksqbp9iksvd3hd7f2z4gk4vrsk99h7r44jr1";
     };
   };
 

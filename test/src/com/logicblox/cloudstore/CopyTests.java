@@ -743,7 +743,8 @@ public class CopyTests
         }
         catch(ExecutionException ex)
         {
-          Assert.assertTrue(ex.getMessage().contains("Error Code: NoSuchBucket"));
+          Assert.assertTrue(ex.getMessage().contains("Error Code: NoSuchBucket") ||
+            ex.getMessage().contains("specified bucket is not valid"));
         }
         Assert.assertNull(msg);
         return;

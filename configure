@@ -98,7 +98,7 @@ jar(
    classpath = deps + test_deps,
    manifest = {'add_classpath': True,
                'main_class': "com.logicblox.cloudstore.TestRunner"},
-   java_version = "1.7")
+   java_version = "1.8")
 
 bin_program('cloud-store')
 

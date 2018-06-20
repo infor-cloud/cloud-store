@@ -23,9 +23,6 @@ import java.util.Optional;
  * {@code DownloadOptions} contains all the details needed by the download operation. The specified
  * {@code object}, under {@code _bucketName}, is downloaded to a local {@code _file}.
  * <p>
- * If {@code _recursive} is set, then all objects under {@code _objectKey} key will be downloaded.
- * Otherwise, only the top-level objects will be downloaded.
- * <p>
  * If {@code _overwrite} is set, then newly downloaded files is possible to _overwrite existing local
  * files.
  * <p>

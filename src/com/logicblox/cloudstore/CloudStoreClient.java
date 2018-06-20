@@ -247,10 +247,10 @@ public interface CloudStoreClient
     throws IOException;
 
   /**
-   * Download a set of files from a cloud store service to the local file system.  The
+   * Download a set of objects from a cloud store service to the local file system. The
    * {@code objectKey} in the {@link DownloadOptions} will be used as a prefix to find
-   * a set of files in a simulated directory in the cloud store service. All files matching the
-   * prefix will be downloaded.
+   * a set of objects in the cloud store service. All objects matching the prefix will be
+   * downloaded.
    * <p>
    * If any file to be downloaded was encrypted when uploaded, one of the private keys 
    * corresponding with the public keys associated with the file must be found in the local 
@@ -303,9 +303,8 @@ public interface CloudStoreClient
   ListenableFuture<StoreFile> copy(CopyOptions options);
 
   /**
-   * Copy all files in a cloud store service whose keys would be returned by the list 
-   * operation on the source prefix URI to new files with a new prefix.  This behaves like a
-   * local file system copy of a set of files into a new directory.  The destination URI in
+   * Copy all files in a cloud store service whose keys would be returned by the recursive list
+   * operation on the source prefix key to new files with a new prefix. The destination key in
    * the {@link CopyOptions} must look like a directory (end with a '/').
    * <p>
    * The source bucket must already exist and the user must have read permission to it.
@@ -346,7 +345,7 @@ public interface CloudStoreClient
    * behaving like a local directory rename.
    * <p>
    * The source key can be a prefix (including directory-like keys ending with '/'), while the
-   * destination key has to be directory-like (ended with '/').
+   * destination key has to be directory-like (ending with '/').
    * <p>
    * The source bucket must already exist and the user must have read permission to it.
    * Likewise, the destination bucket must already exist and the user must have write

@@ -41,7 +41,7 @@ class S3DeleteCommand
     if(_options.getObjectKey().endsWith("/") || _options.getObjectKey().equals(""))
     {
       String uri = getUri(_options.getBucketName(), _options.getObjectKey());
-      throw new UsageException("Key should be a fully qualified URI: " + uri + ". Prefix URIs are" +
+      throw new UsageException("Key should be fully qualified: " + uri + ". Prefix keys are" +
         " supported only by the recursive variant.");
     }
 

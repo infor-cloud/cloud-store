@@ -123,8 +123,8 @@ class S3DownloadCommand
     if(_options.getObjectKey().endsWith("/") || _options.getObjectKey().equals(""))
     {
       String uri = getUri(_options.getBucketName(), _options.getObjectKey());
-      throw new UsageException("Source key should be a fully qualified URI: " + uri + ". Prefix " +
-        "source URIs are supported only by the recursive variant.");
+      throw new UsageException("Source key should be fully qualified: " + uri + ". Source " +
+        "prefix keys are supported only by the recursive variant.");
     }
 
     if(_dryRun)

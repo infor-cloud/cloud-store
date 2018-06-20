@@ -44,8 +44,8 @@ class GCSCopyCommand
     if(_options.getSourceObjectKey().endsWith("/") || _options.getSourceObjectKey().equals(""))
     {
       String uri = getUri(_options.getSourceBucketName(), _options.getSourceObjectKey());
-      throw new UsageException("Source key should be a fully qualified URI: " + uri + ". Prefix " +
-        "source URIs are supported only by the recursive variant.");
+      throw new UsageException("Source key should be fully qualified: " + uri + ". Source " +
+        "prefix keys are supported only by the recursive variant.");
     }
 
     if(_options.isDryRun())

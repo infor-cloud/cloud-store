@@ -402,10 +402,7 @@ class Main
 
   }
 
-  @Parameters(commandDescription = "Copy prefix/object. If destination URI is" +
-    " a directory (ends with '/'), then source URI acts as a prefix and " +
-    "this operation will copy all keys that would be returned by the list " +
-    "operation on the same prefix. Otherwise, we go for a direct key-to-key" + " copy.")
+  @Parameters(commandDescription = "Copy an object or prefix to the same storage service")
   class CopyCommandOptions
     extends TwoObjectsCommandOptions
   {
@@ -418,7 +415,8 @@ class Main
       S3Client.STORAGE_CLASSES_DESC_CONST)
     String storageClass;
 
-    @Parameter(names = {"-r", "--recursive"}, description = "Copy recursively")
+    @Parameter(names = {"-r", "--recursive"}, description = "Copy all objects that match the " +
+      "provided storage service prefix key.")
     boolean recursive = false;
 
     @Parameter(names = "--dry-run", description = "Display operations but do not execute them")
@@ -478,10 +476,7 @@ class Main
   }
 
 
-  @Parameters(commandDescription = "Rename an object or object prefix. If the " +
-    "source URI ends with '/', then it acts as a prefix and " +
-    "this operation will rename all objects that would be returned by the list " +
-    "operation on the same prefix.")
+  @Parameters(commandDescription = "Rename an object or prefix on the same storage service")
   class RenameCommandOptions
     extends TwoObjectsCommandOptions
   {
@@ -489,7 +484,8 @@ class Main
       S3Client.CANNED_ACLS_DESC_CONST)
     String cannedAcl;
 
-    @Parameter(names = {"-r", "--recursive"}, description = "Rename recursively")
+    @Parameter(names = {"-r", "--recursive"}, description = "Rename all objects that match the " +
+      "provided storage service prefix key.")
     boolean recursive = false;
 
     @Parameter(names = "--dry-run", description = "Display operations but do not execute them")
@@ -690,7 +686,7 @@ class Main
     extends S3ObjectCommandOptions
   {
     @Parameter(names = {"-r", "--recursive"}, description = "Delete all objects" +
-      " that match the provided storage service URL prefix.")
+      " that match the provided storage service prefix key.")
     boolean recursive = false;
 
     @Parameter(names = "--dry-run", description = "Display operations but do not execute them")
@@ -1101,7 +1097,7 @@ class Main
     }
   }
 
-  @Parameters(commandDescription = "Download a file, or a set of files from the storage service")
+  @Parameters(commandDescription = "Download a file or a set of files from the storage service")
   class DownloadCommandOptions
     extends S3ObjectCommandOptions
   {
@@ -1111,7 +1107,8 @@ class Main
     @Parameter(names = "--overwrite", description = "Overwrite existing file(s) if existing")
     boolean overwrite = false;
 
-    @Parameter(names = {"-r", "--recursive"}, description = "Download recursively")
+    @Parameter(names = {"-r", "--recursive"}, description = "Download all objects that match the " +
+      "provided storage service prefix key.")
     boolean recursive = false;
 
     @Parameter(names = {"--version-id"}, description = "Download a specific version of a file")

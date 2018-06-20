@@ -22,8 +22,8 @@ iterations=1
 
 cloudstore_jars=$CLOUDSTORE_HOME/lib/java
 
+# for local testing
 test_jars=$PWD/build/jars
-   # for local testing
 
 cp="$cloudstore_jars/junit-4.8.2.jar:$test_jars/cloudstore-test.jar:$cloudstore_jars/cloudstore-test.jar"
 

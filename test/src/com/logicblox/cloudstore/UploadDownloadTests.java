@@ -1148,7 +1148,7 @@ public class UploadDownloadTests
 
     // remove "s3tool-pubkey-hash" from metadata to simulate files
     // uploaded by older cloud-store versions
-    String objKey = rootPrefix + toUpload.getName();
+    String objKey = rootPrefix + '/' + toUpload.getName();
     Metadata destMeta = TestUtils.objectExists(Utils.getBucketName(dest), Utils.getObjectKey(dest));
     Assert.assertNotNull(destMeta);
     Map<String, String> destUserMeta = destMeta.getUserMetadata();

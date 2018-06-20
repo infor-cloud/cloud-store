@@ -82,7 +82,7 @@ public class MultiKeyTests
     // make sure file was uploaded
     objs = TestUtils.listObjects(_testBucket, rootPrefix);
     Assert.assertEquals(originalCount + 1, objs.size());
-    String objKey = rootPrefix + toUpload.getName();
+    String objKey = rootPrefix + '/' + toUpload.getName();
     Assert.assertTrue(TestUtils.findObject(objs, objKey));
 
     // download the file and compare it with the original
@@ -207,7 +207,7 @@ public class MultiKeyTests
     String key2FileName = key2 + ".pem";
     TestUtils.writeToFile(publicKey2, new File(keydir, key2FileName));
 
-    String objKey = rootPrefix + toUpload.getName();
+    String objKey = rootPrefix + '/' + toUpload.getName();
     f = _client.addEncryptionKey(TestUtils.buildEncryptionKeyOptions(_testBucket, objKey, key2))
       .get();
     Assert.assertNotNull(f);
@@ -238,7 +238,7 @@ public class MultiKeyTests
     // create a small file and upload
     File toUpload = TestUtils.createTextFile(100);
     String rootPrefix = TestUtils.addPrefix("test-multikey-duplicate");
-    String objKey = rootPrefix + toUpload.getName();
+    String objKey = rootPrefix + '/' + toUpload.getName();
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, key1);
     Assert.assertNotNull(f);
@@ -274,7 +274,7 @@ public class MultiKeyTests
     // create a small file and upload
     File toUpload = TestUtils.createTextFile(100);
     String rootPrefix = TestUtils.addPrefix("test-multikey-missing");
-    String objKey = rootPrefix + toUpload.getName();
+    String objKey = rootPrefix + '/' + toUpload.getName();
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, key1);
     Assert.assertNotNull(f);
@@ -311,7 +311,7 @@ public class MultiKeyTests
     // create a small file and upload
     File toUpload = TestUtils.createTextFile(100);
     String rootPrefix = TestUtils.addPrefix("test-multikey-remove-missing");
-    String objKey = rootPrefix + toUpload.getName();
+    String objKey = rootPrefix + '/' + toUpload.getName();
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, key1);
     Assert.assertNotNull(f);
@@ -346,7 +346,7 @@ public class MultiKeyTests
     // create a small file and upload
     File toUpload = TestUtils.createTextFile(100);
     String rootPrefix = TestUtils.addPrefix("test-multikey-unencrypted-add-key");
-    String objKey = rootPrefix + toUpload.getName();
+    String objKey = rootPrefix + '/' + toUpload.getName();
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     StoreFile f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
@@ -381,7 +381,7 @@ public class MultiKeyTests
     // create a small file and upload
     File toUpload = TestUtils.createTextFile(100);
     String rootPrefix = TestUtils.addPrefix("test-multikey-unencrypted-remove-key");
-    String objKey = rootPrefix + toUpload.getName();
+    String objKey = rootPrefix + '/' + toUpload.getName();
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     StoreFile f = TestUtils.uploadFile(toUpload, dest);
     Assert.assertNotNull(f);
@@ -418,7 +418,7 @@ public class MultiKeyTests
     // create a small file and upload
     File toUpload = TestUtils.createTextFile(100);
     String rootPrefix = TestUtils.addPrefix("test-remove-last-key");
-    String objKey = rootPrefix + toUpload.getName();
+    String objKey = rootPrefix + '/' + toUpload.getName();
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, key1);
     Assert.assertNotNull(f);
@@ -469,7 +469,7 @@ public class MultiKeyTests
     // create a small file and upload
     File toUpload = TestUtils.createTextFile(100);
     String rootPrefix = TestUtils.addPrefix("test-multikey-max");
-    String objKey = rootPrefix + toUpload.getName();
+    String objKey = rootPrefix + '/' + toUpload.getName();
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, keys[0]);
     Assert.assertNotNull(f);

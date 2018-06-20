@@ -143,7 +143,7 @@ class S3AbortPendingUploadsCommand
     public ListenableFuture<List<Void>> call()
       throws ExecutionException, InterruptedException
     {
-      // TODO(geokollias): It's a blocking call (similar case with DownloadDirectoryCommand)
+      // TODO(geokollias): It's a blocking call (similar case with DownloadRecursivelyCommand)
       List<Upload> pendingUploads = _client.listPendingUploads(_options).get();
 
       List<ListenableFuture<Void>> aborts = new ArrayList<>();

@@ -303,19 +303,19 @@ public class S3Client
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> uploadDirectory(UploadOptions options)
+  public ListenableFuture<List<StoreFile>> uploadRecursively(UploadOptions options)
     throws IOException, ExecutionException, InterruptedException
   {
-    UploadDirectoryCommand cmd = new UploadDirectoryCommand(options);
+    UploadRecursivelyCommand cmd = new UploadRecursivelyCommand(options);
     configure(cmd);
     return cmd.run();
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> deleteDirectory(DeleteOptions options)
+  public ListenableFuture<List<StoreFile>> deleteRecursively(DeleteOptions options)
     throws InterruptedException, ExecutionException
   {
-    DeleteDirCommand cmd = new DeleteDirCommand(options);
+    DeleteRecursivelyCommand cmd = new DeleteRecursivelyCommand(options);
     configure(cmd);
     return cmd.run();
   }
@@ -373,10 +373,10 @@ public class S3Client
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> downloadDirectory(DownloadOptions options)
+  public ListenableFuture<List<StoreFile>> downloadRecursively(DownloadOptions options)
     throws IOException, ExecutionException, InterruptedException
   {
-    DownloadDirectoryCommand cmd = new DownloadDirectoryCommand(options);
+    DownloadRecursivelyCommand cmd = new DownloadRecursivelyCommand(options);
     configure(cmd);
     return cmd.run();
   }
@@ -390,10 +390,10 @@ public class S3Client
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> copyDirectory(CopyOptions options)
+  public ListenableFuture<List<StoreFile>> copyRecursively(CopyOptions options)
     throws InterruptedException, ExecutionException, IOException
   {
-    S3CopyDirCommand cmd = new S3CopyDirCommand(options);
+    S3CopyRecursivelyCommand cmd = new S3CopyRecursivelyCommand(options);
     configure(cmd);
     return cmd.run();
   }
@@ -407,10 +407,10 @@ public class S3Client
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> renameDirectory(RenameOptions options)
+  public ListenableFuture<List<StoreFile>> renameRecursively(RenameOptions options)
     throws InterruptedException, ExecutionException, IOException
   {
-    RenameDirectoryCommand cmd = new RenameDirectoryCommand(options);
+    RenameRecursivelyCommand cmd = new RenameRecursivelyCommand(options);
     configure(cmd);
     return cmd.run();
   }

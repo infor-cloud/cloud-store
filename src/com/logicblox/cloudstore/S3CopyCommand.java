@@ -41,12 +41,18 @@ class S3CopyCommand
   {
     super(options);
     _options = options;
-
     _progressListenerFactory = options.getOverallProgressListenerFactory().orElse(null);
   }
 
   public ListenableFuture<StoreFile> run()
   {
+    if(_options.getSourceObjectKey().endsWith("/") || _options.getSourceObjectKey().equals(""))
+    {
+      String uri = getUri(_options.getSourceBucketName(), _options.getSourceObjectKey());
+      throw new UsageException("Source key should be fully qualified: " + uri + ". Source " +
+        "prefix keys are supported only by the recursive variant.");
+    }
+
     if(_options.isDryRun())
     {
       System.out.println("<DRYRUN> copying '" +
@@ -56,7 +62,13 @@ class S3CopyCommand
     }
     else
     {
-      ListenableFuture<Copy> copy = startCopy();
+      ExistsOptions opts = _client.getOptionsBuilderFactory()
+        .newExistsOptionsBuilder()
+        .setBucketName(_options.getSourceBucketName())
+        .setObjectKey(_options.getSourceObjectKey())
+        .createOptions();
+      ListenableFuture<Metadata> sourceExists = _client.exists(opts);
+      ListenableFuture<Copy> copy = Futures.transform(sourceExists, startCopyAsyncFunction());
       copy = Futures.transform(copy, startPartsAsyncFunction());
       ListenableFuture<String> result = Futures.transform(copy, completeAsyncFunction());
       return Futures.transform(result, new Function<String, StoreFile>()
@@ -77,6 +89,22 @@ class S3CopyCommand
   /**
    * Step 1: Start copy and fetch metadata.
    */
+  private AsyncFunction<Metadata, Copy> startCopyAsyncFunction()
+  {
+    return new AsyncFunction<Metadata, Copy>()
+    {
+      public ListenableFuture<Copy> apply(Metadata mdata)
+      {
+        if(mdata == null)
+        {
+          throw new UsageException("Source object not found at " + getUri(
+            _options.getSourceBucketName(), _options.getSourceObjectKey()));
+        }
+        return startCopy();
+      }
+    };
+  }
+
   private ListenableFuture<Copy> startCopy()
   {
     return executeWithRetry(_client.getInternalExecutor(), new Callable<ListenableFuture<Copy>>()

@@ -23,9 +23,6 @@ import java.util.Optional;
  * {@code DownloadOptions} contains all the details needed by the download operation. The specified
  * {@code object}, under {@code _bucketName}, is downloaded to a local {@code _file}.
  * <p>
- * If {@code _recursive} is set, then all objects under {@code _objectKey} key will be downloaded.
- * Otherwise, only the top-level objects will be downloaded.
- * <p>
  * If {@code _overwrite} is set, then newly downloaded files is possible to _overwrite existing local
  * files.
  * <p>
@@ -37,7 +34,7 @@ import java.util.Optional;
  * @see DownloadOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#download(DownloadOptions)
- * @see CloudStoreClient#downloadDirectory(DownloadOptions)
+ * @see CloudStoreClient#downloadRecursively(DownloadOptions)
  * @see OptionsBuilderFactory#newDownloadOptionsBuilder()
  */
 public class DownloadOptions
@@ -46,7 +43,6 @@ public class DownloadOptions
   private File _file;
   private String _bucketName;
   private String _objectKey;
-  private boolean _recursive;
   private String _version;
   private boolean _overwrite;
   private boolean _dryRun;
@@ -54,14 +50,12 @@ public class DownloadOptions
 
   DownloadOptions(
     CloudStoreClient cloudStoreClient, File file, String bucketName, String objectKey, String version,
-    boolean recursive, boolean overwrite, boolean dryRun,
-    OverallProgressListenerFactory overallProgressListenerFactory)
+    boolean overwrite, boolean dryRun, OverallProgressListenerFactory overallProgressListenerFactory)
   {
     super(cloudStoreClient);
     _file = file;
     _bucketName = bucketName;
     _objectKey = objectKey;
-    _recursive = recursive;
     _version = version;
     _overwrite = overwrite;
     _dryRun = dryRun;
@@ -97,18 +91,6 @@ public class DownloadOptions
   public String getObjectKey()
   {
     return _objectKey;
-  }
-
-  /**
-   * Return the recursive property of the command.  If this property is true
-   * and the key looks like a directory (ends in '/'), all "top-level"
-   * and "subdirectory" files will be downloaded.
-   *
-   * @return recursive flag
-   */
-  public boolean isRecursive()
-  {
-    return _recursive;
   }
 
   /**

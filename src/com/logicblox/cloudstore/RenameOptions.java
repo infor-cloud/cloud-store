@@ -31,7 +31,7 @@ import java.util.Optional;
  * @see RenameOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#rename(RenameOptions)
- * @see CloudStoreClient#renameDirectory(RenameOptions)
+ * @see CloudStoreClient#renameRecursively(RenameOptions)
  * @see OptionsBuilderFactory#newRenameOptionsBuilder()
  */
 public class RenameOptions
@@ -41,21 +41,18 @@ public class RenameOptions
   private final String _sourceObjectKey;
   private final String _destinationBucketName;
   private final String _destinationObjectKey;
-  private final boolean _recursive;
   private final boolean _dryRun;
   private String _cannedAcl;
 
   RenameOptions(
     CloudStoreClient cloudStoreClient, String sourceBucketName, String sourceObjectKey,
-    String destinationBucket, String destinationObjectKey, String cannedAcl, boolean recursive,
-    boolean dryRun)
+    String destinationBucket, String destinationObjectKey, String cannedAcl, boolean dryRun)
   {
     super(cloudStoreClient);
     _sourceBucketName = sourceBucketName;
     _sourceObjectKey = sourceObjectKey;
     _destinationBucketName = destinationBucket;
     _destinationObjectKey = destinationObjectKey;
-    _recursive = recursive;
     _cannedAcl = cannedAcl;
     _dryRun = dryRun;
   }
@@ -109,20 +106,6 @@ public class RenameOptions
   public Optional<String> getCannedAcl()
   {
     return Optional.ofNullable(_cannedAcl);
-  }
-
-  /**
-   * Return the recursive property for the rename operation.  If not set, a single file
-   * whose key matches the specified key will be renamed if the key does not look like
-   * a directory (ends with a '/').  If not set and the key ends in a '/', then all
-   * "top-level" files matching the key will be renamed.  If recursive is set and the
-   * key ends in '/', all "top-level" and all matching "sub-directory" files will be renamed.
-   *
-   * @return recursive flag
-   */
-  public boolean isRecursive()
-  {
-    return _recursive;
   }
 
   /**

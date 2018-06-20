@@ -28,12 +28,12 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 
-class GCSCopyDirCommand
+class GCSCopyRecursivelyCommand
   extends Command
 {
   private CopyOptions _options;
 
-  public GCSCopyDirCommand(CopyOptions options)
+  public GCSCopyRecursivelyCommand(CopyOptions options)
   {
     super(options);
     _options = options;
@@ -45,7 +45,8 @@ class GCSCopyDirCommand
     if(!_options.getDestinationObjectKey().endsWith("/") &&
       !_options.getDestinationObjectKey().equals(""))
     {
-      throw new UsageException("Destination directory key should end with a '/'");
+      throw new UsageException("Destination key should end with a '/': " +
+        getUri(_options.getDestinationBucketName(), _options.getDestinationObjectKey()));
     }
 
     String baseDirPath = "";
@@ -60,7 +61,7 @@ class GCSCopyDirCommand
     final String baseDirPathF = baseDirPath;
 
     ListenableFuture<List<StoreFile>> listFuture = getListFuture(_options.getSourceBucketName(),
-      _options.getSourceObjectKey(), _options.isRecursive());
+      _options.getSourceObjectKey(), true);
     ListenableFuture<List<StoreFile>> result = Futures.transform(listFuture,
       new AsyncFunction<List<StoreFile>, List<StoreFile>>()
       {

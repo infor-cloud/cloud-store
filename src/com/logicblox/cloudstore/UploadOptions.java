@@ -41,7 +41,7 @@ import java.util.Optional;
  * @see UploadOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#upload(UploadOptions)
- * @see CloudStoreClient#uploadDirectory(UploadOptions)
+ * @see CloudStoreClient#uploadRecursively(UploadOptions)
  * @see OptionsBuilderFactory#newUploadOptionsBuilder()
  */
 public class UploadOptions

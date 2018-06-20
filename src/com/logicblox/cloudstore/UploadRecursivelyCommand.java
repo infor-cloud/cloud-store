@@ -30,12 +30,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-class UploadDirectoryCommand
+class UploadRecursivelyCommand
   extends Command
 {
   private UploadOptions _options;
 
-  public UploadDirectoryCommand(UploadOptions options)
+  public UploadRecursivelyCommand(UploadOptions options)
   {
     super(options);
     _options = options;
@@ -44,6 +44,17 @@ class UploadDirectoryCommand
   public ListenableFuture<List<StoreFile>> run()
     throws ExecutionException, InterruptedException, IOException
   {
+    if(!_options.getObjectKey().endsWith("/") && !_options.getObjectKey().equals(""))
+    {
+      throw new UsageException("Destination key should end with a '/': " +
+        getUri(_options.getBucketName(), _options.getObjectKey()));
+    }
+
+    if(!_options.getFile().exists())
+    {
+      throw new FileNotFoundException(_options.getFile().getPath());
+    }
+
     final IOFileFilter noSymlinks = new IOFileFilter()
     {
       @Override
@@ -59,10 +70,6 @@ class UploadDirectoryCommand
           boolean res = !FileUtils.isSymlink(file);
           return res;
         }
-        catch(FileNotFoundException e)
-        {
-          return false;
-        }
         catch(IOException e)
         {
           return false;
@@ -76,35 +83,22 @@ class UploadDirectoryCommand
       }
     };
 
-    Collection<File> found = FileUtils.listFiles(_options.getFile(), noSymlinks, noSymlinks);
-
     List<ListenableFuture<StoreFile>> files = new ArrayList<ListenableFuture<StoreFile>>();
-    for(File file : found)
+    if(_options.getFile().isDirectory())
     {
-      String relPath = file.getPath().substring(_options.getFile().getPath().length() + 1);
-      String key = Paths.get(_options.getObjectKey(), relPath).toString();
+      Collection<File> found = FileUtils.listFiles(_options.getFile(), noSymlinks, noSymlinks);
 
-      UploadOptions options = _client.getOptionsBuilderFactory()
-        .newUploadOptionsBuilder()
-        .setFile(file)
-        .setBucketName(_options.getBucketName())
-        .setObjectKey(key)
-        .setChunkSize(_options.getChunkSize())
-        .setEncKey(_options.getEncKey().orElse(null))
-        .setCannedAcl(_options.getCannedAcl())
-        .setOverallProgressListenerFactory(
-          _options.getOverallProgressListenerFactory().orElse(null))
-        .createOptions();
-
-      if(_options.isDryRun())
+      for(File file : found)
       {
-        System.out.println("<DRYRUN> uploading '" + file.getAbsolutePath() + "' to '" +
-          getUri(_options.getBucketName(), key) + "'");
+        String relPath = file.getPath().substring(_options.getFile().getPath().length() + 1);
+        String key = Paths.get(_options.getObjectKey(), relPath).toString();
+        uploadFile(files, file, key);
       }
-      else
-      {
-        files.add(_client.upload(options));
-      }
+    }
+    else
+    {
+      String key = Paths.get(_options.getObjectKey(), _options.getFile().getName()).toString();
+      uploadFile(files, _options.getFile(), key);
     }
 
     if(_options.isDryRun())
@@ -114,6 +108,31 @@ class UploadDirectoryCommand
     else
     {
       return Futures.allAsList(files);
+    }
+  }
+
+  private void uploadFile(List<ListenableFuture<StoreFile>> files, File file, String key)
+    throws IOException
+  {
+    UploadOptions options = _client.getOptionsBuilderFactory()
+      .newUploadOptionsBuilder()
+      .setFile(file)
+      .setBucketName(_options.getBucketName())
+      .setObjectKey(key)
+      .setChunkSize(_options.getChunkSize())
+      .setEncKey(_options.getEncKey().orElse(null))
+      .setCannedAcl(_options.getCannedAcl())
+      .setOverallProgressListenerFactory(_options.getOverallProgressListenerFactory().orElse(null))
+      .createOptions();
+
+    if(_options.isDryRun())
+    {
+      System.out.println("<DRYRUN> uploading '" + file.getAbsolutePath() + "' to '" +
+        getUri(_options.getBucketName(), key) + "'");
+    }
+    else
+    {
+      files.add(_client.upload(options));
     }
   }
 

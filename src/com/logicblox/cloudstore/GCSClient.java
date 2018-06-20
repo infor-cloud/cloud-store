@@ -165,17 +165,17 @@ public class GCSClient
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> uploadDirectory(UploadOptions options)
+  public ListenableFuture<List<StoreFile>> uploadRecursively(UploadOptions options)
     throws IOException, ExecutionException, InterruptedException
   {
-    return _s3Client.uploadDirectory(options);
+    return _s3Client.uploadRecursively(options);
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> deleteDirectory(DeleteOptions opts)
+  public ListenableFuture<List<StoreFile>> deleteRecursively(DeleteOptions opts)
     throws InterruptedException, ExecutionException
   {
-    return _s3Client.deleteDirectory(opts);
+    return _s3Client.deleteRecursively(opts);
   }
 
   @Override
@@ -231,10 +231,10 @@ public class GCSClient
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> downloadDirectory(DownloadOptions options)
+  public ListenableFuture<List<StoreFile>> downloadRecursively(DownloadOptions options)
     throws IOException, ExecutionException, InterruptedException
   {
-    return _s3Client.downloadDirectory(options);
+    return _s3Client.downloadRecursively(options);
   }
 
   @Override
@@ -244,10 +244,10 @@ public class GCSClient
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> copyDirectory(CopyOptions options)
+  public ListenableFuture<List<StoreFile>> copyRecursively(CopyOptions options)
     throws InterruptedException, ExecutionException, IOException
   {
-    return _s3Client.copyDirectory(options);
+    return _s3Client.copyRecursively(options);
   }
 
   @Override
@@ -257,10 +257,10 @@ public class GCSClient
   }
 
   @Override
-  public ListenableFuture<List<StoreFile>> renameDirectory(RenameOptions options)
+  public ListenableFuture<List<StoreFile>> renameRecursively(RenameOptions options)
     throws InterruptedException, ExecutionException, IOException
   {
-    return _s3Client.renameDirectory(options);
+    return _s3Client.renameRecursively(options);
   }
 
   @Override
@@ -340,10 +340,10 @@ public class GCSClient
      * @param options Upload options
      */
     @Override
-    public ListenableFuture<List<StoreFile>> uploadDirectory(UploadOptions options)
+    public ListenableFuture<List<StoreFile>> uploadRecursively(UploadOptions options)
       throws IOException, ExecutionException, InterruptedException
     {
-      UploadDirectoryCommand cmd = new UploadDirectoryCommand(options);
+      UploadRecursivelyCommand cmd = new UploadRecursivelyCommand(options);
       _s3Client.configure(cmd);
       return cmd.run();
     }
@@ -365,10 +365,10 @@ public class GCSClient
     }
 
     @Override
-    public ListenableFuture<List<StoreFile>> copyDirectory(CopyOptions options)
+    public ListenableFuture<List<StoreFile>> copyRecursively(CopyOptions options)
       throws IOException
     {
-      GCSCopyDirCommand cmd = new GCSCopyDirCommand(options);
+      GCSCopyRecursivelyCommand cmd = new GCSCopyRecursivelyCommand(options);
       configure(cmd);
       return cmd.run();
     }

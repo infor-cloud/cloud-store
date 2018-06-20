@@ -25,12 +25,12 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 
-class DeleteDirCommand
+class DeleteRecursivelyCommand
   extends Command
 {
   private DeleteOptions _options;
 
-  public DeleteDirCommand(DeleteOptions options)
+  public DeleteRecursivelyCommand(DeleteOptions options)
   {
     super(options);
     _options = options;
@@ -53,12 +53,6 @@ class DeleteDirCommand
               matches.add(f);
             }
           }
-          if(!_options.forceDelete() && matches.isEmpty())
-          {
-            throw new UsageException("No objects found that match '" +
-              getUri(_options.getBucketName(), _options.getObjectKey()) + "'");
-          }
-
           List<ListenableFuture<StoreFile>> futures = prepareFutures(matches);
 
           if(_options.isDryRun())
@@ -105,7 +99,7 @@ class DeleteDirCommand
       .newListOptionsBuilder()
       .setBucketName(_options.getBucketName())
       .setObjectKey(_options.getObjectKey())
-      .setRecursive(_options.isRecursive())
+      .setRecursive(true)
       .createOptions();
     return _client.listObjects(opts);
   }

@@ -25,7 +25,7 @@ package com.logicblox.cloudstore;
  * @see DeleteOptions
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#delete(DeleteOptions)
- * @see CloudStoreClient#deleteDirectory(DeleteOptions)
+ * @see CloudStoreClient#deleteRecursively(DeleteOptions)
  * @see OptionsBuilderFactory#newDeleteOptionsBuilder()
  */
 public class DeleteOptionsBuilder
@@ -33,9 +33,7 @@ public class DeleteOptionsBuilder
 {
   private String _bucket = null;
   private String _objectKey = null;
-  private boolean _recursive = false;
   private boolean _dryRun = false;
-  private boolean _forceDelete = false;
   private boolean _ignoreAbortInjection = false;
 
   DeleteOptionsBuilder(CloudStoreClient client)
@@ -68,20 +66,6 @@ public class DeleteOptionsBuilder
   }
 
   /**
-   * Set the recursive property of the command.  If true and if the object key
-   * looks like a directory name (ends in '/'), all files that recursively
-   * have the key as their prefix will be deleted.
-   *
-   * @param recursive true to recursively delete files
-   * @return this builder
-   */
-  public DeleteOptionsBuilder setRecursive(boolean recursive)
-  {
-    _recursive = recursive;
-    return this;
-  }
-
-  /**
    * If set to true, print operations that would be executed, but do not perform them.
    *
    * @param dryRun true if operations should be printed but not executed
@@ -90,20 +74,6 @@ public class DeleteOptionsBuilder
   public DeleteOptionsBuilder setDryRun(boolean dryRun)
   {
     _dryRun = dryRun;
-    return this;
-  }
-
-  /**
-   * If forceDelete is set to true, then delete command will complete successfully
-   * even if the specified file does not exist.  Otherwise, the delete command
-   * will fail when trying to delete a file that does not exist.
-   *
-   * @param force true of delete should succeed if file does not exist
-   * @return this builder
-   */
-  public DeleteOptionsBuilder setForceDelete(boolean force)
-  {
-    _forceDelete = force;
     return this;
   }
 
@@ -146,7 +116,6 @@ public class DeleteOptionsBuilder
   {
     validateOptions();
 
-    return new DeleteOptions(_cloudStoreClient, _bucket, _objectKey, _recursive, _dryRun,
-      _forceDelete, _ignoreAbortInjection);
+    return new DeleteOptions(_cloudStoreClient, _bucket, _objectKey, _dryRun, _ignoreAbortInjection);
   }
 }

@@ -139,7 +139,8 @@ public interface CloudStoreClient
     throws IOException;
 
   /**
-   * Upload a set of files from a directory in the local file system to a cloud store service.
+   * Upload a file or a directory of files in the local file system to a cloud store service
+   * recursively.
    * <p>
    * The destination bucket must already exist and the caller must have write permission
    * to the bucket to upload a file.  Checksum validation is done after the transfer of each
@@ -163,7 +164,7 @@ public interface CloudStoreClient
    * @throws ExecutionException -
    * @throws InterruptedException -
    */
-  ListenableFuture<List<StoreFile>> uploadDirectory(UploadOptions options)
+  ListenableFuture<List<StoreFile>> uploadRecursively(UploadOptions options)
     throws IOException, ExecutionException, InterruptedException;
 
   /**
@@ -187,7 +188,7 @@ public interface CloudStoreClient
    * @throws ExecutionException -
    * @throws InterruptedException -
    */
-  ListenableFuture<List<StoreFile>> deleteDirectory(DeleteOptions options)
+  ListenableFuture<List<StoreFile>> deleteRecursively(DeleteOptions options)
     throws InterruptedException, ExecutionException;
 
   /** 
@@ -246,12 +247,10 @@ public interface CloudStoreClient
     throws IOException;
 
   /**
-   * Download a set of files from a cloud store service to the local file system.  The
+   * Download a set of objects from a cloud store service to the local file system. The
    * {@code objectKey} in the {@link DownloadOptions} will be used as a prefix to find
-   * a set of files in a simulated directory in the code store service.  If the
-   * {@code recursive} flag is set, then all files matching the prefix will be downloaded.
-   * If {@code recursive} is false, then only "top-level" files will be downloaded, not
-   * those that appear to be in simulated sub-directories.
+   * a set of objects in the cloud store service. All objects matching the prefix will be
+   * downloaded.
    * <p>
    * If any file to be downloaded was encrypted when uploaded, one of the private keys 
    * corresponding with the public keys associated with the file must be found in the local 
@@ -284,7 +283,7 @@ public interface CloudStoreClient
    * @throws ExecutionException -
    * @throws InterruptedException -
    */
-  ListenableFuture<List<StoreFile>> downloadDirectory(DownloadOptions options)
+  ListenableFuture<List<StoreFile>> downloadRecursively(DownloadOptions options)
     throws IOException, ExecutionException, InterruptedException;
 
   /**
@@ -304,9 +303,8 @@ public interface CloudStoreClient
   ListenableFuture<StoreFile> copy(CopyOptions options);
 
   /**
-   * Copy all files in a cloud store service whose keys would be returned by the list 
-   * operation on the source prefix URI to new files with a new prefix.  This behaves like a
-   * local file system copy of a set of files into a new directory.  The destination URI in
+   * Copy all files in a cloud store service whose keys would be returned by the recursive list
+   * operation on the source prefix key to new files with a new prefix. The destination key in
    * the {@link CopyOptions} must look like a directory (end with a '/').
    * <p>
    * The source bucket must already exist and the user must have read permission to it.
@@ -322,7 +320,7 @@ public interface CloudStoreClient
    * @throws ExecutionException -
    * @throws InterruptedException -
    */
-  ListenableFuture<List<StoreFile>> copyDirectory(CopyOptions options)
+  ListenableFuture<List<StoreFile>> copyRecursively(CopyOptions options)
     throws InterruptedException, ExecutionException, IOException;
 
   /**
@@ -346,12 +344,12 @@ public interface CloudStoreClient
    * Rename all files in a cloud store service whose keys share a prefix to have another prefix,
    * behaving like a local directory rename.
    * <p>
+   * The source key can be a prefix (including directory-like keys ending with '/'), while the
+   * destination key has to be directory-like (ending with '/').
+   * <p>
    * The source bucket must already exist and the user must have read permission to it.
    * Likewise, the destination bucket must already exist and the user must have write
    * permission to it.
-   * <p>
-   * Both the source and destination keys should be folders (ending with '/').  There must be 
-   * some keys that match the source folder prefix, but the destination folder does not need to exist.
    * <p>
    * Return a future that when complete will contain a list of @{link StoreFile} objects with
    * information about the new renamed files.
@@ -362,7 +360,7 @@ public interface CloudStoreClient
    * @throws ExecutionException -
    * @throws InterruptedException -
    */
-  ListenableFuture<List<StoreFile>> renameDirectory(RenameOptions options)
+  ListenableFuture<List<StoreFile>> renameRecursively(RenameOptions options)
     throws InterruptedException, ExecutionException, IOException;
 
   /**

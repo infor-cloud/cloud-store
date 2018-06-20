@@ -122,6 +122,12 @@ class GCSUploadCommand
   public ListenableFuture<StoreFile> run()
     throws FileNotFoundException
   {
+    if(file.isDirectory())
+    {
+      throw new UsageException(
+        "Directory upload is supported only by the recursive variant: " + file.getPath());
+    }
+
     if(!file.exists())
     {
       throw new FileNotFoundException(file.getPath());

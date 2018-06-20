@@ -28,7 +28,7 @@ import java.util.Map;
  * @see CopyOptions
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#copy(CopyOptions)
- * @see CloudStoreClient#copyDirectory(CopyOptions)
+ * @see CloudStoreClient#copyRecursively(CopyOptions)
  * @see OptionsBuilderFactory#newCopyOptionsBuilder()
  */
 public class CopyOptionsBuilder
@@ -39,7 +39,6 @@ public class CopyOptionsBuilder
   private String _destinationBucketName;
   private String _destinationObjectKey;
   private String _storageClass;
-  private boolean _recursive = false;
   private String _cannedAcl;
   private Map<String, String> _userMetadata;
   private boolean _dryRun = false;
@@ -139,22 +138,6 @@ public class CopyOptionsBuilder
   }
 
   /**
-   * Set the recursive property for the copy operation.  If not set, a single file
-   * whose key matches the specified key will be copied if the key does not look like
-   * a directory (ends with a '/').  If not set and the key ends in a '/', then all
-   * "top-level" files matching the key will be copied.  If recursive is set and the
-   * key ends in '/', all "top-level" and all matching "sub-directory" files will be copied.
-   *
-   * @param recursive true if a recursive copy should be performed
-   * @return this builder
-   */
-  public CopyOptionsBuilder setRecursive(boolean recursive)
-  {
-    _recursive = recursive;
-    return this;
-  }
-
-  /**
    * If set to true, print operations that would be executed, but do not perform them.
    *
    * @param dryRun true if operations are to be printed but not executed
@@ -239,7 +222,7 @@ public class CopyOptionsBuilder
     validateOptions();
 
     return new CopyOptions(_cloudStoreClient, _sourceBucketName, _sourceObjectKey,
-      _destinationBucketName, _destinationObjectKey, _cannedAcl, _storageClass, _recursive, _dryRun,
+      _destinationBucketName, _destinationObjectKey, _cannedAcl, _storageClass, _dryRun,
       _ignoreAbortInjection, _userMetadata, _overallProgressListenerFactory);
   }
 }

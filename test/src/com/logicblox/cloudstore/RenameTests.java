@@ -136,10 +136,9 @@ public class RenameTests
           .setSourceObjectKey(Utils.getObjectKey(src))
           .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
-          .setRecursive(false)
           .setDryRun(true)
           .createOptions();
-        List<StoreFile> files = _client.renameDirectory(opts).get();
+        List<StoreFile> files = _client.renameRecursively(opts).get();
         Assert.assertNull(files);
         List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
         Assert.assertEquals(originalCount + 2, objs.size());
@@ -206,14 +205,13 @@ public class RenameTests
           .setSourceObjectKey(Utils.getObjectKey(src))
           .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
-          .setRecursive(true)
           .createOptions();
         oldGlobalFlag = CopyOptions.getAbortCounters().useGlobalCounter(true);
         CopyOptions.getAbortCounters().setInjectionCounter(1);
         // abort first rename during copy phase
         try
         {
-          _client.renameDirectory(opts).get();
+          _client.renameRecursively(opts).get();
         }
         catch(ExecutionException ex)
         {
@@ -299,7 +297,6 @@ public class RenameTests
           .setSourceObjectKey(Utils.getObjectKey(src))
           .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
-          .setRecursive(true)
           .createOptions();
         boolean oldGlobalFlag = false;
         try
@@ -307,7 +304,7 @@ public class RenameTests
           oldGlobalFlag = DeleteOptions.getAbortCounters().useGlobalCounter(true);
           DeleteOptions.getAbortCounters().setInjectionCounter(1);
           // abort first rename during delete phase
-          _client.renameDirectory(opts).get();
+          _client.renameRecursively(opts).get();
         }
         catch(ExecutionException ex)
         {
@@ -392,14 +389,13 @@ public class RenameTests
           .setSourceObjectKey(Utils.getObjectKey(src))
           .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
-          .setRecursive(true)
           .createOptions();
         DeleteOptions.getAbortCounters().setInjectionCounter(1);
         // should be one more than retry count.  retries disabled by default
         String msg = null;
         try
         {
-          _client.renameDirectory(opts).get();
+          _client.renameRecursively(opts).get();
           msg = "expected exception (forcing abort on delete)";
         }
         catch(ExecutionException ex)
@@ -481,14 +477,13 @@ public class RenameTests
           .setSourceObjectKey(Utils.getObjectKey(src))
           .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
-          .setRecursive(true)
           .createOptions();
         CopyOptions.getAbortCounters().setInjectionCounter(1);
         // should be one more than retry count.  retries disabled by default
         String msg = null;
         try
         {
-          _client.renameDirectory(opts).get();
+          _client.renameRecursively(opts).get();
           msg = "expected exception (forcing abort on copy)";
         }
         catch(ExecutionException ex)
@@ -1047,79 +1042,6 @@ public class RenameTests
 
 
   @Test
-  public void testNonRecursiveDirectory()
-    throws Throwable
-  {
-    // directory copy/upload/rename tests intermittently fail when using minio.  trying to
-    // minimize false failure reports by repeating and only failing the test if it consistently
-    // reports an error.
-    int retryCount = TestUtils.RETRY_COUNT;
-    int count = 0;
-    while(count < retryCount)
-    {
-      try
-      {
-        // create simple directory structure and upload
-        File top = TestUtils.createTmpDir(true);
-        File a = TestUtils.createTextFile(top, 100);
-        File b = TestUtils.createTextFile(top, 100);
-        File sub = TestUtils.createTmpDir(top);
-        File c = TestUtils.createTextFile(sub, 100);
-        File d = TestUtils.createTextFile(sub, 100);
-        File sub2 = TestUtils.createTmpDir(sub);
-        File e = TestUtils.createTextFile(sub2, 100);
-
-        String rootPrefix = TestUtils.addPrefix("rename-directory-" + count + "/");
-        int originalCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
-        URI dest = TestUtils.getUri(_testBucket, top, rootPrefix);
-        List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
-        Assert.assertEquals(5, uploaded.size());
-        int uploadCount = TestUtils.listObjects(_testBucket, rootPrefix).size();
-        Assert.assertEquals(uploaded.size(), uploadCount);
-
-        // rename the directory
-        URI src = dest;
-        String newPrefix = TestUtils.addPrefix("rename-dir-dest-" + count + "/subdir/");
-        int newCount = TestUtils.listObjects(_testBucket, newPrefix).size();
-        dest = TestUtils.getUri(_testBucket, "subdir2", newPrefix);
-        RenameOptions opts = _client.getOptionsBuilderFactory()
-          .newRenameOptionsBuilder()
-          .setSourceBucketName(Utils.getBucketName(src))
-          .setSourceObjectKey(Utils.getObjectKey(src))
-          .setDestinationBucketName(Utils.getBucketName(dest))
-          .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
-          .setRecursive(false)
-          .createOptions();
-        List<StoreFile> renamedFiles = _client.renameDirectory(opts).get();
-
-        // verify that top level objects moved (a and b), but others stayed
-        Assert.assertEquals(2, renamedFiles.size());
-        for(StoreFile f : renamedFiles)
-          Assert.assertEquals(Utils.getBucketName(dest), f.getBucketName());
-        List<StoreFile> newObjs = TestUtils.listObjects(_testBucket, newPrefix);
-        Assert.assertEquals(newCount + renamedFiles.size(), newObjs.size());
-        Assert.assertEquals(uploadCount - renamedFiles.size(),
-          TestUtils.listObjects(_testBucket, rootPrefix).size());
-
-        // verify that the structure was replicated correctly
-        String topN = newPrefix + "subdir2/";
-        Assert.assertTrue(TestUtils.findObject(newObjs, topN + a.getName()));
-        Assert.assertTrue(TestUtils.findObject(newObjs, topN + b.getName()));
-        return;
-      }
-      catch(Throwable t)
-      {
-        ++count;
-        if(count >= retryCount)
-        {
-          throw t;
-        }
-      }
-    }
-  }
-
-
-  @Test
   public void testRecursiveDirectory()
     throws Throwable
   {
@@ -1161,9 +1083,8 @@ public class RenameTests
           .setSourceObjectKey(Utils.getObjectKey(src))
           .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
-          .setRecursive(true)
           .createOptions();
-        List<StoreFile> renamedFiles = _client.renameDirectory(opts).get();
+        List<StoreFile> renamedFiles = _client.renameRecursively(opts).get();
 
         // verify that everything moved
         Assert.assertEquals(uploadCount, renamedFiles.size());
@@ -1249,9 +1170,8 @@ public class RenameTests
           .setSourceObjectKey(Utils.getObjectKey(src))
           .setDestinationBucketName(Utils.getBucketName(dest))
           .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
-          .setRecursive(true)
           .createOptions();
-        List<StoreFile> renamedFiles = _client.renameDirectory(opts).get();
+        List<StoreFile> renamedFiles = _client.renameRecursively(opts).get();
 
         // verify that everything moved
         Assert.assertEquals(uploadCount, renamedFiles.size());
@@ -1310,17 +1230,8 @@ public class RenameTests
           .setDestinationObjectKey(Utils.getObjectKey(dest) + "/")
           .createOptions();
         String msg = null;
-        try
-        {
-          _client.renameDirectory(opts).get();
-          msg = "expected exception (source missing)";
-        }
-        catch(Exception ex)
-        {
-          // expected
-          checkUsageException(ex, "No objects found");
-        }
-        Assert.assertNull(msg);
+        List<StoreFile> storeFiles = _client.renameRecursively(opts).get();
+        Assert.assertTrue(storeFiles.isEmpty());
         return;
       }
       catch(Throwable t)
@@ -1381,7 +1292,7 @@ public class RenameTests
         String msg = null;
         try
         {
-          _client.renameDirectory(opts).get();
+          _client.renameRecursively(opts).get();
           msg = "expected exception (source missing)";
         }
         catch(Exception ex)

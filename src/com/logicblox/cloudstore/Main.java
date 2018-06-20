@@ -402,10 +402,7 @@ class Main
 
   }
 
-  @Parameters(commandDescription = "Copy prefix/object. If destination URI is" +
-    " a directory (ends with '/'), then source URI acts as a prefix and " +
-    "this operation will copy all keys that would be returned by the list " +
-    "operation on the same prefix. Otherwise, we go for a direct key-to-key" + " copy.")
+  @Parameters(commandDescription = "Copy an object or prefix to the same storage service")
   class CopyCommandOptions
     extends TwoObjectsCommandOptions
   {
@@ -418,7 +415,8 @@ class Main
       S3Client.STORAGE_CLASSES_DESC_CONST)
     String storageClass;
 
-    @Parameter(names = {"-r", "--recursive"}, description = "Copy recursively")
+    @Parameter(names = {"-r", "--recursive"}, description = "Copy all objects that match the " +
+      "provided storage service prefix key.")
     boolean recursive = false;
 
     @Parameter(names = "--dry-run", description = "Display operations but do not execute them")
@@ -437,7 +435,6 @@ class Main
         .setDestinationObjectKey(getDestinationObjectKey())
         .setCannedAcl(cannedAcl)
         .setStorageClass(storageClass)
-        .setRecursive(recursive)
         .setDryRun(dryRun)
         .createOptions();
 
@@ -456,28 +453,14 @@ class Main
             "Bucket not found at " + Utils.getURI(client.getScheme(), getDestinationBucket(), ""));
         }
 
-        if(getDestinationObjectKey().endsWith("/") || getDestinationObjectKey().equals(""))
+        if(recursive)
         {
-          // If destination URI is a directory (ends with "/") or a bucket
-          // (object URI is empty), then source URI acts as a prefix and this
-          // operation will copy all keys that would be returned by the list
-          // operation on the same prefix.
-          client.copyDirectory(options).get();
+          List<StoreFile> storeFiles = client.copyRecursively(options).get();
+          if(storeFiles.isEmpty())
+            System.err.println("warning: No objects found for " + getURI());
         }
         else
         {
-          opts = client.getOptionsBuilderFactory()
-            .newExistsOptionsBuilder()
-            .setBucketName(getSourceBucket())
-            .setObjectKey(getSourceObjectKey())
-            .createOptions();
-
-          // We go for a direct key-to-key copy, so source object has
-          // to be there.
-          if(client.exists(opts).get() == null)
-          {
-            throw new UsageException("Object not found at " + getSourceURI());
-          }
           client.copy(options).get();
         }
       }
@@ -493,10 +476,7 @@ class Main
   }
 
 
-  @Parameters(commandDescription = "Rename an object or object prefix. If the " +
-    "source URI ends with '/', then it acts as a prefix and " +
-    "this operation will rename all objects that would be returned by the list " +
-    "operation on the same prefix.")
+  @Parameters(commandDescription = "Rename an object or prefix on the same storage service")
   class RenameCommandOptions
     extends TwoObjectsCommandOptions
   {
@@ -504,7 +484,8 @@ class Main
       S3Client.CANNED_ACLS_DESC_CONST)
     String cannedAcl;
 
-    @Parameter(names = {"-r", "--recursive"}, description = "Rename recursively")
+    @Parameter(names = {"-r", "--recursive"}, description = "Rename all objects that match the " +
+      "provided storage service prefix key.")
     boolean recursive = false;
 
     @Parameter(names = "--dry-run", description = "Display operations but do not execute them")
@@ -522,15 +503,16 @@ class Main
         .setDestinationBucketName(getDestinationBucket())
         .setDestinationObjectKey(getDestinationObjectKey())
         .setCannedAcl(cannedAcl)
-        .setRecursive(recursive)
         .setDryRun(dryRun)
         .createOptions();
 
       try
       {
-        if(getSourceObjectKey().endsWith("/"))
+        if(recursive)
         {
-          client.renameDirectory(options).get();
+          List<StoreFile> storeFiles = client.renameRecursively(options).get();
+          if(storeFiles.isEmpty())
+            System.err.println("warning: No objects found for " + getURI());
         }
         else
         {
@@ -556,6 +538,9 @@ class Main
     @Parameter(names = "-i", description = "File or directory to upload", required = true)
     String file;
 
+    @Parameter(names = {"-r", "--recursive"}, description = "Upload a directory recursively")
+    boolean recursive = false;
+
     @Parameter(names = "--key", description = "The name of the encryption key to use")
     String encKeyName = null;
 
@@ -579,13 +564,6 @@ class Main
       CloudStoreClient client = createCloudStoreClient();
       File f = new File(file);
 
-      if(f.isDirectory() && !getObjectKey().endsWith("/"))
-      {
-        throw new UsageException(
-          "Destination key " + Utils.getURI(client.getScheme(), getBucketName(), getObjectKey()) +
-            " should end with '/', since a directory is uploaded.");
-      }
-
       UploadOptionsBuilder uob = client.getOptionsBuilderFactory()
         .newUploadOptionsBuilder()
         .setFile(f)
@@ -602,21 +580,18 @@ class Main
         uob.setOverallProgressListenerFactory(cplf);
       }
 
-      if(f.isFile())
+      if(!f.isFile() && !f.isDirectory())
+        throw new UsageException("'" + file + "' is not a file or a directory");
+
+      if(recursive)
       {
-        if(getObjectKey().endsWith("/"))
-        {
-          uob.setObjectKey(getObjectKey() + f.getName());
-        }
-        client.upload(uob.createOptions()).get();
-      }
-      else if(f.isDirectory())
-      {
-        client.uploadDirectory(uob.createOptions()).get();
+        client.uploadRecursively(uob.createOptions()).get();
       }
       else
       {
-        throw new UsageException("File '" + file + "' is not a file or a " + "directory.");
+        if(getObjectKey().endsWith("/"))
+          uob.setObjectKey(getObjectKey() + f.getName());
+        client.upload(uob.createOptions()).get();
       }
       client.shutdown();
     }
@@ -711,12 +686,8 @@ class Main
     extends S3ObjectCommandOptions
   {
     @Parameter(names = {"-r", "--recursive"}, description = "Delete all objects" +
-      " that match the provided storage service URL prefix.")
+      " that match the provided storage service prefix key.")
     boolean recursive = false;
-
-    @Parameter(names = {"-f", "--force"}, description =
-      "Do not report an error if the object does not " + "exist")
-    boolean forceDelete = false;
 
     @Parameter(names = "--dry-run", description = "Display operations but do not execute them")
     boolean dryRun = false;
@@ -725,27 +696,21 @@ class Main
     public void invoke()
       throws Exception
     {
-      if(recursive && !getObjectKey().endsWith("/"))
-      {
-        throw new UsageException(
-          "Object key should end with / to recursively delete a directory structure");
-      }
-
       CloudStoreClient client = createCloudStoreClient();
       DeleteOptions opts = client.getOptionsBuilderFactory()
         .newDeleteOptionsBuilder()
         .setBucketName(getBucketName())
         .setObjectKey(getObjectKey())
-        .setRecursive(recursive)
         .setDryRun(dryRun)
-        .setForceDelete(forceDelete)
         .createOptions();
 
       try
       {
-        if(getObjectKey().endsWith("/"))
+        if(recursive)
         {
-          client.deleteDirectory(opts).get();
+          List<StoreFile> storeFiles = client.deleteRecursively(opts).get();
+          if(storeFiles.isEmpty())
+            System.err.println("warning: No objects found for " + getURI());
         }
         else
         {
@@ -1132,7 +1097,7 @@ class Main
     }
   }
 
-  @Parameters(commandDescription = "Download a file, or a set of files from the storage service")
+  @Parameters(commandDescription = "Download a file or a set of files from the storage service")
   class DownloadCommandOptions
     extends S3ObjectCommandOptions
   {
@@ -1142,7 +1107,8 @@ class Main
     @Parameter(names = "--overwrite", description = "Overwrite existing file(s) if existing")
     boolean overwrite = false;
 
-    @Parameter(names = {"-r", "--recursive"}, description = "Download recursively")
+    @Parameter(names = {"-r", "--recursive"}, description = "Download all objects that match the " +
+      "provided storage service prefix key.")
     boolean recursive = false;
 
     @Parameter(names = {"--version-id"}, description = "Download a specific version of a file")
@@ -1161,14 +1127,12 @@ class Main
       CloudStoreClient client = createCloudStoreClient();
 
       File output = new File(file);
-      ListenableFuture<?> result;
 
       DownloadOptionsBuilder dob = client.getOptionsBuilderFactory()
         .newDownloadOptionsBuilder()
         .setFile(output)
         .setBucketName(getBucketName())
         .setObjectKey(getObjectKey())
-        .setRecursive(recursive)
         .setVersion(version)
         .setOverwrite(overwrite)
         .setDryRun(dryRun);
@@ -1179,23 +1143,21 @@ class Main
         dob.setOverallProgressListenerFactory(cplf);
       }
 
-      if(getObjectKey().endsWith("/") || getObjectKey().equals(""))
-      {
-        result = client.downloadDirectory(dob.createOptions());
-      }
-      else
-      {
-        if(output.isDirectory())
-        {
-          output = new File(output, getObjectKey().substring(getObjectKey().lastIndexOf("/") + 1));
-        }
-        dob.setFile(output);
-        result = client.download(dob.createOptions());
-      }
-
       try
       {
-        result.get();
+        if(recursive)
+        {
+          List<StoreFile> storeFiles = client.downloadRecursively(dob.createOptions()).get();
+          if(storeFiles.isEmpty())
+            System.err.println("warning: No objects found for " + getURI());
+        }
+        else
+        {
+          if(output.isDirectory())
+            output = new File(output, getObjectKey().substring(getObjectKey().lastIndexOf("/") + 1));
+          dob.setFile(output);
+          client.download(dob.createOptions()).get();
+        }
       }
       catch(ExecutionException exc)
       {

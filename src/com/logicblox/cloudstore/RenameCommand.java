@@ -37,6 +37,13 @@ class RenameCommand
 
   public ListenableFuture<StoreFile> run()
   {
+    if(_options.getSourceObjectKey().endsWith("/") || _options.getSourceObjectKey().equals(""))
+    {
+      String uri = getUri(_options.getSourceBucketName(), _options.getSourceObjectKey());
+      throw new UsageException("Source key should be fully qualified: " + uri + ". Source " +
+        "prefix keys are supported only by the recursive variant.");
+    }
+
     if(_options.isDryRun())
     {
       System.out.println("<DRYRUN> renaming '" + getSourceUri() + "' to '" + getDestUri() + "'");
@@ -60,13 +67,12 @@ class RenameCommand
           .newDeleteOptionsBuilder()
           .setBucketName(_options.getDestinationBucketName())
           .setObjectKey(_options.getDestinationObjectKey())
-          .setForceDelete(true)
           .setIgnoreAbortInjection(true)
           .createOptions();
-        ListenableFuture<StoreFile> deleteFuture = _client.delete(deleteOpts);
+        ListenableFuture<StoreFile> deleteFuture = Futures.withFallback(_client.delete(deleteOpts),
+          ignoreMissingDestinationFile());
 
         return Futures.transform(deleteFuture,
-
           new AsyncFunction<StoreFile, StoreFile>()
           {
             public ListenableFuture<StoreFile> apply(StoreFile f)
@@ -78,6 +84,19 @@ class RenameCommand
     };
   }
 
+  private FutureFallback<StoreFile> ignoreMissingDestinationFile()
+  {
+    return new FutureFallback<StoreFile>()
+    {
+      public ListenableFuture<StoreFile> create(Throwable t)
+      {
+        // It's ok if destintation is not there. Copy might have failed.
+        if(t instanceof UsageException && t.getMessage().contains("Object not found"))
+          return Futures.immediateFuture(null);
+        return Futures.immediateFailedFuture(t);
+      }
+    };
+  }
 
   // start by checking that source exists, then follow with dest check
   private ListenableFuture<StoreFile> buildFutureChain()
@@ -95,7 +114,7 @@ class RenameCommand
       public ListenableFuture<StoreFile> apply(Metadata mdata)
         throws UsageException
       {
-        if(null == mdata)
+        if(mdata == null)
         {
           throw new UsageException("Source object '" + getSourceUri() + "' does not exist");
         }
@@ -121,7 +140,7 @@ class RenameCommand
       public ListenableFuture<StoreFile> apply(Metadata mdata)
         throws UsageException
       {
-        if(null != mdata)
+        if(mdata != null)
         {
           throw new UsageException("Cannot overwrite existing destination object '" + getDestUri());
         }

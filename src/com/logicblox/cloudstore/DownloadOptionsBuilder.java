@@ -29,7 +29,7 @@ import java.io.File;
  * @see DownloadOptions
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#download(DownloadOptions)
- * @see CloudStoreClient#downloadDirectory(DownloadOptions)
+ * @see CloudStoreClient#downloadRecursively(DownloadOptions)
  * @see OptionsBuilderFactory#newDownloadOptionsBuilder()
  */
 public class DownloadOptionsBuilder
@@ -39,7 +39,6 @@ public class DownloadOptionsBuilder
   private String _bucketName;
   private String _objectKey;
   private String _version;
-  private boolean _recursive = false;
   private boolean _overwrite = false;
   private boolean _dryRun = false;
   private OverallProgressListenerFactory _overallProgressListenerFactory;
@@ -83,20 +82,6 @@ public class DownloadOptionsBuilder
   public DownloadOptionsBuilder setObjectKey(String objectKey)
   {
     _objectKey = objectKey;
-    return this;
-  }
-
-  /**
-   * Set the recursive property of the command.  If this property is true
-   * and the key looks like a directory (ends in '/'), all "top-level"
-   * and "subdirectory" files will be downloaded.
-   *
-   * @param recursive recursive flag
-   * @return this builder
-   */
-  public DownloadOptionsBuilder setRecursive(boolean recursive)
-  {
-    _recursive = recursive;
     return this;
   }
 
@@ -183,6 +168,6 @@ public class DownloadOptionsBuilder
     validateOptions();
 
     return new DownloadOptions(_cloudStoreClient, _file, _bucketName, _objectKey, _version,
-      _recursive, _overwrite, _dryRun, _overallProgressListenerFactory);
+      _overwrite, _dryRun, _overallProgressListenerFactory);
   }
 }

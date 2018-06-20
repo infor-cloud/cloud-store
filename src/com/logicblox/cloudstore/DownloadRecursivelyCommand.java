@@ -28,7 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-class DownloadDirectoryCommand
+class DownloadRecursivelyCommand
   extends Command
 {
   private DownloadOptions _options;
@@ -39,7 +39,7 @@ class DownloadDirectoryCommand
   private boolean _dryRun = false;
 
 
-  public DownloadDirectoryCommand(DownloadOptions options)
+  public DownloadRecursivelyCommand(DownloadOptions options)
   {
     super(options);
     _options = options;
@@ -76,13 +76,6 @@ class DownloadDirectoryCommand
           throws IOException
         {
           prepareFutures(srcFiles);
-          if(srcFiles.isEmpty())
-          {
-            throw new UsageException(
-              "No objects found for '" + getUri(_options.getBucketName(), _options.getObjectKey()) +
-                "'");
-          }
-
           if(_options.isDryRun())
           {
             return Futures.immediateFuture(null);
@@ -121,7 +114,7 @@ class DownloadDirectoryCommand
       .newListOptionsBuilder()
       .setBucketName(_options.getBucketName())
       .setObjectKey(_options.getObjectKey())
-      .setRecursive(_options.isRecursive())
+      .setRecursive(true)
       .setIncludeVersions(false)
       .setExcludeDirs(false);
     return _client.listObjects(lob.createOptions());
@@ -192,9 +185,11 @@ class DownloadDirectoryCommand
     throws IOException
   {
     File destAbs = _destination.getAbsoluteFile();
+    String baseDirURI = Utils.getBaseDirURI(_options.getObjectKey());
+
     for(StoreFile src : potentialFiles)
     {
-      String relFile = src.getObjectKey().substring(_options.getObjectKey().length());
+      String relFile = src.getObjectKey().substring(baseDirURI.length());
       File outputFile = new File(destAbs, relFile);
       File outputPath = new File(outputFile.getParent());
 

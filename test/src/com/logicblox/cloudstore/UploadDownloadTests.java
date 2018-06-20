@@ -142,7 +142,7 @@ public class UploadDownloadTests
           .setObjectKey(Utils.getObjectKey(dest))
           .setDryRun(true)
           .createOptions();
-        List<StoreFile> files = _client.uploadDirectory(opts).get();
+        List<StoreFile> files = _client.uploadRecursively(opts).get();
         Assert.assertNull(files);
         Assert.assertEquals(originalCount, TestUtils.listObjects(_testBucket, rootPrefix).size());
         return;
@@ -181,7 +181,6 @@ public class UploadDownloadTests
       .setFile(dlTemp)
       .setBucketName(Utils.getBucketName(src))
       .setObjectKey(Utils.getObjectKey(src))
-      .setRecursive(false)
       .setOverwrite(true)
       .setDryRun(true)
       .createOptions();
@@ -215,11 +214,10 @@ public class UploadDownloadTests
       .setFile(dlDir)
       .setBucketName(Utils.getBucketName(src))
       .setObjectKey(Utils.getObjectKey(src))
-      .setRecursive(true)
       .setOverwrite(true)
       .setDryRun(true)
       .createOptions();
-    List<StoreFile> files = _client.downloadDirectory(opts).get();
+    List<StoreFile> files = _client.downloadRecursively(opts).get();
     Assert.assertNull(files);
     Assert.assertEquals(0, dlDir.list().length);
   }
@@ -401,7 +399,6 @@ public class UploadDownloadTests
         .setFile(dlTemp)
         .setBucketName(Utils.getBucketName(dest))
         .setObjectKey(Utils.getObjectKey(dest))
-        .setRecursive(false)
         .setOverwrite(true)
         .createOptions();
       f = _client.download(dlOpts).get();
@@ -755,30 +752,21 @@ public class UploadDownloadTests
         List<StoreFile> uploaded = TestUtils.uploadDir(top, dest);
         Assert.assertEquals(2, uploaded.size());
 
-        // should fail if source doesn't exist
+        // it's ok if source doesn't exist
         File dlDir = TestUtils.createTmpDir(true);
         String badPrefix = TestUtils.addPrefix(
           "dir-overwrite-bad" + System.currentTimeMillis() + "/");
         URI src = TestUtils.getUri(_testBucket, top, badPrefix);
-        String msg = null;
-        try
-        {
-          TestUtils.downloadDir(src, dlDir, false);
-          msg = "expected exception (no object found)";
-        }
-        catch(Exception ex)
-        {
-          // expected
-          checkUsageException(ex, "No objects found");
-        }
-        Assert.assertNull(msg);
+        List<StoreFile> storeFiles = TestUtils.downloadRecursively(src, dlDir);
+        Assert.assertTrue(storeFiles.isEmpty());
 
         // should fail if dest is existing file with no overwrite
+        String msg = null;
         File existingFile = TestUtils.createTextFile(top, 1);
         src = dest;
         try
         {
-          TestUtils.downloadDir(src, existingFile, true, false);
+          TestUtils.downloadRecursively(src, existingFile, false);
           msg = "expected exception (can't overwrite file)";
         }
         catch(Exception ex)
@@ -789,7 +777,7 @@ public class UploadDownloadTests
         Assert.assertNull(msg);
 
         // should succeed if dest is existing file with overwrite
-        List<StoreFile> downloaded = TestUtils.downloadDir(src, existingFile, true, true);
+        List<StoreFile> downloaded = TestUtils.downloadRecursively(src, existingFile, true);
         Assert.assertEquals(2, downloaded.size());
         Assert.assertTrue(existingFile.isDirectory());
 
@@ -800,7 +788,7 @@ public class UploadDownloadTests
         Assert.assertTrue(existingFile.exists());
         try
         {
-          TestUtils.downloadDir(src, destDir, true, false);
+          TestUtils.downloadRecursively(src, destDir, false);
           msg = "expected exception (can't overwrite file)";
         }
         catch(Exception ex)
@@ -813,13 +801,13 @@ public class UploadDownloadTests
         // should just have the original file.  everything else should be cleaned up
 
         // should succeed if dest is existing directory and one file exists with overwrite
-        downloaded = TestUtils.downloadDir(src, destDir, true, true);
+        downloaded = TestUtils.downloadRecursively(src, destDir, true);
         Assert.assertEquals(2, downloaded.size());
 
         // should succeed if dest doesn't exist
         destDir = new File(destDir.getAbsolutePath() + "-missing-" + System.currentTimeMillis());
         Assert.assertFalse(destDir.exists());
-        downloaded = TestUtils.downloadDir(src, destDir, true, true);
+        downloaded = TestUtils.downloadRecursively(src, destDir, true);
         Assert.assertEquals(2, downloaded.size());
 
         return;
@@ -880,29 +868,46 @@ public class UploadDownloadTests
         Assert.assertTrue(TestUtils.findObject(objs, subN + d.getName()));
         Assert.assertTrue(TestUtils.findObject(objs, sub2N + e.getName()));
 
-        // non-recursive directory download
+        // recursive prefix download for topN w/o trailing '/'
         File dlDir = TestUtils.createTmpDir(true);
-        List<StoreFile> downloaded = TestUtils.downloadDir(dest, dlDir, false);
-        Assert.assertEquals(2, downloaded.size());
-        Assert.assertEquals(2, dlDir.list().length);
+        List<StoreFile> downloaded = TestUtils.downloadRecursively(dest, dlDir);
+        Assert.assertEquals(5, downloaded.size());
+        Assert.assertEquals(3, dlDir.list().length);
         Assert.assertTrue(TestUtils.compareFiles(a, new File(dlDir, a.getName())));
         Assert.assertTrue(TestUtils.compareFiles(b, new File(dlDir, b.getName())));
 
-        // recursive directory download
-        File dlDir2 = TestUtils.createTmpDir(true);
-        downloaded = TestUtils.downloadDir(dest, dlDir2, true);
-        Assert.assertEquals(5, downloaded.size());
-        Assert.assertEquals(3, dlDir2.list().length);
-        Assert.assertTrue(TestUtils.compareFiles(a, new File(dlDir2, a.getName())));
-        Assert.assertTrue(TestUtils.compareFiles(b, new File(dlDir2, b.getName())));
-
-        File dlsub = new File(dlDir2, sub.getName());
+        File dlsub = new File(dlDir, sub.getName());
         Assert.assertTrue(dlsub.exists() && dlsub.isDirectory());
         Assert.assertEquals(3, dlsub.list().length);
         Assert.assertTrue(TestUtils.compareFiles(c, new File(dlsub, c.getName())));
         Assert.assertTrue(TestUtils.compareFiles(d, new File(dlsub, d.getName())));
 
         File dlsub2 = new File(dlsub, sub2.getName());
+        Assert.assertTrue(dlsub2.exists() && dlsub2.isDirectory());
+        Assert.assertEquals(1, dlsub2.list().length);
+        Assert.assertTrue(TestUtils.compareFiles(e, new File(dlsub2, e.getName())));
+
+        // recursive prefix download for topN w/o trailing '/'
+        dest = Utils.getURI(TestUtils.getService(), _testBucket,
+          topN.substring(0, topN.length() - 1));
+        File dlDirPrefix = TestUtils.createTmpDir(true);
+        downloaded = TestUtils.downloadRecursively(dest, dlDirPrefix);
+        Assert.assertEquals(5, downloaded.size());
+        Assert.assertEquals(1, dlDirPrefix.list().length);
+
+        dlDir = new File(dlDirPrefix, top.getName());
+        Assert.assertTrue(dlDir.exists() && dlDir.isDirectory());
+        Assert.assertEquals(3, dlDir.list().length);
+        Assert.assertTrue(TestUtils.compareFiles(a, new File(dlDir, a.getName())));
+        Assert.assertTrue(TestUtils.compareFiles(b, new File(dlDir, b.getName())));
+
+        dlsub = new File(dlDir, sub.getName());
+        Assert.assertTrue(dlsub.exists() && dlsub.isDirectory());
+        Assert.assertEquals(3, dlsub.list().length);
+        Assert.assertTrue(TestUtils.compareFiles(c, new File(dlsub, c.getName())));
+        Assert.assertTrue(TestUtils.compareFiles(d, new File(dlsub, d.getName())));
+
+        dlsub2 = new File(dlsub, sub2.getName());
         Assert.assertTrue(dlsub2.exists() && dlsub2.isDirectory());
         Assert.assertEquals(1, dlsub2.list().length);
         Assert.assertTrue(TestUtils.compareFiles(e, new File(dlsub2, e.getName())));
@@ -962,7 +967,6 @@ public class UploadDownloadTests
       .setFile(dlTemp)
       .setBucketName(Utils.getBucketName(dest))
       .setObjectKey(Utils.getObjectKey(dest))
-      .setRecursive(false)
       .setOverwrite(true)
       .setOverallProgressListenerFactory(this)
       .createOptions();
@@ -1020,7 +1024,6 @@ public class UploadDownloadTests
       .setFile(dlTemp)
       .setBucketName(Utils.getBucketName(dest))
       .setObjectKey(Utils.getObjectKey(dest))
-      .setRecursive(false)
       .setOverwrite(true)
       .setOverallProgressListenerFactory(this)
       .createOptions();

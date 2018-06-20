@@ -34,7 +34,7 @@ import java.util.Optional;
  * @see CopyOptionsBuilder
  * @see CloudStoreClient#getOptionsBuilderFactory()
  * @see CloudStoreClient#copy(CopyOptions)
- * @see CloudStoreClient#copyDirectory(CopyOptions)
+ * @see CloudStoreClient#copyRecursively(CopyOptions)
  * @see OptionsBuilderFactory#newCopyOptionsBuilder()
  */
 public class CopyOptions
@@ -44,7 +44,6 @@ public class CopyOptions
   private final String _sourceObjectKey;
   private final String _destinationBucketName;
   private final String _destinationObjectKey;
-  private final boolean _recursive;
   private final boolean _dryRun;
   private final boolean _ignoreAbortInjection;
   private String _cannedAcl;
@@ -59,7 +58,7 @@ public class CopyOptions
   CopyOptions(
     CloudStoreClient cloudStoreClient, String sourceBucketName, String sourceObjectKey,
     String destinationBucketName, String destinationObjectKey, String cannedAcl,
-    String storageClass, boolean recursive, boolean dryRun, boolean ignoreAbortInjection,
+    String storageClass, boolean dryRun, boolean ignoreAbortInjection,
     Map<String, String> userMetadata, OverallProgressListenerFactory overallProgressListenerFactory)
   {
     super(cloudStoreClient);
@@ -67,7 +66,6 @@ public class CopyOptions
     _sourceObjectKey = sourceObjectKey;
     _destinationBucketName = destinationBucketName;
     _destinationObjectKey = destinationObjectKey;
-    _recursive = recursive;
     _cannedAcl = cannedAcl;
     _storageClass = storageClass;
     _dryRun = dryRun;
@@ -150,20 +148,6 @@ public class CopyOptions
   public Optional<String> getStorageClass()
   {
     return Optional.ofNullable(_storageClass);
-  }
-
-  /**
-   * Return the recursive property for the copy operation.  If not set, a single file
-   * whose key matches the specified key will be copied if the key does not look like
-   * a directory (ends with a '/').  If not sets and the key ends in a '/', then all
-   * "top-level" files matching the key will be copied.  If recursive is set and the
-   * key ends in '/', all "top-level" and all matching "sub-directory" files will be copied.
-   *
-   * @return recursive flag
-   */
-  public boolean isRecursive()
-  {
-    return _recursive;
   }
 
   /**

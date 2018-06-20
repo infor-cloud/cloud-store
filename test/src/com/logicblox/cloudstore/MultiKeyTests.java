@@ -69,7 +69,7 @@ public class MultiKeyTests
     TestUtils.setKeyProvider(keydir);
 
     // capture files currently in test bucket
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("test-multikey-basic");
     List<StoreFile> objs = TestUtils.listObjects(_testBucket, rootPrefix);
     int originalCount = objs.size();
 
@@ -191,7 +191,7 @@ public class MultiKeyTests
     String publicKey2 = keys2[1];
     TestUtils.setKeyProvider(keydir);
 
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("test-multikey-partial");
 
     // create a small file and upload
     File toUpload = TestUtils.createTextFile(100);
@@ -237,7 +237,7 @@ public class MultiKeyTests
 
     // create a small file and upload
     File toUpload = TestUtils.createTextFile(100);
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("test-multikey-duplicate");
     String objKey = rootPrefix + toUpload.getName();
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, key1);
@@ -273,7 +273,7 @@ public class MultiKeyTests
 
     // create a small file and upload
     File toUpload = TestUtils.createTextFile(100);
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("test-multikey-missing");
     String objKey = rootPrefix + toUpload.getName();
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, key1);
@@ -310,7 +310,7 @@ public class MultiKeyTests
 
     // create a small file and upload
     File toUpload = TestUtils.createTextFile(100);
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("test-multikey-remove-missing");
     String objKey = rootPrefix + toUpload.getName();
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, key1);
@@ -345,7 +345,7 @@ public class MultiKeyTests
 
     // create a small file and upload
     File toUpload = TestUtils.createTextFile(100);
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("test-multikey-unencrypted-add-key");
     String objKey = rootPrefix + toUpload.getName();
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     StoreFile f = TestUtils.uploadFile(toUpload, dest);
@@ -380,7 +380,7 @@ public class MultiKeyTests
 
     // create a small file and upload
     File toUpload = TestUtils.createTextFile(100);
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("test-multikey-unencrypted-remove-key");
     String objKey = rootPrefix + toUpload.getName();
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     StoreFile f = TestUtils.uploadFile(toUpload, dest);
@@ -417,7 +417,7 @@ public class MultiKeyTests
 
     // create a small file and upload
     File toUpload = TestUtils.createTextFile(100);
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("test-remove-last-key");
     String objKey = rootPrefix + toUpload.getName();
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, key1);
@@ -468,7 +468,7 @@ public class MultiKeyTests
 
     // create a small file and upload
     File toUpload = TestUtils.createTextFile(100);
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("test-multikey-max");
     String objKey = rootPrefix + toUpload.getName();
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     StoreFile f = TestUtils.uploadEncryptedFile(toUpload, dest, keys[0]);

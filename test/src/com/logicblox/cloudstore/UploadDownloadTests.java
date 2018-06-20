@@ -504,7 +504,7 @@ public class UploadDownloadTests
     // Create a small file and upload it
     long fileSize = 100;
     File toUpload = TestUtils.createTextFile(fileSize);
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("test-download-default-acl");
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     TestUtils.uploadFile(toUpload, dest);
 
@@ -534,7 +534,7 @@ public class UploadDownloadTests
     // Create a small file and upload it
     long fileSize = 100;
     File toUpload = TestUtils.createTextFile(fileSize);
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("test-download-non-default-acl");
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
 
     UploadOptions upOpts = _client.getOptionsBuilderFactory()
@@ -1138,7 +1138,7 @@ public class UploadDownloadTests
     String key1 = "cloud-store-ut-1";
     TestUtils.createEncryptionKey(keydir, key1);
     TestUtils.setKeyProvider(keydir);
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("test-missing-pubkey-hash");
 
     // create a small file and upload
     File toUpload = TestUtils.createTextFile(100);
@@ -1179,7 +1179,7 @@ public class UploadDownloadTests
   {
     // create a small file and upload it
     int fileSize = 100;
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("test-user-metadata");
     File toUpload = TestUtils.createTextFile(fileSize);
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
     StoreFile f = TestUtils.uploadFile(toUpload, dest);
@@ -1204,7 +1204,7 @@ public class UploadDownloadTests
     // Create a small file and upload it w/ default ACL
     long fileSize = 100;
     File toUpload = TestUtils.createTextFile(fileSize);
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("test-custom-chunk-size");
     URI dest = TestUtils.getUri(_testBucket, toUpload, rootPrefix);
 
     long chunkSize = 1024 * 1024;
@@ -1238,7 +1238,7 @@ public class UploadDownloadTests
     TestUtils.setKeyProvider(keyDir);
     String keyName = "cloud-store-ut-1";
     TestUtils.createEncryptionKey(keyDir, keyName);
-    String rootPrefix = TestUtils.addPrefix("");
+    String rootPrefix = TestUtils.addPrefix("test-user-metadata-encrypted");
 
     // create a small file and upload
     int fileSize = 100;

@@ -103,7 +103,7 @@ let
         set -e
         minio_pid=""
 
-       cleanup_minio()
+        cleanup_minio()
         {
           if [[ -n "$minio_pid" ]];
           then

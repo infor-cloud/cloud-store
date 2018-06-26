@@ -26,7 +26,7 @@ Currently there are two ways to build `cloud-store`:
 is set. To configure this, use the `--prefix` option. For example:
 
 
-    $ ./configure --prefix=$HOME/cloudstore
+    $ ./configure --prefix=$HOME/cloud-store
 
 
 ## Usage
@@ -35,7 +35,7 @@ Generate a key pair:
 
     $ cloud-store keygen -n testkeypair
 
-By default, the key pair is installed under `~/.cloudstore-keys`.
+By default, the key pair is installed under `~/.cloud-store-keys`.
 
 Upload:
 

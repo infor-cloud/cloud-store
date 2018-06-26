@@ -92,7 +92,7 @@ public class Utils
   {
     if(null == _defaultKeyDir)
     {
-      _defaultKeyDir = System.getProperty("user.home") + File.separator + ".cloudstore-keys";
+      _defaultKeyDir = System.getProperty("user.home") + File.separator + ".cloud-store-keys";
     }
     return _defaultKeyDir;
   }

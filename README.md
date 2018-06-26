@@ -22,7 +22,7 @@ Currently there are two ways to build `cloud-store`:
     $ make install
 
 
-- The default installation prefix is `/opt/logicblox/cloudstore`, unless `CLOUDSTORE_HOME`
+- The default installation prefix is `/opt/logicblox/cloud-store`, unless `CLOUDSTORE_HOME`
 is set. To configure this, use the `--prefix` option. For example:
 
 

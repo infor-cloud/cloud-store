@@ -1,14 +1,28 @@
+/*
+  Copyright 2018, Infor Inc.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
+
 { system ? builtins.currentSystem
 , nixpkgs ? <nixpkgs>
-, config ? <config>
 , pkgs ? import nixpkgs { inherit system; }
-, builder_config ? import (config + "/lib") { inherit pkgs; }
 , stdenv ? pkgs.stdenv
 , fetchurl ? pkgs.fetchurl
 , python ? pkgs.pythonFull
 , jdk ? pkgs.openjdk8 or pkgs.openjdk
 , unzip ? pkgs.unzip
-, s3lib ?  { outPath = ./.; rev = "1234"; }
+, src ?  { outPath = ./.; rev = "1234"; }
 }:
 
 let
@@ -17,8 +31,50 @@ let
 
   version = src: stdenv.lib.optionalString (src ? revCount) (toString src.revCount + "_" ) + toString (src.rev or src.tag or "unknown");
 
-  revision = version s3lib;
-  name = "s3lib-${revision}";
+  revision = version src;
+  name = "cloudstore-${revision}";
+
+  /**
+   * Simple function to make a tarball from a build directory.
+   */
+  release_helper = { name, build, unixify ? ""} :
+    pkgs.stdenv.mkDerivation rec {
+      inherit name;
+      meta.schedulingPriority = 90;
+      buildCommand = ''
+        cp -R ${build} ${name}
+        chmod -R u+w ${name}
+
+        for f in ${unixify}; do
+          echo "checking $f for /nix/store paths ..."
+          # Rewrite /nix/store/.../bin/env
+          oldPath=$(sed -ne '1 s,^#![ ]*\([^ ]*.*\)/bin/env[\ ]*.*$,\1,p' "${name}/$f")
+          echo "contains: $oldPath ..."
+          if test -n "$oldPath"; then
+            sed -i "s|$oldPath|/usr|" "${name}/$f"
+          fi
+
+          # Rewrite /nix/store/.../bin/python
+          oldPath=$(sed -ne '1 s,^#![ ]*\([^ ]*.*/bin/python\)[\ ]*.*$,\1,p' "${name}/$f")
+          echo "contains: $oldPath ..."
+          if test -n "$oldPath"; then
+            sed -i "s|$oldPath|/usr/bin/env python|" "${name}/$f"
+          fi
+
+          # Rewrite /nix/store/.../bin/sh
+          oldPath=$(sed -ne '1 s,^#![ ]*\([^ ]*.*\)/bin/sh[\ ]*.*$,\1,p' "${name}/$f")
+          if test -n "$oldPath"; then
+            sed -i "s|$oldPath||" "${name}/$f"
+          fi
+        done
+
+        rm -rf ${name}/nix-support
+
+        mkdir -p $out/nix-support
+        tar cvzf $out/${name}.tgz ${name}
+        echo "file tgz $out/${name}.tgz" > $out/nix-support/hydra-build-products
+      ''; /**/
+    };
 
   build_minio = pkgs.buildGoPackage rec {
     name = "minio";
@@ -78,8 +134,7 @@ let
         minio_pid="$!"
         sleep 5
 
-        $jre/bin/java -cp ./lib/java/s3lib-test.jar com.logicblox.s3lib.TestRunner --keydir $keydir --endpoint $s3_endpoint
-        echo "End of unit tests"
+        $jre/bin/java -cp ./lib/java/cloudstore-test.jar com.logicblox.cloudstore.TestRunner --keydir $keydir --endpoint $s3_endpoint
       '';
 
       installPhase = ''
@@ -95,7 +150,7 @@ let
     source_tarball = 
       pkgs.releaseTools.sourceTarball { 
         inherit name;
-        src = "${s3lib}";
+        src = "${src}";
         buildInputs = [python jdk];
         preConfigure = "patchShebangs .";
       };
@@ -120,14 +175,14 @@ let
       };
 
     binary_tarball =
-      builder_config.release_helper {
+      release_helper {
         inherit name build;
-        unixify = "bin/cloud-store bin/s3tool";
-        };
+        unixify = "bin/cloud-store";
+      };
 
     # minio fails to build on osx
     test = (if stdenv.system == "x86_64-linux" then test_linux else null);
 
-    };
+  };
 
 in jobs

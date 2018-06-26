@@ -1,6 +1,4 @@
-#!/usr/bin/env python
-
-'''
+/*
   Copyright 2018, Infor Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,27 +12,35 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-'''
+*/
 
-import sys
-import os
+package com.logicblox.cloudstore;
 
-bindir = os.path.dirname(os.path.realpath( __file__ ))
-prefix = os.path.dirname(bindir)
+public class ProgressOptions
+{
+  private final String _objectUri;
+  private final String _operation;
+  private final long _fileSizeInBytes;
 
-def run(args):
-    subenv = os.environ.copy()
-    subenv['S3LIB_HOME'] = prefix
-    subenv['CLOUDSTORE_HOME'] = prefix
+  ProgressOptions(String objectUri, String operation, long fileSizeInBytes)
+  {
+    _objectUri = objectUri;
+    _operation = operation;
+    _fileSizeInBytes = fileSizeInBytes;
+  }
 
-    java_args = ['java', '-jar', prefix + '/lib/java/cloudstore-0.2.jar']
-    java_args.extend(args)
+  public String getObjectUri()
+  {
+    return _objectUri;
+  }
 
-    os.execvpe('java', java_args, subenv)
+  public String getOperation()
+  {
+    return _operation;
+  }
 
-def main():
-    command_line = sys.argv[1:]
-    run(command_line)
-
-if __name__ == '__main__':
-    main()
+  public long getFileSizeInBytes()
+  {
+    return _fileSizeInBytes;
+  }
+}

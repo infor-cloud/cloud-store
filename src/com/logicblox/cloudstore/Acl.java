@@ -1,6 +1,4 @@
-#!/usr/bin/env python
-
-'''
+/*
   Copyright 2018, Infor Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,27 +12,31 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-'''
+*/
 
-import sys
-import os
+package com.logicblox.cloudstore;
 
-bindir = os.path.dirname(os.path.realpath( __file__ ))
-prefix = os.path.dirname(bindir)
+import java.util.ArrayList;
+import java.util.List;
 
-def run(args):
-    subenv = os.environ.copy()
-    subenv['S3LIB_HOME'] = prefix
-    subenv['CLOUDSTORE_HOME'] = prefix
+class Acl
+{
+  private final Owner _owner;
+  private List<AclGrant> _grants;
 
-    java_args = ['java', '-jar', prefix + '/lib/java/cloudstore-0.2.jar']
-    java_args.extend(args)
+  Acl(Owner owner, List<AclGrant> grants)
+  {
+    _owner = owner;
+    _grants = new ArrayList<>(grants);
+  }
 
-    os.execvpe('java', java_args, subenv)
+  public Owner getOwner()
+  {
+    return _owner;
+  }
 
-def main():
-    command_line = sys.argv[1:]
-    run(command_line)
-
-if __name__ == '__main__':
-    main()
+  public List<AclGrant> getGrants()
+  {
+    return _grants;
+  }
+}

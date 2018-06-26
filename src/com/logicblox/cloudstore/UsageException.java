@@ -1,6 +1,4 @@
-#!/usr/bin/env python
-
-'''
+/*
   Copyright 2018, Infor Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,27 +12,24 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-'''
+*/
 
-import sys
-import os
+package com.logicblox.cloudstore;
 
-bindir = os.path.dirname(os.path.realpath( __file__ ))
-prefix = os.path.dirname(bindir)
+/**
+ * A usage exception is thrown for incorrect usage of the tool. Reporting a stack trace is not
+ * considered useful, and only the message needs to be reported to the user/
+ */
+public class UsageException
+  extends RuntimeException
+{
+  public UsageException(String msg)
+  {
+    super(msg);
+  }
 
-def run(args):
-    subenv = os.environ.copy()
-    subenv['S3LIB_HOME'] = prefix
-    subenv['CLOUDSTORE_HOME'] = prefix
-
-    java_args = ['java', '-jar', prefix + '/lib/java/cloudstore-0.2.jar']
-    java_args.extend(args)
-
-    os.execvpe('java', java_args, subenv)
-
-def main():
-    command_line = sys.argv[1:]
-    run(command_line)
-
-if __name__ == '__main__':
-    main()
+  public UsageException(String msg, Throwable cause)
+  {
+    super(msg, cause);
+  }
+}

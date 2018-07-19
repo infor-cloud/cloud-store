@@ -539,9 +539,8 @@ class S3DownloadCommand
       in = stream;
     }
 
-    int postCryptSize = (int) Math.min(fileLength - position, chunkSize);
+    long postCryptSize = Math.min(fileLength - position, chunkSize);
     int bufSize = 8192;
-    int offset = 0;
     byte[] buf = new byte[bufSize];
 
     Runnable cleanup = () -> {
@@ -569,9 +568,18 @@ class S3DownloadCommand
     }
     else // Not necessary, just for easier reading
     {
+      long offset = 0;
       while(offset < postCryptSize)
       {
-        int len = Math.min(bufSize, postCryptSize - offset);
+        int unreadSize = Integer.MAX_VALUE;
+        try
+        {
+          unreadSize = Math.toIntExact(postCryptSize - offset);
+        }
+        catch(ArithmeticException ignored)
+        {
+        }
+        int len = Math.min(bufSize, unreadSize);
         int result = readSafe(in, buf, 0, len, cleanup);
         if(result == -1)
         {

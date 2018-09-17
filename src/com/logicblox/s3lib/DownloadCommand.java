@@ -384,17 +384,28 @@ public class DownloadCommand extends Command
       in = stream;
     }
 
-    int postCryptSize = (int) Math.min(fileLength - position, chunkSize);
+    long postCryptSize = Math.min(fileLength - position, chunkSize);
     int bufSize = 8192;
-    int offset = 0;
+    long offset = 0;
     byte[] buf = new byte[bufSize];
     while (offset < postCryptSize)
     {
       int result;
 
+      int unreadSizeI;
+      long unreadSizeL = postCryptSize - offset;
+      if ((int)unreadSizeL != unreadSizeL)
+      {
+        // Integer overflow
+        unreadSizeI = Integer.MAX_VALUE;
+      }
+      else
+      {
+        unreadSizeI = (int)unreadSizeL;
+      }
       try
       {
-        result = in.read(buf, 0, Math.min(bufSize, postCryptSize - offset));
+        result = in.read(buf, 0, Math.min(bufSize, unreadSizeI));
       }
       catch (IOException e)
       {

@@ -67,15 +67,23 @@ public class Utils
     ConsoleAppender console = new ConsoleAppender();
     String PATTERN = "%d [%p|%c|%C{1}] %m%n";
     console.setLayout(new PatternLayout(PATTERN));
-    console.setThreshold(Level.ERROR);
+    console.setThreshold(Level.DEBUG);
     console.activateOptions();
 
     Logger cloudStoreLogger = Logger.getLogger("com.logicblox.cloudstore");
     cloudStoreLogger.addAppender(console);
+
     Logger awsLogger = Logger.getLogger("com.amazonaws");
+    awsLogger.setLevel(Level.DEBUG);
     awsLogger.addAppender(console);
+
     Logger apacheLogger = Logger.getLogger("org.apache.http");
+    apacheLogger.setLevel(Level.DEBUG);
     apacheLogger.addAppender(console);
+
+    Logger apacheWireLogger = Logger.getLogger("org.apache.http.wire");
+    apacheWireLogger.setLevel(Level.DEBUG);
+    apacheWireLogger.addAppender(console);
   }
 
 

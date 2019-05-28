@@ -220,10 +220,17 @@ public class Utils
       return new URI("gs://" + matcher.group(1) + "/" + (matcher.group(2)));
     }
 
+    matcher = matchesGCSURI("https://storage.googleapis.com/upload/storage/v1/b/(.+?)/o/(.+?)$", s);
+    if(matcher.find())
+    {
+      return new URI("gs://" + matcher.group(1) + "/" + (matcher.group(2)));
+    }
+
     throw new UsageException("HTTPS GCS URLs have one of the following formats:\n" +
       "https://storage.googleapis.com/bucket/key (for non-upload operations)\n" +
       "https://bucket.storage.googleapis.com/key (for non-upload operations)\n" +
-      "https://www.googleapis.com/upload/storage/v1/b/bucket/o/key\n");
+      "https://www.googleapis.com/upload/storage/v1/b/bucket/o/key\n" +
+      "https://storage.googleapis.com/upload/storage/v1/b/bucket/o/key\n");
   }
 
   private static Matcher matchesGCSURI(String pattern, String uri)

@@ -27,8 +27,8 @@ def parse_arguments(prefix, deps = {}):
     parser = argparse.ArgumentParser(description='configure build of package')
     parser.add_argument('--prefix', help='installation prefix', default=prefix)
 
-    for k, v in deps.iteritems():
-      if isinstance(v, basestring):
+    for k, v in deps.items():
+      if isinstance(v, str):
           default_path = v
       else:
           if os.getenv(v[0]) == None:
@@ -50,7 +50,7 @@ def open_makefile():
     emit('prefix = ' + g_args.prefix)
     emit('build = $(topdir)/build')
 
-    for k ,v in g_args.__dict__.iteritems():
+    for k ,v in g_args.__dict__.items():
         if k.startswith('with_'):
             dep = k[len('with_'):]
             emit(dep + ' = ' + v)
@@ -96,13 +96,13 @@ def flatten(seq):
              yield v0
 
 def rule(output, input, commands=None, separator=':', makefile=None):
-    if not isinstance(output, types.ListType):
+    if not isinstance(output, list):
         output = [ output ]
-    if not isinstance(input, types.ListType):
+    if not isinstance(input, list):
         input = [ input ]
     if commands is None:
         commands = []
-    if not isinstance(commands, types.ListType):
+    if not isinstance(commands, list):
         commands = [ commands ]
     commands = list(flatten(commands))
     last_output = len(output) - 1

@@ -16,13 +16,19 @@
 
 package com.logicblox.cloudstore;
 
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
+import com.google.api.client.googleapis.GoogleUtils;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpBackOffIOExceptionHandler;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpTransport;
+import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.ExponentialBackOff;
@@ -35,6 +41,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
+import java.net.Proxy;
+import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.util.Collection;
 import java.util.Collections;
@@ -49,9 +59,11 @@ public class GCSClientBuilder
 {
   private Storage _gcsClient;
   private AmazonS3 _s3Client;
+  private ClientConfiguration _s3ClientCfg;
   private ListeningExecutorService _apiExecutor;
   private ListeningScheduledExecutorService _internalExecutor;
   private KeyProvider _keyProvider;
+  private AWSCredentialsProvider _awsCredentialsProvider;
 
   private final String _APPLICATION_NAME = "LogicBlox-cloud-store/1.0";
   private final JsonFactory _jsonFactory = JacksonFactory.getDefaultInstance();
@@ -87,6 +99,12 @@ public class GCSClientBuilder
     return this;
   }
 
+  public GCSClientBuilder setInternalS3ClientConfiguration(ClientConfiguration clientCfg)
+  {
+    _s3ClientCfg = clientCfg;
+    return this;
+  }
+
   public GCSClientBuilder setApiExecutor(ListeningExecutorService apiExecutor)
   {
     _apiExecutor = apiExecutor;
@@ -102,6 +120,12 @@ public class GCSClientBuilder
   public GCSClientBuilder setKeyProvider(KeyProvider keyProvider)
   {
     _keyProvider = keyProvider;
+    return this;
+  }
+
+  public GCSClientBuilder setAWSCredentialsProvider(AWSCredentialsProvider credentialsProvider)
+  {
+    _awsCredentialsProvider = credentialsProvider;
     return this;
   }
 
@@ -158,29 +182,73 @@ public class GCSClientBuilder
     return gcsClient0;
   }
 
+  private AmazonS3 getDefaultInternalS3Client()
+  {
+    return new AmazonS3ClientForGCS(_awsCredentialsProvider, _s3ClientCfg);
+  }
+
+  private ClientConfiguration getDefaultInternalS3ClientConfiguration()
+    throws MalformedURLException
+  {
+    ClientConfiguration clientCfg = new ClientConfiguration();
+    if (Utils.viaProxy())
+      S3ClientBuilder.setHttpProxy(clientCfg);
+    // use V2 signatures for authentication to GCS's S3-compatible XML API
+    clientCfg.setSignerOverride("S3SignerType");
+
+    return clientCfg;
+  }
+
+  private static AWSCredentialsProvider getDefaultAWSCredentialsProvider()
+  {
+    return new XMLEnvCredentialsProvider();
+  }
+
   private static HttpTransport getDefaultHttpTransport()
     throws GeneralSecurityException, IOException
   {
-    HttpTransport httpTransport0 = null;
+    HttpTransport httpTransport;
     try
     {
-      httpTransport0 = GoogleNetHttpTransport.newTrustedTransport();
+      if (Utils.viaProxy())
+      {
+        String proxy = System.getenv("HTTPS_PROXY");
+        if(proxy == null)
+        {
+          proxy = System.getenv("HTTP_PROXY");
+        }
+
+        httpTransport = getHttpProxyTransport(new URL(proxy));
+      }
+      else
+        httpTransport = GoogleNetHttpTransport.newTrustedTransport();
     }
     catch(GeneralSecurityException e)
     {
       System.err.println(
-        "Security error during GCS HTTP Transport " + "layer initialization: " + e.getMessage());
+        "Security error during GCS HTTP Transport layer initialization: " + e.getMessage());
       throw e;
     }
     catch(IOException e)
     {
       System.err.println(
-        "I/O error during GCS HTTP Transport layer" + " initialization: " + e.getMessage());
+        "I/O error during GCS HTTP Transport layer initialization: " + e.getMessage());
       throw e;
     }
-    assert httpTransport0 != null;
+    assert httpTransport != null;
 
-    return httpTransport0;
+    return httpTransport;
+  }
+
+  static HttpTransport getHttpProxyTransport(URL proxyURL)
+    throws IOException, GeneralSecurityException
+  {
+    NetHttpTransport.Builder builder = new NetHttpTransport.Builder();
+    builder.trustCertificates(GoogleUtils.getCertificateTrustStore());
+    builder.setProxy(new Proxy(Proxy.Type.HTTP,
+      new InetSocketAddress(proxyURL.getHost(), proxyURL.getPort())));
+
+    return builder.build();
   }
 
   private static GoogleCredential getDefaultCredential()
@@ -257,12 +325,60 @@ public class GCSClientBuilder
           setCredential(getDefaultCredential());
         }
         _credential.initialize(request);
-        request.setIOExceptionHandler(new HttpBackOffIOExceptionHandler(new ExponentialBackOff()));
+        request.setIOExceptionHandler(
+          new HttpBackOffIOExceptionHandler(new ExponentialBackOff())
+          {
+            @Override
+            public boolean handleIOException(HttpRequest request, boolean supportsRetry) throws IOException
+            {
+              // The main reason for handling IOExceptions is to let the underlying Google HTTP
+              // client resume uploads interrupted by an IOException. In all other cases we still
+              // want to be in charge of the underlying exception and decide how we want to
+              // handle it (e.g. retry or not).
+              if (request.getUrl().toString().contains("googleapis.com/upload/storage/"))
+                return super.handleIOException(request, supportsRetry);
+              return false;
+            }
+          }
+        );
       }
     };
 
     return requestInitializer0;
   }
+
+  public static final String GCS_XML_ACCESS_KEY_ENV_VAR = "GCS_XML_ACCESS_KEY";
+
+  public static final String GCS_XML_SECRET_KEY_ENV_VAR = "GCS_XML_SECRET_KEY";
+
+  static class XMLEnvCredentialsProvider implements AWSCredentialsProvider
+  {
+
+    public AWSCredentials getCredentials()
+    {
+      String accessKey = System.getenv(GCS_XML_ACCESS_KEY_ENV_VAR);
+      String secretKey = System.getenv(GCS_XML_SECRET_KEY_ENV_VAR);
+
+      if(accessKey == null || secretKey == null)
+      {
+        throw new UsageException("Unable to load GCS credentials from environment variables " +
+          GCS_XML_ACCESS_KEY_ENV_VAR + " and " + GCS_XML_SECRET_KEY_ENV_VAR);
+      }
+
+      return new BasicAWSCredentials(accessKey, secretKey);
+    }
+
+    public void refresh()
+    {
+    }
+
+    @Override
+    public String toString()
+    {
+      return getClass().getSimpleName();
+    }
+  }
+
 
   public GCSClient createGCSClient()
     throws IOException, GeneralSecurityException
@@ -279,9 +395,17 @@ public class GCSClientBuilder
     {
       setInternalGCSClient(getDefaultInternalGCSClient());
     }
+    if(_awsCredentialsProvider == null)
+    {
+      setAWSCredentialsProvider(getDefaultAWSCredentialsProvider());
+    }
+    if(_s3ClientCfg == null)
+    {
+      setInternalS3ClientConfiguration(getDefaultInternalS3ClientConfiguration());
+    }
     if(_s3Client == null)
     {
-      setInternalS3Client(new AmazonS3ClientForGCS());
+      setInternalS3Client(getDefaultInternalS3Client());
     }
     if(_apiExecutor == null)
     {

@@ -199,7 +199,7 @@ public class GCSClientBuilder
     return clientCfg;
   }
 
-  private static AWSCredentialsProvider getDefaultAWSCredentialsProvider()
+  public static AWSCredentialsProvider getDefaultAWSCredentialsProvider()
   {
     return new XMLEnvCredentialsProvider();
   }

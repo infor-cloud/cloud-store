@@ -76,8 +76,8 @@ public class GCSClient
    * Canned ACLs handling
    */
   public static final List<String> ALL_CANNED_ACLS = Arrays.asList("projectPrivate", "private",
-    "publicRead", "publicReadWrite", "authenticatedRead", "bucketOwnerRead",
-    "bucketOwnerFullControl");
+    "publicRead", "publicReadWrite", "authenticatedRead", "allAuthenticatedUsers",
+    "bucketOwnerRead", "bucketOwnerFullControl");
 
   /**
    * {@code CANNED_ACLS_DESC_CONST} has to be a compile-time String constant expression. That's why
@@ -85,7 +85,7 @@ public class GCSClient
    */
   static final String CANNED_ACLS_DESC_CONST = "For Google Cloud Storage, " +
     "choose one of: projectPrivate, private, publicRead, publicReadWrite," +
-    " authenticatedRead, bucketOwnerRead, bucketOwnerFullControl.";
+    " authenticatedRead, allAuthenticatedUsers, bucketOwnerRead, bucketOwnerFullControl.";
 
   @Override
   public void setRetryCount(int retryCount)

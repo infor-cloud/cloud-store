@@ -17,7 +17,6 @@
 package com.logicblox.cloudstore;
 
 import com.amazonaws.AmazonServiceException;
-import com.beust.jcommander.IValueValidator;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
@@ -33,7 +32,6 @@ import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -129,7 +127,7 @@ class Main
       " default order is: \"env-vars\", " + "\"system-properties\", " +
       "\"credentials-profile\", \"ec2-metadata-service\". Choices should be" +
       " comma-separated without any spaces, e.g. \"env-vars," +
-      "ec2-metadata-service\".", validateValueWith = CredentialProvidersValidator.class)
+      "ec2-metadata-service\".", validateValueWith = S3ClientBuilder.CredentialProvidersValidator.class)
     List<String> credentialProvidersS3;
 
     protected URI getURI()
@@ -149,22 +147,6 @@ class Main
     {
       return Utils.createCloudStoreClient(getScheme(), endpoint, maxConcurrentConnections,
         encKeyDirectory, credentialProvidersS3, _stubborn, _retryCount);
-    }
-  }
-
-  public static class CredentialProvidersValidator
-    implements IValueValidator<List<String>>
-  {
-    @Override
-    public void validate(String name, List<String> credentialsProvidersS3)
-      throws ParameterException
-    {
-      for(String cp : credentialsProvidersS3)
-        if(!Utils.defaultCredentialProvidersS3.contains(cp))
-        {
-          throw new ParameterException("Credential providers should be a " + "subset of " +
-            Arrays.toString(Utils.defaultCredentialProvidersS3.toArray()));
-        }
     }
   }
 

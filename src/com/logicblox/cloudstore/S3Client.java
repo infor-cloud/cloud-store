@@ -30,6 +30,7 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -206,6 +207,9 @@ public class S3Client
    */
   static final String STORAGE_CLASSES_DESC_CONST = "For Amazon S3, choose one of: " +
     "STANDARD, REDUCED_REDUNDANCY, GLACIER, STANDARD_IA.";
+
+  public static final List<String> defaultCredentialProviders = Arrays.asList("env-vars",
+    "system-properties", "credentials-profile", "ec2-metadata-service");
 
   @Override
   public void setRetryCount(int retryCount)

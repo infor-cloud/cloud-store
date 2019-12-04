@@ -16,19 +16,6 @@
 
 package com.logicblox.cloudstore;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.Protocol;
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSCredentialsProviderChain;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
-import com.amazonaws.auth.InstanceProfileCredentialsProvider;
-import com.amazonaws.auth.SystemPropertiesCredentialsProvider;
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -39,15 +26,12 @@ import org.apache.log4j.PatternLayout;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.Executors;
@@ -301,88 +285,6 @@ public class Utils
       "Cannot detect storage service: (endpoint=" + endpoint + ", scheme=" + scheme + ")");
   }
 
-  public static final List<String> defaultCredentialProvidersS3 = Arrays.asList("env-vars",
-    "system-properties", "credentials-profile", "ec2-metadata-service");
-
-  public static AWSCredentialsProvider getCredentialsProviderS3(List<String> credentialsProvidersS3)
-  {
-    if(credentialsProvidersS3 == null || credentialsProvidersS3.size() == 0)
-    {
-      return new DefaultAWSCredentialsProviderChain();
-    }
-
-    List<AWSCredentialsProvider> choices = new ArrayList<>();
-    for(String cp : credentialsProvidersS3)
-    {
-      switch(cp)
-      {
-        case "env-vars":
-          choices.add(new EnvironmentVariableCredentialsProvider());
-          break;
-        case "system-properties":
-          choices.add(new SystemPropertiesCredentialsProvider());
-          break;
-        case "credentials-profile":
-          choices.add(new ProfileCredentialsProvider());
-          break;
-        case "ec2-metadata-service":
-          choices.add(new InstanceProfileCredentialsProvider());
-          break;
-        default:
-          break;
-      }
-    }
-
-    if(choices.size() == 0)
-    {
-      return new DefaultAWSCredentialsProviderChain();
-    }
-
-    AWSCredentialsProvider[] choicesArr = new AWSCredentialsProvider[choices.size()];
-    choicesArr = choices.toArray(choicesArr);
-
-    return new AWSCredentialsProviderChain(choicesArr);
-  }
-
-  public static final String GCS_XML_ACCESS_KEY_ENV_VAR = "GCS_XML_ACCESS_KEY";
-
-  public static final String GCS_XML_SECRET_KEY_ENV_VAR = "GCS_XML_SECRET_KEY";
-
-  static class GCSXMLEnvironmentVariableCredentialsProvider
-    implements AWSCredentialsProvider
-  {
-
-    public AWSCredentials getCredentials()
-    {
-      String accessKey = System.getenv(GCS_XML_ACCESS_KEY_ENV_VAR);
-      String secretKey = System.getenv(GCS_XML_SECRET_KEY_ENV_VAR);
-
-      if(accessKey == null || secretKey == null)
-      {
-        throw new UsageException("Unable to load GCS credentials from environment variables " +
-          GCS_XML_ACCESS_KEY_ENV_VAR + " and " + GCS_XML_SECRET_KEY_ENV_VAR);
-      }
-
-      return new BasicAWSCredentials(accessKey, secretKey);
-    }
-
-    public void refresh()
-    {
-    }
-
-    @Override
-    public String toString()
-    {
-      return getClass().getSimpleName();
-    }
-  }
-
-  public static GCSXMLEnvironmentVariableCredentialsProvider
-  getGCSXMLEnvironmentVariableCredentialsProvider()
-  {
-    return new GCSXMLEnvironmentVariableCredentialsProvider();
-  }
-
   public static String getBucketName(URI uri)
   {
     if((!"s3".equals(uri.getScheme())) && (!"gs".equals(uri.getScheme())))
@@ -449,52 +351,6 @@ public class Utils
       return true;
     }
     return false;
-  }
-
-  public static ClientConfiguration setProxy(ClientConfiguration clientCfg)
-  {
-    if(!Utils.viaProxy())
-    {
-      return clientCfg;
-    }
-
-    String proxy = System.getenv("HTTPS_PROXY");
-    if(proxy == null)
-    {
-      proxy = System.getenv("HTTP_PROXY");
-    }
-
-    URL url;
-    try
-    {
-      url = new URL(proxy);
-    }
-    catch(MalformedURLException e)
-    {
-      System.err.println("Malformed proxy url: " + proxy);
-      e.printStackTrace();
-      return clientCfg;
-    }
-
-    if(System.getenv("HTTPS_PROXY") != null)
-    {
-      clientCfg.setProtocol(Protocol.HTTPS);
-    }
-    else
-    {
-      clientCfg.setProtocol(Protocol.HTTP);
-    }
-
-    clientCfg.setProxyHost(url.getHost());
-    clientCfg.setProxyPort(url.getPort());
-    if(url.getUserInfo() != null)
-    {
-      String[] userInfo = url.getUserInfo().split(":");
-      clientCfg.setProxyUsername(userInfo[0]);
-      clientCfg.setProxyPassword(userInfo[1]);
-    }
-
-    return clientCfg;
   }
 
   /**
@@ -579,27 +435,15 @@ public class Utils
     CloudStoreClient client;
     if(service == StorageService.GCS)
     {
-      AWSCredentialsProvider gcsXMLProvider = getGCSXMLEnvironmentVariableCredentialsProvider();
-
-      // make the AWS interfaces use V2 signatures for authentication
-      ClientConfiguration config = new ClientConfiguration();
-      config.setSignerOverride("S3SignerType");
-
-      AmazonS3ClientForGCS s3Client = new AmazonS3ClientForGCS(gcsXMLProvider, config);
-
-      client = new GCSClientBuilder().setInternalS3Client(s3Client)
+      client = new GCSClientBuilder()
         .setApiExecutor(uploadExecutor)
         .setKeyProvider(createKeyProvider(encKeyDirectory))
         .createGCSClient();
     }
     else
     {
-      ClientConfiguration clientCfg = new ClientConfiguration();
-      clientCfg = setProxy(clientCfg);
-      AWSCredentialsProvider credsProvider = getCredentialsProviderS3(credentialProviders);
-      AmazonS3 s3Client = new AmazonS3Client(credsProvider, clientCfg);
-
-      client = new S3ClientBuilder().setInternalS3Client(s3Client)
+      client = new S3ClientBuilder()
+        .setAWSCredentialsProvider(credentialProviders)
         .setApiExecutor(uploadExecutor)
         .setKeyProvider(createKeyProvider(encKeyDirectory))
         .createS3Client();

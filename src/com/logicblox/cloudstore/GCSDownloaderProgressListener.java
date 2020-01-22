@@ -16,33 +16,30 @@
 
 package com.logicblox.cloudstore;
 
-import com.google.api.client.googleapis.media.MediaHttpUploader;
-import com.google.api.client.googleapis.media.MediaHttpUploaderProgressListener;
+import com.google.api.client.googleapis.media.MediaHttpDownloader;
+import com.google.api.client.googleapis.media.MediaHttpDownloaderProgressListener;
 
-class GCSProgressListener
-  implements MediaHttpUploaderProgressListener
+class GCSDownloaderProgressListener
+  implements MediaHttpDownloaderProgressListener
 {
   final private OverallProgressListener _opl;
   final private PartProgressEvent _ppe;
 
-  public GCSProgressListener(OverallProgressListener opl, PartProgressEvent ppe)
+  public GCSDownloaderProgressListener(OverallProgressListener opl, PartProgressEvent ppe)
   {
     _opl = opl;
     _ppe = ppe;
   }
 
   @Override
-  public void progressChanged(MediaHttpUploader uploader)
+  public void progressChanged(MediaHttpDownloader downloader)
   {
-    switch(uploader.getUploadState())
+    switch(downloader.getDownloadState())
     {
       case MEDIA_IN_PROGRESS:
-        // TODO: Progress works iff you have a content length specified.
-        _ppe.setTransferredBytes(uploader.getNumBytesUploaded());
-        _opl.progress(_ppe);
-        break;
       case MEDIA_COMPLETE:
-        _ppe.setTransferredBytes(uploader.getNumBytesUploaded());
+        // TODO: Progress works iff you have a content length specified.
+        _ppe.setTransferredBytes(downloader.getNumBytesDownloaded());
         _opl.progress(_ppe);
         break;
       default:

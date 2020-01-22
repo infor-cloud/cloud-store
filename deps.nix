@@ -70,9 +70,16 @@ in {
 
   commonscodec =
     buildjar {
-      name = "commons-codec-1.9";
-      url = http://repo1.maven.org/maven2/commons-codec/commons-codec/1.9/commons-codec-1.9.jar;
-      sha256 = "ad19d2601c3abf0b946b5c3a4113e226a8c1e3305e395b90013b78dd94a723ce";
+      name = "commons-codec-1.11";
+      url = https://repo1.maven.org/maven2/commons-codec/commons-codec/1.11/commons-codec-1.11.jar;
+      sha256 = "e599d5318e97aa48f42136a2927e6dfa4e8881dff0e6c8e3109ddbbff51d7b7d";
+    };
+
+  commonslogging =
+    buildjar {
+      name = "commons-logging-1.2";
+      url = https://repo1.maven.org/maven2/commons-logging/commons-logging/1.2/commons-logging-1.2.jar;
+      sha256 = "daddea1ea0be0f56978ab3006b8ac92834afeefbd9b7e4e6316fca57df0fa636";
     };
 
   aws_java_sdk =
@@ -101,16 +108,16 @@ in {
     let
       google_api_services_storage =
         buildjar {
-          name = "google-api-services-storage-v1-rev26-1.19.1";
-          url = http://search.maven.org/remotecontent?filepath=com/google/apis/google-api-services-storage/v1-rev26-1.19.1/google-api-services-storage-v1-rev26-1.19.1.jar;
-          sha256 = "15abdb8fbf5d26b23337822ec957320fb595524558c143a3cd7e12223d747231";
+          name = "google-api-services-storage-v1-rev20190910-1.30.3";
+          url = http://search.maven.org/remotecontent?filepath=com/google/apis/google-api-services-storage/v1-rev20190910-1.30.3/google-api-services-storage-v1-rev20190910-1.30.3.jar;
+          sha256 = "8d0e3f337cde15a45c64cc4fdcbacf38c28bd46add19abb45b26f8f8c5c7d78a";
       };
 
       google_api_client =
         buildjar {
-          name = "google-api-client-1.19.1";
-          url = http://search.maven.org/remotecontent?filepath=com/google/api-client/google-api-client/1.19.1/google-api-client-1.19.1.jar;
-          sha256 = "e3b1fda37e5e485e2df77e604c2d0c4966067464724f8d098a751408c3f7ee60";
+          name = "google-api-client-1.30.3";
+          url = http://search.maven.org/remotecontent?filepath=com/google/api-client/google-api-client/1.30.3/google-api-client-1.30.3.jar;
+          sha256 = "da89326bd0eb9b8a355e5b87090bf201cb1eed4e734fc60cdb8cbab31904dd8c";
       };
 
       google_oauth_client =
@@ -122,16 +129,23 @@ in {
 
       google_http_client =
         buildjar {
-          name = "google-http-client-1.19.0";
-          url = http://search.maven.org/remotecontent?filepath=com/google/http-client/google-http-client/1.19.0/google-http-client-1.19.0.jar;
-          sha256 = "aa70d0384697f8d674ddc483b07ea3ae5821373e6393a861a3a3db786b9718b9";
+          name = "google-http-client-1.32.0";
+          url = http://search.maven.org/remotecontent?filepath=com/google/http-client/google-http-client/1.32.0/google-http-client-1.32.0.jar;
+          sha256 = "6fd9e819d8d75bcedcb2ba9d8e08496b5160b3f855a50057f5d9f6850bbf0e4c";
       };
 
       google_http_client_jackson2 =
         buildjar {
-          name = "google-http-client-jackson2-1.19.0";
-          url = http://search.maven.org/remotecontent?filepath=com/google/http-client/google-http-client-jackson2/1.19.0/google-http-client-jackson2-1.19.0.jar;
-          sha256 = "f416949077a926f14b3804c2c14cc3b3e691840cb2c2c2d2d31222d6ee05e4b5";
+          name = "google-http-client-jackson2-1.32.0";
+          url = http://search.maven.org/remotecontent?filepath=com/google/http-client/google-http-client-jackson2/1.32.0/google-http-client-jackson2-1.32.0.jar;
+          sha256 = "4cc7c7b0cf0cf03cb7264763efbacee8af4621eb09a51a078331f3f717c09694";
+      };
+
+      jackson_core =
+        buildjar {
+          name = "jackson-core-2.9.9";
+          url = https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.9.9/jackson-core-2.9.9.jar;
+          sha256 = "3083079be6088db2ed0a0c6ff92204e0aa48fa1de9db5b59c468f35acf882c2c";
       };
 
       jsr305 =
@@ -142,7 +156,7 @@ in {
       };
     in
     pkgs.stdenv.mkDerivation rec {
-      name = "gcs-java-sdk-v1-rev26-1.19.1";
+      name = "gcs-java-sdk-v1-rev20190910-1.30.3";
       buildInputs = [google_api_services_storage google_api_client google_oauth_client google_http_client google_http_client_jackson2 jsr305];
       buildCommand = ''
         mkdir -p $out/lib/java

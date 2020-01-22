@@ -76,16 +76,15 @@ public class GCSClient
    * Canned ACLs handling
    */
   public static final List<String> ALL_CANNED_ACLS = Arrays.asList("projectPrivate", "private",
-    "publicRead", "publicReadWrite", "authenticatedRead", "allAuthenticatedUsers",
-    "bucketOwnerRead", "bucketOwnerFullControl");
+    "publicRead", "authenticatedRead", "bucketOwnerRead", "bucketOwnerFullControl");
 
   /**
    * {@code CANNED_ACLS_DESC_CONST} has to be a compile-time String constant expression. That's why
    * e.g. we cannot re-use {@code ALL_CANNED_ACLS} to construct it.
    */
   static final String CANNED_ACLS_DESC_CONST = "For Google Cloud Storage, " +
-    "choose one of: projectPrivate, private, publicRead, publicReadWrite," +
-    " authenticatedRead, allAuthenticatedUsers, bucketOwnerRead, bucketOwnerFullControl.";
+    "choose one of: projectPrivate, private, publicRead, authenticatedRead, bucketOwnerRead, " +
+    "bucketOwnerFullControl.";
 
   @Override
   public void setRetryCount(int retryCount)
@@ -329,7 +328,7 @@ public class GCSClient
       throws IOException
     {
       GCSUploadCommand cmd = new GCSUploadCommand(options);
-      _s3Client.configure(cmd);
+      configure(cmd);
       return cmd.run();
     }
 
@@ -343,7 +342,25 @@ public class GCSClient
       throws IOException, ExecutionException, InterruptedException
     {
       UploadRecursivelyCommand cmd = new UploadRecursivelyCommand(options);
-      _s3Client.configure(cmd);
+      configure(cmd);
+      return cmd.run();
+    }
+
+    @Override
+    public ListenableFuture<StoreFile> download(DownloadOptions options)
+      throws IOException
+    {
+      GCSDownloadCommand cmd = new GCSDownloadCommand(options);
+      configure(cmd);
+      return cmd.run();
+    }
+
+    @Override
+    public ListenableFuture<List<StoreFile>> downloadRecursively(DownloadOptions options)
+      throws IOException, ExecutionException, InterruptedException
+    {
+      DownloadRecursivelyCommand cmd = new DownloadRecursivelyCommand(options);
+      configure(cmd);
       return cmd.run();
     }
 

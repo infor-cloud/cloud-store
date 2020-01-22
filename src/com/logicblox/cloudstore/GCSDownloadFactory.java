@@ -16,33 +16,28 @@
 
 package com.logicblox.cloudstore;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.google.api.services.storage.Storage;
+import com.google.api.services.storage.model.StorageObject;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
+import java.io.IOException;
 import java.util.concurrent.Callable;
 
-class S3DownloadFactory
+class GCSDownloadFactory
 {
   final private DownloadOptions _options;
-  final private long _fileLength;
-  final private long _chunkSize;
   final private ListeningExecutorService _apiExecutor;
   private final ListeningExecutorService _internalExecutor;
-  final private AmazonS3 _client;
+  final private Storage _client;
 
-  public S3DownloadFactory(DownloadOptions options,
-                           long fileLength, long chunkSize,
-                           AmazonS3 client,
-                           ListeningExecutorService apiExecutor,
-                           ListeningExecutorService internalExecutor)
+  public GCSDownloadFactory(DownloadOptions options,
+                            Storage client,
+                            ListeningExecutorService apiExecutor,
+                            ListeningExecutorService internalExecutor)
   {
     _options = options;
     _client = client;
-    _fileLength = fileLength;
-    _chunkSize = chunkSize;
     _apiExecutor = apiExecutor;
     _internalExecutor = internalExecutor;
   }
@@ -56,12 +51,11 @@ class S3DownloadFactory
     implements Callable<Download>
   {
     public Download call()
+      throws IOException
     {
-      GetObjectMetadataRequest metareq = new GetObjectMetadataRequest(_options.getBucketName(),
-        _options.getObjectKey(), _options.getVersion().orElse(null));
-      ObjectMetadata metadata = _client.getObjectMetadata(metareq);
-      return new S3Download(_options, _fileLength, _chunkSize, _client, _apiExecutor,
-        _internalExecutor, metadata);
+      StorageObject storageObject = _client.objects().get(_options.getBucketName(),
+        _options.getObjectKey()).execute();
+      return new GCSDownload(_options, _client, _apiExecutor, _internalExecutor, storageObject);
     }
   }
 }

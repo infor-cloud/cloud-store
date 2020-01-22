@@ -18,21 +18,23 @@ package com.logicblox.cloudstore;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
+import java.io.InputStream;
 import java.util.Map;
 
-class GCSUploadCommand
-  extends UploadCommand
+interface Download
 {
-  public GCSUploadCommand(UploadOptions options)
-  {
-    super(options);
-  }
+  ListenableFuture<InputStream> downloadPart(
+    int partNumber, long start, long end, OverallProgressListener progressListener);
 
-  @Override
-  protected ListenableFuture<Upload> initiateUpload(Map<String, String> metadata)
-  {
-    GCSParallelUploadFactory factory = new GCSParallelUploadFactory(_options, getGCSClient(),
-      _client.getApiExecutor(), metadata);
-    return factory.startUpload();
-  }
+  ListenableFuture<Download> completeDownload();
+
+  Map<String, String> getMetadata();
+
+  long getLength();
+
+  String getETag();
+
+  String getObjectKey();
+
+  String getBucketName();
 }

@@ -31,7 +31,7 @@ let
       '';
     };
 
-in {
+in rec {
 
   guava =
     buildjar {
@@ -66,6 +66,13 @@ in {
       name = "commons-io-2.4";
       url = http://search.maven.org/remotecontent?filepath=commons-io/commons-io/2.4/commons-io-2.4.jar;
       sha256 = "108mw2v8ncig29kjvzh8wi76plr01f4x5l3b1929xk5a7vf42snc";
+    };
+
+  commonscodec =
+    buildjar {
+      name = "commons-codec-1.11";
+      url = http://search.maven.org/remotecontent?filepath=commons-codec/commons-codec/1.11/commons-codec-1.11.jar;
+      sha256 = "e599d5318e97aa48f42136a2927e6dfa4e8881dff0e6c8e3109ddbbff51d7b7d";
     };
 
   aws_java_sdk =
@@ -190,13 +197,6 @@ in {
           sha256 = "daddea1ea0be0f56978ab3006b8ac92834afeefbd9b7e4e6316fca57df0fa636";
         };
 
-      commonscodec =
-        buildjar {
-          name = "commons-codec-1.11";
-          url = http://search.maven.org/remotecontent?filepath=commons-codec/commons-codec/1.11/commons-codec-1.11.jar;
-          sha256 = "e599d5318e97aa48f42136a2927e6dfa4e8881dff0e6c8e3109ddbbff51d7b7d";
-        };
-      
     in
 
     pkgs.stdenv.mkDerivation rec {

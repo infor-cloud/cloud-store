@@ -1,5 +1,5 @@
 /*
-  Copyright 2018, Infor Inc.
+  Copyright 2020, Infor Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -42,10 +42,12 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
+/**
+ * Google Cloud Storage specific {@link Upload} implementation.
+ */
 class GCSParallelUpload
   implements Upload
 {
-  private ConcurrentMap<Integer, String> _crc32cs = new ConcurrentSkipListMap<>();
   private ConcurrentMap<Integer, StorageObject> _uploadedParts = new ConcurrentSkipListMap<>();
   private ConcurrentLinkedQueue<String> _tempObjectNames = new ConcurrentLinkedQueue<>();
   private Storage _client;
@@ -69,6 +71,12 @@ class GCSParallelUpload
     _uploadId = _options.getBucketName() + "/" + _options.getObjectKey();
   }
 
+  /**
+   * Uploads a part of the target object as an individual single object and, then, does checksum
+   * validation for that object. GCS doesn't have the notion of S3's multi-part uploads. Instead,
+   * after all individual parts have been uploaded, they are composed on the server to form the
+   * final object. Composition happens in {@link GCSUpload#completeUpload}.
+   */
   public ListenableFuture<Void> uploadPart(
     int partNumber, long partSize, Callable<InputStream> stream,
     OverallProgressListener progressListener)
@@ -79,16 +87,18 @@ class GCSParallelUpload
     return _executor.submit(new UploadCallable(partNumber, partSize, stream, progressListener));
   }
 
+  /**
+   * Completes the upload by asking the service to compose all individual part objects.
+   * Additionally, it performs checksum validation on each compose operation.
+   */
   public ListenableFuture<String> completeUpload()
   {
     return (new CompleteCallable()).call();
-    // return Futures.dereference(_executor.submit(new CompleteCallable()));
   }
 
   public ListenableFuture<Void> abort()
   {
     return (new AbortCallable()).call();
-    // return _executor.submit(new AbortCallable());
   }
 
   public String getBucketName()
@@ -126,12 +136,24 @@ class GCSParallelUpload
     }
   }
 
+  /**
+   * GCS compose API call can merge up to 32 (either single or composite) objects. Initially, if the
+   * source file has been chunked into >32 parts, then >1 compositions will take place (#chunks/32).
+   * If that first round of compositions results into >32 composite objects, then more compositions
+   * will follow. For huge files and/or small chunk sizes we might end up with a deep tree of such
+   * compositions. {@code CompleteCallable} takes care of that by composing the appropriate number
+   * of parts recursively, making sure that each level of compositions happens only after the
+   * previous one has been completed.
+   * <p>
+   * For more details on composite objects please see
+   * https://cloud.google.com/storage/docs/composite-objects.
+   */
   private class CompleteCallable
     implements Callable<ListenableFuture<String>>
   {
     public ListenableFuture<String> call()
     {
-      // Compose non-composite objects
+      // Compose initial single (non-composite) objects
       int npass = 0;
       int nbatches = 0;
       List<ListenableFuture<StorageObject>> l = new ArrayList<>();
@@ -157,7 +179,7 @@ class GCSParallelUpload
 
       if (!lastCompose)
       {
-        // Compose composite objects
+        // Compose composite objects recursively
         while(true)
         {
           List<List<ListenableFuture<StorageObject>>> compositesBatches =
@@ -237,6 +259,21 @@ class GCSParallelUpload
     }
   }
 
+  /**
+   * The actual GCS compose API call happens here. Up to 32 (as many as the API allows) names of
+   * source objects (parts) are declared in the compose request. Apart from the names, the
+   * generations of the source objects are added as well to make sure only the objects uploaded as
+   * part of this upload operation are composed and not unrelated objects that happen to share the
+   * same names, for example due to another concurrent upload to the same object (see
+   * https://cloud.google.com/storage/docs/generations-preconditions#_ParallelUpload for more
+   * details).
+   * <p>
+   * Additionally, this class performs CRC32C checksum validation to make sure the composition
+   * resulted to the expected object.
+   * <p>
+   * For more details on composite objects and their validation please see
+   * https://cloud.google.com/storage/docs/composite-objects.
+   */
   private class ComposeCallable
     implements Callable<StorageObject>
   {
@@ -365,8 +402,7 @@ class GCSParallelUpload
 
       Storage.Objects.Insert insertObject = _client.objects()
         .insert(getBucketName(), objectMetadata, mediaContent)
-        .setPredefinedAcl(_options.getCannedAcl())
-        .setIfGenerationMatch(0L);
+        .setPredefinedAcl(_options.getCannedAcl());
       insertObject.getMediaHttpUploader().setDisableGZipContent(true);
       if(_progressListener != null)
       {
@@ -383,7 +419,6 @@ class GCSParallelUpload
       String localCrc32c = new String(Base64.encodeBase64(stream.getValueAsBytes()));
       if(remoteCrc32c.equals(localCrc32c))
       {
-        _crc32cs.put(_partNumber, remoteCrc32c);
         return null;
       }
       else

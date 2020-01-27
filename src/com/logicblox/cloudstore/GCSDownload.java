@@ -1,5 +1,5 @@
 /*
-  Copyright 2018, Infor Inc.
+  Copyright 2020, Infor Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -33,6 +33,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
+/**
+ * Google Cloud Storage specific {@link Download} implementation.
+ */
 class GCSDownload
   implements Download
 {
@@ -56,13 +59,22 @@ class GCSDownload
     _storageObject = storageObject;
   }
 
+  /**
+   * Uses ranged HTTP GET to download a part of the target object.
+   */
   @Override
   public ListenableFuture<InputStream> downloadPart(
-    int partNumber, long start, long end, OverallProgressListener progressListener)
+    int partNumber, long start, long end, OverallProgressListener opl)
   {
-    return _apiExecutor.submit(new DownloadCallable(partNumber, start, end, progressListener));
+    return _apiExecutor.submit(new DownloadCallable(partNumber, start, end, opl));
   }
 
+  /**
+   * Does checksum validation. The downloaded object's CRC32C is computed by combining the CRC32C
+   * of all individual parts. The final CRC32C is compared against the CRC32C computed by the GCS
+   * service.
+   */
+  @Override
   public ListenableFuture<Download> completeDownload()
   {
     return _internalExecutor.submit(new GCSDownload.CompleteCallable());

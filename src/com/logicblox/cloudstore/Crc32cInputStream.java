@@ -1,5 +1,5 @@
 /*
-  Copyright 2018, Infor Inc.
+  Copyright 2020, Infor Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -20,15 +20,19 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+/**
+ * It computes the CRC-32c checksum of the underlying input stream as it is being read, in a
+ * streaming way.
+ */
 class Crc32cInputStream
   extends FilterInputStream {
 
-  private Crc32c crc;
+  private Crc32c _crc;
 
   public Crc32cInputStream(InputStream in)
   {
     super(in);
-    crc = new Crc32c();
+    _crc = new Crc32c();
   }
 
   @Override
@@ -38,7 +42,7 @@ class Crc32cInputStream
     int res = in.read();
     if(res != -1)
     {
-      crc.update(res);
+      _crc.update(res);
     }
     return res;
   }
@@ -50,7 +54,7 @@ class Crc32cInputStream
     int count = in.read(b);
     if(count != -1)
     {
-      crc.update(b, 0, count);
+      _crc.update(b, 0, count);
     }
     return count;
   }
@@ -62,7 +66,7 @@ class Crc32cInputStream
     int count = in.read(b, off, len);
     if(count != -1)
     {
-      crc.update(b, off, count);
+      _crc.update(b, off, count);
     }
     return count;
   }
@@ -73,7 +77,7 @@ class Crc32cInputStream
    * @return the 4-byte array representation of the checksum in network byte order (big endian).
    */
   public byte[] getValueAsBytes() {
-    return crc.getValueAsBytes();
+    return _crc.getValueAsBytes();
   }
 
   /**
@@ -82,6 +86,6 @@ class Crc32cInputStream
    * @return the long representation of the checksum (high bits set to zero).
    */
   public long getValue() {
-    return crc.getValue();
+    return _crc.getValue();
   }
 }

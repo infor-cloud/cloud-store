@@ -1,5 +1,5 @@
 /*
-  Copyright 2018, Infor Inc.
+  Copyright 2020, Infor Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -20,6 +20,10 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.IOException;
 
+/**
+ * Google Cloud Storage specific {@link DownloadCommand} implementation. It creates a
+ * {@link GCSDownload} through {@link GCSDownloadFactory}.
+ */
 class GCSDownloadCommand
   extends DownloadCommand
 {

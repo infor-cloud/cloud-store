@@ -1,5 +1,5 @@
 /*
-  Copyright 2018, Infor Inc.
+  Copyright 2020, Infor Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -19,6 +19,9 @@ package com.logicblox.cloudstore;
 import com.google.api.client.googleapis.media.MediaHttpDownloader;
 import com.google.api.client.googleapis.media.MediaHttpDownloaderProgressListener;
 
+/**
+ * Implements GCS's interface for receiving progress notifications for downloads.
+ */
 class GCSDownloaderProgressListener
   implements MediaHttpDownloaderProgressListener
 {
@@ -38,7 +41,6 @@ class GCSDownloaderProgressListener
     {
       case MEDIA_IN_PROGRESS:
       case MEDIA_COMPLETE:
-        // TODO: Progress works iff you have a content length specified.
         _ppe.setTransferredBytes(downloader.getNumBytesDownloaded());
         _opl.progress(_ppe);
         break;

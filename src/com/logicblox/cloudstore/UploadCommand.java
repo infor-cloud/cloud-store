@@ -1,5 +1,5 @@
 /*
-  Copyright 2018, Infor Inc.
+  Copyright 2020, Infor Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -44,6 +44,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+/**
+ * Drives an end-to-end parallel object upload according to {@code UploadOptions}. At a high level,
+ * it chunks the input file into multiple parts, uploads all parts in parallel, combines them
+ * together on the server and performs checksum validation on the final object.
+ * It uses an {@link Upload} object to delegate all backend-specific API calls.
+ */
 abstract class UploadCommand
   extends Command
 {
@@ -91,23 +97,8 @@ abstract class UploadCommand
       {
         throw new UsageException("Missing encryption key: " + _encKeyName);
       }
-      catch(NoSuchAlgorithmException e)
-      {
-        throw new RuntimeException(e);
-      }
-      catch(NoSuchPaddingException e)
-      {
-        throw new RuntimeException(e);
-      }
-      catch(InvalidKeyException e)
-      {
-        throw new RuntimeException(e);
-      }
-      catch(IllegalBlockSizeException e)
-      {
-        throw new RuntimeException(e);
-      }
-      catch(BadPaddingException e)
+      catch(NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
+        IllegalBlockSizeException | BadPaddingException e)
       {
         throw new RuntimeException(e);
       }
@@ -117,7 +108,9 @@ abstract class UploadCommand
   }
 
   /**
-   * Run ties Step 1, Step 2, and Step 3 together. The return result is the ETag of the upload.
+   * Runs the actual upload.
+   *
+   * @return A future to the ETag of the uploaded object.
    */
   public ListenableFuture<StoreFile> run()
     throws FileNotFoundException

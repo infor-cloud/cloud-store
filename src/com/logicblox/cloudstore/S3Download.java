@@ -63,9 +63,9 @@ class S3Download
 
   @Override
   public ListenableFuture<InputStream> downloadPart(
-    int partNumber, long start, long end, OverallProgressListener progressListener)
+    int partNumber, long start, long end, OverallProgressListener opl)
   {
-    return _apiExecutor.submit(new DownloadCallable(partNumber, start, end, progressListener));
+    return _apiExecutor.submit(new DownloadCallable(partNumber, start, end, opl));
   }
 
   public ListenableFuture<Download> completeDownload()

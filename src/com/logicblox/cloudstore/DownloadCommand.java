@@ -1,5 +1,5 @@
 /*
-  Copyright 2018, Infor Inc.
+  Copyright 2020, Infor Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -45,12 +45,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+/**
+ * Drives an end-to-end parallel object download according to {@code DownloadOptions}. At a high
+ * level, it downloads all object parts in parallel, combines the parts together and
+ * performs checksum validation on the final object.
+ * It uses an {@link Download} object to delegate all backend-specific API calls.
+ */
 abstract class DownloadCommand
   extends Command
 {
   DownloadOptions _options;
   KeyProvider _encKeyProvider;
-  boolean _dryRun;
   OverallProgressListenerFactory _progressListenerFactory;
 
   public DownloadCommand(DownloadOptions options)
@@ -59,7 +64,6 @@ abstract class DownloadCommand
     super(options);
     _options = options;
     _encKeyProvider = _client.getKeyProvider();
-    _dryRun = _options.isDryRun();
 
     this.file = _options.getFile();
     createNewFile();
@@ -73,8 +77,8 @@ abstract class DownloadCommand
     File dir = file.getParentFile();
     if(!dir.exists())
     {
-      List<File> newDirs = Utils.mkdirs(dir, _dryRun);
-      if(_dryRun)
+      List<File> newDirs = Utils.mkdirs(dir, _options.isDryRun());
+      if(_options.isDryRun())
       {
         for(File f : newDirs)
           System.out.println("<DRYRUN> creating missing directory '" + f.getAbsolutePath() + "'");
@@ -85,7 +89,7 @@ abstract class DownloadCommand
     {
       if(_options.doesOverwrite())
       {
-        if(_dryRun)
+        if(_options.isDryRun())
         {
           System.out.println("<DRYRUN> overwrite existing file '" + file.getAbsolutePath() + "'");
         }
@@ -104,7 +108,7 @@ abstract class DownloadCommand
       }
     }
 
-    if(!_dryRun)
+    if(!_options.isDryRun())
     {
       if(!file.createNewFile())
       {
@@ -113,7 +117,11 @@ abstract class DownloadCommand
     }
   }
 
-
+  /**
+   * Runs the actual download.
+   *
+   * @return A future to the downloaded file
+   */
   public ListenableFuture<StoreFile> run()
   {
     if(_options.getObjectKey().endsWith("/") || _options.getObjectKey().equals(""))
@@ -123,7 +131,7 @@ abstract class DownloadCommand
         "prefix keys are supported only by the recursive variant.");
     }
 
-    if(_dryRun)
+    if(_options.isDryRun())
     {
       System.out.println(
         "<DRYRUN> downloading '" + getUri(_options.getBucketName(), _options.getObjectKey()) +
@@ -352,23 +360,8 @@ abstract class DownloadCommand
               cipher.init(Cipher.DECRYPT_MODE, privKey);
               encKeyBytes = cipher.doFinal(DatatypeConverter.parseBase64Binary(symKeyStr));
             }
-            catch(NoSuchAlgorithmException e)
-            {
-              throw new RuntimeException(e);
-            }
-            catch(NoSuchPaddingException e)
-            {
-              throw new RuntimeException(e);
-            }
-            catch(InvalidKeyException e)
-            {
-              throw new RuntimeException(e);
-            }
-            catch(IllegalBlockSizeException e)
-            {
-              throw new RuntimeException(e);
-            }
-            catch(BadPaddingException e)
+            catch(NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
+              IllegalBlockSizeException | BadPaddingException e)
             {
               throw new RuntimeException(e);
             }
@@ -466,11 +459,7 @@ abstract class DownloadCommand
       {
         blockSize = Cipher.getInstance("AES/CBC/PKCS5Padding").getBlockSize();
       }
-      catch(NoSuchAlgorithmException e)
-      {
-        throw new RuntimeException(e);
-      }
-      catch(NoSuchPaddingException e)
+      catch(NoSuchAlgorithmException | NoSuchPaddingException e)
       {
         throw new RuntimeException(e);
       }
@@ -520,7 +509,6 @@ abstract class DownloadCommand
     Download download, InputStream stream, long position, int partNumber)
     throws Exception
   {
-    // HashingInputStream stream = new HashingInputStream(inStream);
     RandomAccessFile out = new RandomAccessFile(file, "rw");
     out.seek(position);
 
@@ -595,17 +583,15 @@ abstract class DownloadCommand
   private int readSafe(InputStream in, byte[] buf, int offset, int len, Runnable cleanup)
     throws IOException
   {
-    int result;
     try
     {
-      result = in.read(buf, offset, len);
+      return in.read(buf, offset, len);
     }
     catch(IOException e)
     {
       cleanup.run();
       throw e;
     }
-    return result;
   }
 
   private void writeSafe(RandomAccessFile out, byte[] buf, int offset, int len, Runnable cleanup)

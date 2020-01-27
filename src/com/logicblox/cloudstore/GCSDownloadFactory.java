@@ -1,5 +1,5 @@
 /*
-  Copyright 2018, Infor Inc.
+  Copyright 2020, Infor Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -24,6 +24,10 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import java.io.IOException;
 import java.util.concurrent.Callable;
 
+/**
+ * Constructs a {@link GCSDownload} object that implements all GCS-specific API calls. It's used
+ * by {@link GCSDownloadCommand}
+ */
 class GCSDownloadFactory
 {
   final private DownloadOptions _options;

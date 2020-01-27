@@ -1,5 +1,5 @@
 /*
-  Copyright 2018, Infor Inc.
+  Copyright 2020, Infor Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -14,17 +14,17 @@
   limitations under the License.
 */
 
-/*
-  The code below comes from zlib and  Google's CRC32C implementation
-  (github.com/googlearchive/crc32c-java).
-  A few changes were applied to make it part of cloud-store.
-
-  zlib.h -- interface of the 'zlib' general purpose compression library
-  version 1.2.8, April 28th, 2013
-  Copyright (C) 1995-2013 Jean-loup Gailly and Mark Adler
-
-  Copyright 2011 Google Inc. All rights reserved.
-*/
+/**
+ * The code below comes from zlib and Google's CRC32C implementation
+ * (github.com/googlearchive/crc32c-java). The most significant change in the zlib code was to use
+ * the CRC-32c polynomial (0x82f63b78L), instead of the CRC-32 one (0xedb88320UL).
+ * <p>
+ * zlib.h -- interface of the 'zlib' general purpose compression library
+ * version 1.2.8, April 28th, 2013
+ * Copyright (C) 1995-2013 Jean-loup Gailly and Mark Adler
+ * <p>
+ * Copyright 2011 Google Inc. All rights reserved.
+ */
 
 package com.logicblox.cloudstore;
 
@@ -189,6 +189,15 @@ final class Crc32c
     return (CRC_TABLE[index] ^ (crc >> 8)) & LONG_MASK;
   }
 
+  /**
+   * Computes the CRC-32c of bytestream C, where C is the concatenation of bytestreams A and B, by
+   * just relying on the CRC-32c of A, the CRC-32C of B and B's number of bytes.
+   *
+   * @param crc1 A's CRC-32c
+   * @param crc2 B's CRC-32c
+   * @param len2 B's number of bytes
+   * @return C's CRC-32c
+   */
   static long combine(long crc1, long crc2, long len2)
   {
     long row;
@@ -200,7 +209,7 @@ final class Crc32c
       return crc1;
 
     // put operator for one zero bit in odd
-    odd[0] = 0x82f63b78L;          // CRC-32c polynomial reserved
+    odd[0] = 0x82f63b78L;          // CRC-32c polynomial reversed
     row = 1;
     for(int n = 1; n < GF2_DIM; n++)
     {

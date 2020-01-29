@@ -136,9 +136,9 @@ in {
 
       jsr305 =
         buildjar {
-          name = "jsr305-3.0.2";
-          url = http://search.maven.org/remotecontent?filepath=com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar;
-          sha256 = "766ad2a0783f2687962c8ad74ceecc38a28b9f72a2d085ee438b7813e928d0c7";
+          name = "jsr305-1.3.9";
+          url = http://search.maven.org/remotecontent?filepath=com/google/code/findbugs/jsr305/1.3.9/jsr305-1.3.9.jar;
+          sha256 = "905721a0eea90a81534abb7ee6ef4ea2e5e645fa1def0a5cd88402df1b46c9ed";
       };
 
       j2objc_annotations =

@@ -128,7 +128,7 @@ class GCSDownload
     {
       _partNumber = partNumber;
       _start = start;
-      _end = end;
+      _end = end < 0 ? 0 : end;
       _progressListener = progressListener;
     }
 

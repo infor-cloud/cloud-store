@@ -31,7 +31,7 @@ let
       '';
     };
 
-in rec {
+in {
 
   guava =
     buildjar {
@@ -70,9 +70,9 @@ in rec {
 
   commonscodec =
     buildjar {
-      name = "commons-codec-1.11";
-      url = http://search.maven.org/remotecontent?filepath=commons-codec/commons-codec/1.11/commons-codec-1.11.jar;
-      sha256 = "e599d5318e97aa48f42136a2927e6dfa4e8881dff0e6c8e3109ddbbff51d7b7d";
+      name = "commons-codec-1.9";
+      url = http://search.maven.org/remotecontent?filepath=commons-codec/commons-codec/1.9/commons-codec-1.9.jar;
+      sha256 = "ad19d2601c3abf0b946b5c3a4113e226a8c1e3305e395b90013b78dd94a723ce";
     };
 
   aws_java_sdk =
@@ -134,13 +134,6 @@ in rec {
           sha256 = "4cc7c7b0cf0cf03cb7264763efbacee8af4621eb09a51a078331f3f717c09694";
       };
 
-      jackson_core =
-        buildjar {
-          name = "jackson-core-2.9.9";
-          url = http://search.maven.org/remotecontent?filepath=com/fasterxml/jackson/core/jackson-core/2.9.9/jackson-core-2.9.9.jar;
-          sha256 = "3083079be6088db2ed0a0c6ff92204e0aa48fa1de9db5b59c468f35acf882c2c";
-      };
-
       jsr305 =
         buildjar {
           name = "jsr305-3.0.2";
@@ -176,37 +169,15 @@ in rec {
           sha256 = "780a3937705b3c92e07292c97d065b2676fcbe031eae250f1622b026485f294e";
       };
 
-      httpclient =
-        buildjar {
-          name = "httpclient-4.5.9";
-          url = http://search.maven.org/remotecontent?filepath=org/apache/httpcomponents/httpclient/4.5.9/httpclient-4.5.9.jar;
-          sha256 = "6c7e3bb423d8c5574f28157fe42b4c38d6a3477bfa2954cfe5f330b14ecad8a9";
-      };
-
-      httpcore =
-        buildjar {
-          name = "httpcore-4.4.11";
-          url = http://search.maven.org/remotecontent?filepath=org/apache/httpcomponents/httpcore/4.4.11/httpcore-4.4.11.jar;
-          sha256 = "d799522d579aac06b170603f8f080f6e3248dadc01f9652cdd7ea7bc318c21ce";
-      };
-      
-      commonslogging =
-        buildjar {
-          name = "commons-logging-1.2";
-          url = https://repo1.maven.org/maven2/commons-logging/commons-logging/1.2/commons-logging-1.2.jar;
-          sha256 = "daddea1ea0be0f56978ab3006b8ac92834afeefbd9b7e4e6316fca57df0fa636";
-        };
-
     in
 
     pkgs.stdenv.mkDerivation rec {
       name = "gcs-java-sdk-v1-rev20190910-1.30.3";
       buildInputs = [google_api_services_storage google_api_client 
                      google_oauth_client google_http_client
-                     google_http_client_jackson2 jackson_core jsr305 
+                     google_http_client_jackson2 jsr305
                      j2objc_annotations opencensus_api 
-                     opencensus_contrib_http_util grpc_context httpclient 
-                     httpcore commonslogging commonscodec];
+                     opencensus_contrib_http_util grpc_context];
       buildCommand = ''
         mkdir -p $out/lib/java
 
@@ -216,15 +187,10 @@ in rec {
         cp ${google_http_client}/lib/java/*.jar $out/lib/java
         cp ${jsr305}/lib/java/*.jar $out/lib/java
         cp ${google_http_client_jackson2}/lib/java/*.jar $out/lib/java
-        cp ${jackson_core}/lib/java/*.jar $out/lib/java
         cp ${j2objc_annotations}/lib/java/*.jar $out/lib/java
         cp ${opencensus_api}/lib/java/*.jar $out/lib/java
         cp ${opencensus_contrib_http_util}/lib/java/*.jar $out/lib/java
         cp ${grpc_context}/lib/java/*.jar $out/lib/java
-        cp ${httpclient}/lib/java/*.jar $out/lib/java
-        cp ${httpcore}/lib/java/*.jar $out/lib/java
-        cp ${commonslogging}/lib/java/*.jar $out/lib/java
-        cp ${commonscodec}/lib/java/*.jar $out/lib/java
       '';
     };
 }

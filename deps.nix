@@ -57,21 +57,21 @@ in {
   log4j =
     buildjar {
       name = "log4j-1.2.13";
-      url = http://repo1.maven.org/maven2/log4j/log4j/1.2.13/log4j-1.2.13.jar;
+      url = http://search.maven.org/remotecontent?filepath=log4j/log4j/1.2.13/log4j-1.2.13.jar;
       sha256 = "053zkljmfsaj4p1vmnlfr04g7fchsb8v0i7aqibpjbd6i5c63vf8";
     };
 
   commonsio =
     buildjar {
       name = "commons-io-2.4";
-      url = http://repo1.maven.org/maven2/commons-io/commons-io/2.4/commons-io-2.4.jar;
+      url = http://search.maven.org/remotecontent?filepath=commons-io/commons-io/2.4/commons-io-2.4.jar;
       sha256 = "108mw2v8ncig29kjvzh8wi76plr01f4x5l3b1929xk5a7vf42snc";
     };
 
   commonscodec =
     buildjar {
       name = "commons-codec-1.9";
-      url = http://repo1.maven.org/maven2/commons-codec/commons-codec/1.9/commons-codec-1.9.jar;
+      url = http://search.maven.org/remotecontent?filepath=commons-codec/commons-codec/1.9/commons-codec-1.9.jar;
       sha256 = "ad19d2601c3abf0b946b5c3a4113e226a8c1e3305e395b90013b78dd94a723ce";
     };
 
@@ -101,49 +101,83 @@ in {
     let
       google_api_services_storage =
         buildjar {
-          name = "google-api-services-storage-v1-rev26-1.19.1";
-          url = http://search.maven.org/remotecontent?filepath=com/google/apis/google-api-services-storage/v1-rev26-1.19.1/google-api-services-storage-v1-rev26-1.19.1.jar;
-          sha256 = "15abdb8fbf5d26b23337822ec957320fb595524558c143a3cd7e12223d747231";
+          name = "google-api-services-storage-v1-rev20190910-1.30.3";
+          url = http://search.maven.org/remotecontent?filepath=com/google/apis/google-api-services-storage/v1-rev20190910-1.30.3/google-api-services-storage-v1-rev20190910-1.30.3.jar;
+          sha256 = "8d0e3f337cde15a45c64cc4fdcbacf38c28bd46add19abb45b26f8f8c5c7d78a";
       };
 
       google_api_client =
         buildjar {
-          name = "google-api-client-1.19.1";
-          url = http://search.maven.org/remotecontent?filepath=com/google/api-client/google-api-client/1.19.1/google-api-client-1.19.1.jar;
-          sha256 = "e3b1fda37e5e485e2df77e604c2d0c4966067464724f8d098a751408c3f7ee60";
+          name = "google-api-client-1.30.3";
+          url = http://search.maven.org/remotecontent?filepath=com/google/api-client/google-api-client/1.30.3/google-api-client-1.30.3.jar;
+          sha256 = "da89326bd0eb9b8a355e5b87090bf201cb1eed4e734fc60cdb8cbab31904dd8c";
       };
 
       google_oauth_client =
         buildjar {
-          name = "google-oauth-client-1.19.0";
-          url = http://search.maven.org/remotecontent?filepath=com/google/oauth-client/google-oauth-client/1.19.0/google-oauth-client-1.19.0.jar;
-          sha256 = "763ea99b3cd97c525884ee7c7304836366b696c4d545c38b0f502fc012879886";
+          name = "google-oauth-client-1.30.2";
+          url = http://search.maven.org/remotecontent?filepath=com/google/oauth-client/google-oauth-client/1.30.2/google-oauth-client-1.30.2.jar;
+          sha256 = "f97bd2674949d0ce59e198129edf46dbd7c5509f382a1f41ff25040046ff5178";
       };
 
       google_http_client =
         buildjar {
-          name = "google-http-client-1.19.0";
-          url = http://search.maven.org/remotecontent?filepath=com/google/http-client/google-http-client/1.19.0/google-http-client-1.19.0.jar;
-          sha256 = "aa70d0384697f8d674ddc483b07ea3ae5821373e6393a861a3a3db786b9718b9";
+          name = "google-http-client-1.32.0";
+          url = http://search.maven.org/remotecontent?filepath=com/google/http-client/google-http-client/1.32.0/google-http-client-1.32.0.jar;
+          sha256 = "6fd9e819d8d75bcedcb2ba9d8e08496b5160b3f855a50057f5d9f6850bbf0e4c";
       };
 
       google_http_client_jackson2 =
         buildjar {
-          name = "google-http-client-jackson2-1.19.0";
-          url = http://search.maven.org/remotecontent?filepath=com/google/http-client/google-http-client-jackson2/1.19.0/google-http-client-jackson2-1.19.0.jar;
-          sha256 = "f416949077a926f14b3804c2c14cc3b3e691840cb2c2c2d2d31222d6ee05e4b5";
+          name = "google-http-client-jackson2-1.32.0";
+          url = http://search.maven.org/remotecontent?filepath=com/google/http-client/google-http-client-jackson2/1.32.0/google-http-client-jackson2-1.32.0.jar;
+          sha256 = "4cc7c7b0cf0cf03cb7264763efbacee8af4621eb09a51a078331f3f717c09694";
       };
 
       jsr305 =
         buildjar {
-          name = "jsr305-1.3.9";
-          url = http://search.maven.org/remotecontent?filepath=com/google/code/findbugs/jsr305/1.3.9/jsr305-1.3.9.jar;
-          sha256 = "905721a0eea90a81534abb7ee6ef4ea2e5e645fa1def0a5cd88402df1b46c9ed";
+          name = "jsr305-3.0.2";
+          url = http://search.maven.org/remotecontent?filepath=com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar;
+          sha256 = "766ad2a0783f2687962c8ad74ceecc38a28b9f72a2d085ee438b7813e928d0c7";
       };
+
+      j2objc_annotations =
+        buildjar {
+          name = "j2objc-annotations-1.3";
+          url = http://search.maven.org/remotecontent?filepath=com/google/j2objc/j2objc-annotations/1.3/j2objc-annotations-1.3.jar;
+          sha256 = "21af30c92267bd6122c0e0b4d20cccb6641a37eaf956c6540ec471d584e64a7b";
+      };
+
+      opencensus_api =
+        buildjar {
+          name = "opencensus-api-0.24.0";
+          url = http://search.maven.org/remotecontent?filepath=io/opencensus/opencensus-api/0.24.0/opencensus-api-0.24.0.jar;
+          sha256 = "f561b1cc2673844288e596ddf5bb6596868a8472fd2cb8993953fc5c034b2352";
+      };
+
+      opencensus_contrib_http_util =
+        buildjar {
+          name = "opencensus-contrib-http-util-0.24.0";
+          url = http://search.maven.org/remotecontent?filepath=io/opencensus/opencensus-contrib-http-util/0.24.0/opencensus-contrib-http-util-0.24.0.jar;
+          sha256 = "7155273bbb1ed3d477ea33cf19d7bbc0b285ff395f43b29ae576722cf247000f";
+      };
+
+      grpc_context =
+        buildjar {
+          name = "grpc-context-1.22.1";
+          url = http://search.maven.org/remotecontent?filepath=io/grpc/grpc-context/1.22.1/grpc-context-1.22.1.jar;
+          sha256 = "780a3937705b3c92e07292c97d065b2676fcbe031eae250f1622b026485f294e";
+      };
+
     in
+
     pkgs.stdenv.mkDerivation rec {
-      name = "gcs-java-sdk-v1-rev26-1.19.1";
-      buildInputs = [google_api_services_storage google_api_client google_oauth_client google_http_client google_http_client_jackson2 jsr305];
+      name = "gcs-java-sdk-v1-rev20190910-1.30.3";
+      buildInputs = [google_api_services_storage google_api_client 
+                     google_oauth_client google_http_client
+                     google_http_client_jackson2 jsr305
+                     j2objc_annotations opencensus_api 
+                     opencensus_contrib_http_util grpc_context];
       buildCommand = ''
         mkdir -p $out/lib/java
 
@@ -153,6 +187,10 @@ in {
         cp ${google_http_client}/lib/java/*.jar $out/lib/java
         cp ${jsr305}/lib/java/*.jar $out/lib/java
         cp ${google_http_client_jackson2}/lib/java/*.jar $out/lib/java
+        cp ${j2objc_annotations}/lib/java/*.jar $out/lib/java
+        cp ${opencensus_api}/lib/java/*.jar $out/lib/java
+        cp ${opencensus_contrib_http_util}/lib/java/*.jar $out/lib/java
+        cp ${grpc_context}/lib/java/*.jar $out/lib/java
       '';
     };
 }

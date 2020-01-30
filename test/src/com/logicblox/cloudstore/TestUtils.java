@@ -589,10 +589,10 @@ public class TestUtils
   }
 
 
-  // GCS implementation currently doesn't support multipart uploads
+  // Currently all implementations support multipart uploads
   public static boolean supportsMultiPart()
   {
-    return !getService().equalsIgnoreCase("gs");
+    return true;
   }
 
   public static boolean supportsAcl()

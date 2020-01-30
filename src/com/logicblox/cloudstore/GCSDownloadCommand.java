@@ -1,5 +1,5 @@
 /*
-  Copyright 2018, Infor Inc.
+  Copyright 2020, Infor Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -18,21 +18,26 @@ package com.logicblox.cloudstore;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-import java.util.Map;
+import java.io.IOException;
 
-class GCSUploadCommand
-  extends UploadCommand
+/**
+ * Google Cloud Storage specific {@link DownloadCommand} implementation. It creates a
+ * {@link GCSDownload} through {@link GCSDownloadFactory}.
+ */
+class GCSDownloadCommand
+  extends DownloadCommand
 {
-  public GCSUploadCommand(UploadOptions options)
+  public GCSDownloadCommand(DownloadOptions options)
+    throws IOException
   {
     super(options);
   }
 
   @Override
-  protected ListenableFuture<Upload> initiateUpload(Map<String, String> metadata)
+  protected ListenableFuture<Download> initiateDownload()
   {
-    GCSParallelUploadFactory factory = new GCSParallelUploadFactory(_options, getGCSClient(),
-      _client.getApiExecutor(), metadata);
-    return factory.startUpload();
+    GCSDownloadFactory factory = new GCSDownloadFactory(_options, getGCSClient(),
+      _client.getApiExecutor(), _client.getInternalExecutor());
+    return factory.startDownload();
   }
 }

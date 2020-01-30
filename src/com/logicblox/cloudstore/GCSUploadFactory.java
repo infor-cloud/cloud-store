@@ -17,22 +17,22 @@
 package com.logicblox.cloudstore;
 
 import com.google.api.services.storage.Storage;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 import java.util.Date;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
-class GCSUploadFactory
+class GCSParallelUploadFactory
 {
   final private UploadOptions _options;
   final private Storage _client;
   final private ListeningExecutorService _executor;
   final private Map<String, String> _meta;
 
-  public GCSUploadFactory(UploadOptions options, Storage client, ListeningExecutorService executor,
-                          Map<String, String> meta)
+  public GCSParallelUploadFactory(UploadOptions options, Storage client, ListeningExecutorService executor,
+                                  Map<String, String> meta)
   {
     if(client == null)
     {
@@ -51,16 +51,7 @@ class GCSUploadFactory
 
   ListenableFuture<Upload> startUpload()
   {
-    return _executor.submit(new StartCallable());
-  }
-
-  private class StartCallable
-    implements Callable<Upload>
-  {
-    public Upload call()
-      throws Exception
-    {
-      return new GCSUpload(_options, _client, _executor, _meta, new Date());
-    }
+    return Futures.immediateFuture(new GCSParallelUpload(_options, _client, _executor, _meta,
+      new Date()));
   }
 }

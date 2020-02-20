@@ -148,20 +148,31 @@ class GCSDownload
       // take the copy of the stream and re-write it to an InputStream
       PipedInputStream inp = new PipedInputStream();
       final PipedOutputStream outp = new PipedOutputStream(inp);
-      _apiExecutor.submit(new Callable<Void>()
+
+      // NOTE: This used to submit a new Callable to the _apiExecutor since PipedOutputStream 
+      //       writes needed to take place in a different thread than PipedInputStream reads,
+      //       thinking that it's safe to do the writes in the _apiExecutor thread because
+      //       the reads happen in an internalExecutor thread.  But when doing recursive
+      //       multipart downloads, we can get into a situation where all the _apiExecutor
+      //       threads are used and we don't have a free thread to execute the PipedOutputStream
+      //       write being waited on the the corresponding read, so we can deadlock.  Using
+      //       an independent thread for the writes seems to resolve the issue.  See LB-3798.
+      Thread t = new Thread(new Runnable() 
       {
-        public Void call()
-          throws IOException
+        public void run()
         {
-          // PipedOutputStream writes should take place in a different thread
-          // than PipedInputStream reads. It's safe to do the writes here
-          // (apiExecutor thread) because reads happen in an internalExecutor
-          // thread.
-          getObject.executeMediaAndDownloadTo(outp);
-          outp.close();
-          return null;
+          try
+          {
+             getObject.executeMediaAndDownloadTo(outp);
+             outp.close();
+          }
+          catch(IOException ex)
+          {
+             throw new RuntimeException(ex);
+          }
         }
       });
+      t.start();
 
       Crc32cInputStream in = new Crc32cInputStream(inp);
       _partInputStreams.put(_partNumber, in);

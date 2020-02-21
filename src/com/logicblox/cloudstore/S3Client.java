@@ -339,8 +339,10 @@ public class S3Client
     List<Bucket> buckets = new ArrayList<Bucket>();
     for(com.amazonaws.services.s3.model.Bucket b : s3Buckets)
     {
-      buckets.add(new Bucket(b.getName(), b.getCreationDate(),
-        new Owner(b.getOwner().getId(), b.getOwner().getDisplayName())));
+      Owner owner = null;
+      if(null != b.getOwner())
+         owner = new Owner(b.getOwner().getId(), b.getOwner().getDisplayName());
+      buckets.add(new Bucket(b.getName(), b.getCreationDate(), owner));
     }
     return Futures.immediateFuture(buckets);
   }

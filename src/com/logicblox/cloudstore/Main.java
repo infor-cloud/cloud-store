@@ -314,8 +314,14 @@ class Main
         Bucket b = buckets.get(i);
         table[i][0] = b.getName();
         table[i][1] = df.format(b.getCreationDate());
-        String ownerName = b.getOwner().getDisplayName();
-        table[i][2] = (ownerName != null) ? ownerName : b.getOwner().getId();
+        String ownerName = "<unknown>";
+        if(null != b.getOwner())
+        {
+           ownerName = b.getOwner().getDisplayName();
+           if(null == ownerName)
+              ownerName = b.getOwner().getId();
+        }
+        table[i][2] = ownerName;
 
         for(int j = 0; j < 3; j++)
           max[j] = Math.max(table[i][j].length(), max[j]);
@@ -1130,7 +1136,7 @@ class Main
         if(recursive)
         {
           List<StoreFile> storeFiles = client.downloadRecursively(dob.createOptions()).get();
-          if(storeFiles.isEmpty())
+          if((null == storeFiles) || storeFiles.isEmpty())
             System.err.println("warning: No objects found for " + getURI());
         }
         else

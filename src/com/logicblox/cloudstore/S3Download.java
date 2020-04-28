@@ -36,8 +36,6 @@ class S3Download
   implements Download
 {
   private DownloadOptions _options;
-  private long _fileLength;
-  private long _chunkSize;
   private AmazonS3 _client;
   private ListeningExecutorService _apiExecutor;
   private ListeningExecutorService _internalExecutor;
@@ -53,8 +51,6 @@ class S3Download
     ObjectMetadata meta)
   {
     _options = options;
-    _fileLength = fileLength;
-    _chunkSize = chunkSize;
     _client = client;
     _apiExecutor = apiExecutor;
     _internalExecutor = internalExecutor;
@@ -68,9 +64,9 @@ class S3Download
     return _apiExecutor.submit(new DownloadCallable(partNumber, start, end, opl));
   }
 
-  public ListenableFuture<Download> completeDownload()
+  public ListenableFuture<Download> completeDownload(long fileLength, long chunkSize)
   {
-    return _internalExecutor.submit(new CompleteCallable());
+    return _internalExecutor.submit(new CompleteCallable(fileLength, chunkSize));
   }
 
   @Override
@@ -151,6 +147,15 @@ class S3Download
   private class CompleteCallable
     implements Callable<Download>
   {
+    private long _fileLength;
+    private long _chunkSize;
+
+    CompleteCallable(long fileLength, long chunkSize)
+    {
+      _fileLength = fileLength;
+      _chunkSize = chunkSize;
+    }
+
     public Download call()
       throws Exception
     {

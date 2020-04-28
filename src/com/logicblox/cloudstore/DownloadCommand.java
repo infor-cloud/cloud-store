@@ -614,7 +614,8 @@ abstract class DownloadCommand
     {
       public ListenableFuture<Download> apply(Download download)
       {
-        return download.completeDownload();
+        return download.completeDownload(
+          DownloadCommand.this.fileLength, DownloadCommand.this.chunkSize);
       }
     };
   }

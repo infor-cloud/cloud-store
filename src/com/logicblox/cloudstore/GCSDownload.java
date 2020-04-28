@@ -75,7 +75,7 @@ class GCSDownload
    * service.
    */
   @Override
-  public ListenableFuture<Download> completeDownload()
+  public ListenableFuture<Download> completeDownload(long fileLength, long chunkSize)
   {
     return _internalExecutor.submit(new GCSDownload.CompleteCallable());
   }

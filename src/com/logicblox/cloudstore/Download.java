@@ -48,7 +48,7 @@ interface Download
    *
    * @return A future to this download implementation
    */
-  ListenableFuture<Download> completeDownload();
+  ListenableFuture<Download> completeDownload(long fileLength, long chunkSize);
 
   /**
    * @return The user metadata associated with the target object

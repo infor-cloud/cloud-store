@@ -50,9 +50,9 @@ deps = [
     '$(aws_java_sdk)/lib/java/httpcore-4.4.4.jar',
     '$(aws_java_sdk)/lib/java/httpclient-4.5.2.jar',
     '$(aws_java_sdk)/lib/java/aws-java-sdk-1.11.102.jar',
-    '$(aws_java_sdk)/lib/java/jackson-annotations-2.6.0.jar',
-    '$(aws_java_sdk)/lib/java/jackson-core-2.6.6.jar',
-    '$(aws_java_sdk)/lib/java/jackson-databind-2.6.6.jar',
+    '$(aws_java_sdk)/lib/java/jackson-annotations-2.10.4.jar',
+    '$(aws_java_sdk)/lib/java/jackson-core-2.10.4.jar',
+    '$(aws_java_sdk)/lib/java/jackson-databind-2.10.4.jar',
 
     '$(gcs_java_sdk)/lib/java/google-api-services-storage-v1-rev20190910-1.30.3.jar',
     '$(gcs_java_sdk)/lib/java/google-api-client-1.30.3.jar',

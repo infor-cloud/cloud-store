@@ -61,6 +61,20 @@ in {
       sha256 = "7a34575770eebc60a5476616e3676a6cb6f2975c78c415e2a6014ac724ba5783";
     };
 
+  jaxb_api = 
+    buildjar {
+      name = "jaxb-api-2.3.1";
+      url = https://repo1.maven.org/maven2/javax/xml/bind/jaxb-api/2.3.1/jaxb-api-2.3.1.jar;
+      sha256 = "88b955a0df57880a26a74708bc34f74dcaf8ebf4e78843a28b50eae945732b06";
+    };
+
+  jaxb_runtime = 
+    buildjar {
+    name = "jaxb-runtime-2.3.1";
+    url = https://repo1.maven.org/maven2/org/glassfish/jaxb/jaxb-runtime/2.3.1/jaxb-runtime-2.3.1.jar;
+      sha256 = "45fecfa5c8217ce1f3652ab95179790ec8cc0dec0384bca51cbeb94a293d9f2f";
+    };
+
   jcommander =
     buildjar {
       name = "jcommander-1.29";

@@ -20,7 +20,7 @@
 , stdenv ? pkgs.stdenv
 , fetchurl ? pkgs.fetchurl
 , python ? pkgs.pythonFull
-, jdk ? pkgs.openjdk8 or pkgs.openjdk
+, jdk ? pkgs.openjdk11 or pkgs.openjdk
 , unzip ? pkgs.unzip
 , src ?  { outPath = ./.; rev = "1234"; }
 }:
@@ -150,6 +150,8 @@ let
 
         configureFlags = [
           "--with-guava=${deps.guava}"
+          "--with-jaxb-api=${deps.jaxb_api}"
+          "--with-jaxb-runtime=${deps.jaxb_runtime}"
           "--with-jcommander=${deps.jcommander}"
           "--with-log4j=${deps.log4j}"
           "--with-commons-io=${deps.commonsio}"

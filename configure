@@ -34,6 +34,8 @@ parse_arguments(
            'commons-io' : depdir,
            'commons-codec' : depdir,
            'log4j' : depdir,
+           'jaxb-api' : depdir,
+           'jaxb-runtime' : depdir,
            'aws-java-sdk' : depdir,
            'gcs-java-sdk' : depdir,
            'junit' : depdir
@@ -54,6 +56,9 @@ deps = [
     '$(aws_java_sdk)/lib/java/jackson-core-2.6.6.jar',
     '$(aws_java_sdk)/lib/java/jackson-databind-2.6.6.jar',
 
+    '$(jaxb_api)/lib/java/jaxb-api-2.3.1.jar',
+    '$(jaxb_runtime)/lib/java/jaxb-runtime-2.3.1.jar',
+    
     '$(gcs_java_sdk)/lib/java/google-api-services-storage-v1-rev20190910-1.30.3.jar',
     '$(gcs_java_sdk)/lib/java/google-api-client-1.30.3.jar',
     '$(gcs_java_sdk)/lib/java/google-http-client-1.32.0.jar',
@@ -91,7 +96,7 @@ jar(
                                    ('Implementation-Title', "com.logicblox.cloudstore"),
                                    ('Implementation-Version', impl_version),
                                    ('Implementation-Vendor', "LogicBlox, Inc.")]},
-   java_version = "1.8")
+   java_version = "11")
 
 test_deps = [
   '$(junit)/lib/java/junit-4.8.2.jar',
@@ -102,7 +107,7 @@ jar(
    classpath = deps + test_deps,
    manifest = {'add_classpath': True,
                'main_class': "com.logicblox.cloudstore.TestRunner"},
-   java_version = "1.8")
+   java_version = "11")
 
 bin_program('cloud-store')
 

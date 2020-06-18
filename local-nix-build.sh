@@ -19,8 +19,8 @@
 set -e
 set -u
 
-# nixpkgs needs to point to nixpkgs version 17.03,
-# e.g. /home/user/dev/nix/nixpkgs-20170404
+# nixpkgs needs to point to nixpkgs version 17.03.  for example:
+#    local-nix-build.sh channel:nixos-17.03
 nixpkgs="$1"
 
 # This wraps use of nix-build to run the test job in default.nix, passing in
@@ -30,6 +30,7 @@ nixpkgs="$1"
 rm -rf build Makefile buildlib.pyc
 
 # set the "keep" flag if you don't want the test execution directory to be discarded
-#keep="-K"
+keep="-K"
+#keep=""
 
 nix-build $keep -I nixpkgs=$nixpkgs -A test default.nix

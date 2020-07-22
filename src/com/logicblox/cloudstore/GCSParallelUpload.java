@@ -417,6 +417,7 @@ class GCSParallelUpload
 
       String remoteCrc32c = res.getCrc32c();
       String localCrc32c = new String(Base64.encodeBase64(stream.getValueAsBytes()));
+      String localCrc32cGuava = new String(Base64.encodeBase64(stream.getGuavaValueAsBytes()));
       if(remoteCrc32c.equals(localCrc32c))
       {
         return null;

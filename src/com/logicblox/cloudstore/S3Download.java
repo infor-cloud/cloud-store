@@ -123,6 +123,8 @@ class S3Download
       String version = _options.getVersion().orElse(null);
       if(version == null)
       {
+System.err.println("+++ TRACE bucketName=[" + getBucketName() + "]");
+System.err.println("+++ TRACE objectKey=[" + getObjectKey() + "]");
         req = new GetObjectRequest(getBucketName(), getObjectKey());
       }
       else

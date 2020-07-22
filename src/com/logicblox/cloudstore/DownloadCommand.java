@@ -258,6 +258,7 @@ abstract class DownloadCommand
               throw new UsageException(errPrefix + "No encryption key provider is specified");
             }
             String keyName = meta.get("s3tool-key-name");
+System.err.println("++++++ TRACE: downloading " + download.getObjectKey() + " - s3tool-key-name=[[" + keyName + "]]");
             String keyNamesStr = meta.get("s3tool-key-name");
             List<String> keyNames = new ArrayList<>(Arrays.asList(keyNamesStr.split(",")));
             String symKeyStr;
@@ -273,6 +274,7 @@ abstract class DownloadCommand
                 if(meta.containsKey("s3tool-pubkey-hash"))
                 {
                   String pubKeyHashHeader = meta.get("s3tool-pubkey-hash");
+System.err.println("++++++ TRACE: downloading " + download.getObjectKey() + " - s3tool-pubkey-hash (single key)=[[" + pubKeyHashHeader + "]]");
                   PublicKey pubKey = Command.getPublicKey(privKey);
                   String pubKeyHashLocal = DatatypeConverter.printBase64Binary(
                     DigestUtils.sha256(pubKey.getEncoded())).substring(0, 8);
@@ -304,6 +306,7 @@ abstract class DownloadCommand
                     "encryption keys");
               }
               String pubKeyHashHeadersStr = meta.get("s3tool-pubkey-hash");
+System.err.println("++++++ TRACE: downloading " + download.getObjectKey() + " - s3tool-pubkey-hash(multi key)=[[" + pubKeyHashHeadersStr + "]]");
               List<String> pubKeyHashHeaders = new ArrayList<>(
                 Arrays.asList(pubKeyHashHeadersStr.split(",")));
               int privKeyIndex = -1;
@@ -331,6 +334,7 @@ abstract class DownloadCommand
                   {
                     // Successfully-read, validated key.
                     privKeyFound = true;
+System.err.println("++++++ TRACE: downloading " + download.getObjectKey() + " - using key [[" + kn + "]]");
                     break;
                   }
                 }
@@ -440,7 +444,8 @@ abstract class DownloadCommand
 
       public String toString()
       {
-        return "downloading part " + (partNumber + 1);
+//        return "downloading part " + (partNumber + 1);
+        return "downloading part " + (partNumber + 1) + " of " + download.getObjectKey();
       }
     });
   }
@@ -509,6 +514,8 @@ abstract class DownloadCommand
     Download download, InputStream stream, long position, int partNumber)
     throws Exception
   {
+System.err.println("++++++ TRACE: position=" + position);
+System.err.println("++++++ TRACE: partNumber=" + partNumber);
     RandomAccessFile out = new RandomAccessFile(file, "rw");
     out.seek(position);
 
@@ -525,6 +532,9 @@ abstract class DownloadCommand
     }
 
     long postCryptSize = Math.min(fileLength - position, chunkSize);
+System.err.println("++++++ TRACE: fileLength=" + fileLength);
+System.err.println("++++++ TRACE: chunkSize=" + chunkSize);
+System.err.println("++++++ TRACE: postCryptSize=" + postCryptSize);
     int bufSize = 8192;
     byte[] buf = new byte[bufSize];
 

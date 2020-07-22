@@ -16,9 +16,12 @@
 
 package com.logicblox.cloudstore;
 
+import com.logicblox.cloudstore.guava.*;
+
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+
 
 /**
  * It computes the CRC-32c checksum of the underlying input stream as it is being read, in a
@@ -28,11 +31,13 @@ class Crc32cInputStream
   extends FilterInputStream {
 
   private Crc32c _crc;
+  private Hasher _crcGuava;
 
   public Crc32cInputStream(InputStream in)
   {
     super(in);
     _crc = new Crc32c();
+    _crcGuava = Hashing.crc32c().newHasher();
   }
 
   @Override
@@ -43,6 +48,7 @@ class Crc32cInputStream
     if(res != -1)
     {
       _crc.update(res);
+      _crcGuava.putByte((byte) res);
     }
     return res;
   }
@@ -55,6 +61,7 @@ class Crc32cInputStream
     if(count != -1)
     {
       _crc.update(b, 0, count);
+      _crcGuava.putBytes(b, 0, count);
     }
     return count;
   }
@@ -67,6 +74,7 @@ class Crc32cInputStream
     if(count != -1)
     {
       _crc.update(b, off, count);
+      _crcGuava.putBytes(b, off, count);
     }
     return count;
   }
@@ -78,6 +86,19 @@ class Crc32cInputStream
    */
   public byte[] getValueAsBytes() {
     return _crc.getValueAsBytes();
+  }
+
+  public byte[] getGuavaValueAsBytes() {
+//    return _crcGuava.hash().asBytes();
+    long value = _crcGuava.hash().asInt();
+    byte[] result = new byte[4];
+    for(int i = 3; i >= 0; i--)
+    {
+      result[i] = (byte) (value & 0xffL);
+      value >>= 8;
+    }
+    return result;
+
   }
 
   /**

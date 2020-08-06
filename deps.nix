@@ -33,6 +33,27 @@ let
 
 in {
 
+  jackson_annotations =
+    buildjar {
+      name = "jackson-annotations-2.10.4";
+      url = https://search.maven.org/remotecontent?filepath=com/fasterxml/jackson/core/jackson-annotations/2.10.4/jackson-annotations-2.10.4.jar;
+      sha256 = "9d07ea7ce579a678e7aea61249fa82c46469af9d02c5b5f13e84beb7b0827dbc";
+    };
+
+  jackson_core =
+    buildjar {
+      name = "jackson-core-2.10.4";
+      url = https://search.maven.org/remotecontent?filepath=com/fasterxml/jackson/core/jackson-core/2.10.4/jackson-core-2.10.4.jar;
+      sha256 = "564f6e5706096179537114299e6d7492d2c38da182df8d7834a4c9141b078ef3";
+    };
+
+  jackson_databind =
+    buildjar {
+      name = "jackson-databind-2.10.4";
+      url = https://search.maven.org/remotecontent?filepath=com/fasterxml/jackson/core/jackson-databind/2.10.4/jackson-databind-2.10.4.jar;
+      sha256 = "55312662a420c71508e6159c86aa41c1694c52e89a1b90dc94bcf4358134005e";
+    };
+
   guava =
     buildjar {
       name = "guava-15.0";

@@ -171,6 +171,9 @@ let
           "--with-aws-java-sdk=${deps.aws_java_sdk}"
           "--with-gcs-java-sdk=${deps.gcs_java_sdk}"
           "--with-junit=${deps.junit}"
+          "--with-jackson-annotations=${deps.jackson_annotations}"
+          "--with-jackson-core=${deps.jackson_core}"
+          "--with-jackson-databind=${deps.jackson_databind}"
         ];
         buildInputs = [ python pkgs.makeWrapper ];
         propagatedBuildInputs = [ jdk ];

@@ -29,6 +29,9 @@ depdir = os.getenv('LB_UNIVERSE_DEPS', '/opt/logicblox/lb-universe-deps')
 parse_arguments(
   prefix = prefix,
   deps = { 
+           'jackson-annotations' : depdir,
+           'jackson-core' : depdir,
+           'jackson-databind' : depdir,
            'guava' : depdir,
            'jcommander' : depdir,
            'commons-io' : depdir,
@@ -52,9 +55,9 @@ deps = [
     '$(aws_java_sdk)/lib/java/httpcore-4.4.4.jar',
     '$(aws_java_sdk)/lib/java/httpclient-4.5.2.jar',
     '$(aws_java_sdk)/lib/java/aws-java-sdk-1.11.102.jar',
-    '$(aws_java_sdk)/lib/java/jackson-annotations-2.6.0.jar',
-    '$(aws_java_sdk)/lib/java/jackson-core-2.6.6.jar',
-    '$(aws_java_sdk)/lib/java/jackson-databind-2.6.6.jar',
+    '$(jackson_annotations)/lib/java/jackson-annotations-2.10.4.jar',
+    '$(jackson_core)/lib/java/jackson-core-2.10.4.jar',
+    '$(jackson_databind)/lib/java/jackson-databind-2.10.4.jar',
 
     '$(jaxb_api)/lib/java/jaxb-api-2.3.1.jar',
     '$(jaxb_runtime)/lib/java/jaxb-runtime-2.3.1.jar',

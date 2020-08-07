@@ -24,11 +24,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import javax.crypto.Cipher;
-import javax.xml.bind.DatatypeConverter;
 import java.io.File;
 import java.net.URI;
 import java.security.Key;
 import java.security.PrivateKey;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -1659,15 +1659,18 @@ public class RenameTests
     Assert.assertEquals(Integer.parseInt(destUserMeta.get("s3tool-version")), Version.CURRENT);
     Assert.assertEquals(destUserMeta.get("s3tool-key-name"), keyName);
 
+    final Base64.Decoder base64Decoder = Base64.getMimeDecoder();
+    final Base64.Encoder base64Encoder = Base64.getEncoder();
+
     PrivateKey privKey = _client.getKeyProvider().getPrivateKey(keyName);
     Cipher cipherRSA = Cipher.getInstance("RSA");
     cipherRSA.init(Cipher.DECRYPT_MODE, privKey);
     String symKeyStr = destUserMeta.get("s3tool-symmetric-key");
     // Make sure we can decrypt symmetric key
-    cipherRSA.doFinal(DatatypeConverter.parseBase64Binary(symKeyStr));
+    cipherRSA.doFinal(base64Decoder.decode(symKeyStr));
 
     Key pubKey = _client.getKeyProvider().getPublicKey(keyName);
-    String pubKeyHash = DatatypeConverter.printBase64Binary(DigestUtils.sha256(pubKey.getEncoded()));
+    String pubKeyHash = base64Encoder.encodeToString(DigestUtils.sha256(pubKey.getEncoded()));
     Assert.assertEquals(destUserMeta.get("s3tool-pubkey-hash"), pubKeyHash.substring(0, 8));
   }
 

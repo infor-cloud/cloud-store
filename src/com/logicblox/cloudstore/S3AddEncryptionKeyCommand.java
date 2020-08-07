@@ -29,7 +29,6 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
-import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -37,6 +36,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -44,6 +44,9 @@ import java.util.concurrent.Callable;
 class S3AddEncryptionKeyCommand
   extends Command
 {
+  private static final Base64.Decoder base64Decoder = Base64.getMimeDecoder();
+  private static final Base64.Encoder base64Encoder = Base64.getEncoder();
+
   private EncryptionKeyOptions _options;
   private String _encKeyName;
   private KeyProvider _encKeyProvider;
@@ -205,7 +208,7 @@ class S3AddEncryptionKeyCommand
       try
       {
         PublicKey pubKey = Command.getPublicKey(privKey);
-        String pubKeyHashLocal = DatatypeConverter.printBase64Binary(
+        String pubKeyHashLocal = base64Encoder.encodeToString(
           DigestUtils.sha256(pubKey.getEncoded())).substring(0, 8);
 
         if(pubKeyHashLocal.equals(pubKeyHashes.get(privKeyIndex)))
@@ -238,7 +241,7 @@ class S3AddEncryptionKeyCommand
       cipher.init(Cipher.DECRYPT_MODE, privKey);
       // TODO(geokollias): Is it possible to have "privKey != null" &&
       // privKeyIndex out of symKeys bounds? Add assertion.
-      encKeyBytes = cipher.doFinal(DatatypeConverter.parseBase64Binary(symKeys.get(privKeyIndex)));
+      encKeyBytes = cipher.doFinal(base64Decoder.decode(symKeys.get(privKeyIndex)));
     }
     catch(InvalidKeyException | BadPaddingException | NoSuchPaddingException |
       NoSuchAlgorithmException | IllegalBlockSizeException e)
@@ -252,12 +255,12 @@ class S3AddEncryptionKeyCommand
     try
     {
       PublicKey pubKey = _encKeyProvider.getPublicKey(_encKeyName);
-      pubKeyHash = DatatypeConverter.printBase64Binary(DigestUtils.sha256(pubKey.getEncoded()))
+      pubKeyHash = base64Encoder.encodeToString(DigestUtils.sha256(pubKey.getEncoded()))
         .substring(0, 8);
 
       cipher = Cipher.getInstance("RSA");
       cipher.init(Cipher.ENCRYPT_MODE, pubKey);
-      encSymKeyString = DatatypeConverter.printBase64Binary(cipher.doFinal(encKeyBytes));
+      encSymKeyString = base64Encoder.encodeToString(cipher.doFinal(encKeyBytes));
     }
     catch(NoSuchKeyException e)
     {

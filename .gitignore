@@ -1,0 +1,5 @@
+buildlib.pyc
+Makefile
+^build/
+^dist/
+^result/

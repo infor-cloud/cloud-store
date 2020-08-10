@@ -215,8 +215,6 @@ public class DirectoryKeyProvider
       throw new NoSuchKeyException("Incorrect file format: " + file.getPath());
     }
 
-
-    System.err.println("keyPem " + keyPem.toString());
     byte[] keyBytes = base64Decoder.decode(keyPem.toString());
     return keyBytes;
   }

@@ -174,6 +174,7 @@ let
           "--with-jackson-annotations=${deps.jackson_annotations}"
           "--with-jackson-core=${deps.jackson_core}"
           "--with-jackson-databind=${deps.jackson_databind}"
+          "--with-istackruntime=${deps.istack_runtime}"
         ];
         buildInputs = [ python pkgs.makeWrapper ];
         propagatedBuildInputs = [ jdk ];

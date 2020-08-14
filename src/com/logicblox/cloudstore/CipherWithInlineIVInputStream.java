@@ -124,8 +124,8 @@ class CipherWithInlineIVInputStream
       return readCount;
     }
 // DO NOT COMMIT -- added to simulate error condition
-throw new IOException(new javax.crypto.BadPaddingException("TESTING"));
-//    return in.read(b, off, len);
+//throw new IOException(new javax.crypto.BadPaddingException("TESTING"));
+    return in.read(b, off, len);
   }
 
   @Override

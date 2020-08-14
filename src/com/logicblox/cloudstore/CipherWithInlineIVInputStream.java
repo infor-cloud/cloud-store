@@ -26,6 +26,8 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
 
+import javax.crypto.BadPaddingException;
+
 class CipherWithInlineIVInputStream
   extends FilterInputStream
 {
@@ -121,7 +123,9 @@ class CipherWithInlineIVInputStream
       _ivBytesWritten += readCount;
       return readCount;
     }
-    return in.read(b, off, len);
+// DO NOT COMMIT -- added to simulate error condition
+throw new IOException(new javax.crypto.BadPaddingException("TESTING"));
+//    return in.read(b, off, len);
   }
 
   @Override

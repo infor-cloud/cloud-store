@@ -51,6 +51,12 @@ import java.util.concurrent.ConcurrentSkipListMap;
 class S3DownloadCommand
   extends Command
 {
+  private static final boolean DEBUG_PADDING_ERROR = true;
+  private String _debug_encodedSymmetricKey = "UNDEFINED";
+  private String _debug_s3toolKeyName = "UNDEFINED";
+  private String _debug_s3toolPubKeyHash = "UNDEFINED";
+  private String _debug_decryptionKeyName = "UNDEFINED";
+
   private DownloadOptions _options;
   private KeyProvider _encKeyProvider;
   private boolean _dryRun;
@@ -255,6 +261,8 @@ class S3DownloadCommand
             }
             String keyName = meta.get("s3tool-key-name");
             String keyNamesStr = meta.get("s3tool-key-name");
+            if(DEBUG_PADDING_ERROR)
+              _debug_s3toolKeyName = keyName;
             List<String> keyNames = new ArrayList<>(Arrays.asList(keyNamesStr.split(",")));
             String symKeyStr;
             PrivateKey privKey = null;
@@ -269,6 +277,8 @@ class S3DownloadCommand
                 if(meta.containsKey("s3tool-pubkey-hash"))
                 {
                   String pubKeyHashHeader = meta.get("s3tool-pubkey-hash");
+                  if(DEBUG_PADDING_ERROR)
+                    _debug_s3toolPubKeyHash = pubKeyHashHeader;
                   PublicKey pubKey = Command.getPublicKey(privKey);
                   String pubKeyHashLocal = DatatypeConverter.printBase64Binary(
                     DigestUtils.sha256(pubKey.getEncoded())).substring(0, 8);
@@ -287,6 +297,8 @@ class S3DownloadCommand
                   errPrefix + "private key '" + keyName + "' is not available to decrypt");
               }
               symKeyStr = meta.get("s3tool-symmetric-key");
+              if(DEBUG_PADDING_ERROR)
+                 _debug_decryptionKeyName = keyName;
             }
             else
             {
@@ -300,6 +312,8 @@ class S3DownloadCommand
                     "encryption keys");
               }
               String pubKeyHashHeadersStr = meta.get("s3tool-pubkey-hash");
+              if(DEBUG_PADDING_ERROR)
+                _debug_s3toolPubKeyHash = pubKeyHashHeadersStr;
               List<String> pubKeyHashHeaders = new ArrayList<>(
                 Arrays.asList(pubKeyHashHeadersStr.split(",")));
               int privKeyIndex = -1;
@@ -327,6 +341,8 @@ class S3DownloadCommand
                   {
                     // Successfully-read, validated key.
                     privKeyFound = true;
+                    if(DEBUG_PADDING_ERROR)
+                       _debug_decryptionKeyName = kn;
                     break;
                   }
                 }
@@ -376,6 +392,17 @@ class S3DownloadCommand
             {
               throw new RuntimeException(e);
             }
+
+/*
+System.err.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ENCRYPTION KEY");
+System.err.println("symKeyStr.length=" + symKeyStr.length());
+System.err.println("encoded symKeyStr=<<<" + symKeyStr + ">>>");
+System.err.println("encKeyBytes.len=" + encKeyBytes.length);
+System.err.println("encKeyBytes=" + Arrays.toString(encKeyBytes));
+System.err.println("-------");
+*/
+            if(DEBUG_PADDING_ERROR)
+              _debug_encodedSymmetricKey = symKeyStr;
 
             encKey = new SecretKeySpec(encKeyBytes, "AES");
           }
@@ -523,6 +550,8 @@ class S3DownloadCommand
     S3Download download, InputStream inStream, long position, int partNumber)
     throws Exception
   {
+try
+{
     HashingInputStream stream = new HashingInputStream(inStream);
     RandomAccessFile out = new RandomAccessFile(file, "rw");
     out.seek(position);
@@ -594,6 +623,27 @@ class S3DownloadCommand
 
     cleanup.run();
     _etags.put(partNumber, stream.getDigest());
+}
+catch(IOException ex)
+{
+  if(ex.getCause() instanceof javax.crypto.BadPaddingException)
+    logPaddingErrorData((javax.crypto.BadPaddingException) ex.getCause());
+  throw ex;
+}
+  }
+
+
+  private void logPaddingErrorData(javax.crypto.BadPaddingException ex)
+  {
+    if(!DEBUG_PADDING_ERROR)
+      return;
+
+    System.err.println("------------------------------ CAUGHT BadPaddingException: " + ex.getMessage());
+    System.err.println("     encoded symmetric key = <<<" + _debug_encodedSymmetricKey + ">>>");
+    System.err.println("     decryption key name = <<<" + _debug_decryptionKeyName + ">>>");
+    System.err.println("     s3tool-key-name = <<<" + _debug_s3toolKeyName + ">>>");
+    System.err.println("     s3tool-pubkey-hash = <<<" + _debug_s3toolPubKeyHash + ">>>");
+    System.err.println("--------------------------------------------------------------------");
   }
 
   private int readSafe(InputStream in, byte[] buf, int offset, int len, Runnable cleanup)

@@ -23,9 +23,26 @@ import java.util.Map;
 class GCSUploadCommand
   extends UploadCommand
 {
+  // There seems to be a problem chunk sizes larger than 10m bytes when uploading
+  // large (i.e. 200g) encrypted files to GCS.  Each uploaded chunk returns a
+  // CRC32c value that doesn't match what we compute locally.  If we limit chunk
+  // sizes to 10m bytes, we don't see this problem.  Note that this may result in
+  // more than 10000 chunks for large files which is a problem for AWS but doesn't
+  // seem to be for GCS.
+  private static final long MAX_ALLOWED_CHUNK_SIZE = 10000000;
+
   public GCSUploadCommand(UploadOptions options)
   {
     super(options);
+  }
+
+  @Override
+  public void setChunkSize(long chunkSize)
+  {
+    if(chunkSize > MAX_ALLOWED_CHUNK_SIZE)
+      this.chunkSize = MAX_ALLOWED_CHUNK_SIZE;
+    else
+      this.chunkSize = chunkSize;
   }
 
   @Override

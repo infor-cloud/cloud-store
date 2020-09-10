@@ -440,7 +440,7 @@ abstract class DownloadCommand
 
       public String toString()
       {
-        return "downloading part " + (partNumber + 1);
+        return "downloading part " + (partNumber + 1) + " of " + download.getObjectKey();
       }
     });
   }

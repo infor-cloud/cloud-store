@@ -159,7 +159,8 @@ def jar(name,
         javadoc = None,
         resources = [],
         install = True,
-        java_version = "1.6",
+        javac_flags = "",
+        java_version = "11",
         manifest=None):
     '''Build a jar by compiling Java files with javac'''
     java_files = []
@@ -179,7 +180,7 @@ def jar(name,
 
     emit(jar_file + ': ' + ' '.join(java_files) + ' ' + ' '.join(resources))
     emit('\tmkdir -p ' + classes_dir)
-    emit('\tjavac -Xlint:deprecation -d ' + classes_dir +
+    emit('\tjavac -Xlint:deprecation ' + javac_flags + ' -d ' + classes_dir +
          ' -source ' + java_version +
          ' -target ' + java_version +
          ' -cp ' + ':'.join(classpath) + ':' + classes_dir +
@@ -239,9 +240,10 @@ def jar(name,
              ' -windowtitle "' + javadoc['title'] + '"' +
              ' -doctitle "' + javadoc['title'] + '"' +
              ' -public ' +
-             ' -linkoffline "http://docs.oracle.com/javase/7/docs/api/" "./package-list/java"' +
-             ' -linkoffline "http://docs.guava-libraries.googlecode.com/git/javadoc/" "./package-list/guava"' +
-             ' -linkoffline "http://docs.amazonwebservices.com/AWSJavaSDK/latest/javadoc/" "./package-list/aws"' +
+             # 2020.06.11 linkoffline causes a hard error now that the package-list files were removed in commit c18736e
+             #' -linkoffline "http://docs.oracle.com/javase/7/docs/api/" "./package-list/java"' +
+             #' -linkoffline "http://docs.guava-libraries.googlecode.com/git/javadoc/" "./package-list/guava"' +
+             #' -linkoffline "http://docs.amazonwebservices.com/AWSJavaSDK/latest/javadoc/" "./package-list/aws"' +
              ' -d ' + javadoc_dir + 
              ' ' + ' '.join(java_files))
 

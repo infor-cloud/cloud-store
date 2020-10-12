@@ -30,7 +30,6 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
-import javax.xml.bind.DatatypeConverter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,6 +40,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -54,10 +54,12 @@ import java.util.concurrent.Callable;
 abstract class DownloadCommand
   extends Command
 {
+  private static final Base64.Decoder base64Decoder = Base64.getMimeDecoder();
+  private static final Base64.Encoder base64Encoder = Base64.getEncoder();
+
   DownloadOptions _options;
   KeyProvider _encKeyProvider;
   OverallProgressListenerFactory _progressListenerFactory;
-
   public DownloadCommand(DownloadOptions options)
     throws IOException
   {
@@ -274,7 +276,7 @@ abstract class DownloadCommand
                 {
                   String pubKeyHashHeader = meta.get("s3tool-pubkey-hash");
                   PublicKey pubKey = Command.getPublicKey(privKey);
-                  String pubKeyHashLocal = DatatypeConverter.printBase64Binary(
+                  String pubKeyHashLocal = base64Encoder.encodeToString(
                     DigestUtils.sha256(pubKey.getEncoded())).substring(0, 8);
 
                   if(!pubKeyHashLocal.equals(pubKeyHashHeader))
@@ -324,7 +326,7 @@ abstract class DownloadCommand
                 try
                 {
                   PublicKey pubKey = Command.getPublicKey(privKey);
-                  String pubKeyHashLocal = DatatypeConverter.printBase64Binary(
+                  String pubKeyHashLocal = base64Encoder.encodeToString(
                     DigestUtils.sha256(pubKey.getEncoded())).substring(0, 8);
 
                   if(pubKeyHashLocal.equals(pubKeyHashHeaders.get(privKeyIndex)))
@@ -358,7 +360,7 @@ abstract class DownloadCommand
             {
               cipher = Cipher.getInstance("RSA");
               cipher.init(Cipher.DECRYPT_MODE, privKey);
-              encKeyBytes = cipher.doFinal(DatatypeConverter.parseBase64Binary(symKeyStr));
+              encKeyBytes = cipher.doFinal(base64Decoder.decode(symKeyStr));
             }
             catch(NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
               IllegalBlockSizeException | BadPaddingException e)

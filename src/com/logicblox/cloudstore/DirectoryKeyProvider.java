@@ -19,7 +19,6 @@ package com.logicblox.cloudstore;
 import com.google.common.base.Charsets;
 import com.google.common.io.Closeables;
 
-import javax.xml.bind.DatatypeConverter;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -36,6 +35,7 @@ import java.security.cert.CertificateFactory;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -44,6 +44,8 @@ import java.util.regex.Pattern;
 public class DirectoryKeyProvider
   implements KeyProvider
 {
+  private static final Base64.Decoder base64Decoder = Base64.getMimeDecoder();
+
   private static final Pattern _BEGIN_PUBLIC = Pattern.compile(
     "^----[\\-\\ ]BEGIN PUBLIC KEY---[-]+$");
   private static final Pattern _END_PUBLIC = Pattern.compile("^----[\\-\\ ]END PUBLIC KEY---[-]+$");
@@ -213,8 +215,7 @@ public class DirectoryKeyProvider
       throw new NoSuchKeyException("Incorrect file format: " + file.getPath());
     }
 
-
-    byte[] keyBytes = DatatypeConverter.parseBase64Binary(keyPem.toString());
+    byte[] keyBytes = base64Decoder.decode(keyPem.toString());
     return keyBytes;
   }
 }

@@ -54,11 +54,32 @@ in {
       sha256 = "55312662a420c71508e6159c86aa41c1694c52e89a1b90dc94bcf4358134005e";
     };
 
+  istack_runtime = 
+    buildjar {
+      name = "istack-commons-runtime-3.0.11";
+      url = https://repo1.maven.org/maven2/com/sun/istack/istack-commons-runtime/3.0.11/istack-commons-runtime-3.0.11.jar;
+      sha256 = "cc3f3704ca7bf23e97653edcfc6bbcf9bfe3866b8aed7f290ae7809085d3a959";
+    };
+
   guava =
     buildjar {
       name = "guava-15.0";
       url = http://search.maven.org/remotecontent?filepath=com/google/guava/guava/15.0/guava-15.0.jar;
       sha256 = "7a34575770eebc60a5476616e3676a6cb6f2975c78c415e2a6014ac724ba5783";
+    };
+
+  jaxb_api = 
+    buildjar {
+      name = "jaxb-api-2.3.1";
+      url = https://repo1.maven.org/maven2/javax/xml/bind/jaxb-api/2.3.1/jaxb-api-2.3.1.jar;
+      sha256 = "88b955a0df57880a26a74708bc34f74dcaf8ebf4e78843a28b50eae945732b06";
+    };
+
+  jaxb_runtime = 
+    buildjar {
+    name = "jaxb-runtime-2.3.1";
+    url = https://repo1.maven.org/maven2/org/glassfish/jaxb/jaxb-runtime/2.3.1/jaxb-runtime-2.3.1.jar;
+      sha256 = "45fecfa5c8217ce1f3652ab95179790ec8cc0dec0384bca51cbeb94a293d9f2f";
     };
 
   jcommander =

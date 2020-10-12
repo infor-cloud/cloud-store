@@ -29,7 +29,6 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
-import javax.xml.bind.DatatypeConverter;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -39,6 +38,7 @@ import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +53,8 @@ import java.util.concurrent.Callable;
 abstract class UploadCommand
   extends Command
 {
+  private final static Base64.Encoder base64Encoder = Base64.getEncoder();
+
   String _encKeyName;
   String _encryptedSymmetricKeyString;
 
@@ -85,12 +87,12 @@ abstract class UploadCommand
         }
         Key pubKey = _client.getKeyProvider().getPublicKey(_encKeyName);
 
-        _pubKeyHash = DatatypeConverter.printBase64Binary(
+        _pubKeyHash = base64Encoder.encodeToString(
           DigestUtils.sha256(pubKey.getEncoded()));
 
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.ENCRYPT_MODE, pubKey);
-        _encryptedSymmetricKeyString = DatatypeConverter.printBase64Binary(
+        _encryptedSymmetricKeyString = base64Encoder.encodeToString(
           cipher.doFinal(encKeyBytes));
       }
       catch(NoSuchKeyException e)

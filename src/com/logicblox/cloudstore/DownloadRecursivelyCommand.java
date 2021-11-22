@@ -18,9 +18,10 @@ package com.logicblox.cloudstore;
 
 
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureFallback;
+//import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 
 import java.io.File;
 import java.io.IOException;
@@ -69,7 +70,8 @@ class DownloadRecursivelyCommand
     }
 
     ListenableFuture<List<StoreFile>> listObjs = querySourceFiles();
-    ListenableFuture<List<StoreFile>> result = Futures.transform(listObjs,
+    ListenableFuture<List<StoreFile>> result = Futures.transformAsync(
+      listObjs,
       new AsyncFunction<List<StoreFile>, List<StoreFile>>()
       {
         public ListenableFuture<List<StoreFile>> apply(List<StoreFile> srcFiles)
@@ -85,7 +87,8 @@ class DownloadRecursivelyCommand
             return scheduleExecution();
           }
         }
-      });
+      },
+      MoreExecutors.directExecutor());
     return result;
   }
 
@@ -96,14 +99,20 @@ class DownloadRecursivelyCommand
     // one fails, even if explicitly cancelled.  This seems to be the only way
     // to clean up all the newly created files reliably.
     ListenableFuture<List<StoreFile>> futureList = Futures.allAsList(_futures);
-    return Futures.withFallback(futureList, new FutureFallback<List<StoreFile>>()
-    {
-      public ListenableFuture<List<StoreFile>> create(Throwable t)
+//    return Futures.withFallback(futureList, new FutureFallback<List<StoreFile>>()
+    return Futures.catchingAsync(
+      futureList, 
+      Throwable.class, 
+      new AsyncFunction<Throwable, List<StoreFile>>()
       {
-        cleanup();
-        return Futures.immediateFailedFuture(t);
-      }
-    });
+//      public ListenableFuture<List<StoreFile>> create(Throwable t)
+        public ListenableFuture<List<StoreFile>> apply(Throwable t)
+        {
+          cleanup();
+          return Futures.immediateFailedFuture(t);
+        }
+      },
+      MoreExecutors.directExecutor());
   }
 
 

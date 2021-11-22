@@ -75,7 +75,11 @@ deps = [
     '$(gcs_java_sdk)/lib/java/opencensus-api-0.24.0.jar',
     '$(gcs_java_sdk)/lib/java/opencensus-contrib-http-util-0.24.0.jar',
 
-    '$(guava)/lib/java/guava-15.0.jar',
+    #'$(guava)/lib/java/guava-15.0.jar',
+    '$(guava)/lib/java/guava-31.0.1-jre.jar',
+    '$(guava)/lib/java/failureaccess-1.0.1.jar',
+    #'$(guava)/lib/java/guava-19.0.jar',
+
     '$(jcommander)/lib/java/jcommander-1.29.jar',
     '$(log4j)/lib/java/log4j-1.2.13.jar',
     '$(commons_io)/lib/java/commons-io-2.4.jar',

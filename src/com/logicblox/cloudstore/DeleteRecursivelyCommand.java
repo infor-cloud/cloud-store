@@ -19,6 +19,7 @@ package com.logicblox.cloudstore;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +41,8 @@ class DeleteRecursivelyCommand
     throws InterruptedException, ExecutionException
   {
     ListenableFuture<List<StoreFile>> listObjs = queryFiles();
-    ListenableFuture<List<StoreFile>> result = Futures.transform(listObjs,
+    ListenableFuture<List<StoreFile>> result = Futures.transformAsync(
+      listObjs,
       new AsyncFunction<List<StoreFile>, List<StoreFile>>()
       {
         public ListenableFuture<List<StoreFile>> apply(List<StoreFile> potential)
@@ -64,7 +66,8 @@ class DeleteRecursivelyCommand
             return Futures.allAsList(futures);
           }
         }
-      });
+      },
+      MoreExecutors.directExecutor());
     return result;
   }
 

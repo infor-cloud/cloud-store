@@ -20,9 +20,10 @@ package com.logicblox.cloudstore;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureFallback;
+//import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -51,22 +52,30 @@ class S3RemoveEncryptionKeyCommand
   {
     // TODO(geokollias): Handle versions?
     ListenableFuture<S3ObjectMetadata> objMeta = getMetadata();
-    objMeta = Futures.transform(objMeta, removeEncryptionKeyFn());
-    ListenableFuture<StoreFile> res = Futures.transform(objMeta, updateObjectMetadataFn());
+//    objMeta = Futures.transform(objMeta, removeEncryptionKeyFn());
+    objMeta = Futures.transformAsync(objMeta, removeEncryptionKeyFn(), MoreExecutors.directExecutor());
+//    ListenableFuture<StoreFile> res = Futures.transform(objMeta, updateObjectMetadataFn());
+    ListenableFuture<StoreFile> res = Futures.transformAsync(objMeta, updateObjectMetadataFn(), MoreExecutors.directExecutor());
 
-    return Futures.withFallback(res, new FutureFallback<StoreFile>()
-    {
-      public ListenableFuture<StoreFile> create(Throwable t)
+//    return Futures.withFallback(res, new FutureFallback<StoreFile>()
+    return Futures.catchingAsync(
+      res, 
+      Throwable.class, 
+      new AsyncFunction<Throwable, StoreFile>()
       {
-        if(t instanceof UsageException)
+//      public ListenableFuture<StoreFile> create(Throwable t)
+        public ListenableFuture<StoreFile> apply(Throwable t)
         {
-          return Futures.immediateFailedFuture(t);
+          if(t instanceof UsageException)
+          {
+            return Futures.immediateFailedFuture(t);
+          }
+          return Futures.immediateFailedFuture(new Exception(
+            "Error " + "adding new encryption key to " +
+              getUri(_options.getBucketName(), _options.getObjectKey()) + ".", t));
         }
-        return Futures.immediateFailedFuture(new Exception(
-          "Error " + "adding new encryption key to " +
-            getUri(_options.getBucketName(), _options.getObjectKey()) + ".", t));
-      }
-    });
+      },
+      MoreExecutors.directExecutor());
   }
 
   /**
@@ -117,7 +126,7 @@ class S3RemoveEncryptionKeyCommand
       }
     };
 
-    return Futures.transform(metadataFactory, checkMetadata);
+    return Futures.transformAsync(metadataFactory, checkMetadata, MoreExecutors.directExecutor());
   }
 
   /**

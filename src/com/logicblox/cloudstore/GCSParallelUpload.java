@@ -29,6 +29,7 @@ import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.commons.codec.binary.Base64;
 
 import java.io.IOException;
@@ -131,8 +132,10 @@ class GCSParallelUpload
       {
         deleted.add(_executor.submit(new DeleteCallable(objectName)));
       }
-      return Futures.transform(Futures.successfulAsList(deleted),
-        Functions.constant(null));
+      return Futures.transform(
+        Futures.successfulAsList(deleted),
+        Functions.constant(null),
+        MoreExecutors.directExecutor());
     }
   }
 
@@ -224,7 +227,10 @@ class GCSParallelUpload
       List<ListenableFuture<StorageObject>> composites,
       String targetObjectName)
     {
-      return Futures.transform(Futures.allAsList(composites), composeAsyncFunction(targetObjectName));
+      return Futures.transformAsync(
+        Futures.allAsList(composites), 
+        composeAsyncFunction(targetObjectName),
+        MoreExecutors.directExecutor());
     }
 
     private AsyncFunction<List<StorageObject>, StorageObject> composeAsyncFunction(
@@ -242,7 +248,8 @@ class GCSParallelUpload
     private ListenableFuture<String> cleanupIntermediateObjects(
       ListenableFuture<StorageObject> finalObject)
     {
-      return Futures.transform(finalObject,
+      return Futures.transformAsync(
+        finalObject,
         new AsyncFunction<StorageObject, String>()
         {
           public ListenableFuture<String> apply(StorageObject object)
@@ -252,10 +259,13 @@ class GCSParallelUpload
             {
               deleted.add(_executor.submit(new DeleteCallable(objectName)));
             }
-            return Futures.transform(Futures.successfulAsList(deleted),
-              Functions.constant(object.getEtag()));
+            return Futures.transform(
+              Futures.successfulAsList(deleted),
+              Functions.constant(object.getEtag()),
+              MoreExecutors.directExecutor());
           }
-        });
+        },
+        MoreExecutors.directExecutor());
     }
   }
 

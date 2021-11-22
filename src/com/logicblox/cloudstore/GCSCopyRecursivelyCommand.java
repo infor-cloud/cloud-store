@@ -21,6 +21,7 @@ import com.google.api.services.storage.model.StorageObject;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -62,7 +63,8 @@ class GCSCopyRecursivelyCommand
 
     ListenableFuture<List<StoreFile>> listFuture = getListFuture(_options.getSourceBucketName(),
       _options.getSourceObjectKey(), true);
-    ListenableFuture<List<StoreFile>> result = Futures.transform(listFuture,
+    ListenableFuture<List<StoreFile>> result = Futures.transformAsync(
+      listFuture,
       new AsyncFunction<List<StoreFile>, List<StoreFile>>()
       {
         public ListenableFuture<List<StoreFile>> apply(List<StoreFile> filesToCopy)
@@ -81,7 +83,8 @@ class GCSCopyRecursivelyCommand
             return Futures.allAsList(futures);
           }
         }
-      });
+      },
+      MoreExecutors.directExecutor());
     return result;
   }
 

@@ -20,6 +20,7 @@ import com.google.common.base.Function;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -66,19 +67,22 @@ class RenameRecursivelyCommand
       .createOptions();
 
     ListenableFuture<Metadata> destExists = _client.exists(opts);
-    return Futures.transform(destExists, new AsyncFunction<Metadata, List<StoreFile>>()
-    {
-      public ListenableFuture<List<StoreFile>> apply(Metadata mdata)
-        throws Exception
+    return Futures.transformAsync(
+      destExists, 
+      new AsyncFunction<Metadata, List<StoreFile>>()
       {
-        if(mdata != null)
+        public ListenableFuture<List<StoreFile>> apply(Metadata mdata)
+          throws Exception
         {
-          throw new UsageException(
-            "Cannot overwrite existing destination object '" + getUri(bucket, key));
+          if(mdata != null)
+          {
+            throw new UsageException(
+              "Cannot overwrite existing destination object '" + getUri(bucket, key));
+          }
+          return copyThenDelete();
         }
-        return copyThenDelete();
-      }
-    });
+      },
+      MoreExecutors.directExecutor());
   }
 
 
@@ -101,7 +105,8 @@ class RenameRecursivelyCommand
     //         should be collected into an ExecutionException?
     ListenableFuture<List<StoreFile>> listObjs = queryFiles();
 
-    ListenableFuture<List<StoreFile>> result = Futures.transform(listObjs,
+    ListenableFuture<List<StoreFile>> result = Futures.transformAsync(
+      listObjs,
       new AsyncFunction<List<StoreFile>, List<StoreFile>>()
       {
         public ListenableFuture<List<StoreFile>> apply(List<StoreFile> toDelete)
@@ -131,26 +136,31 @@ class RenameRecursivelyCommand
           }
           else
           {
-            return Futures.transform(copyFuture,
+            return Futures.transformAsync(
+              copyFuture,
               new AsyncFunction<List<StoreFile>, List<StoreFile>>()
               {
                 public ListenableFuture<List<StoreFile>> apply(final List<StoreFile> copied)
                   throws InterruptedException, ExecutionException
                 {
                   // need to return list of dest files
-                  return Futures.transform(deleteFiles(toDelete),
+                  return Futures.transform(
+                    deleteFiles(toDelete),
                     new Function<List<StoreFile>, List<StoreFile>>()
                     {
                       public List<StoreFile> apply(List<StoreFile> deletedFiles)
                       {
                         return copied;
                       }
-                    });
+                    },
+                    MoreExecutors.directExecutor());
                 }
-              });
+              },
+              MoreExecutors.directExecutor());
           }
         }
-      });
+      },
+      MoreExecutors.directExecutor());
     return result;
   }
 

@@ -22,6 +22,7 @@ import com.google.common.base.Functions;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
@@ -68,21 +69,27 @@ class S3CopyCommand
         .setObjectKey(_options.getSourceObjectKey())
         .createOptions();
       ListenableFuture<Metadata> sourceExists = _client.exists(opts);
-      ListenableFuture<Copy> copy = Futures.transform(sourceExists, startCopyAsyncFunction());
-      copy = Futures.transform(copy, startPartsAsyncFunction());
-      ListenableFuture<String> result = Futures.transform(copy, completeAsyncFunction());
-      return Futures.transform(result, new Function<String, StoreFile>()
-      {
-        public StoreFile apply(String etag)
+      ListenableFuture<Copy> copy = Futures.transformAsync(
+        sourceExists, startCopyAsyncFunction(), MoreExecutors.directExecutor());
+      copy = Futures.transformAsync(
+        copy, startPartsAsyncFunction(), MoreExecutors.directExecutor());
+      ListenableFuture<String> result = Futures.transformAsync(
+        copy, completeAsyncFunction(), MoreExecutors.directExecutor());
+      return Futures.transform(
+        result, 
+        new Function<String, StoreFile>()
         {
-          StoreFile f = new StoreFile();
-          f.setLocalFile(null);
-          f.setETag(etag);
-          f.setBucketName(_options.getDestinationBucketName());
-          f.setObjectKey(_options.getDestinationObjectKey());
-          return f;
-        }
-      });
+          public StoreFile apply(String etag)
+          {
+            StoreFile f = new StoreFile();
+            f.setLocalFile(null);
+            f.setETag(etag);
+            f.setBucketName(_options.getDestinationBucketName());
+            f.setObjectKey(_options.getDestinationObjectKey());
+            return f;
+          }
+        },
+        MoreExecutors.directExecutor());
     }
   }
 
@@ -184,7 +191,8 @@ class S3CopyCommand
       parts.add(startPartCopy(copy, position, opl));
     }
 
-    return Futures.transform(Futures.allAsList(parts), Functions.constant(copy));
+    return Futures.transform(
+      Futures.allAsList(parts), Functions.constant(copy), MoreExecutors.directExecutor());
   }
 
   private ListenableFuture<Void> startPartCopy(

@@ -81,6 +81,7 @@ let
       name = "${name}-test";
       src = jobs.build.out;
       /* jre = "${jdk.jre}"; */
+      jre = "${jdk}";
       buildInputs =
         [
           pkgs.awscli
@@ -122,7 +123,7 @@ let
         minio_pid="$!"
         sleep 5
 
-        $jdk/bin/java -cp ./lib/java/cloudstore-test.jar com.logicblox.cloudstore.TestRunner --keydir $keydir --endpoint $s3_endpoint
+        $jre/bin/java -cp ./lib/java/cloudstore-test.jar com.logicblox.cloudstore.TestRunner --keydir $keydir --endpoint $s3_endpoint
       '';
 
       installPhase = ''

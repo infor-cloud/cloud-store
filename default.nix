@@ -80,7 +80,7 @@ let
     pkgs.stdenv.mkDerivation {
       name = "${name}-test";
       src = jobs.build.out;
-      jre = "${jdk.jre}";
+      /* jre = "${jdk.jre}"; */
       buildInputs =
         [
           pkgs.awscli
@@ -122,7 +122,7 @@ let
         minio_pid="$!"
         sleep 5
 
-        $jre/bin/java -cp ./lib/java/cloudstore-test.jar com.logicblox.cloudstore.TestRunner --keydir $keydir --endpoint $s3_endpoint
+        $jdk/bin/java -cp ./lib/java/cloudstore-test.jar com.logicblox.cloudstore.TestRunner --keydir $keydir --endpoint $s3_endpoint
       '';
 
       installPhase = ''

@@ -313,6 +313,13 @@ public class Metadata
   }
 
 
+  // only used internally when converting between metadata objects used in different libraries
+  ObjectMetadata getObjectMetadata()
+  {
+    return _s3Metadata;
+  }
+
+
   // only used internally
   void print(PrintStream stream)
   {

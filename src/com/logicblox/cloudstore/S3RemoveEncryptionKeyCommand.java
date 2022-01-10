@@ -101,6 +101,49 @@ class S3RemoveEncryptionKeyCommand
 
   private ListenableFuture<S3ObjectMetadata> getMetadataAsync()
   {
+    if(null == getGCSClient())
+      return getMetadataAsyncAws();
+    else
+      return getMetadataAsyncGcs();
+  }
+
+  private ListenableFuture<S3ObjectMetadata> getMetadataAsyncGcs()
+  {
+    final String bucket = _options.getBucketName();
+    final String objectKey = _options.getObjectKey();
+    ExistsOptions opts = new ExistsOptions(_options.getCloudStoreClient(), bucket, objectKey);
+    ListenableFuture<Metadata> mdFuture = _client.exists(opts);
+
+    AsyncFunction<Metadata, S3ObjectMetadata> convert = new AsyncFunction<Metadata, S3ObjectMetadata>()
+    {
+      public ListenableFuture<S3ObjectMetadata> apply(Metadata metadata)
+      {
+        S3ObjectMetadata s3Md = new S3ObjectMetadata(
+           getS3Client(), objectKey, bucket, null, metadata.getObjectMetadata(),
+           _client.getApiExecutor());
+
+        // check that key info is in the metadata
+        Map<String, String> userMetadata = metadata.getUserMetadata();
+        String obj = getUri(bucket, objectKey);
+        if(!userMetadata.containsKey("s3tool-key-name"))
+          throw new UsageException("Object doesn't seem to be encrypted");
+        if(!userMetadata.containsKey("s3tool-pubkey-hash"))
+          throw new UsageException(
+            "Public key hashes are required when " + "object has multiple encryption keys");
+
+        return Futures.immediateFuture(s3Md);
+      }
+    };
+
+    return Futures.transformAsync(mdFuture, convert, MoreExecutors.directExecutor());
+  }
+
+
+  private ListenableFuture<S3ObjectMetadata> getMetadataAsyncAws()
+  {
+    // FIXME - Not sure why this isn't using the exists command like I'm doing above
+    // for GCS.  Maybe this should be changed to match?
+ 
     S3ObjectMetadataFactory f = new S3ObjectMetadataFactory(getS3Client(),
       _client.getApiExecutor());
     ListenableFuture<S3ObjectMetadata> metadataFactory = f.create(_options.getBucketName(),

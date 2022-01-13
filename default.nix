@@ -155,7 +155,6 @@ let
           "--with-jcommander=${deps.jcommander}"
           "--with-log4j-core=${deps.log4jCore}"
           "--with-log4j-api=${deps.log4jApi}"
-          "--with-log4j-12-api=${deps.log4j12Api}"
           "--with-commons-io=${deps.commonsio}"
           "--with-commons-codec=${deps.commonscodec}"
           "--with-aws-java-sdk=${deps.aws_java_sdk}"

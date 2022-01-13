@@ -98,23 +98,16 @@ in {
 
   log4jCore =
     buildjar {
-      name = "log4j-core-2.15.0";
-      url = https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-core/2.15.0/log4j-core-2.15.0.jar;
-      sha256 = "419a8512895971b7b4f4f33e620d361254e5c9552b904b0474b09ddd4a6a220b";
+      name = "log4j-core-2.17.1";
+      url = https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-core/2.17.1/log4j-core-2.17.1.jar;
+      sha256 = "c967f223487980b9364e94a7c7f9a8a01fd3ee7c19bdbf0b0f9f8cb8511f3d41";
     };
 
   log4jApi =
     buildjar {
-      name = "log4j-api-2.15.0";
-      url = https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-api/2.15.0/log4j-api-2.15.0.jar;
-      sha256 = "c8c33e7e8e05496dae69cf0caac8c3092cffd937a164526e92922d2d566d0a55";
-    };
-
-  log4j12Api =
-    buildjar {
-      name = "log4j-1.2-api-2.15.0";
-      url = https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-1.2-api/2.15.0/log4j-1.2-api-2.15.0.jar;
-      sha256 = "15489413a3161e70c96cd5a30220e386bf82aaeb854e78f4974ee25f2605cbf3";
+      name = "log4j-api-2.17.1";
+      url = https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-api/2.17.1/log4j-api-2.17.1.jar;
+      sha256 = "b0d8a4c8ab4fb8b1888d0095822703b0e6d4793c419550203da9e69196161de4";
     };
 
   commonsio =

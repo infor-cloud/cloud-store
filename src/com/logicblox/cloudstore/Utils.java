@@ -19,11 +19,14 @@ package com.logicblox.cloudstore;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Filter;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.appender.ConsoleAppender;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.filter.ThresholdFilter;
+import org.apache.logging.log4j.core.layout.PatternLayout;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -45,20 +48,20 @@ public class Utils
 
   static void initLogging()
   {
-    Logger root = Logger.getRootLogger();
-    root.setLevel(Level.INFO);
-
-    ConsoleAppender console = new ConsoleAppender();
+    Configurator.setAllLevels(LogManager.getRootLogger().getName(), Level.INFO);
     String PATTERN = "%d [%p|%c|%C{1}] %m%n";
-    console.setLayout(new PatternLayout(PATTERN));
-    console.setThreshold(Level.ERROR);
-    console.activateOptions();
+    ConsoleAppender console = ConsoleAppender.newBuilder()
+       .setName("cloud-store-appender")
+       .setLayout(PatternLayout.newBuilder().withPattern(PATTERN).build())
+       .setFilter(
+          ThresholdFilter.createFilter(Level.ERROR, Filter.Result.ACCEPT, Filter.Result.DENY))
+       .build();
 
-    Logger cloudStoreLogger = Logger.getLogger("com.logicblox.cloudstore");
+    Logger cloudStoreLogger = (Logger) LogManager.getLogger("com.logicblox.cloudstore");
     cloudStoreLogger.addAppender(console);
-    Logger awsLogger = Logger.getLogger("com.amazonaws");
+    Logger awsLogger = (Logger) LogManager.getLogger("com.amazonaws");
     awsLogger.addAppender(console);
-    Logger apacheLogger = Logger.getLogger("org.apache.http");
+    Logger apacheLogger = (Logger) LogManager.getLogger("org.apache.http");
     apacheLogger.addAppender(console);
   }
 

@@ -34,7 +34,7 @@ parse_arguments(
            'jackson-databind' : depdir,
            'istackruntime' : depdir,
            'guava' : depdir,
-           'failure_access' : depdir,
+           'failure-access' : depdir,
            'jcommander' : depdir,
            'commons-io' : depdir,
            'commons-codec' : depdir,

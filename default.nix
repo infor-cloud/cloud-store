@@ -80,7 +80,7 @@ let
     pkgs.stdenv.mkDerivation {
       name = "${name}-test";
       src = jobs.build.out;
-      jre = "${jdk.jre}";
+      jre = "${jdk}";
       buildInputs =
         [
           pkgs.awscli

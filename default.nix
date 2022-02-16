@@ -150,6 +150,7 @@ let
 
         configureFlags = [
           "--with-guava=${deps.guava}"
+          "--with-failure-access=${deps.failure_access}"
           "--with-jaxb-api=${deps.jaxb_api}"
           "--with-jaxb-runtime=${deps.jaxb_runtime}"
           "--with-jcommander=${deps.jcommander}"

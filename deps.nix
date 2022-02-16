@@ -76,7 +76,12 @@ in {
       sha256 = "d5be94d65e87bd219fb3193ad1517baa55a3b88fc91d21cf735826ab5af087b9";
     };
 
-
+  failure_access =
+    buildjar {
+      name = "failureaccess-1.0.1";
+      url = https://repo1.maven.org/maven2/com/google/guava/failureaccess/1.0.1/failureaccess-1.0.1.jar;
+      sha256 = "a171ee4c734dd2da837e4b16be9df4661afab72a41adaf31eb84dfdaf936ca26";
+    };
 
   jaxb_api = 
     buildjar {

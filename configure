@@ -34,6 +34,7 @@ parse_arguments(
            'jackson-databind' : depdir,
            'istackruntime' : depdir,
            'guava' : depdir,
+           'failure_access' : depdir,
            'jcommander' : depdir,
            'commons-io' : depdir,
            'commons-codec' : depdir,
@@ -78,7 +79,7 @@ deps = [
 
     #'$(guava)/lib/java/guava-15.0.jar',
     '$(guava)/lib/java/guava-31.0.1-jre.jar',
-    '$(guava)/lib/java/failureaccess-1.0.1.jar',
+    '$(failure_access)/lib/java/failureaccess-1.0.1.jar',
     #'$(guava)/lib/java/guava-19.0.jar',
 
     '$(jcommander)/lib/java/jcommander-1.29.jar',

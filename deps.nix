@@ -61,12 +61,22 @@ in {
       sha256 = "cc3f3704ca7bf23e97653edcfc6bbcf9bfe3866b8aed7f290ae7809085d3a959";
     };
 
+/*
   guava =
     buildjar {
       name = "guava-15.0";
       url = http://search.maven.org/remotecontent?filepath=com/google/guava/guava/15.0/guava-15.0.jar;
       sha256 = "7a34575770eebc60a5476616e3676a6cb6f2975c78c415e2a6014ac724ba5783";
     };
+*/
+  guava =
+    buildjar {
+      name = "guava-31.0.1-jre";
+      url = https://repo1.maven.org/maven2/com/google/guava/guava/31.0.1-jre/guava-31.0.1-jre.jar;
+      sha256 = "d5be94d65e87bd219fb3193ad1517baa55a3b88fc91d21cf735826ab5af087b9";
+    };
+
+
 
   jaxb_api = 
     buildjar {

@@ -179,28 +179,6 @@ public class GCSClient
   @Override
   public ListenableFuture<StoreFile> delete(DeleteOptions opts)
   {
-/*
-//    return _s3Client.delete(opts);
-System.err.println("!!!!!!!!!!!!!!!!!!!!!!!! DELETE OVERRIDE");
-// FIXME - run in a future with retries
-// FIXME - --dry-run needs to print something??
-// FIXME - see S3DeleteCommand.run() and mimic its functionality
-    try
-    {
-      Storage.Objects.Delete delCmd = _gcsClient.objects().delete(
-        opts.getBucketName(), opts.getObjectKey());
-      Object obj = delCmd.execute();
-System.err.println("        returned [[[" + obj + "]]]");
-// FIXME - return the StoreFile
-      return Futures.immediateFuture(null);
-    }
-    catch(Throwable t)
-    {
-// FIXME
-      t.printStackTrace();
-      return Futures.immediateFuture(null);
-    }
-*/
     return _s3Client.delete(opts);
   }
 

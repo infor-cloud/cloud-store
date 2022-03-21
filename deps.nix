@@ -96,11 +96,18 @@ in {
       sha256 = "1l8v7bykvaqrswbg4jlwwb96v308020q2wiaq8w7lv1q748k7vdh";
     };
 
-  log4j =
+  log4jCore =
     buildjar {
-      name = "log4j-1.2.13";
-      url = http://search.maven.org/remotecontent?filepath=log4j/log4j/1.2.13/log4j-1.2.13.jar;
-      sha256 = "053zkljmfsaj4p1vmnlfr04g7fchsb8v0i7aqibpjbd6i5c63vf8";
+      name = "log4j-core-2.17.1";
+      url = https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-core/2.17.1/log4j-core-2.17.1.jar;
+      sha256 = "c967f223487980b9364e94a7c7f9a8a01fd3ee7c19bdbf0b0f9f8cb8511f3d41";
+    };
+
+  log4jApi =
+    buildjar {
+      name = "log4j-api-2.17.1";
+      url = https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-api/2.17.1/log4j-api-2.17.1.jar;
+      sha256 = "b0d8a4c8ab4fb8b1888d0095822703b0e6d4793c419550203da9e69196161de4";
     };
 
   commonsio =

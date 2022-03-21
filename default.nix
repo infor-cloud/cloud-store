@@ -80,7 +80,7 @@ let
     pkgs.stdenv.mkDerivation {
       name = "${name}-test";
       src = jobs.build.out;
-      jre = "${jdk.jre}";
+      jre = "${jdk}";
       buildInputs =
         [
           pkgs.awscli
@@ -153,7 +153,8 @@ let
           "--with-jaxb-api=${deps.jaxb_api}"
           "--with-jaxb-runtime=${deps.jaxb_runtime}"
           "--with-jcommander=${deps.jcommander}"
-          "--with-log4j=${deps.log4j}"
+          "--with-log4j-core=${deps.log4jCore}"
+          "--with-log4j-api=${deps.log4jApi}"
           "--with-commons-io=${deps.commonsio}"
           "--with-commons-codec=${deps.commonscodec}"
           "--with-aws-java-sdk=${deps.aws_java_sdk}"

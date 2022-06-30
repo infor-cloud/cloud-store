@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 
 import java.io.IOException;
 import java.util.Map;
@@ -63,7 +64,8 @@ class GCSCopyCommand
         .setObjectKey(_options.getSourceObjectKey())
         .createOptions();
       ListenableFuture<Metadata> sourceExists = _client.exists(opts);
-      ListenableFuture<StoreFile> future = Futures.transform(sourceExists, startCopyAsyncFunction());
+      ListenableFuture<StoreFile> future = Futures.transformAsync(
+        sourceExists, startCopyAsyncFunction(), MoreExecutors.directExecutor());
 
       return future;
     }

@@ -1,5 +1,5 @@
 /*
-  Copyright 2018, Infor Inc.
+  Copyright 2021, Infor Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -16,26 +16,30 @@
 
 package com.logicblox.cloudstore;
 
-import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.services.storage.Storage;
+import com.google.api.services.storage.model.StorageObject;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 
+import java.io.IOException;
+import java.util.Date;
 import java.util.concurrent.Callable;
 
 
-class S3DeleteCommand
+class GCSDeleteCommand
   extends Command
 {
   private DeleteOptions _options;
 
-  public S3DeleteCommand(DeleteOptions options)
+  public GCSDeleteCommand(DeleteOptions options)
   {
     super(options);
     _options = options;
   }
-
 
   public ListenableFuture<StoreFile> run()
   {
@@ -48,6 +52,12 @@ class S3DeleteCommand
 
     final String bucket = _options.getBucketName();
     final String key = _options.getObjectKey();
+
+    if(_options.isDryRun())
+    {
+      System.out.println("<DRYRUN> deleting '" + getUri(bucket, key) + "'");
+      return Futures.immediateFuture(null);
+    }
 
     ExistsOptions opts = _client.getOptionsBuilderFactory()
       .newExistsOptionsBuilder()
@@ -76,7 +86,6 @@ class S3DeleteCommand
     return result;
   }
 
-
   private ListenableFuture<StoreFile> getDeleteFuture()
   {
     final String bucket = _options.getBucketName();
@@ -101,31 +110,26 @@ class S3DeleteCommand
 
   private ListenableFuture<StoreFile> runActual()
   {
-    final String srcUri = getUri(_options.getBucketName(), _options.getObjectKey());
-    if(_options.isDryRun())
+//System.err.println("!!!!!!!!!!!!!!!!!!!!!!!! DELETE OVERRIDE");
+    return _client.getApiExecutor().submit(new Callable<StoreFile>()
     {
-      System.out.println("<DRYRUN> deleting '" + srcUri + "'");
-      return Futures.immediateFuture(null);
-    }
-    else
-    {
-      return _client.getApiExecutor().submit(new Callable<StoreFile>()
+      public StoreFile call()
+        throws IOException
       {
-        public StoreFile call()
-        {
-          // support for testing failures
-          _options.injectAbort(srcUri);
+        String bucket = _options.getBucketName();
+        String key = _options.getObjectKey();
 
-          String bucket = _options.getBucketName();
-          String key = _options.getObjectKey();
-          DeleteObjectRequest req = new DeleteObjectRequest(bucket, key);
-          getS3Client().deleteObject(req);
-          StoreFile file = new StoreFile();
-          file.setBucketName(bucket);
-          file.setObjectKey(key);
-          return file;
-        }
-      });
-    }
+        // support for testing failures
+        _options.injectAbort(getUri(_options.getBucketName(), _options.getObjectKey()));
+
+        Storage.Objects.Delete delCmd = getGCSClient().objects().delete(bucket, key);
+        delCmd.execute();  // NOTE:  no return if successful, throws exception on failure
+        StoreFile file = new StoreFile();
+        file.setBucketName(bucket);
+        file.setObjectKey(key);
+        return file;
+      }
+    });
   }
+
 }

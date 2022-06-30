@@ -17,10 +17,12 @@
 package com.logicblox.cloudstore;
 
 
-import com.google.common.util.concurrent.FutureFallback;
+//import com.google.common.util.concurrent.FutureFallback;
+import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -59,30 +61,36 @@ public class ThrowableRetriableTask<V>
       future = Futures.immediateFailedFuture(exc);
     }
 
-    return Futures.withFallback(future, new FutureFallback<V>()
-    {
-      public ListenableFuture<V> create(Throwable t)
+//    return Futures.withFallback(future, new FutureFallback<V>()
+    return Futures.catchingAsync(
+      future, 
+      Throwable.class, 
+      new AsyncFunction<Throwable, V>()
       {
-        _retryCount++;
-        if(_retryPolicy.shouldRetry(t, _retryCount))
+//      public ListenableFuture<V> create(Throwable t)
+        public ListenableFuture<V> apply(Throwable t)
         {
-          String msg = "Info: Retriable exception: " + _callable.toString() + ": " + t.getMessage();
-          System.err.println(msg);
-          sendRetryNotifications(_callable.toString(), t);
+          _retryCount++;
+          if(_retryPolicy.shouldRetry(t, _retryCount))
+          {
+            String msg = "Info: Retriable exception: " + _callable.toString() + ": " + t.getMessage();
+            System.err.println(msg);
+            sendRetryNotifications(_callable.toString(), t);
 
-          long delay = _retryPolicy.getDelay(t, _retryCount);
-          // TODO: actually use the scheduled executor once Guava 15 is out
-          // Futures.dereference(_executor.schedule(_callable, delay, TimeUnit.MILLISECONDS));
-          sleep(delay);
+            long delay = _retryPolicy.getDelay(t, _retryCount);
+            // TODO: actually use the scheduled executor once Guava 15 is out
+            // Futures.dereference(_executor.schedule(_callable, delay, TimeUnit.MILLISECONDS));
+            sleep(delay);
 
-          return call();
+            return call();
+          }
+          else
+          {
+            return Futures.immediateFailedFuture(t);
+          }
         }
-        else
-        {
-          return Futures.immediateFailedFuture(t);
-        }
-      }
-    });
+      },
+      MoreExecutors.directExecutor());
   }
 
   // for testing

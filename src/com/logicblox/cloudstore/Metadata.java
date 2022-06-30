@@ -29,6 +29,7 @@ import java.util.Map;
 public class Metadata
 {
   protected ObjectMetadata _s3Metadata = null;
+  private String _etagOverride = null;
 
 
   Metadata(ObjectMetadata s3Data)
@@ -131,7 +132,18 @@ public class Metadata
    */
   public String getETag()
   {
-    return _s3Metadata.getETag();
+    if(null == _etagOverride)
+      return _s3Metadata.getETag();
+    else
+      return _etagOverride;
+  }
+
+  public void setETag(String etag)
+  {
+    // AWS ObjectMetadata doesn't seem to have a set function for the etag, so
+    // need this hack for GCSExistsCommand. Should maybe rewrite this class so
+    // it doesn't wrap AWS ObjectMetadata?
+    _etagOverride = etag;
   }
 
   /**
@@ -298,6 +310,13 @@ public class Metadata
   public boolean isRequesterCharged()
   {
     return _s3Metadata.isRequesterCharged();
+  }
+
+
+  // only used internally when converting between metadata objects used in different libraries
+  ObjectMetadata getObjectMetadata()
+  {
+    return _s3Metadata;
   }
 
 

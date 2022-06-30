@@ -373,6 +373,22 @@ public class GCSClient
     }
 
     @Override
+    public ListenableFuture<Metadata> exists(ExistsOptions options)
+    {
+      GCSExistsCommand cmd = new GCSExistsCommand(options);
+      configure(cmd);
+      return cmd.run();
+    }
+
+    @Override
+    public ListenableFuture<StoreFile> delete(DeleteOptions options)
+    {
+      GCSDeleteCommand cmd = new GCSDeleteCommand(options);
+      configure(cmd);
+      return cmd.run();
+    }
+
+    @Override
     public ListenableFuture<StoreFile> copy(CopyOptions options)
     {
       GCSCopyCommand cmd = new GCSCopyCommand(options);
@@ -406,7 +422,6 @@ public class GCSClient
       configure(cmd);
       return cmd;
     }
-
 
   }
 

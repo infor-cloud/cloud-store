@@ -19,9 +19,10 @@ package com.logicblox.cloudstore;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureFallback;
+//import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.commons.codec.digest.DigestUtils;
 
 import javax.crypto.BadPaddingException;
@@ -64,22 +65,31 @@ class S3AddEncryptionKeyCommand
   {
     // TODO(geokollias): Handle versions?
     ListenableFuture<S3ObjectMetadata> objMeta = getMetadata();
-    objMeta = Futures.transform(objMeta, addNewEncryptionKeyFn());
-    ListenableFuture<StoreFile> res = Futures.transform(objMeta, updateObjectMetadataFn());
+//    objMeta = Futures.transform(objMeta, addNewEncryptionKeyFn());
+    objMeta = Futures.transformAsync(
+      objMeta, addNewEncryptionKeyFn(), MoreExecutors.directExecutor());
+//    ListenableFuture<StoreFile> res = Futures.transform(objMeta, updateObjectMetadataFn());
+    ListenableFuture<StoreFile> res = Futures.transformAsync(
+      objMeta, updateObjectMetadataFn(), MoreExecutors.directExecutor());
 
-    return Futures.withFallback(res, new FutureFallback<StoreFile>()
-    {
-      public ListenableFuture<StoreFile> create(Throwable t)
+//    return Futures.withFallback(res, new FutureFallback<StoreFile>()
+    return Futures.catchingAsync(
+      res, 
+      Throwable.class, new AsyncFunction<Throwable, StoreFile>()
       {
-        if(t instanceof UsageException)
+//      public ListenableFuture<StoreFile> create(Throwable t)
+        public ListenableFuture<StoreFile> apply(Throwable t)
         {
-          return Futures.immediateFailedFuture(t);
+          if(t instanceof UsageException)
+          {
+            return Futures.immediateFailedFuture(t);
+          }
+          return Futures.immediateFailedFuture(new Exception(
+            "Error " + "adding new encryption key to " +
+              getUri(_options.getBucketName(), _options.getObjectKey()) + ".", t));
         }
-        return Futures.immediateFailedFuture(new Exception(
-          "Error " + "adding new encryption key to " +
-            getUri(_options.getBucketName(), _options.getObjectKey()) + ".", t));
-      }
-    });
+      },
+      MoreExecutors.directExecutor());
   }
 
   /**
@@ -105,6 +115,48 @@ class S3AddEncryptionKeyCommand
 
   private ListenableFuture<S3ObjectMetadata> getMetadataAsync()
   {
+    if(null == getGCSClient())
+      return getMetadataAsyncAws();
+    else
+      return getMetadataAsyncGcs();
+  }
+
+  private ListenableFuture<S3ObjectMetadata> getMetadataAsyncGcs()
+  {
+    final String bucket = _options.getBucketName();
+    final String objectKey = _options.getObjectKey();
+    ExistsOptions opts = new ExistsOptions(_options.getCloudStoreClient(), bucket, objectKey);
+    ListenableFuture<Metadata> mdFuture = _client.exists(opts);
+
+    AsyncFunction<Metadata, S3ObjectMetadata> convert = new AsyncFunction<Metadata, S3ObjectMetadata>()
+    {
+      public ListenableFuture<S3ObjectMetadata> apply(Metadata metadata)
+      {
+        S3ObjectMetadata s3Md = new S3ObjectMetadata(
+           getS3Client(), objectKey, bucket, null, metadata.getObjectMetadata(),
+           _client.getApiExecutor());
+
+        // check that key info is in the metadata
+        Map<String, String> userMetadata = metadata.getUserMetadata();
+        String obj = getUri(bucket, objectKey);
+        if(!userMetadata.containsKey("s3tool-key-name"))
+          throw new UsageException("Object doesn't seem to be encrypted");
+        if(!userMetadata.containsKey("s3tool-pubkey-hash"))
+          throw new UsageException(
+            "Public key hashes are required when " + "object has multiple encryption keys");
+
+        return Futures.immediateFuture(s3Md);
+      }
+    };
+
+    return Futures.transformAsync(mdFuture, convert, MoreExecutors.directExecutor());
+  }
+
+  private ListenableFuture<S3ObjectMetadata> getMetadataAsyncAws()
+  {
+    // FIXME - Not sure why this isn't using the exists command like I'm doing above
+    // for GCS.  Maybe this should be changed to match?
+ 
     S3ObjectMetadataFactory f = new S3ObjectMetadataFactory(getS3Client(),
       _client.getApiExecutor());
     ListenableFuture<S3ObjectMetadata> metadataFactory = f.create(_options.getBucketName(),
@@ -130,7 +182,8 @@ class S3AddEncryptionKeyCommand
       }
     };
 
-    return Futures.transform(metadataFactory, checkMetadata);
+//    return Futures.transform(metadataFactory, checkMetadata);
+    return Futures.transformAsync(metadataFactory, checkMetadata, MoreExecutors.directExecutor());
   }
 
 

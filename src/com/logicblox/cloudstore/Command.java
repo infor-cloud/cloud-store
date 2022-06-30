@@ -130,14 +130,10 @@ class Command
     return null;
   }
 
-  protected <V> ListenableFuture<V> executeWithRetry(
-    ListeningScheduledExecutorService executor, Callable<ListenableFuture<V>> callable)
+  protected ThrowableRetryPolicy getRetryPolicy(int initialDelay, int maxDelay, int retryCount, TimeUnit timeUnits)
   {
-    int initialDelay = 300;
-    int maxDelay = 20 * 1000;
-
-    ThrowableRetryPolicy trp = new ExpBackoffRetryPolicy(initialDelay, maxDelay, _retryCount,
-      TimeUnit.MILLISECONDS)
+    // retry if exception is not client exception or if stubborn is set
+    ThrowableRetryPolicy trp = new ExpBackoffRetryPolicy(initialDelay, maxDelay, retryCount, timeUnits)
     {
       @Override
       public boolean retryOnThrowable(Throwable thrown)
@@ -154,7 +150,16 @@ class Command
         return true;
       }
     };
+    return trp;
+  }
 
+  protected <V> ListenableFuture<V> executeWithRetry(
+    ListeningScheduledExecutorService executor, Callable<ListenableFuture<V>> callable)
+  {
+    int initialDelay = 300;
+    int maxDelay = 20 * 1000;
+
+    ThrowableRetryPolicy trp = getRetryPolicy(initialDelay, maxDelay, _retryCount, TimeUnit.MILLISECONDS);
     Callable<ListenableFuture<V>> rt = new ThrowableRetriableTask(callable, executor, trp);
     ListenableFuture<V> f;
     try

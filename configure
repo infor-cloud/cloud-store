@@ -34,6 +34,7 @@ parse_arguments(
            'jackson-databind' : depdir,
            'istackruntime' : depdir,
            'guava' : depdir,
+           'failure-access' : depdir,
            'jcommander' : depdir,
            'commons-io' : depdir,
            'commons-codec' : depdir,
@@ -76,7 +77,11 @@ deps = [
     '$(gcs_java_sdk)/lib/java/opencensus-api-0.24.0.jar',
     '$(gcs_java_sdk)/lib/java/opencensus-contrib-http-util-0.24.0.jar',
 
-    '$(guava)/lib/java/guava-15.0.jar',
+    #'$(guava)/lib/java/guava-15.0.jar',
+    '$(guava)/lib/java/guava-31.0.1-jre.jar',
+    '$(failure_access)/lib/java/failureaccess-1.0.1.jar',
+    #'$(guava)/lib/java/guava-19.0.jar',
+
     '$(jcommander)/lib/java/jcommander-1.29.jar',
     '$(log4j_core)/lib/java/log4j-core-2.17.1.jar',
     '$(log4j_api)/lib/java/log4j-api-2.17.1.jar',

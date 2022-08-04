@@ -19,9 +19,10 @@ package com.logicblox.cloudstore;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureFallback;
+//import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.commons.codec.digest.DigestUtils;
 
 import javax.crypto.BadPaddingException;
@@ -144,34 +145,46 @@ abstract class UploadCommand
   private ListenableFuture<StoreFile> scheduleExecution()
   {
     final ListenableFuture<Upload> started = startUpload();
-    ListenableFuture<Upload> uploaded = Futures.transform(started, startPartsAsyncFunction());
-    ListenableFuture<String> completed = Futures.transform(uploaded, completeAsyncFunction());
-    ListenableFuture<StoreFile> res = Futures.transform(completed, new Function<String, StoreFile>()
-    {
-      public StoreFile apply(String etag)
+//    ListenableFuture<Upload> uploaded = Futures.transform(started, startPartsAsyncFunction());
+    ListenableFuture<Upload> uploaded = Futures.transformAsync(
+       started, startPartsAsyncFunction(), MoreExecutors.directExecutor());
+//    ListenableFuture<String> completed = Futures.transform(uploaded, completeAsyncFunction());
+    ListenableFuture<String> completed = Futures.transformAsync(
+      uploaded, completeAsyncFunction(), MoreExecutors.directExecutor());
+    ListenableFuture<StoreFile> res = Futures.transform(
+      completed, 
+      new Function<String, StoreFile>()
       {
-        StoreFile f = new StoreFile();
-        f.setLocalFile(file);
-        f.setETag(etag);
-        f.setBucketName(_options.getBucketName());
-        f.setObjectKey(_options.getObjectKey());
-        return f;
-      }
-    });
+        public StoreFile apply(String etag)
+        {
+          StoreFile f = new StoreFile();
+          f.setLocalFile(file);
+          f.setETag(etag);
+          f.setBucketName(_options.getBucketName());
+          f.setObjectKey(_options.getObjectKey());
+          return f;
+        }
+      },
+      MoreExecutors.directExecutor());
 
-    return Futures.withFallback(res, new FutureFallback<StoreFile>()
+//    return Futures.withFallback(res, new FutureFallback<StoreFile>()
+    return Futures.catchingAsync(res, Throwable.class, new AsyncFunction<Throwable, StoreFile>()
     {
-      public ListenableFuture<StoreFile> create(final Throwable t)
+//      public ListenableFuture<StoreFile> create(final Throwable t)
+      public ListenableFuture<StoreFile> apply(final Throwable t)
       {
-        ListenableFuture<Void> aborted = Futures.transform(started, abortAsyncFunction());
-        ListenableFuture<StoreFile> res0 = Futures.transform(aborted,
+        ListenableFuture<Void> aborted = Futures.transformAsync(
+          started, abortAsyncFunction(), MoreExecutors.directExecutor());
+        ListenableFuture<StoreFile> res0 = Futures.transformAsync(
+          aborted,
           new AsyncFunction<Void, StoreFile>()
           {
             public ListenableFuture<StoreFile> apply(Void v)
             {
               return Futures.immediateFailedFuture(t);
             }
-          });
+          },
+          MoreExecutors.directExecutor());
 
         return res0;
       }
@@ -251,7 +264,7 @@ abstract class UploadCommand
 
     // we do not care about the voids, so we just return the upload
     // object.
-    return Futures.transform(Futures.allAsList(parts), Functions.constant(upload));
+    return Futures.transform(Futures.allAsList(parts), Functions.constant(upload), MoreExecutors.directExecutor());
   }
 
   private ListenableFuture<Void> startPartUploadThread(
@@ -267,7 +280,37 @@ abstract class UploadCommand
         }
       });
 
-    return Futures.dereference(result);
+//    return Futures.dereference(result);
+/*
+MoreExecutors.submitAsync?
+removed in 24.0?
+
+  public static <V> ListenableFuture<V> dereference(
+      ListenableFuture<? extends ListenableFuture<? extends V>> nested) {
+    return transformAsync(
+        (ListenableFuture) nested, (AsyncFunction) DEREFERENCER, directExecutor());
+  }
+
+  private static final AsyncFunction<ListenableFuture<Object>, Object> DEREFERENCER =
+      new AsyncFunction<ListenableFuture<Object>, Object>() {
+        @Override
+        public ListenableFuture<Object> apply(ListenableFuture<Object> input) {
+          return input;
+        }
+      };
+
+*/
+
+    return Futures.transformAsync(
+      result, 
+      new AsyncFunction<ListenableFuture<Void>, Void>()
+      {
+        public ListenableFuture<Void> apply(ListenableFuture<Void> input)
+        {
+          return input;
+        }
+      },
+      MoreExecutors.directExecutor());
   }
 
   /**

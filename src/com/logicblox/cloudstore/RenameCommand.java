@@ -18,9 +18,10 @@ package com.logicblox.cloudstore;
 
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureFallback;
+//import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 
 
 class RenameCommand
@@ -50,18 +51,23 @@ class RenameCommand
       return Futures.immediateFuture(null);
     }
 
-    return Futures.withFallback(buildFutureChain(), cleanupOnError());
+//    return Futures.withFallback(buildFutureChain(), cleanupOnError());
+    return Futures.catchingAsync(
+      buildFutureChain(), Throwable.class, cleanupOnError(), MoreExecutors.directExecutor());
   }
 
 
   // try to clean up if a failure occurs.  just have to worry
   // about failure during a delete phase and remove the copied
   // file
-  private FutureFallback<StoreFile> cleanupOnError()
+//  private FutureFallback<StoreFile> cleanupOnError()
+  private AsyncFunction<Throwable, StoreFile> cleanupOnError()
   {
-    return new FutureFallback<StoreFile>()
+//    return new FutureFallback<StoreFile>()
+    return new AsyncFunction<Throwable, StoreFile>()
     {
-      public ListenableFuture<StoreFile> create(Throwable t)
+//      public ListenableFuture<StoreFile> create(Throwable t)
+      public ListenableFuture<StoreFile> apply(Throwable t)
       {
         DeleteOptions deleteOpts = _client.getOptionsBuilderFactory()
           .newDeleteOptionsBuilder()
@@ -69,26 +75,34 @@ class RenameCommand
           .setObjectKey(_options.getDestinationObjectKey())
           .setIgnoreAbortInjection(true)
           .createOptions();
-        ListenableFuture<StoreFile> deleteFuture = Futures.withFallback(_client.delete(deleteOpts),
-          ignoreMissingDestinationFile());
+//        ListenableFuture<StoreFile> deleteFuture = Futures.withFallback(_client.delete(deleteOpts),
+//          ignoreMissingDestinationFile());
+        ListenableFuture<StoreFile> deleteFuture = Futures.catchingAsync(
+          _client.delete(deleteOpts), Throwable.class, ignoreMissingDestinationFile(),
+          MoreExecutors.directExecutor());
 
-        return Futures.transform(deleteFuture,
+        return Futures.transformAsync(
+          deleteFuture,
           new AsyncFunction<StoreFile, StoreFile>()
           {
             public ListenableFuture<StoreFile> apply(StoreFile f)
             {
               return Futures.immediateFailedFuture(t);
             }
-          });
+          },
+          MoreExecutors.directExecutor());
       }
     };
   }
 
-  private FutureFallback<StoreFile> ignoreMissingDestinationFile()
+//  private FutureFallback<StoreFile> ignoreMissingDestinationFile()
+  private AsyncFunction<Throwable, StoreFile> ignoreMissingDestinationFile()
   {
-    return new FutureFallback<StoreFile>()
+//    return new FutureFallback<StoreFile>()
+    return new AsyncFunction<Throwable, StoreFile>()
     {
-      public ListenableFuture<StoreFile> create(Throwable t)
+//      public ListenableFuture<StoreFile> create(Throwable t)
+      public ListenableFuture<StoreFile> apply(Throwable t)
       {
         // It's ok if destintation is not there. Copy might have failed.
         if(t instanceof UsageException && t.getMessage().contains("Object not found"))
@@ -109,18 +123,21 @@ class RenameCommand
 
     ListenableFuture<Metadata> sourceExists = _client.exists(opts);
 
-    return Futures.transform(sourceExists, new AsyncFunction<Metadata, StoreFile>()
-    {
-      public ListenableFuture<StoreFile> apply(Metadata mdata)
-        throws UsageException
+    return Futures.transformAsync(
+      sourceExists, 
+      new AsyncFunction<Metadata, StoreFile>()
       {
-        if(mdata == null)
+        public ListenableFuture<StoreFile> apply(Metadata mdata)
+          throws UsageException
         {
-          throw new UsageException("Source object '" + getSourceUri() + "' does not exist");
+          if(mdata == null)
+          {
+            throw new UsageException("Source object '" + getSourceUri() + "' does not exist");
+          }
+          return checkDestExists();
         }
-        return checkDestExists();
-      }
-    });
+      },
+      MoreExecutors.directExecutor());
   }
 
 
@@ -135,45 +152,53 @@ class RenameCommand
 
     ListenableFuture<Metadata> destExists = _client.exists(opts);
 
-    return Futures.transform(destExists, new AsyncFunction<Metadata, StoreFile>()
-    {
-      public ListenableFuture<StoreFile> apply(Metadata mdata)
-        throws UsageException
+    return Futures.transformAsync(
+      destExists, 
+      new AsyncFunction<Metadata, StoreFile>()
       {
-        if(mdata != null)
+        public ListenableFuture<StoreFile> apply(Metadata mdata)
+          throws UsageException
         {
-          throw new UsageException("Cannot overwrite existing destination object '" + getDestUri());
+          if(mdata != null)
+          {
+            throw new UsageException("Cannot overwrite existing destination object '" + getDestUri());
+          }
+          return copyObject();
         }
-        return copyObject();
-      }
-    });
+      },
+      MoreExecutors.directExecutor());
   }
 
 
   // copy is followed by delete
   private ListenableFuture<StoreFile> copyObject()
   {
-    return Futures.transform(getCopyOp(), new AsyncFunction<StoreFile, StoreFile>()
-    {
-      public ListenableFuture<StoreFile> apply(StoreFile srcFile)
+    return Futures.transformAsync(
+      getCopyOp(), 
+      new AsyncFunction<StoreFile, StoreFile>()
       {
-        return deleteObject();
-      }
-    });
-
+        public ListenableFuture<StoreFile> apply(StoreFile srcFile)
+        {
+          return deleteObject();
+        }
+      },
+      MoreExecutors.directExecutor());
   }
 
 
   // delete is followed by return of the dest file
   private ListenableFuture<StoreFile> deleteObject()
   {
-    return Futures.transform(getDeleteOp(), new Function<StoreFile, StoreFile>()
-    {
-      public StoreFile apply(StoreFile deletedFile)
+    return Futures.transform(
+      getDeleteOp(), 
+      new Function<StoreFile, StoreFile>()
       {
-        return new StoreFile(_options.getDestinationBucketName(), getDestKey());
-      }
-    });
+        public StoreFile apply(StoreFile deletedFile)
+        {
+          return new StoreFile(_options.getDestinationBucketName(), getDestKey());
+        }
+      },
+      MoreExecutors.directExecutor());
   }
 
 

@@ -18,9 +18,11 @@ package com.logicblox.cloudstore;
 
 
 import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.google.common.util.concurrent.FutureFallback;
+import com.google.common.util.concurrent.AsyncFunction;
+//import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 
 import java.util.concurrent.Callable;
 
@@ -55,23 +57,27 @@ class S3ExistsCommand
     // The result will throw a 404 exception if after possible retries
     // the object is still not found. We transform this here into a
     // null value.
-    return Futures.withFallback(future, new FutureFallback<Metadata>()
-    {
-      public ListenableFuture<Metadata> create(Throwable t)
+//    return Futures.withFallback(future, new FutureFallback<Metadata>()
+    return Futures.catchingAsync(
+      future, 
+      Throwable.class, 
+      new AsyncFunction<Throwable, Metadata>()
       {
-        if(t instanceof AmazonS3Exception)
+//      public ListenableFuture<Metadata> create(Throwable t)
+        public ListenableFuture<Metadata> apply(Throwable t)
         {
-          AmazonS3Exception exc = (AmazonS3Exception) t;
-          if(exc.getStatusCode() == 404)
+          if(t instanceof AmazonS3Exception)
           {
-            return Futures.immediateFuture(null);
+            AmazonS3Exception exc = (AmazonS3Exception) t;
+            if(exc.getStatusCode() == 404)
+            {
+              return Futures.immediateFuture(null);
+            }
           }
+          return Futures.immediateFailedFuture(t);
         }
-
-
-        return Futures.immediateFailedFuture(t);
-      }
-    });
+      },
+      MoreExecutors.directExecutor());
   }
 
   private ListenableFuture<Metadata> runActual()

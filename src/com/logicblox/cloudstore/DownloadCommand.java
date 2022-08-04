@@ -20,9 +20,10 @@ package com.logicblox.cloudstore;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureFallback;
+//import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.commons.codec.digest.DigestUtils;
 
 import javax.crypto.BadPaddingException;
@@ -73,7 +74,7 @@ abstract class DownloadCommand
   }
 
   private void createNewFile()
-    throws IOException
+	throws IOException
   {
     file = file.getAbsoluteFile();
     File dir = file.getParentFile();
@@ -148,7 +149,8 @@ abstract class DownloadCommand
       .createOptions();
 
     ListenableFuture<Metadata> existsFuture = _client.exists(opts);
-    ListenableFuture<StoreFile> result = Futures.transform(existsFuture,
+    ListenableFuture<StoreFile> result = Futures.transformAsync(
+      existsFuture,
       new AsyncFunction<Metadata, StoreFile>()
       {
         public ListenableFuture<StoreFile> apply(Metadata mdata)
@@ -161,7 +163,8 @@ abstract class DownloadCommand
           }
           return scheduleExecution();
         }
-      });
+      },
+      MoreExecutors.directExecutor());
 
     return result;
   }
@@ -170,9 +173,13 @@ abstract class DownloadCommand
   private ListenableFuture<StoreFile> scheduleExecution()
   {
     ListenableFuture<Download> download = startDownload();
-    download = Futures.transform(download, startPartsAsyncFunction());
-    download = Futures.transform(download, complete());
-    ListenableFuture<StoreFile> res = Futures.transform(download,
+//    download = Futures.transform(download, startPartsAsyncFunction(), );
+    download = Futures.transformAsync(
+      download, startPartsAsyncFunction(), MoreExecutors.directExecutor());
+//    download = Futures.transform(download, complete());
+    download = Futures.transformAsync(download, complete(), MoreExecutors.directExecutor());
+    ListenableFuture<StoreFile> res = Futures.transform(
+      download,
       new Function<Download, StoreFile>()
       {
         public StoreFile apply(Download download)
@@ -184,26 +191,33 @@ abstract class DownloadCommand
           f.setObjectKey(_options.getObjectKey());
           return f;
         }
-      });
+      },
+      MoreExecutors.directExecutor());
 
-    return Futures.withFallback(res, new FutureFallback<StoreFile>()
-    {
-      public ListenableFuture<StoreFile> create(Throwable t)
+//    return Futures.withFallback(res, new FutureFallback<StoreFile>()
+    return Futures.catchingAsync(
+      res, 
+      Throwable.class, 
+      new AsyncFunction<Throwable, StoreFile>()
       {
-        if(DownloadCommand.this.file.exists())
+//      public ListenableFuture<StoreFile> create(Throwable t)
+        public ListenableFuture<StoreFile> apply(Throwable t)
         {
-          DownloadCommand.this.file.delete();
-        }
+          if(DownloadCommand.this.file.exists())
+          {
+            DownloadCommand.this.file.delete();
+          }
 
-        if(t instanceof UsageException)
-        {
-          return Futures.immediateFailedFuture(t);
+          if(t instanceof UsageException)
+          {
+            return Futures.immediateFailedFuture(t);
+          }
+          return Futures.immediateFailedFuture(new Exception(
+            "Error " + "downloading " + getUri(_options.getBucketName(), _options.getObjectKey()) +
+              ".", t));
         }
-        return Futures.immediateFailedFuture(new Exception(
-          "Error " + "downloading " + getUri(_options.getBucketName(), _options.getObjectKey()) +
-            ".", t));
-      }
-    });
+      },
+      MoreExecutors.directExecutor());
   }
 
   /**
@@ -385,7 +399,7 @@ abstract class DownloadCommand
       }
     };
 
-    return Futures.transform(initiateDownload(), initDownload);
+    return Futures.transformAsync(initiateDownload(), initDownload, MoreExecutors.directExecutor());
   }
 
   protected abstract ListenableFuture<Download> initiateDownload();
@@ -425,7 +439,8 @@ abstract class DownloadCommand
       parts.add(startPartDownload(download, position, opl));
     }
 
-    return Futures.transform(Futures.allAsList(parts), Functions.constant(download));
+    return Futures.transform(
+      Futures.allAsList(parts), Functions.constant(download), MoreExecutors.directExecutor());
   }
 
   private ListenableFuture<Integer> startPartDownload(
@@ -504,7 +519,8 @@ abstract class DownloadCommand
       }
     };
 
-    return Futures.transform(getPartFuture, readDownloadFunction);
+    return Futures.transformAsync(
+      getPartFuture, readDownloadFunction, MoreExecutors.directExecutor());
   }
 
   private void readDownload(

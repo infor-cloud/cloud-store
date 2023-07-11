@@ -114,7 +114,7 @@ let
 
         minio_bin="${pkgs.minio}/bin/minio"
         $minio_bin -h
-        $minio_bin version
+        $minio_bin --version
 
         MINIO_ACCESS_KEY=$AWS_ACCESS_KEY_ID MINIO_SECRET_KEY=$AWS_SECRET_ACCESS_KEY \
           $minio_bin server $HOME/cloud-store-ut-buckets --address $s3_addr &

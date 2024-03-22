@@ -177,13 +177,6 @@ in {
           sha256 = "da89326bd0eb9b8a355e5b87090bf201cb1eed4e734fc60cdb8cbab31904dd8c";
       };
 
-      google_oauth_client =
-        buildjar {
-          name = "google-oauth-client-1.30.2";
-          url = http://search.maven.org/remotecontent?filepath=com/google/oauth-client/google-oauth-client/1.30.2/google-oauth-client-1.30.2.jar;
-          sha256 = "f97bd2674949d0ce59e198129edf46dbd7c5509f382a1f41ff25040046ff5178";
-      };
-
       google_http_client =
         buildjar {
           name = "google-http-client-1.32.0";
@@ -238,7 +231,7 @@ in {
     pkgs.stdenv.mkDerivation rec {
       name = "gcs-java-sdk-v1-rev20190910-1.30.3";
       buildInputs = [google_api_services_storage google_api_client 
-                     google_oauth_client google_http_client
+                     google_http_client
                      google_http_client_jackson2 jsr305
                      j2objc_annotations opencensus_api 
                      opencensus_contrib_http_util grpc_context];
@@ -247,7 +240,6 @@ in {
 
         cp ${google_api_services_storage}/lib/java/*.jar $out/lib/java
         cp ${google_api_client}/lib/java/*.jar $out/lib/java
-        cp ${google_oauth_client}/lib/java/*.jar $out/lib/java
         cp ${google_http_client}/lib/java/*.jar $out/lib/java
         cp ${jsr305}/lib/java/*.jar $out/lib/java
         cp ${google_http_client_jackson2}/lib/java/*.jar $out/lib/java

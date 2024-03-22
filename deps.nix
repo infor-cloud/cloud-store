@@ -179,9 +179,9 @@ in {
 
       google_oauth_client =
         buildjar {
-          name = "google-oauth-client-1.30.2";
-          url = http://search.maven.org/remotecontent?filepath=com/google/oauth-client/google-oauth-client/1.30.2/google-oauth-client-1.30.2.jar;
-          sha256 = "f97bd2674949d0ce59e198129edf46dbd7c5509f382a1f41ff25040046ff5178";
+          name = "google-oauth-client-1.33.3";
+          url = http://search.maven.org/remotecontent?filepath=com/google/oauth-client/google-oauth-client/1.33.3/google-oauth-client-1.33.3.jar;
+          sha256 = "310261a5f800084e2cd794061b06ebdc978a59efc37c6831185cd73fec2e1ba4";
       };
 
       google_http_client =
